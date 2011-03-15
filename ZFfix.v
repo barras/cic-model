@@ -82,6 +82,657 @@ elim TI_elim with (3:=H3); intros; auto with *.
 apply Fmono with (TI F x); auto.
 Qed.
 
+
+Section BoundedOperator.
+
+Variable A : set.
+Hypothesis Ftyp : forall X, X \incl A -> F X \incl A.
+
+Definition Ffix := subset A (fun a => exists2 o, isOrd o & a \in TI F o).
+
+Lemma Ffix_inA : Ffix \incl A.
+red; intros.
+apply subset_elim1 in H; trivial.
+Qed.
+
+Lemma TI_Ffix : forall o, isOrd o -> TI F o \incl Ffix.
+intros.
+apply isOrd_ind with (2:=H); intros.
+red; intros.
+apply TI_elim in H3; auto with *.
+destruct H3.
+unfold Ffix.
+apply subset_intro.
+ revert z H4; apply Ftyp.
+ transitivity Ffix; auto.
+ apply Ffix_inA.
+exists (osucc x); auto.
+ apply isOrd_succ; apply isOrd_inv with y; trivial.
+
+ rewrite TI_mono_succ; auto.
+ apply isOrd_inv with y; trivial.
+Qed.
+
+Lemma Ffix_def : forall a, a \in Ffix <-> exists2 o, isOrd o & a \in TI F o.
+unfold Ffix; intros.
+rewrite subset_ax.
+split; intros.
+ destruct H.
+ destruct H0.
+ destruct H1.
+ exists x0; trivial.
+ rewrite H0; trivial.
+
+ destruct H.
+ split.
+  apply Ffix_inA.
+  revert a H0; apply TI_Ffix; trivial.
+
+  exists a; auto with *.
+  exists x; trivial.
+Qed.
+
+Definition Fsub x y :=
+  forall o, isOrd o ->
+  y \in TI F o -> exists2 o', lt o' o & x \in TI F o'.
+
+Definition Ffix_rel a y :=
+  forall R:set->set->Prop,
+  Proper (eq_set ==> eq_set ==> iff) R ->
+  (forall x g,
+   let x' := subset A (fun a => Fsub a x) in
+   ext_fun x' g ->
+   (forall y, Fsub y x -> R y (g y)) ->
+   R x (sup x' (fun y => osucc (g y)))) ->
+  R a y.
+
+  Instance Ffix_rel_morph :
+    Proper (eq_set ==> eq_set ==> iff) Ffix_rel.
+Admitted.
+                                                                             
+  Lemma Ffix_rel_intro : forall x g,
+    let x' := subset A (fun a => Fsub a x) in
+    ext_fun x' g ->
+    (forall y, Fsub y x -> Ffix_rel y (g y)) ->
+    Ffix_rel x (sup x' (fun y => osucc (g y))).
+red; intros.
+apply H2; trivial; intros.
+apply H0; trivial.
+Qed.                                                                         
+                                                                             
+  Lemma Ffix_rel_inv : forall x o,
+    Ffix_rel x o ->
+    let x' := subset A (fun a => Fsub a x) in
+    exists2 g,
+      ext_fun x' g /\
+      (forall y, Fsub y x -> Ffix_rel y (g y)) &                 
+      o == sup x' (fun y => osucc (g y)).
+intros x o Fr.
+apply (@proj2 (Ffix_rel x o)).
+apply Fr; intros.
+ admit. (* mrph *)
+
+ split.
+  apply Ffix_rel_intro; auto.
+  intros.
+  apply H0; trivial.
+
+  exists g.
+   split; intros; trivial.
+   apply H0; trivial.
+
+  apply sup_morph.
+   reflexivity.
+
+   red; intros; apply osucc_morph; apply H; trivial.
+Qed.
+
+  Lemma Ffix_rel_fun :
+    forall x y, Ffix_rel x y -> forall y', Ffix_rel x y' -> y == y'.
+intros x y H.
+apply H; intros.
+ admit. (* mrph *)
+apply Ffix_rel_inv in H2; trivial.
+destruct H2 as (g',(eg',Hg),eqy').
+rewrite eqy'; clear y' eqy'.
+apply sup_morph.
+ reflexivity.
+
+ red; intros.
+ assert (Fsub x1 x0).
+  apply subset_elim2 in H2; destruct H2.
+  admit. (* uses Fsub morph *)
+ apply osucc_morph; apply H1; trivial.
+ rewrite <- (eg' _ _ H2 H3); auto.
+Qed.
+
+Require Import ZFrepl.
+
+  Lemma Ffix_rel_def : forall o a, isOrd o -> a \in TI F o -> exists y, Ffix_rel a y.
+intros o a oo; revert a; apply isOrd_ind with (2:=oo); intros.
+clear o oo H0.
+apply TI_elim in H2; trivial.
+destruct H2.
+assert (xo : isOrd x).
+ apply isOrd_inv with y; trivial.
+assert (forall z, Fsub z a -> uchoice_pred (fun o => Ffix_rel z o)).
+ intros.
+ destruct H1 with x z; trivial.
+  rewrite <- TI_mono_succ in H2; auto.
+  apply H3 in H2; auto.
+  destruct H2.
+  apply TI_mono with x0; auto. 
+   apply isOrd_inv with (osucc x); auto.
+
+   apply olts_le; auto.
+
+  split; intros.
+   rewrite <- H5; trivial.
+  split; intros.
+   exists x0; trivial.
+  apply Ffix_rel_fun with z; trivial.
+exists (sup (subset A (fun b => Fsub b a))
+         (fun b => osucc (uchoice (fun o => Ffix_rel b o)))).
+apply Ffix_rel_intro; trivial.
+ admit. (*ext*)
+intros.
+apply uchoice_def; auto.
+Qed.
+
+  Lemma Ffix_rel_choice_pred : forall o a, isOrd o -> a \in TI F o ->
+    uchoice_pred (fun o => Ffix_rel a o).
+split; intros.
+ rewrite <- H1; trivial.
+split; intros.
+ apply Ffix_rel_def with o; trivial.
+apply Ffix_rel_fun with a; trivial.
+Qed.
+
+  Definition F_assign a := uchoice (fun o => Ffix_rel a o).
+
+  Lemma F_a_eqn : forall a o,
+    isOrd o ->
+    a \in TI F o ->
+    F_assign a ==
+    sup (subset A (fun b => Fsub b a)) (fun b => osucc (F_assign b)).
+intros.
+unfold F_assign.
+generalize (uchoice_def _ (Ffix_rel_choice_pred _ _ H H0)); intro.
+apply Ffix_rel_inv in H1; auto.
+destruct H1.
+destruct H1.
+rewrite H2.
+apply sup_morph; auto with *.
+red; intros.
+apply osucc_morph.
+assert (Fsub x' a).
+ apply subset_elim2 in H4; destruct H4.
+ admit. (* Fsub mrph... *)
+assert (x' \in TI F o).
+ apply H6 in H0; auto.
+ destruct H0.
+ apply TI_incl with x1; auto.
+generalize (uchoice_def _ (Ffix_rel_choice_pred _ _ H H7)); intro.
+specialize H3 with (1:=H6).
+rewrite <- Ffix_rel_fun with (1:=H3) (2:=H8).
+apply H1; trivial.
+Qed.
+
+  Lemma F_a_ord : forall a, a \in Ffix -> isOrd (F_assign a).
+intros.
+rewrite Ffix_def in H; destruct H.
+revert a H0; apply isOrd_ind with (2:=H); intros.
+rewrite F_a_eqn with (o:=y); auto.
+apply isOrd_supf.
+ admit. (*ext *)
+
+ intros.
+ apply isOrd_succ.
+ apply subset_elim2 in H4; destruct H4.
+ apply H5 in H3; trivial.
+ destruct H3.
+ rewrite <- H4 in H6; eauto.
+Qed.
+
+Hint Resolve F_a_ord.
+
+  Hypothesis F_intro : forall w,
+    isOrd w ->
+    forall a, a \in TI F w ->
+    forall o, isOrd o ->
+    (forall y, Fsub y a -> y \in TI F o) ->
+    a \in F (TI F o).
+(*
+intros w ow.
+apply isOrd_ind with (2:=ow); intros.
+
+unfold Fsub in H0.
+
+rewrite <- TI_mono_succ; auto.
+rewrite TI_eq; auto.
+unfold TI.
+*)
+
+  Lemma F_a_tot : forall a,
+   a \in Ffix ->
+   a \in TI F (osucc (F_assign a)).
+intros.
+rewrite Ffix_def in H; destruct H.
+revert a H0; apply isOrd_ind with (2:=H); intros.
+assert (forall y, Fsub y a -> y \in TI F (F_assign a)).
+ intros.
+ red in H4.
+ destruct H4 with (1:=H0)(2:=H3).
+ assert (xo : isOrd x0).
+  apply isOrd_inv with y; trivial.
+ assert (y0 \in TI F (osucc (F_assign y0))).
+  apply H2 with x0; trivial.
+ revert H7; apply TI_mono; auto.
+  apply F_a_ord; rewrite Ffix_def; exists y; auto.
+
+  apply isOrd_succ; apply F_a_ord; rewrite Ffix_def; exists x0; trivial.
+
+  red; intros.
+  rewrite F_a_eqn with (o:=y); auto.
+  rewrite sup_ax.
+  2:admit.
+  exists y0; auto.
+  apply subset_intro; trivial.
+   admit.
+rewrite TI_mono_succ; auto.
+2:apply F_a_ord; rewrite Ffix_def; exists y; trivial.
+apply F_intro with y; trivial.
+apply F_a_ord; rewrite Ffix_def; exists y; trivial.
+Qed.
+
+  Definition Ffix_ord :=
+    sup Ffix (fun a => osucc (F_assign a)).
+
+  Lemma Ffix_o_o : isOrd Ffix_ord.
+apply isOrd_supf; auto.
+admit. (* ext *)
+Qed.
+Hint Resolve Ffix_o_o.
+
+  Lemma Ffix_post : forall a,
+   a \in Ffix ->
+   a \in TI F Ffix_ord.
+intros.
+apply TI_intro with (F_assign a); auto.
+ unfold Ffix_ord; rewrite sup_ax.
+ 2:admit. (* ext*)
+ exists a; trivial.
+ apply lt_osucc; auto.
+
+ rewrite <- TI_mono_succ; auto.
+ apply F_a_tot; trivial.
+Qed.
+
+  Lemma Ffix_eqn : Ffix == F Ffix.
+apply eq_intro; intros.
+rewrite Ffix_def in H; destruct H.
+apply Fmono with (TI F x).
+ apply TI_Ffix; trivial.
+
+ rewrite <- TI_mono_succ; auto.
+ revert H0; apply TI_incl; auto.
+
+ assert (z \in TI F (osucc Ffix_ord)).
+  rewrite TI_mono_succ; auto.
+  revert H; apply Fmono.
+  red; intros; apply Ffix_post; trivial.
+ rewrite Ffix_def; exists (osucc Ffix_ord); auto.
+Qed.
+
+
+
+
+(* Pb with limit ordinals... *)
+(*
+Definition Fsub x y :=
+  forall o, isOrd o ->
+  y \in F (TI F o) -> x \in TI F o.
+
+Definition Ffix_rel a y :=
+  forall R:set->set->Prop,
+  Proper (eq_set ==> eq_set ==> iff) R ->
+  (forall x g,
+   let x' := subset A (fun a => Fsub a x) in
+   ext_fun x' g ->
+   (forall y, Fsub y x -> R y (g y)) ->
+   R x (sup x' (fun y => osucc (g y)))) ->
+  R a y.
+
+  Instance Ffix_rel_morph :
+    Proper (eq_set ==> eq_set ==> iff) Ffix_rel.
+Admitted.
+                                                                             
+  Lemma Ffix_rel_intro : forall x g,
+    let x' := subset A (fun a => Fsub a x) in
+    ext_fun x' g ->
+    (forall y, Fsub y x -> Ffix_rel y (g y)) ->
+    Ffix_rel x (sup x' (fun y => osucc (g y))).
+red; intros.
+apply H2; trivial; intros.
+apply H0; trivial.
+Qed.                                                                         
+                                                                             
+  Lemma Ffix_rel_inv : forall x o,
+    Ffix_rel x o ->
+    let x' := subset A (fun a => Fsub a x) in
+    exists2 g,
+      ext_fun x' g /\
+      (forall y, Fsub y x -> Ffix_rel y (g y)) &                 
+      o == sup x' (fun y => osucc (g y)).
+intros x o Fr.
+apply (@proj2 (Ffix_rel x o)).
+apply Fr; intros.
+ admit. (* mrph *)
+
+ split.
+  apply Ffix_rel_intro; auto.
+  intros.
+  apply H0; trivial.
+
+  exists g.
+   split; intros; trivial.
+   apply H0; trivial.
+
+  apply sup_morph.
+   reflexivity.
+
+   red; intros; apply osucc_morph; apply H; trivial.
+Qed.
+
+  Lemma Ffix_rel_fun :
+    forall x y, Ffix_rel x y -> forall y', Ffix_rel x y' -> y == y'.
+intros x y H.
+apply H; intros.
+ admit. (* mrph *)
+apply Ffix_rel_inv in H2; trivial.
+destruct H2 as (g',(eg',Hg),eqy').
+rewrite eqy'; clear y' eqy'.
+apply sup_morph.
+ reflexivity.
+
+ red; intros.
+ assert (Fsub x1 x0).
+  apply subset_elim2 in H2; destruct H2.
+  admit. (* uses Fsub morph *)
+ apply osucc_morph; apply H1; trivial.
+ rewrite <- (eg' _ _ H2 H3); auto.
+Qed.
+
+Require Import ZFrepl.
+
+  Lemma Ffix_rel_def : forall o a, isOrd o -> a \in TI F o -> exists y, Ffix_rel a y.
+intros o a oo; revert a; apply isOrd_ind with (2:=oo); intros.
+clear o oo H0.
+apply TI_elim in H2; trivial.
+destruct H2.
+assert (forall z, Fsub z a -> uchoice_pred (fun o => Ffix_rel z o)).
+ intros.
+ assert (H3' := H3 _ (isOrd_inv _ _ H H0) H2).
+ destruct H1 with x z; trivial.
+ split; intros.
+  rewrite <- H5; trivial.
+ split; intros.
+  exists x0; trivial.
+ apply Ffix_rel_fun with z; trivial.
+exists (sup (subset A (fun b => Fsub b a))
+         (fun b => osucc (uchoice (fun o => Ffix_rel b o)))).
+apply Ffix_rel_intro; trivial.
+ admit. (*ext*)
+intros.
+apply uchoice_def; auto.
+Qed.
+
+  Lemma Ffix_rel_choice_pred : forall o a, isOrd o -> a \in TI F o ->
+    uchoice_pred (fun o => Ffix_rel a o).
+split; intros.
+ rewrite <- H1; trivial.
+split; intros.
+ apply Ffix_rel_def with o; trivial.
+apply Ffix_rel_fun with a; trivial.
+Qed.
+
+  Definition F_assign a := uchoice (fun o => Ffix_rel a o).
+
+  Lemma F_a_eqn : forall a o,
+    isOrd o ->
+    a \in TI F o ->
+    F_assign a ==
+    sup (subset A (fun b => Fsub b a)) (fun b => osucc (F_assign b)).
+intros.
+unfold F_assign.
+generalize (uchoice_def _ (Ffix_rel_choice_pred _ _ H H0)); intro.
+apply Ffix_rel_inv in H1; auto.
+destruct H1.
+destruct H1.
+rewrite H2.
+apply sup_morph; auto with *.
+red; intros.
+apply osucc_morph.
+assert (Fsub x' a).
+ apply subset_elim2 in H4; destruct H4.
+ admit. (* Fsub mrph... *)
+assert (x' \in TI F o).
+ apply H6; trivial.
+ rewrite <- TI_mono_succ; auto.
+ revert H0; apply TI_incl; auto.
+generalize (uchoice_def _ (Ffix_rel_choice_pred _ _ H H7)); intro.
+specialize H3 with (1:=H6).
+rewrite <- Ffix_rel_fun with (1:=H3) (2:=H8).
+apply H1; trivial.
+Qed.
+
+  Lemma F_a_ord : forall a, a \in Ffix -> isOrd (F_assign a).
+intros.
+rewrite Ffix_def in H; destruct H.
+revert a H0; apply isOrd_ind with (2:=H); intros.
+rewrite F_a_eqn with (o:=y); auto.
+apply isOrd_supf.
+ admit. (*ext *)
+
+ intros.
+ apply TI_elim in H3; trivial.
+ destruct H3.
+ apply isOrd_succ.
+ apply H2 with x1; trivial.
+ apply subset_elim2 in H4; destruct H4.
+ rewrite H4; apply H6; trivial.
+ apply isOrd_inv with y; trivial.
+Qed.
+
+Hint Resolve F_a_ord.
+
+  Lemma F_intro : forall o a,
+    isOrd o ->
+    (forall y, Fsub y a -> y \in TI F o) ->
+    a \in F (TI F o).
+intros.
+unfold Fsub in H0.
+
+rewrite <- TI_mono_succ; auto.
+rewrite TI_eq; auto.
+unfold TI.
+
+  Lemma F_a_tot : forall a,
+   a \in Ffix ->
+   a \in TI F (osucc (F_assign a)).
+intros.
+rewrite Ffix_def in H; destruct H.
+revert a H0; apply isOrd_ind with (2:=H); intros.
+(*setoid_replace (TI F (osucc (F_assign a))) with
+(TI F (osucc (sup (subset A (fun b => Fsub b a)) (fun b => osucc (F_assign b))))).
+2:apply TI_morph.
+2:apply osucc_morph.
+2:apply F_a_eqn with y; trivial.*)
+assert (forall y, Fsub y a -> y \in TI F (F_assign a)).
+ intros.
+ apply TI_elim in H3; trivial.
+ destruct H3.
+ assert (xo : isOrd x0).
+  apply isOrd_inv with y; trivial.
+ rewrite <- TI_mono_succ in H5; auto.
+ assert (y0 \in TI F (osucc (F_assign y0))).
+  apply H2 with x0; trivial.
+  apply H4; trivial.
+  rewrite <- TI_mono_succ; auto.
+ revert H6; apply TI_mono; auto.
+  apply F_a_ord; rewrite Ffix_def; exists (osucc x0); auto.
+
+  apply isOrd_succ; apply F_a_ord; rewrite Ffix_def; exists x0; trivial.
+  apply H4; auto.
+  rewrite <- TI_mono_succ; auto.
+
+  red; intros.
+  rewrite F_a_eqn with (o:=osucc x0); auto.
+  rewrite sup_ax.
+  2:admit.
+  exists y0; auto.
+  apply subset_intro; trivial.
+  admit.
+intros.
+rewrite TI_mono_succ; auto.
+apply stp; auto.
+ apply F_a_ord; rewrite Ffix_def; exists y; trivial.
+ apply F_a_ord; rewrite Ffix_def; exists y; trivial.
+
+apply TI_intro with (F_assign a); auto.
+ apply isOrd_succ; apply F_a_ord.
+ rewrite Ffix_def; exists y; trivial.
+
+ apply lt_osucc.
+
+
+
+assert (forall y, Fsub y a ->
+y \in TI F (osucc (osucc (F_assign y)))).
+ intros.
+apply TI_elim in H3; trivial.
+destruct H3.
+rewrite <- TI_mono_succ in H5; auto.
+2:apply isOrd_inv with y; trivial.
+assert (y0 \in TI F (osucc (F_assign y0))).
+ apply H2 with x0; trivial.
+ rewrite TI_mono_succ in H5; auto.
+ 2:apply isOrd_inv with y; trivial.
+ apply H4; trivial.
+ apply isOrd_inv with y; trivial.
+admit.
+rewrite TI_eq; trivial.
+rewrite sup_ax.
+
+2:apply F_a_ord; rewrite Ffix_def; eauto.
+apply TI_elim in H3; trivial.
+destruct H3.
+
+assert (a \in F (sup (subset A (fun b => Fsub b a)) (fun b => TI F (osucc (F_assign b))))).
+ admit.
+revert H5; apply Fmono.
+red; intros.
+rewrite sup_ax in H5.
+2:admit.
+destruct H5.
+rewrite TI_mono_succ in H6; auto.
+2:admit.
+assert (Fsub x1 a).
+ apply subset_elim2 in H5; destruct H5.
+ admit.
+red in H7.
+apply H7 in H6.
+
+
+ rewrite sup_ax.
+
+revert H4; apply Fmono; red; intros.
+
+apply W_ind with (3:=H); intros.
+ admit. (* mrph *)
+rewrite TI_mono_succ; trivial.
+ 2:apply W_a_ord; apply (TI_Ffix (osucc o')); auto.
+ 2:apply Wsup_typ; trivial.
+ apply Wf_intro; trivial.
+ rewrite cc_eta_eq with (1:=H2).
+ apply cc_prod_intro.
+  admit. (*ext*)
+  auto.
+
+  intros.
+  apply TI_intro with (W_assign (cc_app f x0)).
+   apply Fmono_morph; trivial.
+
+   apply W_a_ord.
+   apply (TI_Ffix (osucc o')); auto.
+   apply Wsup_typ; trivial.
+
+   unfold W_assign at 2.
+   rewrite W_eqn2 with (o:=o'); trivial.
+    rewrite sup_ax.
+    2:admit. (* ext*)
+    exists x0; trivial.
+    apply lt_osucc.
+    apply W_a_ord.
+    rewrite Ffix_def.
+    exists o'; auto.
+    apply cc_prod_elim with (1:=H2); trivial.
+
+    admit. (* ext *)
+
+   rewrite <- TI_mono_succ; auto.
+   apply W_a_ord.
+   rewrite Ffix_def; exists o'; trivial.
+   apply cc_prod_elim with (1:=H2); trivial.
+Qed.
+
+  Definition W_ord :=
+    sup W (fun a => osucc (W_assign a)).
+
+  Lemma W_o_o : isOrd W_ord.
+apply isOrd_supf; auto.
+admit. (* ext *)
+Qed.
+Hint Resolve W_o_o.
+Hint Resolve Fmono_morph.
+
+  Lemma W_post : forall a,
+   a \in W ->
+   a \in TI Wf W_ord.
+intros.
+apply TI_intro with (W_assign a); auto.
+ unfold W_ord; rewrite sup_ax.
+ 2:admit. (* ext*)
+ exists a; trivial.
+ apply lt_osucc; auto.
+
+ rewrite <- TI_mono_succ; auto.
+ apply W_ord_tot; trivial.
+Qed.
+
+  Lemma W_eqn : W == Wf W.
+apply eq_intro; intros.
+rewrite Ffix_def in H; destruct H.
+apply Wf_mono with (TI Wf x).
+ apply TI_Ffix; trivial.
+
+ rewrite <- TI_mono_succ; auto.
+ revert H0; apply TI_incl; auto.
+
+ assert (z \in TI Wf (osucc W_ord)).
+  rewrite TI_mono_succ; auto.
+  revert H; apply Wf_mono.
+  red; intros; apply W_post; trivial.
+ rewrite Ffix_def; exists (osucc W_ord); auto.
+Qed.
+
+End WithoutKnaster.
+*)
+
+
+End BoundedOperator.
+
+
 End IterMonotone.
 
 
