@@ -136,6 +136,21 @@ Definition uchoice_pred (P:set->Prop) :=
   (exists x, P x) /\
   (forall x x', P x -> P x' -> x == x').
 
+Instance uchoice_pred_morph : Proper ((eq_set ==> iff) ==> iff) uchoice_pred.
+apply morph_impl_iff1; auto with *.
+do 3 red; intros.
+destruct H0 as (?,(?,?)); split;[|split]; intros.
+ assert (x x0).
+  revert H4; apply H; auto with *.
+ revert H5; apply H; trivial.
+
+ destruct H1; exists x0.
+ revert H1; apply H; auto with *.
+
+ apply H2; [revert H3|revert H4]; apply H; auto with *.
+Qed.
+
+
 Lemma uchoice_ext : forall P x, uchoice_pred P -> P x -> x == uchoice P.
 intros.
 assert (repl_rel (singl empty) (fun _ => P)).
