@@ -2,6 +2,12 @@
 Require Import ZFsum ZFpairs ZFrelations ZFnats ZFord ZFfix.
 Import IZF.
 
+Lemma morph_is_ext : forall F X, morph1 F -> ext_fun X F.
+red; red; intros.
+apply H; trivial.
+Qed.
+Hint Resolve morph_is_ext.
+
 (* Extentionality *)
 Lemma cst_is_ext : forall X o, ext_fun o (fun _ => X).
 do 2 red; reflexivity.
@@ -115,6 +121,108 @@ assert (z \in power y).
 rewrite power_ax in H2; auto.
 Qed.
 
+
+Lemma prodcart_stable : forall F G,
+  morph1 F ->
+  morph1 G ->
+  stable F ->
+  stable G ->
+  stable (fun y => prodcart (F y) (G y)).
+intros F G Fm Gm Fs Gs.
+red; red ;intros.
+destruct inter_wit with (2:=H) as (w,H0).
+ do 2 red; intros.
+ rewrite H0; reflexivity.
+assert (forall x, x \in X -> z \in prodcart (F x) (G x)).
+ intros.
+ apply inter_elim with (1:=H).
+ rewrite replf_ax.
+  exists x; auto with *.
+
+  red; red; intros.
+  rewrite H3; reflexivity.
+clear H.
+assert (z \in prodcart (F w) (G w)) by auto.
+rewrite (surj_pair _ _ _ H).
+apply couple_intro.
+ apply Fs.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H2; trivial.
+  2:red;red;auto.
+  destruct H2.
+  rewrite H3; apply H1 in H2; apply fst_typ in H2; trivial.
+
+  exists (F w); rewrite replf_ax; auto.
+  eauto with *.
+
+ apply Gs.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H2; auto.
+  destruct H2.
+  rewrite H3; apply H1 in H2; apply snd_typ in H2; trivial.
+
+  exists (G w); rewrite replf_ax; auto.
+  eauto with *.
+Qed.
+
+Lemma sigma_stable : forall F G,
+  morph1 F ->
+  morph2 G ->
+  stable F ->
+  (forall x, stable (fun y => G y x)) ->
+  stable (fun y => sigma (F y) (G y)).
+intros F G Fm Gm Fs Gs.
+assert (Hm : morph1 (fun y => sigma (F y) (G y))).
+ do 2 red; intros.
+ apply subset_morph.
+  apply prodcart_morph; auto with *.
+  apply union_morph.
+  apply replf_morph; auto with *.
+  red; intros.
+  apply Gm; trivial.
+
+ red; intros.
+ rewrite H; reflexivity.
+red; red ;intros.
+destruct inter_wit with (2:=H) as (w,H0); trivial.
+assert (forall x, x \in X -> z \in sigma (F x) (G x)).
+ intros.
+ apply inter_elim with (1:=H).
+ rewrite replf_ax; auto.
+ exists x; auto with *.
+clear H.
+assert (z \in sigma (F w) (G w)) by auto.
+rewrite (surj_pair _ _ _ (subset_elim1 _ _ _ H)).
+apply couple_intro_sigma.
+ red;red;intros;apply Gm; auto with *.
+
+ apply Fs.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H2; auto.
+  destruct H2.
+  rewrite H3; apply H1 in H2; apply fst_typ_sigma in H2; trivial.
+
+  exists (F w); rewrite replf_ax; auto.
+  eauto with *.
+
+ apply Gs.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H2.
+   destruct H2.
+   rewrite H3; apply H1 in H2; apply snd_typ_sigma with (y:=fst z) in H2;
+   auto with *.
+   red; red; intros; apply Gm; auto with *.
+
+   red; red; intros; apply Gm; auto with *.
+
+  exists (G w (fst z)); rewrite replf_ax.
+  2:red;red;intros; apply Gm; auto with *.
+  eauto with *.
+Qed.
 
 Lemma sum_stable : forall F G,
   morph1 F ->

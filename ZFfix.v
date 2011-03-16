@@ -98,15 +98,6 @@ apply fa_morph; intro X.
 rewrite H; reflexivity.
 Qed.
 
-(*
-Definition Fsub x y := forall X, X \incl A -> y \in F X -> x \in X.
-
-Instance Fsub_morph : Proper (eq_set ==> eq_set ==> iff) Fsub.
-apply morph_impl_iff2; auto with *.
-do 5 red; intros.
-rewrite <- H; rewrite <- H0 in H3; auto.
-Qed.
-*)
 Definition Ffix := subset A (fun a => exists2 o, isOrd o & a \in TI F o).
 
 Lemma Ffix_inA : Ffix \incl A.
@@ -166,22 +157,6 @@ rewrite H2; apply H3; trivial.
 transitivity Ffix;[apply TI_Ffix|apply Ffix_inA].
 apply isOrd_inv with o; trivial.
 Qed.
-
-(*
-Lemma Fsub_elim : forall x y o,
-  isOrd o ->
-  y \in TI F o ->
-  Fsub x y ->
-  exists2 o', lt o' o & x \in TI F o'.
-intros.
-apply TI_elim in H0; trivial.
-destruct H0.
-exists x0; trivial.
-apply H1; trivial.
-transitivity Ffix;[apply TI_Ffix|apply Ffix_inA].
-apply isOrd_inv with o; trivial.
-Qed.
-*)
 
 Definition Ffix_rel a y :=
   forall R:set->set->Prop,
@@ -358,22 +333,76 @@ Qed.
 
 Hint Resolve F_a_ord.
 
-  Hypothesis F_intro : forall o a,
-    isOrd o ->
-    a \in TI F o ->
-    a \in F (fsub a).
+  Hypothesis Fstab : 
+    forall X,
+    X \incl power A ->
+    inter (replf X F) \incl F (inter X).
 
-  Lemma F_intro' : forall w,
+  Lemma F_intro : forall w,
     isOrd w ->
     forall a, a \in TI F w ->
     forall o, isOrd o ->
     (forall y, y \in fsub a -> y \in TI F o) ->
     a \in F (TI F o).
 intros.
-assert (a \in F (fsub a)).
- apply F_intro with w; trivial.
-revert H3; apply Fmono; red; intros.
-auto.
+assert (inter (replf (subset (power A) (fun X => a \in F X)) (fun X => X))
+        \incl TI F o).
+ red; intros.
+ apply H2.
+ apply subset_intro.
+  apply inter_elim with (1:=H3).
+  rewrite replf_ax.
+  2:red;red;auto.
+  exists A; auto with *.
+  apply subset_intro; auto with *.
+   apply power_intro; auto.
+
+   apply TI_elim in H0; auto.
+   destruct H0.
+   revert H4; apply Fmono.
+   transitivity Ffix; [apply TI_Ffix; trivial|apply Ffix_inA].
+   apply isOrd_inv with w; trivial.
+
+  intros.
+  apply inter_elim with (1:=H3).
+  rewrite replf_ax.
+  2:red;red;auto.
+  exists X; auto with *.
+  apply subset_intro; trivial.
+  apply power_intro; auto.
+apply (Fmono _ _ H3).
+apply Fstab.
+ red; intros.
+ rewrite replf_ax in H4.
+ 2:red;red;auto.
+ destruct H4.
+ rewrite H5; apply subset_elim1 in H4; trivial.
+apply inter_intro; intros.
+ rewrite replf_ax in H4.
+ 2:red;red;auto.
+ destruct H4.
+ rewrite H5; clear y H5.
+ rewrite replf_ax in H4.
+ 2:red;red;trivial.
+ destruct H4.
+ rewrite <- H5 in H4; clear x0 H5.
+ apply subset_elim2 in H4.
+ destruct H4.
+ rewrite H4; trivial.
+
+ apply TI_elim in H0; auto.
+ destruct H0.
+ exists (F (TI F x)).
+ rewrite replf_ax.
+ 2:red;red;auto.
+ exists (TI F x); auto with *.
+ rewrite replf_ax.
+ 2:red;red;trivial.
+ exists (TI F x); auto with *.
+ apply subset_intro; trivial.
+ apply power_intro; intros; apply Ffix_inA.
+ revert H5; apply TI_Ffix.
+ apply isOrd_inv with w; trivial.
 Qed.
 
   Lemma F_a_tot : forall a,
@@ -400,7 +429,7 @@ assert (fsub a \incl TI F (F_assign a)).
   exists z; auto.
 rewrite TI_mono_succ; auto.
 2:apply F_a_ord; rewrite Ffix_def; exists y; trivial.
-apply F_intro' with y; trivial.
+apply F_intro with y; trivial.
 apply F_a_ord; rewrite Ffix_def; exists y; trivial.
 Qed.
 
