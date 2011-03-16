@@ -478,4 +478,90 @@ Qed.
 apply Ffix_eqn; eauto.
 Qed.
 
+(*
+Parameter hd : set -> set.
+Parameter tl : set -> set -> set.
+Parameter hd_eq : forall x, hd (Wsup x) == fst x.
+
+Parameter Wf_eta : forall X x,
+  X \incl Wdom ->
+  x \in Wf X ->
+  x == Wsup (couple (hd x) (cc_lam (B (hd x)) (tl x))).
+
+  Definition trad := Fix_rec Wf Wdom
+    (fun g x => couple (hd x)
+       (cc_lam (B (hd x)) (fun i => g (tl x i)))).
+
+  Lemma trad_ok : forall o,
+    isOrd o ->
+    forall x,
+    x \in TI Wf o ->
+    trad x \in TI W_F o.
+intros o oo.
+apply isOrd_ind with (2:=oo); intros.
+unfold trad.
+rewrite Fr_eqn with (o:=y); auto.
+2:admit.
+apply TI_Wf_elim in H2; trivial.
+destruct H2 as (o',?,(x',?,?)).
+apply TI_intro with o'; auto.
+ apply Fmono_morph; apply W_F_mono.
+
+ assert (x \in Wf (TI Wf o')).
+  rewrite <- TI_mono_succ; auto.
+  2:apply isOrd_inv with y; trivial.
+  rewrite H4; apply Wsup_typ; trivial.
+  apply isOrd_inv with y; trivial.
+ apply Wf_eta in H5.
+ 2:admit.
+ apply couple_intro_sigma.
+  admit.
+
+  admit.
+
+  apply cc_prod_intro; intros.
+   admit.
+   admit.
+  apply H1; trivial.
+  admit.
+Qed.
+
+  Lemma trad_inj : forall o,
+    isOrd o ->
+    forall x y, x \in TI Wf o ->
+    y \in TI Wf o ->
+    trad x == trad y -> x == y.
+intros o oo.
+apply isOrd_ind with (2:=oo); intros.
+unfold trad in H4.
+rewrite Fr_eqn with (o:=y) in H4; auto.
+2:admit.
+rewrite Fr_eqn with (o:=y) in H4; auto.
+2:admit.
+apply couple_injection in H4; destruct H4.
+rewrite (Wf_eta (TI Wf y)).
+2:admit.
+2:admit.
+rewrite (Wf_eta (TI Wf y) y0).
+2:admit.
+2:admit.
+apply Wsup_morph.
+apply couple_morph; trivial.
+apply cc_lam_ext; intros.
+ apply Bmorph; trivial.
+
+ red; intros.
+ generalize (cc_app_morph _ _ H5 _ _ H7).
+ rewrite cc_beta_eq; trivial.
+ 2:admit.
+ rewrite cc_beta_eq; trivial.
+ 2:admit.
+ 2:rewrite <- H7; rewrite <- H4; trivial.
+ apply H1 with (z:=y).
+  admit.
+  admit.
+  admit.
+Qed.
+*)
+
 End W_theory.

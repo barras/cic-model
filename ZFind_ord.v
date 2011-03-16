@@ -144,6 +144,39 @@ End IterationOrd.
 Hint Resolve ORDfun_ext.
 
 
+Require Import ZFind_w.
+Definition ORDf_clos :=
+  let A := NATf (NATf empty) in
+  let B x := NATCASE empty (fun _ => NAT) x in
+  W_ord A B.
+
+Instance Bm : morph1 (fun x => NATCASE empty (fun _ => NAT) x).
+do 2 red; intros.
+apply NATCASE_morph; auto with *.
+red; intros; auto with *.
+Qed.
+
+Lemma ordOc : isOrd ORDf_clos.
+apply W_o_o; auto with *.
+Qed.
+Hint Resolve ordOc.
+
+(*
+  Lemma ORDf_cont0 : forall F,
+    stable_ord F ->
+    increasing F ->
+    ORDf (sup ORDf_clos F) \incl sup ORDf_clos (fun A => ORDf (F A)).
+unfold ORDf.
+intros.
+rewrite <- sum_cont; auto.
+rewrite <- cst_cont; eauto.
+2:admit.
+apply sum_mono; auto with *.
+red; intros.
+
+apply func_cont_gen; auto. (* uses boundo *)
+*)
+
 Section OrdConvergence.
 
 
