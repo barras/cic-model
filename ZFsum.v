@@ -63,6 +63,26 @@ apply subset_morph; trivial.
  rewrite H; rewrite H0; reflexivity.
 Qed.
 
+Lemma sum_ind : forall X Y a (P:Prop),
+  (forall x, x \in X -> a == inl x -> P) ->
+  (forall y, y \in Y -> a == inr y -> P) ->
+  a \in sum X Y -> P.
+unfold sum, inl, inr; intros.
+elim subset_elim2 with (1:=H1); intros.
+rewrite <- H2 in H3.
+clear x H2.
+destruct H3 as [(eq1,eq2)|(eq1,eq2)].
+ apply H with (snd a); trivial.
+ rewrite <- eq1.
+ apply surj_pair with (succ (succ zero)) (union2 X Y).
+ apply subset_elim1 with (1:=H1).
+
+ apply H0 with (snd a); trivial.
+ rewrite <- eq1.
+ apply surj_pair with (succ (succ zero)) (union2 X Y).
+ apply subset_elim1 with (1:=H1).
+Qed.
+
 Lemma inl_typ : forall X Y x, x \in X -> inl x \in sum X Y.
 unfold inl, sum; intros.
 apply subset_intro.
@@ -93,26 +113,6 @@ apply subset_intro.
   rewrite snd_def; trivial.
 Qed.
 
-Lemma sum_ind : forall X Y a (P:Prop),
-  (forall x, x \in X -> a == inl x -> P) ->
-  (forall y, y \in Y -> a == inr y -> P) ->
-  a \in sum X Y -> P.
-unfold sum, inl, inr; intros.
-elim subset_elim2 with (1:=H1); intros.
-rewrite <- H2 in H3.
-clear x H2.
-destruct H3 as [(eq1,eq2)|(eq1,eq2)].
- apply H with (snd a); trivial.
- rewrite <- eq1.
- apply surj_pair with (succ (succ zero)) (union2 X Y).
- apply subset_elim1 with (1:=H1).
-
- apply H0 with (snd a); trivial.
- rewrite <- eq1.
- apply surj_pair with (succ (succ zero)) (union2 X Y).
- apply subset_elim1 with (1:=H1).
-Qed.
-
 Lemma sum_mono : forall X X' Y Y',
   X \incl X' -> Y \incl Y' -> sum X Y \incl sum X' Y'.
 red; intros.
@@ -123,3 +123,91 @@ elim H1 using sum_ind; intros.
  rewrite H3.
  apply inr_typ; auto.
 Qed.
+
+  Definition sum_case f g x :=
+    union
+   (union2 (subset (singl (f (snd x))) (fun _ => fst x == zero))
+           (subset (singl (g (snd x))) (fun _ => fst x == succ zero))).
+
+
+Instance sum_case_morph : Proper
+  ((eq_set ==> eq_set) ==> (eq_set ==> eq_set) ==> eq_set ==> eq_set)
+  sum_case.
+do 4 red; intros.
+unfold sum_case.
+apply union_morph; apply union2_morph.
+ apply subset_morph.
+  apply singl_morph; apply H; rewrite H1; reflexivity.
+  red; intros; rewrite H1; reflexivity.
+ apply subset_morph.
+  apply singl_morph; apply H0; rewrite H1; reflexivity.
+  red; intros; rewrite H1; reflexivity.
+Qed.
+
+Lemma sum_case_inl : forall f g a, morph1 f ->
+  sum_case f g (inl a) == f a.
+intros.
+unfold sum_case.
+apply eq_intro; intros.
+ rewrite union_ax in H0; destruct H0.
+ apply union2_elim in H1; destruct H1.
+  apply subset_elim1 in H1.
+  apply singl_elim in H1.
+  change snd with dest_sum in H1.
+  rewrite dest_sum_inl in H1.
+  rewrite <- H1; trivial.
+
+  apply subset_elim2 in H1; destruct H1. 
+  unfold inl in H2; rewrite fst_def in H2.
+  symmetry in H2; apply discr in H2; contradiction.
+
+ apply union_intro with (f a); trivial.
+ apply union2_intro1.
+ apply subset_intro.
+  unfold inl; rewrite snd_def; apply singl_intro.
+  unfold inl; rewrite fst_def; reflexivity.
+Qed.
+
+Lemma sum_case_inr : forall f g b, morph1 g ->
+  sum_case f g (inr b) == g b.
+intros.
+unfold sum_case.
+apply eq_intro; intros.
+ rewrite union_ax in H0; destruct H0.
+ apply union2_elim in H1; destruct H1.
+  apply subset_elim2 in H1; destruct H1. 
+  unfold inr in H2; rewrite fst_def in H2.
+  apply discr in H2; contradiction.
+
+  apply subset_elim1 in H1.
+  apply singl_elim in H1.
+  change snd with dest_sum in H1.
+  rewrite dest_sum_inr in H1.
+  rewrite <- H1; trivial.
+
+ apply union_intro with (g b); trivial.
+ apply union2_intro2.
+ apply subset_intro.
+  unfold inr; rewrite snd_def; apply singl_intro.
+  unfold inr; rewrite fst_def; reflexivity.
+Qed.
+
+Lemma sum_case_ind :
+  forall A B f g (P:set->Prop),
+  Proper (eq_set ==> iff) P ->
+  morph1 f ->
+  morph1 g ->
+  (forall a, a \in A -> P (f a)) ->
+  (forall b, b \in B -> P (g b)) ->
+  forall x,
+  x \in sum A B ->
+  P (sum_case f g x).
+intros.
+apply sum_ind with (3:=H4); intros.
+ rewrite H6.
+ rewrite sum_case_inl; auto.
+
+ rewrite H6.
+ rewrite sum_case_inr; auto.
+Qed.
+

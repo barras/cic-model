@@ -162,6 +162,7 @@ Section Iter.
 
 Variable G : (set -> set) -> set -> set.
 Hypothesis Gm : forall x x' g g',
+  x \in A ->
   eq_fun (fsub x) g g' ->
   x == x' -> G g x == G g' x'.
 
@@ -192,54 +193,62 @@ apply H0; trivial.
 Qed.
 
   Lemma Ffix_rel_inv : forall x o,
+    x \in A ->
     Ffix_rel x o ->
     exists2 g,
       ext_fun (fsub x) g /\
       (forall y, y \in fsub x -> Ffix_rel y (g y)) &
       o == G g x.
-intros x o Fr.
+intros x o xA Fr.
 apply (@proj2 (Ffix_rel x o)).
+revert xA.
 apply Fr; intros.
  apply morph_impl_iff2; auto with *.
  do 4 red; intros.
- destruct H1 as (?,(g,(?,?),?)).
+ rewrite <- H in xA.
+ destruct (H1 xA) as (?,(g,(?,?),?)); clear H1.
  split;[|exists g].
   rewrite <- H; rewrite <- H0; trivial.
 
   split; intros.
-   red; red; intros; apply H2; trivial.
+   red; red; intros; apply H3; trivial.
    rewrite H; trivial.
 
-   rewrite <- H in H5; auto.
+   rewrite <- H in H1; auto.
 
-  rewrite <- H0; rewrite H4.
+  rewrite <- H0; rewrite H5.
   apply Gm; auto with *.
 
  split.
   apply Ffix_rel_intro; auto.
   intros.
   apply H0; trivial.
+  apply subset_elim1 in H1; trivial.
 
   exists g.
    split; intros; trivial.
    apply H0; trivial.
+   apply subset_elim1 in H1; trivial.
 
   apply Gm; auto with *.
 Qed.
 
   Lemma Ffix_rel_fun :
-    forall x y, Ffix_rel x y -> forall y', Ffix_rel x y' -> y == y'.
+    forall x y, Ffix_rel x y ->
+    forall y', Ffix_rel x y' -> x \in A -> y == y'.
 intros x y H.
 apply H; intros.
  apply morph_impl_iff2; auto with *.
  do 4 red; intros.
- rewrite <- H1; rewrite <- H0 in H3; auto.
+ rewrite <- H1; rewrite <- H0 in H3,H4; auto.
 apply Ffix_rel_inv in H2; trivial.
 destruct H2 as (g',(eg',Hg),eqy').
 rewrite eqy'; clear y' eqy'.
 apply Gm; auto with *.
 red; intros.
-rewrite <- (eg' _ _ H2 H3); auto.
+rewrite <- (eg' _ _ H2 H4); auto.
+apply H1; auto.
+apply subset_elim1 in H2; trivial.
 Qed.
 
 Require Import ZFrepl.
@@ -263,6 +272,7 @@ assert (forall z, z \in fsub a -> uchoice_pred (fun o => Ffix_rel z o)).
   split; intros.
    exists x0; trivial.
   apply Ffix_rel_fun with z; trivial.
+  apply subset_elim1 in H3; trivial.
 exists (G (fun b => uchoice (fun o => Ffix_rel b o)) a).
 apply Ffix_rel_intro; trivial.
  red; red; intros.
@@ -279,6 +289,8 @@ split; intros.
 split; intros.
  apply Ffix_rel_def with o; trivial.
 apply Ffix_rel_fun with a; trivial.
+apply Ffix_inA.
+revert H0; apply TI_Ffix; trivial.
 Qed.
 
   Definition Fix_rec a := uchoice (fun o => Ffix_rel a o).
@@ -291,10 +303,12 @@ intros.
 unfold Fix_rec.
 generalize (uchoice_def _ (Ffix_rel_choice_pred _ _ H H0)); intro.
 apply Ffix_rel_inv in H1; auto.
+ 2:apply Ffix_inA; revert H0; apply TI_Ffix; trivial.
 destruct H1.
 destruct H1.
 rewrite H2.
 apply Gm; auto with *.
+ apply Ffix_inA; revert H0; apply TI_Ffix; trivial.
 red; intros.
 rewrite H5 in H4.
 assert (x' \in TI F o).
@@ -303,6 +317,7 @@ assert (x' \in TI F o).
 generalize (uchoice_def _ (Ffix_rel_choice_pred _ _ H H6)); intro.
 specialize H3 with (1:=H4).
 rewrite <- Ffix_rel_fun with (1:=H3) (2:=H7).
+2:apply subset_elim1 in H4; trivial.
 rewrite <- H5 in H4.
 apply H1; trivial.
 Qed.
