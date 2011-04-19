@@ -249,6 +249,80 @@ split; intros.
  rewrite snd_def; reflexivity.
 Qed.
 
+(* hd and tl : inverse of Wsup *)
+
+Definition hd x := union (subset A (fun a => couple Nil a \in x)).
+
+Instance hdm : morph1 hd.
+do 2 red; intros.
+unfold hd.
+apply union_morph.
+apply subset_morph; auto with *.
+red; intros.
+rewrite H; reflexivity.
+Qed.
+
+Lemma hd_eq : forall f x X,
+  morph1 f -> x \in W_F X -> hd (Wsup f x) == fst x.
+intros; unfold hd.
+apply union_subset_singl with (fst x); auto with *.
+ apply fst_typ_sigma in H0; trivial.
+
+ apply Wsup_hd_prop; auto with *.
+
+ intros.
+ apply Wsup_hd_prop in H3; auto with *.
+ apply Wsup_hd_prop in H4; auto with *.
+ rewrite H3; rewrite H4; reflexivity.
+Qed.
+
+Definition tl x i :=
+  subset (prodcart (List (sup A B)) A)
+    (fun p => couple (Cons i (fst p)) (snd p) \in x).
+
+Instance tlm : morph2 tl.
+do 3 red; intros.
+unfold tl.
+apply subset_morph; auto with *.
+red; intros.
+rewrite H; rewrite H0; reflexivity.
+Qed.
+
+Lemma tl_typ : forall x i, x \in Wdom -> tl x i \in Wdom.
+intros.
+unfold tl.
+apply power_intro; intros.
+apply subset_elim1 in H0; trivial.
+Qed.
+
+Lemma tl_eq : forall X f x i,
+  morph1 f ->
+  (forall b, b \in X -> f b \in Wdom) ->
+  x \in W_F X ->
+  i \in B (fst x) ->
+  tl (Wsup f x) i == f (cc_app (snd x) i).
+intros.
+unfold tl.
+symmetry; apply subset_ext; intros.
+ apply Wsup_tl_prop with (X:=X) in H4; auto with *.
+ destruct H4.
+ rewrite (surj_pair _ _ _ H3); trivial.
+
+ apply power_elim with (2:=H3).
+ apply H0.
+ apply cc_prod_elim with (1:=tys _ _ H1); trivial.
+
+ exists x0; auto with *.
+ apply Wsup_tl_prop with (X:=X); auto with *.
+ split; trivial.
+ assert (x0 \in prodcart (List (sup A B)) A).
+  apply power_elim with (2:=H3).
+  apply H0.
+  apply cc_prod_elim with (1:=tys _ _ H1); trivial.
+ rewrite <- (surj_pair _ _ _ H4); trivial.
+Qed.
+
+(* could use hd_eq and tl_eq... *)
 Lemma Wsup_inj : forall X Y f f' x x',
   morph1 f ->
   morph1 f' ->
@@ -511,111 +585,301 @@ apply Ffix_eqn; eauto.
 Qed.
 
 
+(***************************************)
 
+  Definition WFmap f x :=
+    couple (fst x) (cc_lam (B (fst x)) (fun i => f (cc_app (snd x) i))).
 
-Parameter WFm : (set -> set) -> set -> set.
-Parameter WFmm : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) WFm.
-Parameter WFmtyp : forall X Y f x,
-  (forall a, a \in X -> f a \in Y) ->
-  x \in W_F X ->
-  WFm f x \in W_F Y.
+  Lemma WFmap_ext : forall f f' x x',
+    fst x == fst x' ->
+    (forall i i', i \in B (fst x) -> i == i' ->
+     f (cc_app (snd x) i) == f' (cc_app (snd x') i')) ->
+    WFmap f x == WFmap f' x'.
+intros.
+apply couple_morph; trivial.
+apply cc_lam_ext.
+ rewrite H; reflexivity.
 
-
-
-  Definition trad := Fix_rec Wf Wdom WFm.
-
-Let Gm_prf : forall (x x' : set) (g g' : set -> set),
- x \in Wdom ->
- eq_fun (fsub Wf Wdom x) g g' -> x == x' -> WFm g x == WFm g' x'.
-admit.
-(*intros.
-apply Wsupi_morph; trivial.
-admit.*)
+ red; intros; auto.
 Qed.
 
-Instance trad_morph : morph1 trad.
-red; red; intros.
-unfold trad.
-unfold Fix_rec.
-apply uchoice_morph_raw; red; intros.
-apply Ffix_rel_morph; trivial.
-Qed.
-
-  Lemma trad_ok : forall o,
-    isOrd o ->
-    forall x,
-    x \in TI Wf o ->
-    trad x \in TI W_F o.
-intros o oo.
-apply isOrd_ind with (2:=oo); intros.
-unfold trad.
-rewrite Fr_eqn with (o:=y); auto.
-fold trad.
-apply TI_Wf_elim in H2; trivial.
-destruct H2 as (o',?,(x',?,?)).
-apply TI_intro with o'; auto.
- apply Fmono_morph; apply W_F_mono.
-
- apply WFmtyp with (TI Wf o'); auto with *.
-
- rewrite H4.
- rewrite <- TI_mono_succ; auto.
- 2:apply isOrd_inv with y; trivial.
- apply Wsup_typ; trivial.
- apply isOrd_inv with y; trivial.
-Qed.
-
-
-
-
-Definition Wsupi f a :=
-  union (subset Wdom (fun b => Wsup f b == a)).
-
-
-Instance Wsupi_morph :
-  Proper ((eq_set==>eq_set) ==> eq_set ==> eq_set) Wsupi.
+  Instance WFmap_morph : Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) WFmap.
 do 3 red; intros.
-unfold Wsupi.
-apply union_morph.
-apply subset_morph; auto with *.
+apply WFmap_ext.
+ rewrite H0; reflexivity.
+
+ intros.
+ apply H.
+ rewrite H0; rewrite H2; reflexivity.
+Qed.
+
+  Lemma WFmap_typ : forall X Y f x,
+    morph1 f ->
+    x \in W_F X ->
+    (forall a, a \in X -> f a \in Y) ->
+    WFmap f x \in W_F Y.
+unfold WFmap; intros.
+apply couple_intro_sigma.
+ red; red; intros.
+ apply cc_prod_ext.
+  apply Bmorph; trivial.
+
+  red; intros; reflexivity.
+
+ apply subset_elim1 in H0; apply fst_typ in H0; trivial.
+
+ apply cc_prod_intro.
+  red; red; intros.
+  rewrite H3; reflexivity.
+
+  red; red; reflexivity.
+
+  intros.
+  apply H1.
+  apply cc_prod_elim with (1:=tys _ _ H0); trivial.
+Qed.
+
+  Lemma WFmap_inj : forall X Y g g' x x',
+    x \in W_F X -> x' \in W_F Y ->
+    morph1 g -> morph1 g' ->
+    (forall a a', a \in X -> a' \in Y -> g a == g' a' -> a == a') ->
+    WFmap g x == WFmap g' x' -> x == x'.
+unfold WFmap; intros.
+apply couple_injection in H4; destruct H4 as (eqhd, eqtl).
+rewrite (WF_eta _ _ H).
+rewrite (WF_eta _ _ H0).
+apply couple_morph; trivial.
+apply cc_lam_ext; intros; auto.
 red; intros.
-rewrite H; rewrite H0; reflexivity.
+assert (cc_app (cc_lam (B (fst x)) (fun i => g (cc_app (snd x) i))) x0 ==
+        cc_app (cc_lam (B (fst x')) (fun i => g' (cc_app (snd x') i))) x'0).
+ apply cc_app_morph; trivial.
+rewrite cc_beta_eq in H6; trivial.
+rewrite cc_beta_eq in H6.
+ apply H3 in H6; trivial.
+  apply cc_prod_elim with (1:=tys _ _ H); trivial.
+  apply cc_prod_elim with (1:=tys _ _ H0); trivial.
+  rewrite <- eqhd; rewrite <- H5; trivial.
+
+ red; red; intros.
+ rewrite H8; reflexivity.
+
+ rewrite <- eqhd; rewrite <- H5; trivial.
+
+ red; red; intros.
+ rewrite H8; reflexivity.
 Qed.
 
-Lemma Wsupi_inj : forall f f' a a',
-  (forall x x', f x == f' x' -> x == x') ->
-  Wsupi f a == Wsupi f' a' -> a == a'.
-Admitted.
+  Definition Wsupi x := union (subset (W_F Wdom) (fun y => Wsup (fun x => x) y == x)).
 
-Lemma Wsupi_inv : forall f a,
-  Wsupi f (Wsup f a) == a.
-Admitted.
+  Instance Wsupi_morph : morph1 Wsupi.
+do 2 red; intros.
+unfold Wsupi.
+apply union_morph; apply subset_morph; auto with *.
+red; intros.
+rewrite H; reflexivity.
+Qed.
 
-Lemma Wsupi_typ : forall X Y f x,
-  morph1 f ->
-  (forall a, a \in X -> f a \in Y) ->
-  x \in Wf X ->
-  Wsupi f x \in W_F Y.
+  Lemma Wsupi_typ : forall x,
+    x \in Wdom ->
+    Wsupi x \in W_F Wdom.
+
+
+  Lemma Wsupi_def : forall X x y,
+    y \in W_F X ->
+    X \incl Wdom ->
+    Wsup (fun x => x) y == x ->
+    Wsupi x == y.
+unfold Wsupi; intros.
+apply union_subset_singl with (y':=y); auto with *.
+ revert H; apply W_F_mono; auto.
+
+ intros.
+ rewrite <- H5 in H4.
+ apply Wsup_inj with (X:=Wdom) (Y:=Wdom) in H4; auto with *.
+Qed.
+
+(* translation Wf X --> W_F Y given translation g:X-->Y *)
+  Definition trF g x := WFmap g (Wsupi x).
+
+  Lemma trF_decomp : forall X g x y,
+    morph1 g ->
+    x \in W_F X ->
+    X \incl Wdom ->
+    y == Wsup (fun x => x) x ->
+    trF g y == WFmap g x.
 intros.
-apply Wf_elim in H1.
-destruct H1.
-rewrite H2.
-admit.
+unfold trF.
+apply WFmap_morph; trivial.
+apply Wsupi_def with X; auto with *.
 Qed.
 
-  Definition trad := Fix_rec Wf Wdom Wsupi.
-
-  Definition trad := Fix_rec Wf Wdom
-    (fun g x => couple (hd x)
-       (cc_lam (B (hd x)) (fun i => g (tl x i)))).
 
 Let Gm_prf : forall (x x' : set) (g g' : set -> set),
- x \in Wdom ->
- eq_fun (fsub Wf Wdom x) g g' -> x == x' -> Wsupi g x == Wsupi g' x'.
+   x \in W ->
+   eq_fun (fsub Wf Wdom x) g g' ->
+   x == x' ->
+   trF g x == trF g' x'.
 intros.
-apply Wsupi_morph; trivial.
-admit.
+unfold trF.
+unfold WFmap.
+apply couple_morph.
+ rewrite H1; reflexivity.
+
+ apply cc_lam_ext.
+  rewrite H1; reflexivity.
+
+  red; intros.
+  apply H0.
+  2:rewrite H1; rewrite H3; reflexivity.
+  apply subset_intro; intros.
+   unfold W in H; rewrite Ffix_def in H; auto with *.
+   destruct H.
+   apply TI_Wf_elim in H4; trivial.
+   destruct H4.
+   destruct H5.
+   assert (x3 \in W_F Wdom).
+    revert H5; apply W_F_mono; auto with *.
+    transitivity W;[apply Wi_W; eauto using isOrd_inv|apply Wtyp].
+   assert (Wsupi x == x3).
+    apply Wsupi_def with Wdom; auto with *.
+   rewrite H8 in H2|-*.
+   apply cc_prod_elim with (1:=tys _ _ H7); trivial.
+
+   apply Wf_elim in H5.
+   destruct H5.
+   assert (Wsupi x == x1).
+    apply Wsupi_def with X; auto with *.
+   rewrite H7 in H2|-*.
+   apply cc_prod_elim with (1:=tys _ _ H5); trivial.
 Qed.
+Hint Resolve Gm_prf.
+
+
+Lemma trF_typ : forall X Y x g,
+  morph1 g ->
+  X \incl Wdom ->
+  (forall x, x \in X -> g x \in Y) ->
+  x \in Wf X ->
+  trF g x \in W_F Y.
+intros.
+apply Wf_elim in H2; destruct H2.
+rewrite trF_decomp with (2:=H2) (4:=H3); trivial.
+apply WFmap_typ with X; trivial.
+Qed.
+
+  Lemma trF_inj : forall X Y g g' x x',
+    X \incl Wdom -> Y \incl Wdom ->
+    x \in Wf X -> x' \in Wf Y ->
+    morph1 g -> morph1 g' ->
+    (forall a a', a \in X -> a' \in Y -> g a == g' a' -> a == a') ->
+    trF g x == trF g' x' -> x == x'.
+intros X Y g g' x x' Xi Yi H H0 gm g'm H1 H2.
+apply Wf_elim in H; destruct H.
+apply Wf_elim in H0; destruct H0.
+(*rewrite trF_decomp with (2:=H) (3:=H3) in H2; trivial.
+  produces ill-typed proof term rejected at Qed *)
+rewrite trF_decomp with (2:=H) (4:=H3) in H2; trivial.
+rewrite trF_decomp with (2:=H0) (4:=H4) in H2; trivial.
+apply WFmap_inj with (X:=X)(Y:=Y) in H2; trivial.
+rewrite H3; rewrite H4; apply Wsup_morph; auto with *.
+red; auto.
+Qed.
+
+(*
+
+(* translation Wf X --> W_F Y given translation g:X-->Y *)
+  Definition trF g x :=
+    couple (hd x) (cc_lam (B (hd x)) (fun i => g (tl x i))).
+
+(* unused *)
+  Lemma trF_decomp : forall X g x y,
+    morph1 g ->
+    x \in W_F X ->
+    X \incl Wdom ->
+    y == Wsup (fun x => x) x ->
+    trF g y == WFmap g x.
+intros.
+unfold trF, WFmap.
+apply couple_morph.
+ rewrite H2.
+ apply hd_eq with (2:=H0); auto with *.
+
+ apply cc_lam_ext; intros.
+  rewrite H2.
+  rewrite hd_eq with (2:=H0); auto with *.
+
+  red; intros.
+  apply H.
+  rewrite H2; rewrite <- H4.
+  apply tl_eq with (3:=H0); auto with *.
+  rewrite H2 in H3.
+  rewrite hd_eq with (2:=H0) in H3; auto with *.
+Qed.
+
+
+Let Gm_prf : forall (x x' : set) (g g' : set -> set),
+   x \in Wdom ->
+   eq_fun (fsub Wf Wdom x) g g' ->
+   x == x' ->
+   trF g x == trF g' x'.
+intros.
+apply couple_morph.
+ rewrite H1; reflexivity.
+
+ apply cc_lam_ext.
+  rewrite H1; reflexivity.
+
+  red; intros.
+  apply H0.
+   apply subset_intro; intros.
+    apply tl_typ; trivial.
+
+    apply Wf_elim in H5.
+    destruct H5.
+    rewrite H6.
+    assert (x0 \in B (fst x1)).
+     rewrite H6 in H2; rewrite hd_eq with (2:=H5) in H2; trivial with *.
+    rewrite tl_eq with (X:=X); trivial with *.
+    apply cc_prod_elim with (1:=tys _ _ H5); trivial.
+
+   apply tlm; trivial.
+Qed.
+Hint Resolve Gm_prf.
+
+
+Lemma trF_typ : forall X Y x g,
+  morph1 g ->
+  X \incl Wdom ->
+  (forall x, x \in X -> g x \in Y) ->
+  x \in Wf X ->
+  trF g x \in W_F Y.
+intros.
+apply Wf_elim in H2; destruct H2.
+rewrite trF_decomp with (2:=H2) (4:=H3); trivial.
+apply WFmap_typ with X; trivial.
+Qed.
+
+  Lemma trF_inj : forall X Y g g' x x',
+    X \incl Wdom -> Y \incl Wdom ->
+    x \in Wf X -> x' \in Wf Y ->
+    morph1 g -> morph1 g' ->
+    (forall a a', a \in X -> a' \in Y -> g a == g' a' -> a == a') ->
+    trF g x == trF g' x' -> x == x'.
+intros X Y g g' x x' Xi Yi H H0 gm g'm H1 H2.
+apply Wf_elim in H; destruct H.
+apply Wf_elim in H0; destruct H0.
+(*rewrite trF_decomp with (2:=H) (3:=H3) in H2; trivial.
+  produces ill-typed proof term rejected at Qed *)
+rewrite trF_decomp with (2:=H) (4:=H3) in H2; trivial.
+rewrite trF_decomp with (2:=H0) (4:=H4) in H2; trivial.
+apply WFmap_inj with (X:=X)(Y:=Y) in H2; trivial.
+rewrite H3; rewrite H4; apply Wsup_morph; auto with *.
+red; auto.
+Qed.
+*)
+
+  Definition trad := Fix_rec Wf Wdom trF.
 
 Instance trad_morph : morph1 trad.
 red; red; intros.
@@ -624,6 +888,7 @@ unfold Fix_rec.
 apply uchoice_morph_raw; red; intros.
 apply Ffix_rel_morph; trivial.
 Qed.
+
 
   Lemma trad_ok : forall o,
     isOrd o ->
@@ -634,20 +899,21 @@ intros o oo.
 apply isOrd_ind with (2:=oo); intros.
 unfold trad.
 rewrite Fr_eqn with (o:=y); auto.
-fold trad.
 apply TI_Wf_elim in H2; trivial.
 destruct H2 as (o',?,(x',?,?)).
+assert (oo' : isOrd o').
+ apply isOrd_inv with y; trivial.
 apply TI_intro with o'; auto.
  apply Fmono_morph; apply W_F_mono.
 
- apply Wsupi_typ with (TI Wf o'); auto with *.
+ apply trF_typ with (TI Wf o'); auto with *.
+  transitivity W; [apply Wi_W|apply Wtyp]; trivial.
 
- rewrite H4.
- rewrite <- TI_mono_succ; auto.
- 2:apply isOrd_inv with y; trivial.
- apply Wsup_typ; trivial.
- apply isOrd_inv with y; trivial.
+  rewrite H4.
+  rewrite <- TI_mono_succ; auto.
+  apply Wsup_typ; trivial.
 Qed.
+
 
   Lemma trad_inj : forall o,
     isOrd o ->
@@ -665,147 +931,165 @@ apply TI_Wf_elim in xty; trivial.
 destruct xty as (o1', ?, (c1,?,?)).
 apply TI_Wf_elim in yty; trivial.
 destruct yty as (o2', ?, (c2,?,?)).
-apply Wsupi_inj in eqtr; trivial.
-intros.
-admit.
+apply trF_inj with (TI Wf o1') (TI Wf o2') trad trad; auto with *.
+ transitivity W; [apply Wi_W|apply Wtyp];eauto using isOrd_inv.
+ transitivity W; [apply Wi_W|apply Wtyp];eauto using isOrd_inv.
+
+ rewrite <- TI_mono_succ; eauto using isOrd_inv.
+ rewrite H1; apply Wsup_typ; eauto using isOrd_inv.
+
+ rewrite <- TI_mono_succ; eauto using isOrd_inv.
+ rewrite H4; apply Wsup_typ; eauto using isOrd_inv.
+
+ intros.
+ apply Hrec with o1' o2'; eauto using isOrd_inv.
 Qed.
 
-  Definition trad1 o y :=
-    union (subset (TI Wf o) (fun x => trad x == y)).
+  Definition trad1 y :=
+    union (subset W (fun x => trad x == y)).
+
+  Instance trad1m : morph1 trad1.
+do 2 red; intros.
+unfold trad1.
+apply union_morph.
+apply subset_morph.
+ reflexivity.
+
+ red; intros.
+ rewrite H; reflexivity.
+Qed.
+
+Lemma Wsup_ext : forall f f' y y',
+   morph1 f ->
+   morph1 f' ->
+   fst y == fst y' ->
+   (forall i, i \in B (fst y) ->
+    f (cc_app (snd y) i) == f' (cc_app (snd y') i)) ->
+   Wsup f y == Wsup f' y'.
+intros.
+apply eq_intro; intros.
+ rewrite Wsup_def in H3|-*; trivial.
+ destruct H3;[left|right].
+  rewrite <- H1; trivial.
+
+  destruct H3.
+  exists x.
+   rewrite <- H1; trivial.
+
+   destruct H4.
+    exists x0; trivial.
+    rewrite <- H2; trivial.
+
+ rewrite Wsup_def in H3|-*; trivial.
+ destruct H3;[left|right].
+  rewrite H1; trivial.
+
+  destruct H3.
+  exists x.
+   rewrite H1; trivial.
+
+   destruct H4.
+    exists x0; trivial.
+    rewrite H2; trivial.
+    rewrite H1; trivial.
+Qed.
+
+Lemma Wsup_typ' : forall X Y o f x,
+  morph1 f ->
+  isOrd o ->
+  x \in W_F X ->
+  (forall a, a \in X -> f a \in Y) ->
+  Wsup f x \in Wf Y.
+intros.
+unfold Wf.
+rewrite replf_ax; auto.
+exists (WFmap f x).
+ apply WFmap_typ with X; trivial.
+
+ apply Wsup_ext; auto with *.
+  unfold WFmap; rewrite fst_def; reflexivity.
+
+  intros.
+  unfold WFmap; rewrite snd_def.
+  rewrite cc_beta_eq; auto with *.
+  red; red; intros.
+  rewrite H5; reflexivity.
+Qed.
 
   Lemma trad_surj : forall o,
     isOrd o ->
     forall y,
     y \in TI W_F o ->
-    trad1 o y \in TI Wf o /\ trad (trad1 o y) == y.
+    trad1 y \in TI Wf o /\ trad (trad1 y) == y.
 intros o oo.
 apply isOrd_ind with (2:=oo); intros o'; intros.
 apply TI_elim in H2; auto with *.
 2:apply Fmono_morph; apply W_F_mono.
 destruct H2.
-pose (y' := Wsupi trad y).
-assert (tyy' : y' \in W_F (TI Wf x)).
- unfold y'.
- eapply Wsupi_typ.
+assert (ty_tr_y : Wsup trad1 y \in TI Wf o').
+ apply TI_intro with x; auto with *.
+ apply Wsup_typ' with (o:=x)(3:=H3); eauto using isOrd_inv with *.
+ intros.
+ apply H1; trivial.
+assert (trad (Wsup trad1 y) == y).
+ unfold trad; rewrite Fr_eqn with (o:=o'); fold trad; auto with *.
+ transitivity (WFmap (fun x => x) y).
+  unfold trF.
+  apply WFmap_ext.  
 
 
- apply couple_intro_sigma; auto with *.
-  do 2 red; intros.
-  apply cc_prod_ext; auto with *.
-  red; reflexivity.
+ generalize (WF_eta _ _ H3); intro.
+ apply @transitivity with (3:=symmetry H4); auto with *.
+fold (WFmap (fun x => x) y).
+ apply couple_morph.
+  rewrite hd_eq with (2:=H3); auto with *.
 
-  apply fst_typ_sigma in H3; trivial.
+  apply cc_lam_ext.
+   rewrite hd_eq with (2:=H3); auto with *.
 
-  apply cc_prod_intro; intros.
-   do 2 red; intros.
-   unfold trad1. (* trad1 ext*)
-   apply union_morph.
-   apply subset_morph; auto with *.
    red; intros.
-   rewrite H5; reflexivity.
+   rewrite hd_eq with (2:=H3) in H5; auto with *.
+   rewrite tl_eq with (3:=H3); trivial with *.
+    rewrite <- H6.
+    apply H1 with x; trivial.
+    apply cc_prod_elim with (1:=tys _ _ H3); trivial.
 
-   do 2 red; reflexivity.
-
-   destruct H1 with (1:=H2) (y:=cc_app (snd y) x0); trivial.
-   apply cc_prod_elim with (1:=tys _ _ H3); trivial.
-assert (tyx' : Wsup y' \in TI Wf o').
- apply TI_intro with x; trivial.
-  apply Fmono_morph; trivial.
- apply Wf_intro; trivial.
-assert (trad (Wsup y') == y).
- unfold trad; rewrite Fr_eqn with (o:=o'); auto with *.
- rewrite WF_eta with (1:=H3).
- assert (hd (Wsup y') == fst y).
-  rewrite hd_eq with (1:=tyy').
-  unfold y'; rewrite fst_def; reflexivity.
- apply couple_morph; trivial.
- apply cc_lam_ext.
-  rewrite H4; reflexivity.
- red; intros.
- destruct H1 with (1:=H2) (y:=cc_app (snd y) x0).
-  apply cc_prod_elim with (1:=tys _ _ H3); trivial.
-  rewrite <- H4; trivial.
-
-  fold trad.
-  rewrite tl_eq with (X:=TI Wf x); auto. 
-   unfold y'; rewrite snd_def.
-   rewrite cc_beta_eq.
-    rewrite H8.
-    rewrite H6; reflexivity.
-
-    red; red; intros.
-    unfold trad1. (* trad1 ext*)
-    apply union_morph.
-    apply subset_morph; auto with *.
-    red; intros.
-    rewrite H10; reflexivity.
-
-    rewrite <- H4; trivial.
-
-    transitivity W; [apply Wi_W|apply Wtyp].
-    apply isOrd_inv with o'; trivial.
-
-    unfold y'; rewrite fst_def.
-    rewrite <- H4; trivial.
-assert (trad1 o' y == Wsup y').
- apply union_subset_singl with (y:=Wsup y') (y':=Wsup y');
+    intros.
+    apply Wtyp.
+    apply Wi_W with x; eauto using isOrd_inv.
+    apply H1; trivial.
+assert (trad1 y == Wsup trad1 y).
+ apply union_subset_singl with (y:=Wsup trad1 y) (y':=Wsup trad1 y);
    intros; auto with *.
- rewrite <- H8 in H7; apply trad_inj with (o:=o') (o':=o') in H7; trivial. 
+  apply Wi_W with o'; trivial.
+
+  unfold W in H5,H6.
+  rewrite Ffix_def in H5,H6; auto with *.
+  destruct H5; destruct H6.
+  rewrite <- H8 in H7; apply trad_inj with (o:=x0) (o':=x1) in H7; trivial. 
+
 rewrite H5; auto.
-
-
-
-; trivial.
- in eqtr.
-
-apply couple_injection in eqtr; destruct eqtr as (eqhd, eqtl).
-rewrite H1 in eqhd|-*; rewrite H4 in eqhd|-*.
-apply Wsup_morph.
-rewrite hd_eq with (1:=H0) in eqhd.
-rewrite hd_eq with (1:=H3) in eqhd.
-rewrite (WF_eta _ _ H0).
-rewrite (WF_eta _ _ H3).
-apply couple_morph; trivial.
-apply cc_lam_ext; intros; auto.
-red; intros.
-rewrite <- tl_eq with (2:=H0); trivial.
-2:transitivity W;[apply Wi_W|apply Wtyp]; eauto using isOrd_inv.
-rewrite <- tl_eq with (2:=H3); trivial.
-2:transitivity W;[apply Wi_W|apply Wtyp]; eauto using isOrd_inv.
-2:rewrite <- H6; rewrite <- eqhd; trivial.
-assert (cc_app (cc_lam (B (hd x)) (fun i => trad (tl x i))) x0 ==
-        cc_app (cc_lam (B (hd y)) (fun i => trad (tl y i))) x').
- apply cc_app_morph; trivial.
-rewrite cc_beta_eq in H7.
-rewrite cc_beta_eq in H7.
-rewrite <- H1; rewrite <- H4; apply Hrec with o1' o2'; trivial.
- rewrite H1; rewrite tl_eq with (2:=H0); trivial.
- 2:transitivity W;[apply Wi_W|apply Wtyp]; eauto using isOrd_inv.
- apply cc_prod_elim with (1:=tys _ _ H0); trivial.
-
- apply isOrd_inv with o2; trivial.
-
- rewrite H4; rewrite tl_eq with (2:=H3); trivial.
- 2:transitivity W;[apply Wi_W|apply Wtyp]; eauto using isOrd_inv.
- apply cc_prod_elim with (1:=tys _ _ H3); trivial.
- rewrite <- H6; rewrite <- eqhd; trivial.
-
- rewrite <- H6; rewrite <- eqhd; trivial.
-
- do 2 red; intros.
- apply trad_morph.
- apply tlm; auto with *.
-
- rewrite <- H6; rewrite H4; rewrite hd_eq with (1:=H3); rewrite <- eqhd;
-   trivial.
-
- do 2 red; intros.
- apply trad_morph.
- apply tlm; auto with *.
-
- rewrite H1; rewrite hd_eq with (1:=H0); trivial.
 Qed.
 
+
+  Definition W2 := TI W_F W_ord.
+
+  Lemma W2_eqn : W2 == W_F W2.
+unfold W2 at 2.
+rewrite <- TI_mono_succ; auto.
+2:apply W_F_mono.
+apply eq_intro; intros.
+ unfold W2; 
+ revert H; apply TI_incl; auto.
+ apply W_F_mono.
+
+ apply trad_surj in H; auto.
+ destruct H.
+ rewrite <- H0.
+ apply trad_ok; auto.
+ apply W_post.
+ revert H; apply Wi_W; auto.
+Qed.
 
 (***)
 
