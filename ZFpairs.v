@@ -261,7 +261,6 @@ specialize subset_elim1 with (1 := H); intros.
 apply fst_typ with (1:=H0).
 Qed.
 
-
 Lemma snd_typ_sigma : forall p y A B,
   ext_fun A B ->
   p \in sigma A B -> y == fst p -> snd p \in B y.
@@ -274,5 +273,22 @@ rewrite (H y (fst x)); trivial.
  rewrite H1; apply fst_typ with (1:=H4).
 
  rewrite H1; rewrite H2; reflexivity.
+Qed.
+
+Lemma sigma_mono : forall A A' B B',
+  ext_fun A B ->
+  ext_fun A' B' ->
+  A \incl A' ->
+  (forall x x', x \in A -> x == x' -> B x \incl B' x') ->
+  sigma A B \incl sigma A' B'.
+red; intros.
+rewrite (surj_pair _ _ _ (subset_elim1 _ _ _ H3)).
+apply couple_intro_sigma; trivial.
+ apply fst_typ_sigma in H3; auto.
+
+ apply (H2 (fst z)); auto with *.
+  apply fst_typ_sigma in H3; auto.
+
+  apply snd_typ_sigma with (2:=H3); auto with *.
 Qed.
 

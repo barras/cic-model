@@ -591,10 +591,12 @@ Hint Resolve W_o_o.
    a \in W ->
    a \in TI Wf W_ord.
 apply Ffix_post; eauto.
+apply Wf_stable.
 Qed.
 
   Lemma W_eqn : W == Wf W.
 apply Ffix_eqn; eauto.
+apply Wf_stable.
 Qed.
 
 

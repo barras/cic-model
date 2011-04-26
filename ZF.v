@@ -620,6 +620,12 @@ assert (x \in pair x' y').
       elim pair_elim with (1:=H4); trivial.
 Qed.
 
+Lemma discr_mt_pair : forall a b, ~ empty == pair a b.
+red; intros.
+apply (empty_ax a).
+rewrite H.
+apply pair_intro1.
+Qed.
 
 (* macros *)
 Definition singl x := pair x x.

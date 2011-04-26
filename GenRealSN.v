@@ -695,13 +695,10 @@ assert (alltrue : forall x, x \in El dom -> El (F x) == power empty).
 assert (isunit : cc_prod (El dom) (fun x => El (F x)) == power empty).
  assert (ZFcoc.cc_lam (El dom) (fun _ => empty) == empty).
   apply ZFcoc.cc_impredicative_lam; auto with *.
-  red; red; reflexivity.
  apply power_ext; intros.
   setoid_replace x with empty.
    rewrite <- H2.
-   apply ZFcoc.cc_prod_intro.
-    do 2 red; reflexivity.
-
+   apply ZFcoc.cc_prod_intro; auto.
     do 2 red; intros.
     apply El_morph.
     rewrite El_def in H4; destruct H4.
@@ -761,7 +758,6 @@ Existing Instance app_ext.
   Lemma daemon_false : (daemon,daemont) \real prod props (fun P => P).
 apply inSAT_val with (lam props (fun _ => empty)) (prod props (fun P => P)); auto with *.
  apply cc_impredicative_lam; auto with *.
- red; red; reflexivity.
 apply prod_intro; intros.
  red; red; reflexivity.
 

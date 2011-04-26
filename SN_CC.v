@@ -58,10 +58,8 @@ apply singl_ext; intros.
  rewrite <- (cc_impredicative_lam dom (fun x => prf_trm)); intros.
  2:do 2 red; reflexivity.
   apply cc_prod_intro; intros; auto.
-   do 2 red; reflexivity.
-
-   apply H0 in H1; rewrite H1.
-   apply singl_intro.
+  apply H0 in H1; rewrite H1.
+  apply singl_intro.
 
   reflexivity.
 

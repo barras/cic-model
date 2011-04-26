@@ -393,6 +393,102 @@ Lemma power_ax:
   forall a x, x \in power a <-> (forall y, y \in x -> y \in a).
 Proof fun a => proj2_sig (power_sig a).
 
+(* uchoice *)
+
+Definition uchoice_pred (P:set->Prop) :=
+  (forall x x', x == x' -> P x -> P x') /\
+  (exists x, P x) /\
+  (forall x x', P x -> P x' -> x == x').
+
+Definition uchoice (P : set -> Prop) (Hp : uchoice_pred P) : set.
+exists (fun z => P (Z2set z)).
+destruct Hp.
+destruct H0.
+split; intros.
+ destruct H0.
+ destruct (Z2set_surj x).
+ exists x0; apply H with x; trivial.
+
+ apply eq_Zeq.
+ auto.
+Defined.
+
+Lemma uchoice_ax : forall P h x,
+  (x \in uchoice P h <-> exists2 z, P z & x \in z).
+split; intros.
+ destruct H.
+ destruct H.
+ destruct H0.
+ simpl in H0.
+ exists (Z2set x1); trivial.
+ apply In_intro; intros.
+ simpl in H3.
+ rewrite H3.
+ destruct (proj2_sig x).
+ rewrite (H5 x' x0); trivial.
+
+ destruct H.
+ destruct H0.
+ destruct H0.
+ destruct H1.
+ constructor.
+ exists x1; trivial.
+ simpl.
+ exists x2; trivial.
+ apply (proj1 h x0); trivial.
+ apply Eq_proj; trivial.
+Qed.
+
+Lemma uchoice_morph_raw : forall (P1 P2:set->Prop) h1 h2,
+  (forall x x', x == x' -> (P1 x <-> P2 x')) ->
+  uchoice P1 h1 == uchoice P2 h2.
+intros.
+apply eq_set_ax; intros.
+rewrite uchoice_ax.
+rewrite uchoice_ax.
+apply ex2_morph; red; intros.
+ apply H; reflexivity.
+
+ reflexivity.
+Qed.
+
+Instance uchoice_pred_morph : Proper ((eq_set ==> iff) ==> iff) uchoice_pred.
+apply morph_impl_iff1; auto with *.
+do 3 red; intros.
+destruct H0 as (?,(?,?)); split;[|split]; intros.
+ assert (x x0).
+  revert H4; apply H; auto with *.
+ revert H5; apply H; trivial.
+
+ destruct H1; exists x0.
+ revert H1; apply H; auto with *.
+
+ apply H2; [revert H3|revert H4]; apply H; auto with *.
+Qed.
+
+
+Lemma uchoice_ext : forall (P:set->Prop) h x, P x -> x == uchoice P h.
+intros.
+apply eq_set_ax;intros.
+rewrite uchoice_ax.
+split; intros.
+ exists x; trivial.
+
+ destruct H0.
+ destruct h.
+ destruct H3.
+ rewrite (H4 x x1); auto.
+Qed.
+
+Lemma uchoice_def : forall P h, P (uchoice P h).
+intros.
+destruct h.
+destruct a.
+destruct e.
+apply p with x; trivial.
+apply uchoice_ext; trivial.
+Qed.
+
 (* replacement *)
 
 Definition funDom (R:set -> set -> Prop) x :=

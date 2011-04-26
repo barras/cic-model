@@ -1,6 +1,6 @@
 
 Require Import Setoid.
-Require Export ZF ZFpairs ZFrelations.
+Require Export ZF ZFpairs ZFrelations ZFstable.
 Import IZF.
 
 (* CC *)
@@ -252,6 +252,45 @@ setoid_replace (cc_prod dom' G) with (cc_prod dom G).
 
  apply cc_prod_ext; trivial.
  symmetry; trivial.
+Qed.
+
+Lemma cc_prod_stable : forall dom F,
+  morph2 F ->
+  (forall x, stable (fun y => F y x)) ->
+  stable (fun y => cc_prod dom (F y)).
+intros dom F Fm Fs.
+assert (Hm : morph1 (fun y => cc_prod dom (F y))).
+ do 2 red; intros.
+ apply cc_prod_ext; auto with *.
+ red; intros; apply Fm; auto.
+red; red ;intros.
+destruct inter_wit with (2:=H) as (w,H0); trivial.
+assert (forall x, x \in X -> z \in cc_prod dom (F x)).
+ intros.
+ apply inter_elim with (1:=H).
+ rewrite replf_ax; auto.
+ exists x; auto with *.
+clear H.
+assert (z \in cc_prod dom (F w)) by auto.
+rewrite (cc_eta_eq _ _ _ H).
+apply cc_prod_intro.
+ red; red; intros; apply cc_app_morph; auto with *.
+
+ red; red; intros; apply Fm; auto with *.
+
+ intros.
+ apply Fs.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H3; auto.
+  2:red;red;intros;apply Fm; auto with *.
+  destruct H3.
+  rewrite H4; apply H1 in H3.
+  apply cc_prod_elim with (1:=H3); trivial.
+
+  exists (F w x); rewrite replf_ax.
+  2:red;red;intros; apply Fm; auto with *.
+  eauto with *.
 Qed.
 
 
