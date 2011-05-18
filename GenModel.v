@@ -35,7 +35,6 @@ Module V := VarMap.Make(Xeq).
 
 Notation val := V.map.
 Notation eq_val := V.eq_map.
-Instance eq_val_equiv : Equivalence eq_val. (* should be in stdlib *)
 
 Definition vnil : val := V.nil props.
 

@@ -44,7 +44,6 @@ Module V := VarMap.Make(Xeq).
 
 Notation val := V.map.
 Notation eq_val := V.eq_map.
-Instance eq_val_equiv : Equivalence eq_val. (* should be in stdlib *)
 
 Definition vnil : val := V.nil props.
 
@@ -65,7 +64,6 @@ Module I := VarMap.Make(LCeq).
 
 Notation intt := I.map.
 Notation eq_intt := I.eq_map.
-Instance eq_intt_equiv : Equivalence eq_intt. (* should be in stdlib *)
 
 Import I.
 Existing Instance cons_morph.
@@ -172,13 +170,6 @@ destruct H; destruct H0; split.
  transitivity fy; trivial.
  transitivity gy; trivial.
 Qed.
-
-Instance eq_trm_equiv : Equivalence eq_trm.
-(* Need to declare Equivalence instance, otherwise
-   rewriting does not work. e.g:
-Goal forall A (R:A->A->Prop) x y z,
-Reflexive R -> Symmetric R -> Transitive R -> R x y -> (R x z <-> R y z).
-*)
 
 Lemma eq_kind : forall (M:trm), M = None <-> eq_trm M None.
 destruct M; simpl; split; contradiction||discriminate||trivial.
@@ -626,7 +617,7 @@ destruct e; simpl prod_list in eq_U.
   setoid_replace i with (V.cons (i 0) (V.shift 1 i)).
    rewrite int_lift_eq; trivial.
 
-   red; red; intros.
+   red; intros.
    destruct a; reflexivity.
 
  elim (discr_ref_prod eq_U).

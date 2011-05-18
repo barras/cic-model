@@ -51,4 +51,4 @@ depend:: Ens0.v
 	$(COQDEP) -c $(COQINCLUDES) *.v *.ml > .depend
 	$(COQDEP) -suffix .html $(COQINCLUDES) *.v >> .depend
 
-include .depend
+-include .depend

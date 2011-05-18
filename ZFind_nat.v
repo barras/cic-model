@@ -1095,7 +1095,6 @@ apply VN_union; trivial.
 apply VNlim_pair; eauto.
 apply VN_union; trivial.
 apply VNlim_pair; eauto.
-unfold UNIT; eauto.
 Qed.
 
   Hypothesis zer_o : zero \in VN o.

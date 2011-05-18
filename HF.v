@@ -237,6 +237,8 @@ apply eq_hf_intro; intros.
 Qed.
 
 Instance eq_hf_equiv : Equivalence Eq_hf. (* why is it needed? *)
+constructor; auto with *.
+Qed.
 
 Instance eq_hf_morph : Proper (Eq_hf ==> Eq_hf ==> @eq bool) eq_hf.
 repeat red; intros.

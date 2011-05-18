@@ -697,7 +697,6 @@ assert (alltrue : forall x, x \in El dom -> El (F x) == power empty).
 assert (isunit : cc_prod (El dom) (fun x => El (F x)) == power empty).
  assert (ZFcoc.cc_lam (El dom) (fun _ => empty) == empty).
   apply ZFcoc.cc_impredicative_lam; auto with *.
-  red; red; reflexivity.
  apply power_ext; intros.
   setoid_replace x with empty.
    rewrite <- H2.
@@ -763,7 +762,6 @@ Existing Instance app_ext.
   Lemma daemon_false : (daemon,daemont) \real prod props (fun P => P).
 apply inSAT_val with (lam props (fun _ => empty)) (prod props (fun P => P)); auto with *.
  apply cc_impredicative_lam; auto with *.
- red; red; reflexivity.
 apply prod_intro; intros.
  red; red; reflexivity.
 
@@ -969,7 +967,6 @@ Module V := VarMap.Make(Xeq).
 
 Notation val := V.map.
 Notation eq_val := V.eq_map.
-Instance eq_val_equiv : Equivalence eq_val. (* should be in stdlib *)
 
 Definition vnil : val := V.nil props.
 
@@ -990,7 +987,6 @@ Module I := VarMap.Make(LCeq).
 
 Notation intt := I.map.
 Notation eq_intt := I.eq_map.
-Instance eq_intt_equiv : Equivalence eq_intt. (* should be in stdlib *)
 
 Import I.
 Existing Instance cons_morph.
@@ -1099,6 +1095,8 @@ destruct H; destruct H0; split.
 Qed.
 
 Instance eq_trm_equiv : Equivalence eq_trm.
+constructor; auto with *.
+Qed.
 (* Need to declare Equivalence instance, otherwise
    rewriting does not work. e.g:
 Goal forall A (R:A->A->Prop) x y z,
