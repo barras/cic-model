@@ -415,7 +415,9 @@ Qed.
   Variable eps : set.
   Hypothesis epsOrd : isOrd eps.
   Variable F : set -> set -> set.
-  Hypothesis Fm : morph2 F.
+  Hypothesis Fm : forall o o' f f',
+    isOrd o -> o == o' -> f == f' ->
+    F o f == F o' f'.
   Variable U : set -> set -> set.
 (*
 Hypothesis Um_eq : forall o o', lt o' eps -> o == o' ->
@@ -900,45 +902,11 @@ Lemma NATREC_morph :
 intros.
 unfold NATREC.
 unfold TIO.
-unfold TR.
-apply ZFrepl.uchoice_morph.
- apply TR_rel_choice_pred; auto.
- intros.
- apply sup_morph; auto.
- red; intros.
- assert (morph2 f1).
-  do 3 red; intros.
-  transitivity (f2 y y0).
-   apply H; trivial.
-
-   symmetry; apply H; reflexivity.
- apply H6; trivial.
- apply H3; trivial.
-
- intros.
- unfold TR_rel.
- split; intros.
-  rewrite <- H1.
-  apply H2 with (P:=P); intros; auto.
-  apply H4 in H6; auto.
-  revert H6; apply iff_impl.
-  apply H3; auto with *.
-  apply sup_morph; auto with *.
-  red; intros.
-  symmetry; apply H; symmetry; trivial.
-  apply H5; trivial.
-
-  rewrite H1.
-  apply H2 with (P:=P); intros; auto.
-  apply H4 in H6; auto.
-  revert H6; apply iff_impl.
-  apply H3; auto with *.
-  apply sup_morph; auto with *.
-  red; intros.
-  apply H; trivial.
-  apply H5; trivial.
+apply TR_morph_gen; trivial; intros.
+apply sup_morph; intros; auto.
+red; intros.
+apply H; auto.
 Qed.
-
 
 Section NatFixpoint.
 

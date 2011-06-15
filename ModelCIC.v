@@ -557,7 +557,7 @@ apply NATREC_wt with
   (eps :=osucc(int O i))
   (o:=int O i)
   (U:=fun o x => int U (V.cons x (V.cons o i))); intros; auto.
- apply morph_fix_body.
+ apply morph_fix_body; trivial.
 
  apply fx_sub_U.
   apply val_push_var; simpl; auto.
@@ -606,8 +606,8 @@ refine (let FX_exp :=
       (fun o f => int M (V.cons f (V.cons o i))) _
       (fun o x => int U (V.cons x (V.cons o i)))
     in _); auto.
- do 3 red; intros.
- rewrite H2; rewrite H3; reflexivity.
+ intros.
+ rewrite H3; rewrite H4; reflexivity.
 rewrite FX_exp; clear FX_exp.
  apply app_ext; try reflexivity.
  apply int_morph; auto with *.

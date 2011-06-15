@@ -85,6 +85,9 @@ Qed.
 
 Definition ext_fun dom f := eq_fun dom f f.
 
+Definition ext_fun2 A B f :=
+  forall x x' y y', x \in A -> x == x' -> y \in B x -> y == y' -> f x y == f x' y'.
+
 Lemma eq_fun_ext : forall dom F G, eq_fun dom F G -> ext_fun dom F.
 red; intros.
 transitivity G; trivial.

@@ -567,6 +567,33 @@ apply isOrd_intro; intros.
  apply isOrd_inv with x; trivial.
 Qed.
 
+Lemma inter2_succ : forall x y,
+  isOrd x -> isOrd y ->
+  inter2 (osucc x) (osucc y) == osucc (inter2 x y).
+intros.
+apply eq_intro; intros.
+ rewrite inter2_def in H1.
+ destruct H1.
+ apply ole_lts; eauto using isOrd_inv.
+ apply olts_le in H1; apply olts_le in H2.
+ red; intros; rewrite inter2_def; auto.
+
+ assert (isOrd z).
+  apply isOrd_inv with (osucc (inter2 x y)); trivial.
+  apply isOrd_succ; apply isOrd_inter2; trivial.
+ rewrite inter2_def; split.
+  apply ole_lts; eauto using isOrd_inv.
+  apply olts_le in H1.
+  transitivity (inter2 x y); trivial.
+  apply inter2_incl1.
+
+  apply ole_lts; eauto using isOrd_inv.
+  apply olts_le in H1.
+  transitivity (inter2 x y); trivial.
+  apply inter2_incl2.
+Qed.
+
+
 Module NotDirected.
 Import Examples.
 Section S.
@@ -676,34 +703,43 @@ apply eq_intro; intros.
 Qed.
 
 
+
 Section TransfiniteRecursion.
 
   Variable F : (set -> set) -> set -> set.
-  Hypothesis Fmorph : forall o o' f f',
+
+  Variable ord : set.
+  Hypothesis Fmorph : forall o o' f f', isOrd o -> o \incl ord ->
     o == o' -> eq_fun o f f' -> F f o == F f' o'.
 
-  Definition TR_rel o y :=
-    forall P,
-    Proper (eq_set ==> eq_set ==> iff) P ->
-    (forall o' f, ext_fun o' f ->
+  Definition TR_rel o y := (isOrd o/\o\incl ord) /\
+    forall (P:set->set->Prop),
+    (forall o o' x x', isOrd o -> o \incl ord -> o == o' -> x == x' -> P o x -> P o' x') ->
+    (forall o' f, isOrd o' -> o' \incl ord -> ext_fun o' f ->
      (forall n, lt n o' -> P n (f n)) ->
      P o' (F f o')) ->
     P o y.
 
   Instance TR_rel_morph : Proper (eq_set ==> eq_set ==> iff) TR_rel.
-do 3 red; unfold TR_rel; split; intros.
- rewrite <- H; rewrite <- H0; apply H1; auto.
+apply morph_impl_iff2; auto with *.
+do 4 red; unfold TR_rel; intros.
+destruct H1 as ((xo, xle),Hrec); split; intros.
+ rewrite <- H; auto.
 
- rewrite H; rewrite H0; apply H1; auto.
+ apply (H1 x y x0 y0); auto.
+ apply Hrec; auto.
 Qed.
 
   Lemma TR_rel_intro : forall x f,
+    isOrd x ->
+    x \incl ord ->
     ext_fun x f ->
     (forall y, y \in x -> TR_rel y (f y)) ->
     TR_rel x (F f x).
 red; intros.
-apply H2; trivial; intros.
-apply H0; trivial.
+split; intros; auto.
+apply H4; trivial; intros.
+apply H2; trivial.
 Qed.
 
   Lemma TR_rel_inv : forall x y,
@@ -713,21 +749,19 @@ Qed.
       y == F f x.
 intros.
 apply (@proj2 (TR_rel x y)).
-apply H; intros.
- do 3 red; intros.
- rewrite <- H0; rewrite <- H1.
- split; destruct 1 as (Htr,(f,(fm,eqf),eqF)); split; trivial; exists f; trivial.
-  split; intros.
-   do 2 red; intros.
-   rewrite <- H0 in H2; auto.
-   rewrite <- H0 in H2; auto.
-  rewrite <- H1; rewrite eqF; apply Fmorph; intros; auto.
-  split; intros.
-   do 2 red; intros.
-   rewrite H0 in H2; auto.
-   rewrite H0 in H2; auto.
-  symmetry in H0; rewrite H1; rewrite eqF; apply Fmorph; intros; auto.
-assert (TR_relsub := fun n h => proj1 (H1 n h)); clear H1.
+destruct H as ((H,Hle),H0).
+apply H0; intros.
+ destruct H5; split.
+  rewrite <- H3; rewrite <- H4; trivial.
+
+  destruct H6 as (f,(fm,eqf),eqF); exists f; trivial.
+   split; intros.
+    do 2 red; intros.
+    rewrite <- H3 in H6; auto.
+    rewrite <- H3 in H6; auto.
+
+    rewrite <- H4; rewrite eqF; auto.
+assert (TR_relsub := fun n h => proj1 (H4 n h)); clear H4.
 split.
  apply TR_rel_intro; trivial.
 
@@ -737,20 +771,16 @@ Qed.
 
   Lemma TR_rel_fun :
     forall x y, TR_rel x y -> forall y', TR_rel x y' -> y == y'.
-intros x y H.
+intros x y (xo,H).
 apply H; intros.
- do 3 red; intros.
- split; intros.
-  rewrite <- H1; rewrite <- H0 in H3; auto.
-  rewrite H1; rewrite H0 in H3; auto.
-apply TR_rel_inv in H2; destruct H2.
-destruct H2.
-rewrite H3; clear y' H3.
-apply Fmorph; intros.
- reflexivity.
+ rewrite <- H3; rewrite <- H2 in H5; auto.
+apply TR_rel_inv in H4; destruct H4.
+destruct H4.
+rewrite H5; clear y' H5.
+apply Fmorph; intros; auto with *.
 red; intros.
-apply H1; trivial.
-rewrite H5 in H3|-*; auto.
+apply H3; trivial.
+rewrite H7 in H5|-*; auto.
 Qed.
 
 Require Import ZFrepl.
@@ -763,35 +793,35 @@ split; intros.
  apply TR_rel_fun with x0; trivial.
 Qed.
 
-  Lemma TR_rel_def : forall o, isOrd o -> exists y, TR_rel o y.
+  Lemma TR_rel_def : forall o, isOrd o -> o \incl ord -> exists y, TR_rel o y.
 induction 1 using isOrd_ind; intros.
 assert (forall z, lt z y -> uchoice_pred (fun y => TR_rel z y)).
  intros.
- specialize H1 with (1:=H2).
- destruct H1.
+ destruct H1 with z; trivial.
+  red; intros; apply H2; apply isOrd_trans with z; trivial.
  split; intros.
-  rewrite <- H3; trivial.
+  rewrite <- H5; trivial.
  split; intros.
   exists x; trivial.
  apply TR_rel_fun with z; trivial.
 exists (F (fun z => uchoice (fun y => TR_rel z y)) y).
-apply TR_rel_intro; intros.
+apply TR_rel_intro; intros; trivial.
  do 2 red; intros.
  apply uchoice_morph; intros; auto.
- rewrite H4; reflexivity.
+ rewrite H5; reflexivity.
 apply uchoice_def; auto.
 Qed.
 
-  Lemma TR_rel_choice_pred : forall o, isOrd o ->
+  Lemma TR_rel_choice_pred : forall o, isOrd o -> o \incl ord ->
     uchoice_pred (fun y => TR_rel o y).
 split; intros.
- rewrite <- H0; trivial.
+ rewrite <- H1; trivial.
 split; intros.
  apply TR_rel_def; trivial.
 apply TR_rel_fun with o; trivial.
 Qed.
 
-  Definition TR o := uchoice (fun y => TR_rel o y).
+  Definition TR := uchoice (fun y => TR_rel ord y).
 
 (*
   Lemma TR_morph : forall x x', isOrd x -> x == x' -> TR x == TR x'.
@@ -827,72 +857,148 @@ apply eq_intro; intros.
   apply TR_rel_fun with x'; trivial.
 Qed.
 *)
-  Instance TR_morph : morph1 TR.
-do 2 red; intros.
-unfold TR.
-apply uchoice_morph_raw.
-red; intros.
-apply TR_rel_morph; trivial.
-Qed.
 
-  Lemma TR_eqn : forall o, isOrd o -> TR o == F TR o.
-unfold TR; intros.
-specialize TR_rel_choice_pred with (1:=H); intro.
-apply uchoice_def in H0.
-apply TR_rel_inv in H0.
-destruct H0.
-destruct H0.
-rewrite H1.
+  Lemma TR_eqn0 : forall o, isOrd o -> o \incl ord ->
+     uchoice (fun y => TR_rel o y) == F (fun o => uchoice (fun y => TR_rel o y)) o.
+intros.
+specialize TR_rel_choice_pred with (1:=H) (2:=H0); intro.
+apply uchoice_def in H1.
+apply TR_rel_inv in H1.
+destruct H1.
+destruct H1.
+rewrite H2.
 apply Fmorph; intros; auto with *.
 red; intros.
 apply TR_rel_fun with x'.
- rewrite <- H4; auto.
+ rewrite <- H5; auto.
 
  apply uchoice_def.
  apply TR_rel_choice_pred.
- rewrite <- H4; apply isOrd_inv with o; trivial.
-Qed.
-
-  Lemma TR_ind : forall o (P:set->set->Prop),
-    (forall x, isOrd x -> x \incl o ->
-     forall y y', y == y' -> P x y -> P x y') ->
-    isOrd o ->
-    (forall y, isOrd y -> y \incl o ->
-     (forall x, lt x y -> P x (TR x)) ->
-     P y (F TR y)) ->
-    P o (TR o).
-induction 2 using isOrd_ind; intros.
-apply H with (F TR y); auto with *.
- symmetry; apply TR_eqn; trivial.
-apply H3; trivial; intros.
- reflexivity.
-apply H2; trivial; intros.
-apply H3; trivial.
-red; intros.
-apply H6 in H8.
-apply isOrd_trans with x; trivial.
-Qed.
-
-
-  Lemma TR_typ : forall n X,
-    morph1 X ->
-    isOrd n ->
-    (forall y f, isOrd y -> y \incl n ->
-     (forall z, lt z y -> f z \in X z) -> F f y \in X y) ->
-    TR n \in X n.
-intros n X Xm is_ord.
-apply TR_ind with (o:=n); intros; trivial.
- rewrite <- H1; auto.
-apply H2; intros; auto with *.
-apply H1; trivial; intros.
-apply H2; auto.
-red; intros.
-apply H5 in H7.
-apply isOrd_trans with z; trivial.
+ rewrite <- H5; apply isOrd_inv with o; trivial.
+ red; intros; apply H0; apply isOrd_trans with x'; trivial.
+ rewrite <- H5; trivial.
 Qed.
 
 End TransfiniteRecursion.
 
+  Lemma TR_rel_irrel : forall F b1 b2 o y,
+    o \incl b2 ->
+    TR_rel F b1 o y -> TR_rel F b2 o y.
+intros.
+revert H; apply H0; intros.
+ rewrite <- H2 in H5.
+ generalize (H4 H5).
+ apply TR_rel_morph; auto with *.
+
+ apply TR_rel_intro; trivial; intros.
+ apply H3; trivial.
+ transitivity o'; trivial.
+ red; intros; apply isOrd_trans with y0; trivial.
+Qed.
+
+  Instance TR_morph : forall F, morph1 (TR F).
+do 2 red; intros.
+unfold TR.
+apply uchoice_morph_raw.
+red; intros.
+transitivity (TR_rel F x y y0).
+ apply TR_rel_morph; trivial. 
+
+ split; apply TR_rel_irrel; auto with *.
+ rewrite H; reflexivity.
+Qed.
+
+  Lemma TR_morph_gen : forall o o' F F',
+    isOrd o ->
+    (forall x x' f f', isOrd x -> x \incl o -> x == x' -> eq_fun x f f' -> F f x == F' f' x') ->
+    o == o' -> TR F o == TR F' o'.
+unfold TR; intros.
+apply uchoice_morph_raw.
+red; intros.
+split; intros.
+ red; intros.
+ destruct H3; split.
+  rewrite <- H1; trivial.
+
+  intros.
+  destruct H3.
+  apply H5 with o x; trivial.
+   rewrite H1; reflexivity.
+
+   apply H4; intros.
+    rewrite H1 in H9; eauto.
+
+    rewrite H1 in H9.
+    apply H5 with o'0 (F' f o'0); auto with *.
+    symmetry; apply H0; auto with *.
+    rewrite H1; trivial.
+
+ red; intros.
+ destruct H3; split.
+  rewrite H1; trivial.
+
+  intros.
+  destruct H3.
+  apply H5 with o' y; auto with *.
+   rewrite H1; reflexivity.
+
+   apply H4; intros.
+    rewrite <- H1 in H9; eauto.
+
+    rewrite <- H1 in H9.
+    apply H5 with o'0 (F f o'0); auto with *.
+Qed.
+
+  Lemma TR_eqn : forall F o,
+    isOrd o ->
+    (forall x x' f f', isOrd x -> x \incl o -> x == x' -> eq_fun x f f' -> F f x == F f' x') ->
+    TR F o == F (TR F) o.
+intros.
+unfold TR; rewrite TR_eqn0; eauto with *.
+apply H0; auto with *.
+red; intros.
+apply uchoice_morph_raw.
+red; intros.
+transitivity (TR_rel F o x' y).
+ apply TR_rel_morph; trivial.
+rewrite H2 in H1.
+split; apply TR_rel_irrel; auto with *.
+red; intros; apply isOrd_trans with x'; trivial.
+Qed.
+
+  Lemma TR_ind : forall F o (P:set->set->Prop),
+    (forall x x' f f', isOrd x -> x \incl o -> x == x' -> eq_fun x f f' -> F f x == F f' x') ->
+    (forall x, isOrd x -> x \incl o ->
+     forall y y', y == y' -> P x y -> P x y') ->
+    isOrd o ->
+    (forall y, isOrd y -> y \incl o ->
+     (forall x, lt x y -> P x (TR F x)) ->
+     P y (F (TR F) y)) ->
+    P o (TR F o).
+induction 3 using isOrd_ind; intros.
+apply H0 with (F (TR F) y); auto with *.
+ symmetry; apply TR_eqn; trivial; intros.
+ apply H; auto.
+ transitivity y; trivial.
+apply H4; trivial; intros.
+ reflexivity.
+apply H3; trivial; intros.
+apply H4; trivial.
+red; intros; apply isOrd_trans with x; auto.
+apply H7; trivial.
+Qed.
+
+  Lemma TR_typ : forall F o X,
+    isOrd o ->
+    (forall x x' f f', isOrd x -> x \incl o -> x == x' -> eq_fun x f f' -> F f x == F f' x') ->
+    morph1 X ->
+    (forall y f, isOrd y -> y \incl o ->
+     (forall z, lt z y -> f z \in X z) -> F f y \in X y) ->
+    TR F o \in X o.
+intros F o X oo Fm Xm Hrec.
+apply TR_ind; intros; auto.
+rewrite <- H1; trivial.
+Qed.
 
 (* Specialized version where the case of limit ordinals is union *)
 Section TransfiniteIteration.

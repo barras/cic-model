@@ -2,6 +2,57 @@ Require Export basic.
 Require Import ZF ZFrelations ZFnats ZFord ZFstable ZFcoc.
 Import IZF.
 
+
+Definition is_cc_fun A f :=
+  forall c, c \in f -> c == couple (fst c) (snd c) /\ fst c \in A.
+
+Instance is_cc_fun_morph : Proper (eq_set ==> eq_set ==> iff) is_cc_fun.
+apply morph_impl_iff2; auto with *.
+do 5 red; intros.
+rewrite <- H; rewrite <- H0 in H2; auto.
+Qed.
+
+
+Lemma is_cc_fun_lam A F :
+  ext_fun A F ->
+  is_cc_fun A (cc_lam A F).
+intros eF.
+unfold cc_lam; red; intros.
+apply union_elim in H; destruct H.
+rewrite replf_ax in H0.
+2:apply cc_lam_fun2; trivial.
+destruct H0.
+rewrite H1 in H; clear x H1.
+rewrite replf_ax in H.
+2:apply cc_lam_fun1.
+destruct H.
+rewrite H1; rewrite fst_def; rewrite snd_def; auto with *.
+Qed.
+
+Lemma cc_prod_is_cc_fun : forall A B f,
+  f \in cc_prod A B -> is_cc_fun A f.
+red; intros.
+unfold cc_prod in H.
+rewrite replf_ax in H.
+2:apply ZFcoc.cc_prod_fun1.
+destruct H.
+rewrite H1 in H0; clear f H1.
+unfold cc_lam in H0.
+apply union_elim in H0; destruct H0.
+rewrite replf_ax in H1.
+2:apply ZFcoc.cc_lam_fun2.
+2:red; red; intros.
+2:rewrite H3; reflexivity.
+destruct H1.
+rewrite H2 in H0; clear x0 H2.
+rewrite replf_ax in H0.
+2:apply ZFcoc.cc_lam_fun1.
+destruct H0.
+rewrite H2; rewrite fst_def; rewrite snd_def; auto with *.
+Qed.
+Hint Resolve cc_prod_is_cc_fun.
+
+
 Lemma couple_in_app : forall x z f,
   couple x z \in f <-> z \in cc_app f x.
 unfold cc_app, rel_image; split; intros.
@@ -30,140 +81,36 @@ unfold cc_app, rel_image; split; intros.
  rewrite H3 in H1; trivial.
 Qed.
 
-Lemma dep_func_has_couples : forall f A B,
-  ext_fun A B ->
-  f \in dep_func A B ->
-  forall a, a \in f ->
-  exists2 x, x \in A & exists2 y, y \in B x & a == couple x y.
-unfold dep_func.
+Lemma cc_eta_eq' : forall dom f,
+  is_cc_fun dom f ->
+  f == cc_lam dom (fun x => cc_app f x).
+unfold is_cc_fun.
 intros.
- rewrite subset_ax in H0.
+apply eq_intro; intros.
+ specialize H with (1:=H0); destruct H.
+ unfold cc_lam.
+ eapply union_intro.
+ 2:rewrite replf_ax.
+ 3:apply ZFcoc.cc_lam_fun2.
+ 3:do 2 red; intros; apply cc_app_morph; auto with *.
+ 2:exists (fst z); trivial.
+ 2:reflexivity.
+ rewrite replf_ax.
+ 2:apply ZFcoc.cc_lam_fun1.
+ exists (snd z); trivial.
+ rewrite H in H0; apply couple_in_app; trivial.
+
+ unfold cc_lam in H0.
+ apply union_elim in H0; destruct H0.
+ rewrite replf_ax in H1.
+ 2:apply ZFcoc.cc_lam_fun2.
+ 2:do 2 red; intros; apply cc_app_morph; auto with *.
+ destruct H1.
+ rewrite H2 in H0; clear x H2.
+ rewrite replf_ax in H0.
+ 2:apply ZFcoc.cc_lam_fun1.
  destruct H0.
- destruct H2.
- assert (f_fun := func_is_function _ _ _ H0).
- unfold func in H0.
- rewrite subset_ax in H0; destruct H0.
- destruct H4.
- destruct H5.
- unfold rel in H0.
- rewrite power_ax in H0.
- specialize H0 with (1:=H1).
- assert (fst a \in A).
-  apply fst_typ with (1:=H0).
- exists (fst a); trivial.
- specialize H5 with (1:=H7).
- specialize H3 with (1:=H7).
- destruct H5.
- assert (app x (fst a) == snd a).
-  rewrite <- H2.
-  apply app_defined; trivial.
-  red.
-  rewrite <- (surj_pair _ _ _ H0); trivial.
- exists (app x (fst a)); trivial.
- rewrite H9; apply (surj_pair _ _ _ H0); trivial.
-Qed.
-
-
-Lemma cc_prod_couples : forall f a A B,
-  ext_fun A B ->
-  f \in cc_prod A B ->
-  a \in f ->
-  exists2 x, x \in A & exists2 y, y \in B x & exists2 z, z \in y & a == couple x z.
-unfold cc_prod.
-intros.
-rewrite replf_ax in H0.
-2:apply ZFcoc.cc_prod_fun1.
-destruct H0.
-rewrite H2 in H1; clear H2 f.
-unfold cc_lam in H1.
-rewrite union_ax in H1.
-destruct H1.
-rewrite replf_ax in H2.
-2:apply ZFcoc.cc_lam_fun2.
-2:red; red; intros.
-2:rewrite H4; reflexivity.
-destruct H2.
-exists x1; trivial.
-rewrite H3 in H1; clear H3 x0.
-rewrite replf_ax in H1.
-2:apply ZFcoc.cc_lam_fun1.
-destruct H1.
-exists (app x x1).
- apply dep_func_elim with (1:=H0); trivial.
-
- exists x0; trivial.
-Qed.
-
-
-Lemma cc_prod_intro_couples : forall f A B,
-  ext_fun A B ->
-  (forall a, a \in f -> exists2 x, x \in A & exists z, a == couple x z) ->
-  (forall x, x \in A -> exists2 y, y \in B x &
-     forall z, (couple x z \in f <-> z \in y)) ->
-  f \in cc_prod A B.
-intros.
-unfold cc_prod.
-rewrite replf_ax.
-2:apply ZFcoc.cc_prod_fun1.
-exists (lam A (fun x => cc_app f x)).
- apply dep_func_intro; intros; trivial.
-  red; red; intros.
-  rewrite H3; reflexivity.
-
-  destruct H1 with (1:=H2).
-  assert (x0 == cc_app f x).
-   apply eq_intro; intros.
-    rewrite <- couple_in_app.
-    rewrite H4; trivial.
-
-    rewrite <- H4.
-    rewrite couple_in_app; trivial.
-  rewrite <- H5; trivial.
-
- apply eq_intro; intros.
-  unfold cc_lam.
-  destruct (H0 _ H2).
-  destruct H4.
-  apply union_intro with (replf (cc_app f x) (fun y' => couple x y')).
-   apply replf_intro with x0; trivial.
-   rewrite <- couple_in_app.
-   rewrite <- H4; trivial.
-
-   apply replf_intro with x; auto.
-    apply ZFcoc.cc_lam_fun2.
-    red; red; intros.
-    rewrite H6; reflexivity.
-
-    apply replf_ext; intros; auto.
-     rewrite beta_eq in H5; auto.
-      apply replf_intro with x1; auto with *.
-
-      red; red; intros.
-      rewrite H7; reflexivity.
-
-     rewrite replf_ax in H5; auto.
-     destruct H5.
-     exists x1; auto.
-     rewrite beta_eq; auto.
-     red; red; intros.
-     rewrite H8; reflexivity.
-
-  unfold cc_lam in H2.
-  rewrite union_ax in H2; destruct H2.
-  rewrite replf_ax in H3.
-   destruct H3.
-   rewrite H4 in H2; clear H4 x.
-   rewrite replf_ax in H2; auto.
-   destruct H2.
-   rewrite H4; clear H4 z.
-   rewrite beta_eq in H2; auto.
-    rewrite couple_in_app; auto.
-    red; red; intros.
-    rewrite H5; reflexivity.
-
-  apply cc_lam_fun2.
-  red; red; intros.
-  rewrite H5; reflexivity.
+ rewrite H2; apply couple_in_app; trivial.
 Qed.
 
 
@@ -192,28 +139,34 @@ rewrite cc_beta_eq; trivial.
 rewrite cc_beta_eq; auto.
 Qed.
 
+Lemma fcompat_typ_eq : forall A f f',
+  is_cc_fun A f ->
+  is_cc_fun A f' ->
+  fcompat A f f' ->
+  f == f'.
+intros.
+rewrite cc_eta_eq' with (1:=H).
+rewrite cc_eta_eq' with (1:=H0).
+apply cc_lam_ext; auto with *.
+red; intros.
+rewrite <- H3; auto.
+Qed.
+
 
 Section ExtendFamily.
 
   Variable I : set.
 
-  Variable A B F : set -> set.
+  Variable A F : set -> set.
   Hypothesis extA : ext_fun I A.
-  Hypothesis extB : forall x, x \in I -> ext_fun (A x) B.
   Hypothesis extF : ext_fun I F.
 
-  Hypothesis in_prod : forall x, x \in I -> F x \in cc_prod (A x) B.
+  Hypothesis in_prod : forall x, x \in I -> is_cc_fun (A x) (F x).
 
   Definition fdirected :=
     forall x y, x \in I -> y \in I -> fcompat (inter2 (A x) (A y)) (F x) (F y).
 
   Hypothesis fcomp : fdirected.
-
-  Let extB' : ext_fun (sup I A) B.
-red; red; intros.
-rewrite sup_ax in H; trivial; destruct H.
-apply (extB x0); trivial.
-Qed.
 
   Lemma fdir :
     forall x0 x1 x z,
@@ -226,46 +179,21 @@ intros.
 assert (x \in A x1).
  rewrite <- couple_in_app in H2.
  specialize in_prod with (1:=H0).
- destruct cc_prod_couples with (2:=in_prod) (3:=H2); auto.
- destruct H4.
- destruct H5.
- apply couple_injection in H6; destruct H6.
- rewrite H6; trivial.
+ apply in_prod in H2.
+ destruct H2 as (_,H2); rewrite fst_def in H2; trivial.
 apply eq_elim with (cc_app (F x1) x); trivial.
 apply fcomp; trivial.
 rewrite inter2_def; auto.
 Qed.
 
-Lemma prd_union : sup I F \in cc_prod (sup I A) B.
-apply cc_prod_intro_couples; intros; trivial.
- rewrite sup_ax in H; trivial.
- destruct H.
- specialize in_prod with (1:=H).
- destruct cc_prod_couples with (2:=in_prod) (3:=H0); auto.
- destruct H2.
- destruct H3.
- exists x0.
-  rewrite sup_ax; trivial.
-  exists x; trivial.
-
-  exists x2; trivial.
-
- rewrite sup_ax in H; trivial.
- destruct H.
- assert (H1' := in_prod _ H).
- exists (cc_app (F x0) x).
-  apply cc_prod_elim with (1:=H1'); trivial.
-
-  intros.
-  rewrite sup_ax; trivial.
-  split; intros.
-   destruct H1.
-   rewrite couple_in_app in H2.
-   specialize in_prod with (1:=H1).
-   apply fdir with x1; trivial.
-
-   exists x0; trivial.
-   rewrite couple_in_app; auto.
+Lemma prd_union : is_cc_fun (sup I A) (sup I F).
+red; intros.
+rewrite sup_ax in H; trivial.
+destruct H.
+specialize in_prod with (1:=H).
+apply in_prod in H0.
+destruct H0; split; trivial.
+rewrite sup_ax; eauto.
 Qed.
 
 

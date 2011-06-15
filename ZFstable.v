@@ -167,6 +167,60 @@ apply couple_intro.
   eauto with *.
 Qed.
 
+Lemma sigma_stable' : forall A F,
+  (forall y y' x x', y == y' -> x \in A -> x == x' -> F y x == F y' x') ->
+  (forall x, x \in A -> stable (fun y => F y x)) ->
+  stable (fun y => sigma A (F y)).
+intros A F Fm Fs.
+assert (Hm : morph1 (fun y => sigma A (F y))).
+ do 2 red; intros.
+ apply subset_morph.
+  apply prodcart_morph; auto with *.
+  apply union_morph.
+  apply replf_morph; auto with *.
+  red; intros.
+  apply Fm; trivial.
+
+ red; intros.
+ setoid_replace (F x (fst x0)) with (F y (fst x0)); auto with *.
+ apply Fm; auto with *.
+ apply fst_typ in H0; trivial.
+red; red ;intros.
+destruct inter_wit with (2:=H) as (w,H0); trivial.
+assert (forall x, x \in X -> z \in sigma A (F x)).
+ intros.
+ apply inter_elim with (1:=H).
+ rewrite replf_ax; auto.
+ exists x; auto with *.
+clear H.
+assert (z \in sigma A (F w)) by auto.
+rewrite (surj_pair _ _ _ (subset_elim1 _ _ _ H)).
+apply couple_intro_sigma.
+ red;red;intros;apply Fm; auto with *.
+
+ apply fst_typ_sigma in H; trivial.
+
+ apply Fs.
+  apply fst_typ_sigma in H; trivial.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H2.
+   destruct H2.
+   rewrite H3; apply H1 in H2; apply snd_typ_sigma with (y:=fst z) in H2;
+   auto with *.
+   red; red; intros; apply Fm; auto with *.
+
+   red; red; intros; apply Fm; auto with *.
+   apply fst_typ_sigma in H; trivial.
+
+  exists (F w (fst z)); rewrite replf_ax.
+   eauto with *.
+
+   red;red;intros; apply Fm; auto with *.
+   apply fst_typ_sigma in H; trivial.
+Qed.
+
+
 Lemma sigma_stable : forall F G,
   morph1 F ->
   morph2 G ->

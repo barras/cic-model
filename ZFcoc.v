@@ -255,8 +255,8 @@ setoid_replace (cc_prod dom' G) with (cc_prod dom G).
 Qed.
 
 Lemma cc_prod_stable : forall dom F,
-  morph2 F ->
-  (forall x, stable (fun y => F y x)) ->
+  (forall y y' x x', y == y' -> x \in dom -> x == x' -> F y x == F y' x') ->
+  (forall x, x \in dom -> stable (fun y => F y x)) ->
   stable (fun y => cc_prod dom (F y)).
 intros dom F Fm Fs.
 assert (Hm : morph1 (fun y => cc_prod dom (F y))).
@@ -279,7 +279,7 @@ apply cc_prod_intro.
  red; red; intros; apply Fm; auto with *.
 
  intros.
- apply Fs.
+ apply Fs; trivial.
  apply inter_intro.
   intros.
   rewrite replf_ax in H3; auto.
@@ -292,7 +292,6 @@ apply cc_prod_intro.
   2:red;red;intros; apply Fm; auto with *.
   eauto with *.
 Qed.
-
 
 (* impredicativity *)
 
