@@ -6,13 +6,17 @@ Section W_theory.
 
 Variable A : set.
 Variable B : set -> set.
-(*
-Hypothesis Bmorph : morph1 B.
-*)
 Hypothesis Bext : ext_fun A B.
 
 (* The intended type operator *)
 Definition W_F X := sigma A (fun x => cc_prod (B x) (fun _ => X)).
+
+Lemma wfm1 : forall X, ext_fun A (fun x => cc_prod (B x) (fun _ => X)).
+do 2 red; intros.
+apply cc_prod_ext; auto.
+red; intros; reflexivity.
+Qed.
+Hint Resolve wfm1.
 
 Lemma W_F_mono : Proper (incl_set ==> incl_set) W_F.
 unfold W_F; do 3 red; intros.
@@ -25,14 +29,8 @@ apply couple_intro_sigma.
  apply fst_typ_sigma in H0; trivial.
 
  apply snd_typ_sigma with (y:=fst z) in H0; auto with *.
-  revert H0; apply cc_prod_covariant; auto with *.
-
-  red; red; intros.
-  apply cc_prod_ext; auto with *.
-  red; intros; auto with *.
+ revert H0; apply cc_prod_covariant; auto with *.
 Qed.
-
-Require Import ZFstable.
 
 Lemma W_F_stable : stable W_F.
 unfold W_F.
@@ -48,9 +46,6 @@ Qed.
 Let tys : forall x X, x \in W_F X -> snd x \in cc_prod (B (fst x)) (fun _ => X).
 intros.
 apply snd_typ_sigma with (y:=fst x) in H; auto with *.
-red; red; intros.
-apply cc_prod_ext; auto with *.
-red; auto with *.
 Qed.
 
   Definition WFmap f x :=
@@ -180,11 +175,7 @@ Qed.
     (forall a, a \in X -> f a \in Y) ->
     WFmap f x \in W_F Y.
 unfold WFmap; intros.
-apply couple_intro_sigma.
- red; red; intros.
- apply cc_prod_ext; auto.
- red; intros; reflexivity.
-
+apply couple_intro_sigma; trivial.
  apply subset_elim1 in H0; apply fst_typ in H0; trivial.
 
  apply cc_prod_intro.
@@ -335,7 +326,6 @@ split; intros.
  rewrite snd_def; reflexivity.
 Qed.
 
-(* could use hd_eq and tl_eq... *)
 Lemma Wsup_inj : forall X Y x x',
   X \incl Wdom ->
   Y \incl Wdom ->
@@ -886,3 +876,29 @@ apply eq_intro; intros.
 Qed.
 
 End W_theory.
+
+(* More on W_F: *)
+(*
+Lemma W_F_morph : Proper (eq_set ==> (eq_set ==> eq_set) ==> eq_set ==> eq_set) W_F.
+do 4 red; intros.
+unfold W_F.
+apply sigma_morph; trivial.
+intros.
+apply cc_prod_ext; auto with *.
+red; trivial.
+Qed.
+*)
+
+Lemma W_F_ext : forall A A' B B' X X',
+  A == A' ->
+  eq_fun A B B' ->
+  X == X' ->
+  W_F A B X == W_F A' B' X'.
+unfold W_F; intros.
+apply sigma_morph; trivial.
+intros.
+apply cc_prod_ext; auto with *.
+red; auto.
+Qed.
+
+Hint Resolve wfm1.

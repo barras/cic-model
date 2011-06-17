@@ -434,7 +434,7 @@ apply eq_intro; intros.
 Qed.
 
 (* We only use the following instance of choice: *)
-Definition choice' := forall A:Type, unique_choice A set eq_set.
+Definition choice' := forall a:set, unique_choice {x|in_set x a} set eq_set.
 
 Lemma choice'_axiom : choice'.
 red; red; intros; apply choice_axiom; trivial.
@@ -449,7 +449,9 @@ Lemma repl_ax:
      (exists2 y, in_set y a & R y x).
 intros.
 pose (a' := {x|in_set x (subset a (fun x => exists y, R x y))}).
-elim (choice'_axiom a' (fun p y => R (proj1_sig p) y)); intros.
+elim (choice'_axiom (subset a (fun x=>exists y, R x y))
+        (fun p y => R (proj1_sig p) y)); intros.
+fold a' in x,H1.
 exists (repl1 _ x).
 intros.
 elim (repl1_ax _ x x0); intros.
@@ -499,10 +501,49 @@ elim (repl1_ax _ x x0); intros.
  apply (proj1 (proj1 (subset_ax _ _ _) (proj2_sig x))).
 Qed.
 
-(*
-Lemma choice'_necessary_for_repl : choice'.
+(* Attempt to prove that choice is necessary for replacement, by deriving
+   choice from replacement. Works only for relations that are morphisms for
+   set equality... *)
+Lemma choice'_almost_necessary_for_repl : choice'.
 red; red; intros.
-*)
+assert (Rext :
+        forall x x' y y', eq_set (proj1_sig x) (proj1_sig x') -> eq_set y y' ->
+        R x y -> R x' y') by admit. (* R is up to set equality... *)
+destruct repl_ax with
+  (a:=a) (R:=fun x y => exists h:in_set x a, R (exist _ x h) y).
+ intros.
+ destruct H4.
+ exists (in_reg _ _ _ H2 x0).
+ apply Rext with (3:=H4); trivial.
+
+ intros.
+ destruct H2.
+ destruct H3.
+ apply H0 with (1:=H2).
+ apply Rext with (3:=H3); apply eq_set_refl.
+
+ exists (fun y => union (subset x (fun z => R y z))).
+ intro.
+ destruct H with x0.
+ apply Rext with (3:=H2);[apply eq_set_refl|].
+ apply eq_set_ax; split; intros.
+  rewrite union_ax; exists x1; trivial.
+  rewrite subset_ax.
+  split.
+   apply H1.
+   exists (proj1_sig x0); [apply proj2_sig|].
+   exists (proj2_sig x0).
+   destruct x0; trivial.
+
+   exists x1; trivial; apply eq_set_refl.
+
+  rewrite union_ax in H3; destruct H3.
+  rewrite subset_ax in H4; destruct H4.
+  destruct H5.
+  apply eq_elim with x2; trivial.
+  apply eq_set_trans with (1:=H5).
+  apply H0 with (1:=H6); trivial.
+Qed.
 
 Notation "x \in y" := (in_set x y) (at level 60).
 Notation "x == y" := (eq_set x y) (at level 70).

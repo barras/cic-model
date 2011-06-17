@@ -133,6 +133,15 @@ split; intros.
  apply H0; auto with *.
 Qed.
 
+Definition typ_fun f A B := forall x, x \in A -> f x \in B.
+
+Instance typ_fun_morph0 : Proper (eq ==> eq_set ==> eq_set ==> iff) typ_fun.
+apply morph_impl_iff3; auto with *.
+do 6 red; intros.
+subst y.
+rewrite <- H1; rewrite <- H0 in H3; auto.
+Qed.
+
 
 (* Derived axioms *)
 
@@ -584,6 +593,56 @@ apply eq_intro; intros.
  exists (F x); trivial.
  rewrite replf_ax; trivial.
  exists x; auto with *.
+Qed.
+
+(* Conditional set *)
+
+  Definition cond_set P x := subset x (fun _ => P). 
+
+  Instance cond_set_morph : Proper (iff ==> eq_set ==> eq_set) cond_set.
+do 3 red; intros.
+apply subset_morph; trivial.
+red; auto.
+Qed.
+
+  Lemma cond_set_ax P x z :
+    z \in cond_set P x <-> (z \in x /\ P).
+unfold cond_set.
+rewrite subset_ax.
+split; destruct 1; split; trivial.
+ destruct H0; trivial.
+ exists z; auto with *.
+Qed.
+
+ (* A more precise morphism lemma *)
+ Lemma cond_set_morph2 : forall P Q x y,
+    (P <-> Q) ->
+    (P -> x == y) ->
+    cond_set P x == cond_set Q y.
+intros.
+apply subset_ext; intros.
+ rewrite <- H in H2.
+ apply subset_intro; trivial.
+ rewrite H0; trivial.
+
+ rewrite cond_set_ax in H1; destruct H1.
+ rewrite <- H0; trivial.
+
+ rewrite cond_set_ax in H1; destruct H1.
+ exists x0; auto with *.
+ rewrite <- H; trivial.
+Qed.
+
+  Lemma cond_set_ok (P:Prop) x : P -> cond_set P x == x.
+intro p.
+apply eq_intro; intros.
+ apply subset_elim1 in H; trivial.
+
+ apply subset_intro; trivial.
+Qed.
+
+  Lemma cond_set_elim_prop x P z :  z \in cond_set P x -> P.
+rewrite cond_set_ax; destruct 1; trivial.
 Qed.
 
 (* other properties of axioms *)

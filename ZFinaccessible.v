@@ -96,7 +96,7 @@ apply G_repl; trivial.
    intros.
    apply sup_morph; trivial.
    red; intros.
-   apply power_morph; apply H4; trivial.
+   apply power_morph; apply H6; trivial.
 
  apply G_singl; trivial.
  apply grot_ord_intro.
@@ -107,20 +107,20 @@ apply G_repl; trivial.
  intros.
  red in H1.
  revert H; apply H1.
-  do 3 red; intros.
-  rewrite H; rewrite H2; reflexivity.
+  intros.
+  rewrite <- H3 in H6; rewrite <- H4; auto.
 
   intros.
   apply G_union; trivial.
   apply G_replf; trivial.
    red; red; intros.
-   apply power_morph; apply H; trivial.
+   apply power_morph; apply H3; trivial.
 
    apply grot_ord_intro; trivial.
 
    intros.
    apply G_power; trivial.
-   apply H2; trivial.
+   apply H4; trivial.
    apply isOrd_trans with o'; trivial.
 Qed.
 

@@ -276,7 +276,7 @@ split; intros.
   apply B.eq_elim with (injU x); trivial.
   apply lift_in; trivial.
  (* Here again we need choice *)
- elim (S.choice'_axiom {p|S.in_set p x}
+ elim (S.choice'_axiom x
          (fun p y =>
           B.eq_set (F (exist _ (injU(proj1_sig p)) (H2 _ (proj2_sig p)))) (injU y)));
    intros.

@@ -4,7 +4,8 @@ Set Implicit Arguments.
 
 Require Import ZF ZFcoc ZFind_nat.
 Import IZF.
-(*Import ZFnats.*)
+
+(* Saturated sets constructions related to natural numbers *)
 
 Require Import basic Can Sat GenRealSN.
 Module Lc:=Lambda.
@@ -130,7 +131,7 @@ rewrite fNAT_def in H0 |- *; intros.
 apply H0; intros; auto.
 Qed.
 
-
+(* interp of 0 *)
 Definition ZE := Lc.Abs (Lc.Abs (Lc.Ref 1)).
 
 Lemma fNAT_ZE : forall A, inSAT ZE (fNAT A ZEROt).
@@ -143,6 +144,7 @@ apply prodSAT_intro; intros.
 unfold Lc.subst; rewrite Lc.simpl_subst; trivial; rewrite Lc.lift0; trivial.
 Qed.
 
+(* interp of successor *)
 Definition SU := Lc.Abs (Lc.Abs (Lc.Abs
     (Lc.App2 (Lc.Ref 0) (Lc.Ref 2) (Lc.App2 (Lc.Ref 2) (Lc.Ref 1) (Lc.Ref 0))))).
 
@@ -175,7 +177,7 @@ apply prodSAT_elim with (A:=P n).
 Qed.
 
 
-
+(* realizability relation of natural numbers *)
 Definition cNAT : family.
 exists (fun n =>
   interSAT (fun P:{P:family|forall k, inclSAT (fNAT P k) (P k)} =>

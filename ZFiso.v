@@ -3,20 +3,9 @@ Import IZF.
 
 Set Implicit Arguments.
 
-Definition typ_fct f A B := forall x, x \in A -> f x \in B.
-
-
-Instance typ_fct_morph0 : Proper (eq ==> eq_set ==> eq_set ==> iff) typ_fct.
-apply morph_impl_iff3; auto with *.
-do 6 red; intros.
-subst y.
-rewrite <- H1; rewrite <- H0 in H3; auto.
-Qed.
-
-
 Record iso_fun X Y f : Prop := {
   iso_funm : ext_fun X f;
-  iso_typ : forall x, x \in X -> f x \in Y;
+  iso_typ : typ_fun f X Y;
   iso_inj : forall x x', x \in X -> x' \in X -> f x == f x' -> x == x';
   iso_surj : forall y, y \in Y -> exists2 x, x \in X & f x == y
 }.
@@ -31,6 +20,7 @@ constructor; intros.
  do 2 red; intros.
  rewrite <- H in H3; auto.
 
+ red; intros.
  rewrite <- H in H3; rewrite <- H0; rewrite <- (H1 x x H3 (reflexivity _)).
  apply (iso_typ H2); trivial.
 
@@ -64,6 +54,7 @@ constructor; intros.
  rewrite H2; symmetry; apply H0.
  rewrite <- H2; trivial.
 
+ red; intros.
  rewrite H0; trivial.
  rewrite <- H; trivial.
 
@@ -158,6 +149,7 @@ constructor; intros.
  red; intros.
  rewrite H1; reflexivity.
 
+ red; intros.
  apply iso_inv_typ with (1:=H); trivial.
 
  apply (iso_funm H) in H2.
@@ -188,6 +180,7 @@ constructor; intros.
 
    apply (iso_funm H0); trivial.
 
+ red; intros.
  rewrite <- H; trivial.
  apply (iso_typ H1).
  apply (iso_typ H0); trivial.
@@ -225,10 +218,10 @@ unfold comp_iso; red; intros; auto.
 Qed.
 
 Lemma comp_iso_typ X Y Z f g :
-  typ_fct f X Y ->
-  typ_fct g Y Z ->
-  typ_fct (comp_iso f g) X Z.
-unfold typ_fct, comp_iso; auto.
+  typ_fun f X Y ->
+  typ_fun g Y Z ->
+  typ_fun (comp_iso f g) X Z.
+unfold typ_fun, comp_iso; auto.
 Qed.
 
 
@@ -241,7 +234,7 @@ Lemma iso_intro : forall X Y f g,
   iso_fun X Y f.
 intros.
 constructor; trivial.
- intros.
+ red; intros.
  apply H0; trivial.
 
  intros.
@@ -272,10 +265,10 @@ apply sum_case_ext.
 Qed.
 
 Lemma sum_isomap_typ X X' Y Y' f g :
-  typ_fct f X X' ->
-  typ_fct g Y Y' ->
-  typ_fct (sum_isomap f g) (sum X Y) (sum X' Y').
-unfold typ_fct, sum_isomap; intros tyf tyg x tyx.
+  typ_fun f X X' ->
+  typ_fun g Y Y' ->
+  typ_fun (sum_isomap f g) (sum X Y) (sum X' Y').
+unfold typ_fun, sum_isomap; intros tyf tyg x tyx.
 apply sum_ind with (3:=tyx); intros.
  rewrite sum_case_inl0; eauto.
  apply inl_typ.
@@ -369,8 +362,8 @@ apply sum_case_morph; auto with *.
 Qed.
 
 Lemma sum_isocomm_typ X Y:
-  typ_fct sum_isocomm (sum X Y) (sum Y X).
-unfold typ_fct, sum_isocomm; intros.
+  typ_fun sum_isocomm (sum X Y) (sum Y X).
+unfold typ_fun, sum_isocomm; intros.
 apply sum_ind with (3:=H); intros.
  rewrite H1; rewrite sum_case_inl; trivial with *.
  apply inr_typ; trivial.
@@ -438,8 +431,8 @@ do 2 red; intros; apply sum_case_morph; auto with *.
 Qed.
 
 Lemma sum_isoassoc_typ : forall X Y Z,
-  typ_fct sum_isoassoc (sum (sum X Y) Z) (sum X (sum Y Z)).
-unfold typ_fct, sum_isoassoc; intros.
+  typ_fun sum_isoassoc (sum (sum X Y) Z) (sum X (sum Y Z)).
+unfold typ_fun, sum_isoassoc; intros.
 apply sum_ind with (3:=H); intros.
  rewrite H1; auto with *.
  rewrite sum_case_inl; trivial with *.
@@ -543,10 +536,10 @@ Qed.
 Lemma sigma_isomap_typ A A' B B' f g :
   ext_fun A B ->
   ext_fun A' B' ->
-  typ_fct f A A' ->
-  (forall x, x \in A -> typ_fct (g x) (B x) (B' (f x))) ->
-  typ_fct (sigma_isomap f g) (sigma A B) (sigma A' B').
-unfold typ_fct, sigma_isomap; intros eB eB' tyf tyg x tyx.
+  typ_fun f A A' ->
+  (forall x, x \in A -> typ_fun (g x) (B x) (B' (f x))) ->
+  typ_fun (sigma_isomap f g) (sigma A B) (sigma A' B').
+unfold typ_fun, sigma_isomap; intros eB eB' tyf tyg x tyx.
 assert (fst x \in A).
  apply fst_typ_sigma in tyx; trivial.
 apply couple_intro_sigma; auto.
@@ -566,7 +559,7 @@ constructor; intros.
  apply sigma_isomap_morph; intros; auto.
  apply (iso_funm H2).
 
- revert H4; apply sigma_isomap_typ; intros; trivial.
+ apply sigma_isomap_typ; intros; trivial.
   exact (iso_typ H2).
   exact (iso_typ (H3 _ _ H4 (reflexivity _))).
 
@@ -610,6 +603,7 @@ Lemma sigma_iso_fun_1_l : forall x F,
   ext_fun (singl x) F ->
   iso_fun (sigma (singl x) F) (F x) snd.
 constructor; intros; auto with *.
+ red; intros.
  apply snd_typ_sigma with (2:=H0); trivial.
  apply fst_typ_sigma in H0.
  apply singl_elim in H0; auto with *.
@@ -636,6 +630,7 @@ Lemma sigma_iso_fun_1_l' : forall x F,
   iso_fun (F x) (sigma (singl x) F) (couple x).
 intros.
 constructor; intros; auto with *.
+ red; intros.
  apply couple_intro_sigma; auto.
  apply singl_intro.
 
@@ -660,6 +655,7 @@ Lemma sigma_iso_fun_1_r : forall A B,
   iso_fun (sigma A B) A fst.
 intros.
 constructor; intros; auto with *.
+ red; intros.
  apply fst_typ_sigma in H1; trivial.
 
  assert (forall x y y', x \in A -> y \in B x -> y' \in B x -> y == y').
@@ -688,7 +684,7 @@ Definition sigma_1r_iso f x := couple x (f x).
 Lemma sigma_1r_iso_typ A B f :
   ext_fun A B ->
   (forall x, x \in A -> f x \in B x) ->
-  typ_fct (sigma_1r_iso f) A (sigma A B).
+  typ_fun (sigma_1r_iso f) A (sigma A B).
 intros eB tyf x H.
 unfold sigma_1r_iso.
 apply couple_intro_sigma; auto.
@@ -704,7 +700,7 @@ unfold sigma_1r_iso.
 constructor; intros; auto with *.
  apply sigma_1r_iso_typ; trivial.
  intros.
- apply (iso_typ (H1 _ H3) (singl_intro empty)).
+ apply (iso_typ (H1 _ H2) (singl_intro empty)).
 
  apply couple_injection in H4; destruct H4; trivial.
 
@@ -729,7 +725,7 @@ Qed.
 Lemma sigma_isoassoc_typ A B C :
   ext_fun A B ->
   ext_fun2 A B C ->
-  typ_fct sigma_isoassoc
+  typ_fun sigma_isoassoc
     (sigma A (fun x => sigma (B x) (fun y => C x y)))
     (sigma (sigma A B) (fun p => C (fst p) (snd p))).
 intros eB eC x tyx.
@@ -853,7 +849,7 @@ Qed.
 Lemma sum_sigma_iso_typ A1 A2 B1 B2 :
   ext_fun A1 B1 ->
   ext_fun A2 B2 ->
-  typ_fct sum_sigma_iso
+  typ_fun sum_sigma_iso
     (sum (sigma A1 B1) (sigma A2 B2))
     (sigma (sum A1 A2) (sum_case B1 B2)).
 intros eB1 eB2 x tyx.
@@ -1016,9 +1012,9 @@ apply (iso_funm H0); trivial.
 Qed.
 
 Lemma sigma_isomap_typ_prod A A' B B' f g :
-  typ_fct f A A' ->
-  typ_fct g B B' ->
-  typ_fct (sigma_isomap f (fun _ => g)) (prodcart A B) (prodcart A' B').
+  typ_fun f A A' ->
+  typ_fun g B B' ->
+  typ_fun (sigma_isomap f (fun _ => g)) (prodcart A B) (prodcart A' B').
 red; intros.
 rewrite sigma_nodep in H1|-*.
 revert H1; apply sigma_isomap_typ; trivial.
@@ -1031,6 +1027,7 @@ constructor; intros.
  do 2 red; intros.
  rewrite H0; reflexivity.
 
+ red; intros.
  apply couple_intro.
   apply snd_typ in H; trivial.
   apply fst_typ in H; trivial.
@@ -1075,7 +1072,7 @@ Definition prodcart_sigma_iso q :=
 Lemma prodcart_sigma_iso_typ A1 A2 B1 B2 :
   ext_fun A1 B1 ->
   ext_fun A2 B2 ->
-  typ_fct prodcart_sigma_iso
+  typ_fun prodcart_sigma_iso
     (prodcart (sigma A1 B1) (sigma A2 B2))
     (sigma (prodcart A1 A2) (fun p => prodcart (B1 (fst p)) (B2 (snd p)))).
 intros eB1 eB2 x H.
@@ -1169,7 +1166,7 @@ Lemma cc_prod_isomap_morph A B A' A'' f f' g g' :
   A' == A'' ->
   ext_fun A B ->
   eq_fun A' f f' ->
-  typ_fct f A' A ->
+  typ_fun f A' A ->
   (forall x x' y y', x \in A' -> x == x' -> y \in B (f x) -> y == y' ->
    g (f x) y == g' (f' x') y') ->
   eq_fun (cc_prod A B) (cc_prod_isomap A' f g) (cc_prod_isomap A'' f' g').
@@ -1185,9 +1182,9 @@ Lemma cc_prod_isomap_typ A A' B B' f g :
   ext_fun A' B' ->
   ext_fun A' f ->
   ext_fun2 A B g ->
-  typ_fct f A' A ->
-  (forall x, x \in A' -> typ_fct (g (f x)) (B (f x)) (B' x)) ->
-  typ_fct (cc_prod_isomap A' f g) (cc_prod A B) (cc_prod A' B').
+  typ_fun f A' A ->
+  (forall x, x \in A' -> typ_fun (g (f x)) (B (f x)) (B' x)) ->
+  typ_fun (cc_prod_isomap A' f g) (cc_prod A B) (cc_prod A' B').
 intros eB' fm gm tyf tyg x H. 
 unfold cc_prod_isomap.
 apply cc_prod_intro; trivial; intros.
@@ -1225,7 +1222,7 @@ assert (gext : forall h h' x x',
 unfold cc_prod_isomap; constructor; intros.
  apply cc_prod_isomap_morph; intros; auto with *.
 
- revert H4; apply cc_prod_isomap_typ; intros; trivial.
+ apply cc_prod_isomap_typ; intros; trivial.
  exact (iso_typ (H3 _ H4)).
 
  rewrite (cc_eta_eq _ _ _ H4).
@@ -1313,6 +1310,7 @@ Lemma cc_prod_iso_fun_0_l : forall a F,
   iso_fun (cc_prod empty F) (singl a) (fun _ => a).
 intros.
 constructor; intros; auto with *.
+ red; intros.
  apply singl_intro.
 
  rewrite (cc_eta_eq _ _ _ H).
@@ -1339,6 +1337,7 @@ constructor; intros.
  red; intros.
  apply empty_ax in H1; contradiction.
 
+ red; intros.
  apply cc_prod_intro; intros; auto with *.
   do 2 red; intros.
   apply empty_ax in H0; contradiction.
@@ -1365,6 +1364,7 @@ unfold cc_prod_iso1l; constructor; intros.
  do 2 red; intros.
  rewrite H1; reflexivity.
 
+ red; intros.
  apply cc_prod_elim with (1:=H0).
  apply singl_intro.
 
@@ -1401,6 +1401,7 @@ constructor; intros.
  apply cc_lam_ext; intros; auto with *.
  red; trivial.
 
+ red; intros.
  apply cc_prod_intro; intros.
   do 2 red; reflexivity.
 
@@ -1436,6 +1437,7 @@ Lemma cc_prod_iso_fun_1_r : forall A F,
 constructor; intros.
  do 2 red; reflexivity.
 
+ red; intros.
  apply singl_intro.
 
  rewrite (cc_eta_eq _ _ _ H1).
@@ -1465,7 +1467,7 @@ Definition cc_prod_isocurry A B :=
 Lemma cc_prod_isocurry_typ A B C :
   ext_fun A B ->
   ext_fun2 A B C ->
-  typ_fct (cc_prod_isocurry A B)
+  typ_fun (cc_prod_isocurry A B)
     (cc_prod A (fun x => cc_prod (B x) (fun y => C x y)))
     (cc_prod (sigma A B) (fun p => C (fst p) (snd p))).
 intros eB eC x H.
@@ -1576,7 +1578,7 @@ Definition cc_prod_sigma_iso A :=
 Lemma cc_prod_sigma_iso_typ A B C :
   ext_fun A B ->
   ext_fun2 A B C ->
-  typ_fct (cc_prod_sigma_iso A)
+  typ_fun (cc_prod_sigma_iso A)
     (cc_prod A (fun x => sigma (B x) (fun y => C x y)))
     (sigma (cc_prod A B) (fun f => cc_prod A (fun x => C x (cc_app f x)))).
 intros eB eC x H.
@@ -1741,7 +1743,7 @@ Qed.
 Lemma prodcart_cc_prod_iso_typ A1 A2 F1 F2 :
   ext_fun A1 F1 ->
   ext_fun A2 F2 ->
-  typ_fct (prodcart_cc_prod_iso (sum A1 A2))
+  typ_fun (prodcart_cc_prod_iso (sum A1 A2))
     (prodcart (cc_prod A1 F1) (cc_prod A2 F2))
     (cc_prod (sum A1 A2) (sum_case F1 F2)).
 intros eF1 eF2 x H.
@@ -1997,7 +1999,8 @@ constructor; intros.
  apply (iso_funm (iso' _ H)); trivial.
  rewrite TI_mono_succ; trivial.
  apply isOrd_inv with o; trivial.
- 
+
+ red; intros. 
  apply TI_elim in H; trivial.
  destruct H.
  apply TI_intro with x0; trivial.
@@ -2116,8 +2119,8 @@ destruct
   let Q:=fun o f => iso_fun (TI F o) (TI G o) (cc_app f) in
   let F:=fun o f => cc_lam (TI F (osucc o)) (g (cc_app f)) in
   fun Tm Tc Ts Qm Qc Fm Ftyp Tstb =>
-  conj (REC_typ T Tm Tc Ts Q Qm Qc F Fm Ftyp Tstb o oo)
-       (REC_expand T Tm Tc Ts Q Qm Qc F Fm Ftyp Tstb o oo))
+  conj (REC_typ o oo T Tm Tc Ts Q Qm Qc F Fm Ftyp Tstb)
+       (REC_expand o oo T Tm Tc Ts Q Qm Qc F Fm Ftyp Tstb))
  as (isoTI,expTI); intros; auto.
  apply TI_morph.
 
@@ -2131,11 +2134,11 @@ destruct
 
  apply TI_stable2; trivial.
 
- revert H2; apply iso_fun_morph; auto with *.
+ revert H3; apply iso_fun_morph; auto with *.
   apply TI_morph; trivial.
   apply TI_morph; trivial.
   red; intros.
-  rewrite <- H3; auto.
+  rewrite <- H4; auto.
 
   apply iso_cont; trivial.
 
@@ -2152,8 +2155,8 @@ destruct
  split.
   apply is_cc_fun_lam; auto.
 
-  apply isog in H1.
-  revert H1; apply iso_fun_morph.
+  apply isog in H2.
+  revert H2; apply iso_fun_morph.
    symmetry; apply TI_mono_succ; eauto using isOrd_inv.
    symmetry; apply TI_mono_succ; eauto using isOrd_inv.
 
@@ -2161,26 +2164,26 @@ destruct
    rewrite cc_beta_eq; auto.
     apply (geq (TI F o0)); trivial.
     red; intros.
-    rewrite H4; reflexivity.
+    rewrite H5; reflexivity.
 
-    rewrite <- H2; rewrite TI_mono_succ; auto.
+    rewrite <- H3; rewrite TI_mono_succ; auto.
 
  (* irrel : *)
  red; intros.
  red; intros.
- destruct H0 as (oo0,(ofun,oiso)); destruct H1 as (oo',(o'fun,o'iso)).
+ destruct H1 as (oo0,(ofun,oiso)); destruct H2 as (oo',(o'fun,o'iso)).
  rewrite cc_beta_eq; auto.
  rewrite cc_beta_eq; auto.
   apply (geq (TI F o0)); auto with *.
    red; intros.
-   rewrite <- H1; auto.
+   rewrite <- H2; auto.
 
    rewrite <- TI_mono_succ; auto.
 
-  revert H3; apply TI_mono; auto.
+  revert H4; apply TI_mono; auto.
   red; intros.
   apply ole_lts; eauto using isOrd_inv.
-  apply olts_le in H0.
+  apply olts_le in H1.
   transitivity o0; trivial.
 
 (* main goal *)

@@ -139,6 +139,8 @@ Definition cc_prod (x:set) (y:set->set) : set :=
   replf (dep_func x y)
     (fun f => cc_lam x (fun x' => app f x')).
 
+Definition cc_arr A B := cc_prod A (fun _ => B).
+
 Lemma cc_prod_fun1 : forall A x,
   ext_fun A (fun f => cc_lam x (fun x' => app f x')).
 Proof.
@@ -202,6 +204,22 @@ rewrite cc_beta_eq; auto.
 
  do 2 red; intros.
  rewrite H2; reflexivity.
+Qed.
+
+Lemma cc_arr_intro : forall A B F,
+  ext_fun A F ->
+  (forall x, x \in A -> F x \in B) ->
+  cc_lam A F \in cc_arr A B.
+unfold cc_arr; intros.
+apply cc_prod_intro; trivial.
+Qed.
+
+Lemma cc_arr_elim : forall f x A B,
+  f \in cc_arr A B -> 
+  x \in A ->
+  cc_app f x \in B.
+intros.
+apply cc_prod_elim with (1:=H); trivial.
 Qed.
 
 (* Eta: *)
@@ -317,3 +335,81 @@ specialize H with (1 := H1).
 specialize power_elim with (1 := H) (2 := H2); intro.
 apply singl_elim; trivial.
 Qed.
+
+(* mapping (meta-level) propositions to props *)
+
+Definition P2p (P:Prop) := cond_set P (singl prf_trm).
+Definition p2P p := prf_trm \in p.
+
+Lemma P2p_typ : forall P, P2p P \in props.
+unfold P2p; intros.
+apply power_intro; intros.
+rewrite cond_set_ax in H; destruct H; trivial.
+Qed.
+
+Lemma P2p2P : forall P, p2P (P2p P) <-> P.
+unfold P2p, p2P; intros.
+rewrite cond_set_ax.
+split; intros.
+ destruct H; trivial.
+
+ split; trivial; apply singl_intro.
+Qed.
+
+Lemma p2P2p : forall p, p \in props -> P2p (p2P p) == p.
+unfold p2P, P2p; intros.
+apply eq_intro; intros.
+ rewrite cond_set_ax in H0; destruct H0.
+ apply singl_elim in H0.
+ rewrite H0; trivial.
+
+ rewrite cond_set_ax; split.
+  apply power_elim with (1:=H); trivial.
+
+  apply in_reg with z; trivial.
+  apply singl_elim.
+  apply power_elim with (1:=H); trivial.
+Qed.
+
+Lemma P2p_forall A (B:set->Prop) :
+   (forall x x', x \in A -> x == x' -> (B x <-> B x')) ->
+   P2p (forall x, x \in A -> B x) == cc_prod A (fun x => P2p (B x)).
+intros.
+unfold P2p.
+apply eq_intro; intros.
+ rewrite cond_set_ax in H0; destruct H0.
+ apply singl_elim in H0.
+ rewrite H0.
+ unfold prf_trm; rewrite <- (cc_impredicative_lam A (fun _ => prf_trm)); auto with *.
+ 2:intros; reflexivity.
+ apply cc_prod_intro; intros; auto with *.
+  do 2 red; intros.
+  apply cond_set_morph; auto with *.
+
+  rewrite cond_set_ax; split; auto; apply singl_intro.
+
+ rewrite cond_set_ax.
+ split.
+  rewrite cc_eta_eq with (1:=H0).
+  rewrite cc_impredicative_lam.
+   apply singl_intro.
+
+   do 2 red; intros.
+   apply cc_app_morph; auto with *.
+
+   intros.
+   specialize cc_prod_elim with (1:=H0) (2:=H1); intro.
+   rewrite cond_set_ax in H2; destruct H2.
+   apply singl_elim in H2; trivial.
+
+  intros.
+  specialize cc_prod_elim with (1:=H0) (2:=H1); intro.
+  rewrite cond_set_ax in H2; destruct H2; trivial.
+Qed.
+
+(*
+Lemma cc_valid_choice : forall A B R,
+  (forall x x' y y', x \in A -> x == x' -> y \in B --> y == y' -> R x y -> R x' y') ->
+  (forall x, x \in A -> exists2 y, y \in B & R x y) ->
+  { f | f \in cc_prod A (fun _ => B) & (forall x, x \in A -> R x (f x)) }.
+*)
