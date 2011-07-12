@@ -12,18 +12,17 @@ Section TransfiniteIteration.
   (* (F o x) produces value for stage o+1 given x the value for stage o *)
   Variable F : set -> set -> set.
   Hypothesis Fmorph : forall o o' x x',
-    isOrd o -> o == o' -> x == x' -> F o x == F o' x'.
+    o == o' -> x == x' -> F o x == F o' x'.
 (*  Hypothesis Fmorph : Proper (eq_set ==> eq_set ==> eq_set) F.*)
 
 Let G f o := sup o (fun o' => F o' (f o')).
 
 Lemma Gmorph : forall o o' f f',
-    isOrd o -> o == o' -> eq_fun o f f' -> G f o == G f' o'.
+    o == o' -> eq_fun o f f' -> G f o == G f' o'.
 unfold G; intros.
 apply sup_morph; trivial.
 red; intros.
 apply Fmorph; auto.
-apply isOrd_inv with o; trivial.
 Qed.
 Hint Resolve Gmorph.
 
@@ -37,7 +36,6 @@ Qed.
   Lemma TIO_fun_ext : forall x, isOrd x -> ext_fun x (fun y => F y (TIO y)).
 do 2 red; intros.
 apply Fmorph; trivial.
- apply isOrd_inv with x; trivial.
 apply TIO_morph; trivial.
 Qed.
 Hint Resolve TIO_fun_ext.
@@ -107,7 +105,7 @@ Section IterMonotone.
 
   Variable F : set -> set -> set.
   Hypothesis Fmorph : forall o o' x x',
-    isOrd o -> o == o' -> x == x' -> F o x == F o' x'.
+    o == o' -> x == x' -> F o x == F o' x'.
 (*  Variable Fmorph : morph2 F.*)
   Variable Fmono : forall o o', isOrd o -> isOrd o' -> o \incl o' ->
     TIO F o \incl TIO F o' -> F o (TIO F o) \incl F o' (TIO F o').

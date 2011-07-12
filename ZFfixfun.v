@@ -1,53 +1,166 @@
-Require Import ZF ZFrelations ZFnats ZFord.
+Require Import ZF ZFrelations ZFnats ZFord ZFcoc.
 Import IZF.
+
+Definition incl_fam A X Y :=
+  forall a a', a \in A -> a == a' -> X a \incl Y a'.
+
+Instance incl_fam_trans : forall A, Transitive (incl_fam A).
+red; red; intros.
+transitivity (y a); auto with *.
+Qed.
+
+Definition mono_fam A F :=
+  forall X Y, morph1 X -> morph1 Y -> incl_fam A X Y -> incl_fam A (F X) (F Y).
 
 Section IterMonotone.
 
-  Variable F : set -> set.
-  Variable Fmono : Proper (incl_set ==> incl_set) F.
+  Variable A : set.
+  Variable F : (set -> set) -> set -> set.
+  Variable Fmono : mono_fam A F.
 
-  Instance Fmono_morph: Proper (eq_set ==> eq_set) F.
-do 2 red; intros.
-apply eq_intro; intros.
- apply Fmono with x; trivial.
- red; intros.
- rewrite <- H; trivial.
+  Lemma FFmono_ext: forall X Y, morph1 X -> morph1 Y -> eq_fun A X Y -> eq_fun A (F X) (F Y).
+red; intros.
+apply incl_eq.
+ apply Fmono; trivial.
+ red; red; intros.
+ revert H6; apply eq_elim; auto.
 
- apply Fmono with y; trivial.
- red; intros.
- rewrite H; trivial.
+ rewrite H3 in H2; symmetry in H3.
+ apply Fmono; trivial.
+ red; red; intros.
+ revert H6; apply eq_elim; symmetry; apply H1; auto with *.
+ rewrite <- H5; trivial.
 Qed.
-Hint Resolve Fmono_morph.
+Hint Resolve FFmono_ext.
 
-  Lemma TI_mono : increasing (TI F).
+  Definition TIF o :=
+    cc_app (TR (fun f o => cc_lam A (fun a => sup o (fun o' => F (cc_app (f o')) a))) o).
+
+  Let m1 : forall o o' f f', isOrd o -> o == o' -> eq_fun o f f' ->
+    cc_lam A (fun a => sup o (fun o' => F (cc_app (f o')) a)) ==
+    cc_lam A (fun a => sup o' (fun o' => F (cc_app (f' o')) a)).
+intros.
+apply cc_lam_ext; intros; auto with *.
+red; intros.
+apply sup_morph; trivial.
+red; intros.
+apply FFmono_ext; trivial.
+ apply cc_app_morph.
+ transitivity (f' x0); auto with *.
+ symmetry; auto with *.
+
+ apply cc_app_morph.
+ rewrite H5 in H4.
+ transitivity (f x'0); auto with *.
+ symmetry; auto with *.
+
+ red; intros.
+ apply cc_app_morph; auto with *.
+Qed.
+
+  Instance TIF_morph : morph2 TIF.
+unfold TIF; do 3 red; intros.
+apply cc_app_morph; trivial.
+apply TR_morph; auto with *.
+Qed.
+
+  Let m2: forall a a' o o', a \in A -> a == a' -> isOrd o -> o == o' ->
+    F (TIF o) a == F (TIF o') a'.
+intros.
+apply FFmono_ext; auto with *.
+ apply TIF_morph; auto with *.
+ apply TIF_morph; auto with *.
+
+ red; intros; apply TIF_morph; auto.
+Qed.
+
+  Lemma TIF_eq : forall o a,
+    isOrd o ->
+    a \in A ->
+    TIF o a == sup o (fun o' => F (TIF o') a).
+intros.
+unfold TIF.
+rewrite TR_eqn; intros; auto.
+ rewrite cc_beta_eq; auto with *.
+ do 2 red; intros.
+ apply sup_morph; auto with *.
+ red; intros.
+ apply m2; trivial.
+ apply isOrd_inv with o; trivial.
+
+ apply cc_lam_ext; auto with *.
+ red; intros.
+ apply sup_morph; trivial.
+ red; intros.
+ apply FFmono_ext; trivial.
+  apply cc_app_morph; reflexivity.
+  apply cc_app_morph; reflexivity.
+  red; intros; apply cc_app_morph; auto.
+Qed.
+
+  Lemma TIF_intro : forall o o' a x,
+    isOrd o ->
+    lt o' o ->
+    a \in A ->
+    x \in F (TIF o') a ->
+    x \in TIF o a.
+intros.
+rewrite TIF_eq; trivial.
+rewrite sup_ax; auto.
+ exists o'; trivial.
+
+ do 2 red; intros; apply m2; auto with *.
+ apply isOrd_inv with o; trivial.
+Qed.
+
+  Lemma TIF_elim : forall o x a,
+    isOrd o ->
+    a \in A ->
+    x \in TIF o a ->
+    exists2 o', lt o' o & x \in F (TIF o') a.
+intros.
+rewrite TIF_eq in H1; trivial.
+rewrite sup_ax in H1; auto.
+do 2 red; intros; apply m2; auto with *.
+apply isOrd_inv with o; trivial.
+Qed.
+
+  Lemma TIF_mono : forall a, a \in A -> increasing (fun o => TIF o a).
 do 2 red; intros.
-apply TI_elim in H2; intros; auto with *.
-destruct H2.
-apply TI_intro with x0; auto with *.
-apply H1 in H2; trivial.
+apply TIF_elim in H3; intros; auto with *.
+destruct H3.
+apply TIF_intro with x0; auto with *.
+apply H2 in H3; trivial.
 Qed.
 
   Lemma TI_incl : forall o, isOrd o ->
     forall o', lt o' o ->
-    TI F o' \incl TI F o.
+    forall a, a \in A -> 
+    TIF o' a \incl TIF o a.
 intros.
-apply TI_mono; trivial; auto.
+apply TIF_mono; trivial; auto.
  apply isOrd_inv with o; trivial.
  red; intros; apply isOrd_trans with o'; trivial.
 Qed.
 
-  Lemma TI_mono_succ : forall o,
+  Lemma TIF_mono_succ : forall o a,
     isOrd o ->
-    TI F (osucc o) == F (TI F o).
+    a \in A ->
+    TIF (osucc o) a == F (TIF o) a.
 intros.
-assert (Fext : ext_fun (osucc o) (fun o' => F (TI F o'))).
- generalize (isOrd_succ _ H); auto.
-rewrite TI_eq; auto.
+assert (Fext : ext_fun (osucc o) (fun o' => F (TIF o') a)).
+ do 2 red; intros; apply m2; auto with *.
+ apply isOrd_inv with (osucc o); auto.
+rewrite TIF_eq; auto.
  apply eq_intro; intros.
-  rewrite sup_ax in H0; trivial.
-  destruct H0.
-  apply Fmono with (TI F x); trivial.
-  apply TI_mono; trivial.
+  rewrite sup_ax in H1; trivial.
+  destruct H1.
+  revert H2; apply Fmono; auto with *.
+   apply TIF_morph; auto with *.
+   apply TIF_morph; auto with *.
+  red; intros.
+  rewrite <- H3.
+  apply TIF_mono; trivial.
    apply isOrd_inv with (osucc o); auto.
    apply olts_le; trivial.
 
@@ -56,156 +169,164 @@ rewrite TI_eq; auto.
  apply lt_osucc; trivial.
 Qed.
 
-  Lemma TI_mono_eq : forall o,
+  Lemma TIF_mono_eq : forall o a,
     isOrd o ->
-    TI F o == sup o (fun o' => TI F (osucc o')).
+    a \in A ->
+    TIF o a == sup o (fun o' => TIF (osucc o') a).
 intros.
-rewrite TI_eq; auto.
+rewrite TIF_eq; auto.
 apply sup_morph; auto with *.
 red; intros.
-rewrite <- TI_mono_succ.
- apply TI_morph.
- rewrite H1; reflexivity.
+rewrite <- TIF_mono_succ; trivial.
+ apply TIF_morph; auto with *.
+ rewrite H2; reflexivity.
 
  apply isOrd_inv with o; trivial.
 Qed.
 
-  Lemma TI_pre_fix : forall fx o,
+  Lemma TIF_pre_fix : forall fx o,
+     morph1 fx ->
      isOrd o ->
-     F fx \incl fx ->
-     TI F o \incl fx.
+     incl_fam A (F fx) fx ->
+     incl_fam A (TIF o) fx.
 intros.
-induction H using isOrd_ind; intros.
+induction H0 using isOrd_ind; intros.
 red; intros.
-apply H0.
-elim TI_elim with (3:=H3); intros; auto with *.
-apply Fmono with (TI F x); auto.
+transitivity (F fx a').
+2:rewrite H5 in H4; auto with *.
+red; intros.
+elim TIF_elim with (3:=H6); intros; auto with *.
+revert H8; apply Fmono; auto with *.
+apply TIF_morph; auto with *.
 Qed.
 
 
 Section BoundedOperator.
 
-Variable A : set.
-Hypothesis Ftyp : forall X, X \incl A -> F X \incl A.
+Variable B : set.
+Hypothesis Ftyp : forall X, morph1 X ->
+  (forall a, a \in A -> X a \incl B) ->
+  forall a, a \in A -> F X a \incl B.
 
-Definition fsub a := subset A (fun b => forall X, X \incl A -> a \in F X -> b \in X).
+Definition fsub a' x :=
+  subset B (fun b => forall a X, morph1 X -> (forall a, a \in A -> X a \incl B) ->
+                     x \in F X a -> b \in X a').
 
-Instance fsub_morph : morph1 fsub.
-unfold fsub; do 2 red; intros.
+Instance fsub_morph : morph2 fsub.
+unfold fsub; do 3 red; intros.
 apply subset_morph; auto with *.
 red; intros.
+apply fa_morph; intro a.
 apply fa_morph; intro X.
-rewrite H; reflexivity.
+apply fa_morph; intro.
+apply fa_morph; intro a'.
+rewrite H; rewrite H0; reflexivity.
 Qed.
 
-Definition Ffix := subset A (fun a => exists2 o, isOrd o & a \in TI F o).
+Definition Ffix a := subset B (fun b => exists2 o, isOrd o & b \in TIF o a).
 
-Lemma Ffix_inA : Ffix \incl A.
+Lemma Ffix_in_dom : forall a, a \in A -> Ffix a \incl B.
 red; intros.
-apply subset_elim1 in H; trivial.
+apply subset_elim1 in H0; trivial.
 Qed.
 
-Lemma TI_Ffix : forall o, isOrd o -> TI F o \incl Ffix.
+Lemma TIF_Ffix : forall o a, isOrd o -> a \in A -> TIF o a \incl Ffix a.
 intros.
+revert a H0.
 apply isOrd_ind with (2:=H); intros.
 red; intros.
-apply TI_elim in H3; auto with *.
-destruct H3.
+apply TIF_elim in H4; auto with *.
+destruct H4.
 unfold Ffix.
 apply subset_intro.
- revert z H4; apply Ftyp.
- transitivity Ffix; auto.
- apply Ffix_inA.
+ revert z H5; apply Ftyp; trivial.
+  apply TIF_morph; auto with *.
+ intros.
+ transitivity (Ffix a0); auto.
+ apply Ffix_in_dom; trivial.
 exists (osucc x); auto.
  apply isOrd_succ; apply isOrd_inv with y; trivial.
 
- rewrite TI_mono_succ; auto.
+ rewrite TIF_mono_succ; auto.
  apply isOrd_inv with y; trivial.
 Qed.
 
-Lemma Ffix_def : forall a, a \in Ffix <-> exists2 o, isOrd o & a \in TI F o.
+Lemma Ffix_def : forall a b, a \in A ->
+  (b \in Ffix a <-> exists2 o, isOrd o & b \in TIF o a).
 unfold Ffix; intros.
 rewrite subset_ax.
 split; intros.
- destruct H.
  destruct H0.
  destruct H1.
+ destruct H2.
  exists x0; trivial.
- rewrite H0; trivial.
+ rewrite H1; trivial.
 
- destruct H.
+ destruct H0.
  split.
-  apply Ffix_inA.
-  revert a H0; apply TI_Ffix; trivial.
+  apply (Ffix_in_dom a); trivial.
+  revert b H1; apply TIF_Ffix; trivial.
 
-  exists a; auto with *.
+  exists b; auto with *.
   exists x; trivial.
 Qed.
 
-Lemma fsub_elim : forall x y o,
+Lemma fsub_elim : forall x y o a a',
+  a \in A ->
+  a' \in A ->
   isOrd o ->
-  y \in TI F o ->
-  x \in fsub y ->
-  exists2 o', lt o' o & x \in TI F o'.
+  y \in TIF o a ->
+  x \in fsub a' y ->
+  exists2 o', lt o' o & x \in TIF o' a'.
 intros.
-unfold fsub in H1; rewrite subset_ax in H1.
-destruct H1 as (?,(x',?,?)).
-apply TI_elim in H0; trivial.
-destruct H0.
+unfold fsub in H3; rewrite subset_ax in H3.
+destruct H3 as (?,(x',?,?)).
+apply TIF_elim in H2; trivial.
+destruct H2.
 exists x0; trivial.
-rewrite H2; apply H3; trivial.
-transitivity Ffix;[apply TI_Ffix|apply Ffix_inA].
-apply isOrd_inv with o; trivial.
+rewrite H4; apply H5 with a; trivial.
+ apply TIF_morph; auto with *.
+
+ intros.
+ transitivity (Ffix a0);[apply TIF_Ffix|apply Ffix_in_dom]; trivial.
+ apply isOrd_inv with o; trivial.
 Qed.
 
-Lemma Ffix_fsub_inv : forall x y,
-  x \in Ffix ->
-  y \in fsub x ->
-  y \in Ffix.
+Lemma Ffix_fsub_inv : forall x y a a',
+  a \in A ->
+  a' \in A ->
+  x \in Ffix a ->
+  y \in fsub a' x ->
+  y \in Ffix a'.
 intros.
-rewrite Ffix_def in H|-*.
-destruct H.
-apply fsub_elim with (2:=H1) in H0; trivial.
-destruct H0.
+rewrite Ffix_def in H1|-*; trivial.
+destruct H1.
+apply fsub_elim with (4:=H3) in H2; trivial.
+destruct H2.
 exists x1; eauto using isOrd_inv.
 Qed.
 
-(*
-Section Iter0.
-
-Variable G : (set -> set) -> set -> set.
-Hypothesis Gm : forall x x' g g',
-  eq_fun (fsub x) g g' ->
-  x == x' -> G g x == G g' x'.
-
-
-  Definition Fix_rec :=
-    TR (fun f o =>
-        lam (TI F o) (fun x => G (fun y => ) x
-
-  Lemma Fr_eqn : forall a o,
-    isOrd o ->
-    a \in TI F o ->
-    Fix_rec a == G Fix_rec a.
-*)
 
 Section Iter.
 
-Variable G : (set -> set) -> set -> set.
-Hypothesis Gm : forall x x' g g',
-  x \in Ffix ->
-  eq_fun (fsub x) g g' ->
-  x == x' -> G g x == G g' x'.
+Variable G : (set -> set -> set) -> set -> set -> set.
+Hypothesis Gm : forall a x x' g g',
+  a \in A ->
+  x \in Ffix a ->
+  (forall a', a' \in A -> eq_fun (fsub a' x) (g a') (g' a')) ->
+  x == x' -> G g a x == G g' a x'.
 
-Definition Ffix_rel a y :=
-  forall R:set->set->Prop,
-  Proper (eq_set ==> eq_set ==> iff) R ->
-  (forall x g,
-   ext_fun (fsub x) g ->
-   (forall y, y \in fsub x -> R y (g y)) ->
-   R x (G g x)) ->
-  R a y.
+Definition Ffix_rel a b y :=
+  forall R:set->set->set->Prop,
+  Proper (eq_set ==> eq_set ==> eq_set ==> iff) R ->
+  (forall a x g,
+   a \in A ->
+   (forall a', a' \in A -> ext_fun (fsub a' x) (g a')) ->
+   (forall a' y, a' \in A -> y \in fsub a' x -> R a' y (g a' y)) ->
+   R a x (G g a x)) ->
+  R a b y.
 
+(*
   Instance Ffix_rel_morph :
     Proper (eq_set ==> eq_set ==> iff) Ffix_rel.
 apply morph_impl_iff2; auto with *.
@@ -296,7 +417,7 @@ assert (forall z, z \in fsub a -> uchoice_pred (fun o => Ffix_rel z o)).
  destruct H1 with x z; auto.
   apply subset_elim2 in H3; destruct H3.
   rewrite H3; apply H4; trivial.
-  transitivity Ffix; [apply TI_Ffix; trivial|apply Ffix_inA].
+  transitivity Ffix; [apply TIF_Ffix; trivial|apply Ffix_in_dom].
 
   split; intros.
    rewrite <- H5; trivial.
@@ -304,7 +425,7 @@ assert (forall z, z \in fsub a -> uchoice_pred (fun o => Ffix_rel z o)).
    exists x0; trivial.
   apply Ffix_rel_fun with z; trivial.
   apply Ffix_fsub_inv with a; trivial.
-  apply TI_Ffix with (o:=y); trivial.
+  apply TIF_Ffix with (o:=y); trivial.
   apply TI_intro with x; trivial.
 exists (G (fun b => uchoice (fun o => Ffix_rel b o)) a).
 apply Ffix_rel_intro; trivial.
@@ -322,7 +443,7 @@ split; intros.
 split; intros.
  apply Ffix_rel_def with o; trivial.
 apply Ffix_rel_fun with a; trivial.
-revert H0; apply TI_Ffix; trivial.
+revert H0; apply TIF_Ffix; trivial.
 Qed.
 
   Definition Fix_rec a := uchoice (fun o => Ffix_rel a o).
@@ -335,12 +456,12 @@ intros.
 unfold Fix_rec.
 generalize (uchoice_def _ (Ffix_rel_choice_pred _ _ H H0)); intro.
 apply Ffix_rel_inv in H1; auto.
- 2:revert H0; apply TI_Ffix; trivial.
+ 2:revert H0; apply TIF_Ffix; trivial.
 destruct H1.
 destruct H1.
 rewrite H2.
 apply Gm; auto with *.
- revert H0; apply TI_Ffix; trivial.
+ revert H0; apply TIF_Ffix; trivial.
 red; intros.
 rewrite H5 in H4.
 assert (x' \in TI F o).
@@ -350,44 +471,22 @@ generalize (uchoice_def _ (Ffix_rel_choice_pred _ _ H H6)); intro.
 specialize H3 with (1:=H4).
 rewrite <- Ffix_rel_fun with (1:=H3) (2:=H7).
 2:apply Ffix_fsub_inv with a; trivial.
-2:revert H0; apply TI_Ffix; trivial.
+2:revert H0; apply TIF_Ffix; trivial.
 rewrite <- H5 in H4.
 apply H1; trivial.
 Qed.
-
-  Lemma Fix_rec_typ U1 U2 a :
-    Ffix \incl U1 ->
-    (forall x g, ext_fun (fsub x) g -> x \in U1 -> (forall y, y \in fsub x -> g y \in U2) -> G g x \in U2) ->
-    a \in Ffix ->
-    Fix_rec a \in U2.
-intros.
-rewrite Ffix_def in H1; destruct H1.
-revert a H2.
-induction H1 using isOrd_ind; intros.
-rewrite Fr_eqn with (2:=H4); trivial.
-apply H0.
- do 2 red; intros; apply uchoice_morph_raw.
- red; intros.
- apply Ffix_rel_morph; trivial.
-
- apply H.
- rewrite Ffix_def; eauto.
-
- intros.
- apply fsub_elim with (o:=y) in H5; trivial.
- destruct H5.
- apply H3 with x0; trivial.
-Qed.
+*)
 
 End Iter.
 
-  Definition F_a g x := osup (fsub x) (fun a => osucc (g a)).
+(*
+  Definition F_a g x := sup (fsub x) (fun a => osucc (g a)).
 
   Lemma F_a_morph : forall x x' g g',
     eq_fun (fsub x) g g' ->
     x == x' -> F_a g x == F_a g' x'.
 unfold F_a; intros.
-apply osup_morph.
+apply sup_morph.
  rewrite H0; reflexivity.
 
  red; intros.
@@ -409,7 +508,7 @@ intros.
 rewrite Ffix_def in H; destruct H.
 revert a H0; apply isOrd_ind with (2:=H); intros.
 rewrite Fr_eqn with (o:=y); auto.
-apply isOrd_osup; trivial.
+apply isOrd_supf; trivial.
 intros.
 apply isOrd_succ.
 destruct fsub_elim with (2:=H3) (3:=H4); trivial.
@@ -444,7 +543,7 @@ assert (inter (replf (subset (power A) (fun X => a \in F X)) (fun X => X))
    apply TI_elim in H0; auto.
    destruct H0.
    revert H4; apply Fmono.
-   transitivity Ffix; [apply TI_Ffix; trivial|apply Ffix_inA].
+   transitivity Ffix; [apply TIF_Ffix; trivial|apply Ffix_in_dom].
    apply isOrd_inv with w; trivial.
 
   intros.
@@ -484,8 +583,8 @@ apply inter_intro; intros.
  2:red;red;trivial.
  exists (TI F x); auto with *.
  apply subset_intro; trivial.
- apply power_intro; intros; apply Ffix_inA.
- revert H5; apply TI_Ffix.
+ apply power_intro; intros; apply Ffix_in_dom.
+ revert H5; apply TIF_Ffix.
  apply isOrd_inv with w; trivial.
 Qed.
 
@@ -509,8 +608,8 @@ assert (fsub a \incl TI F (Fix_rec F_a a)).
 
   red; intros.
   rewrite Fr_eqn with (o:=y); auto.
-  unfold F_a.
-  apply osup_intro with (x:=z); trivial.
+  unfold F_a; rewrite sup_ax; trivial.
+  exists z; auto.
 rewrite TI_mono_succ; auto.
 2:apply F_a_ord; rewrite Ffix_def; exists y; trivial.
 apply F_intro with y; trivial.
@@ -518,10 +617,10 @@ apply F_a_ord; rewrite Ffix_def; exists y; trivial.
 Qed.
 
   Definition Ffix_ord :=
-    osup Ffix (fun a => osucc (Fix_rec F_a a)).
+    sup Ffix (fun a => osucc (Fix_rec F_a a)).
 
   Lemma Ffix_o_o : isOrd Ffix_ord.
-apply isOrd_osup; auto.
+apply isOrd_supf; auto.
 Qed.
 Hint Resolve Ffix_o_o.
 
@@ -530,7 +629,8 @@ Hint Resolve Ffix_o_o.
    a \in TI F Ffix_ord.
 intros.
 apply TI_intro with (Fix_rec F_a a); auto.
- apply osup_intro with (x:=a); trivial.
+ unfold Ffix_ord; rewrite sup_ax; trivial.
+ exists a; trivial.
  apply lt_osucc; auto.
 
  rewrite <- TI_mono_succ; auto.
@@ -541,7 +641,7 @@ Qed.
 apply eq_intro; intros.
 rewrite Ffix_def in H; destruct H.
 apply Fmono with (TI F x).
- apply TI_Ffix; trivial.
+ apply TIF_Ffix; trivial.
 
  rewrite <- TI_mono_succ; auto.
  revert H0; apply TI_incl; auto.
@@ -552,143 +652,10 @@ apply Fmono with (TI F x).
   red; intros; apply Ffix_post; trivial.
  rewrite Ffix_def; exists (osucc Ffix_ord); auto.
 Qed.
+*)
 
 End BoundedOperator.
 
 
 End IterMonotone.
-
-
-Section KnasterTarski.
-
-Variable A : set.
-Variable F : set -> set.
-
-Record fp_props : Prop :=
- { typ : forall x, x \incl A -> F x \incl A;
-(*   morph : morph1 F;*)
-   mono : forall x x',
-     x' \incl A -> x \incl x' -> F x \incl F x'}.
-
-Hypothesis Ffix : fp_props.
-
-Lemma fx_mrph : forall x x', x \incl A -> x == x' -> F x == F x'.
-intros.
-apply eq_intro; intros.
- revert z H1; apply mono; trivial.
- rewrite <- H0; trivial.
- rewrite H0; auto with *.
-
- revert z H1; apply mono; trivial.
- rewrite H0; auto with *.
-Qed.
-
-Let Ftyp := Ffix.(typ).
-Let Fmono := Ffix.(mono).
-
-Definition is_lfp x :=
-  F x == x /\ forall y, y \incl A -> F y \incl y -> x \incl y.
-
-Definition pre_fix x := x \incl F x.
-Definition post_fix x := F x \incl x.
-
-Lemma post_fix_A : post_fix A.
-red; intros.
-apply Ftyp; auto with *.
-Qed.
-
-Definition M' := subset (power A) post_fix.
-
-Lemma member_A : A \in M'.
-unfold M'.
-apply subset_intro.
- apply power_intro; auto.
-
- apply post_fix_A.
-Qed.
-
-Lemma post_fix1 : forall x, x \in M' -> F x \incl x.
-unfold M'; intros.
-elim subset_elim2 with (1:=H); intros.
-red; intros.
-red in H1. red in H1.
-rewrite H0.
-apply subset_elim1 in H.
-apply H1.
-apply Fmono with x; trivial.
- rewrite <- H0; red; intros.
- apply power_elim with x; trivial.
-
- rewrite H0; auto with *.
-Qed.
-
-Definition least_fp := inter M'.
-
-Lemma lfp_typ : least_fp \incl A.
-unfold least_fp, M'.
-red; intros.
-apply inter_elim with (1:=H).
-apply subset_intro.
- apply power_intro; auto.
-
- apply post_fix_A.
-Qed.
-
-Lemma lower_bound : forall x, x \in M' -> least_fp \incl x.
-unfold least_fp, M'; red; intros.
-apply inter_elim with (1:=H0); auto.
-Qed.
-
-Lemma post_fix2 : forall x, x \in M' -> F least_fp \incl F x.
-intros.
-apply Fmono.
- apply subset_elim1 in H.
- red; intros.
- apply power_elim with x; trivial.
-
- apply lower_bound; trivial.
-Qed.
-
-
-Lemma post_fix_lfp : post_fix least_fp.
-red; red; intros.
-unfold least_fp.
-apply inter_intro.
-2:exists A; apply member_A.
-intros.
-apply post_fix1 with (1:=H0).
-apply post_fix2 with (1:=H0).
-trivial.
-Qed.
-
-Lemma incl_f_lfp : F least_fp \in M'.
-unfold M'; intros.
-apply subset_intro.
- apply power_intro.
- apply Ftyp.
- apply lfp_typ.
-
- red; intros.
- apply Fmono.
-  apply lfp_typ.
-
-  apply post_fix_lfp; trivial.
-Qed.
-
-Lemma knaster_tarski : is_lfp least_fp.
-split.
- apply eq_intro; intros.
-  apply (post_fix_lfp z H); trivial.
-
-  apply (lower_bound (F least_fp)); trivial.
-  apply incl_f_lfp; trivial.
-
- intros.
- apply lower_bound.
- unfold M'.
- apply subset_intro; trivial.
- apply power_intro; trivial.
-Qed.
-
-End KnasterTarski.
 

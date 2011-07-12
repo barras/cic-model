@@ -8,8 +8,17 @@ Import IZF.
 (* Lambda: Aczel's encoding of functions *)
 
 Definition cc_lam (x:set) (y:set->set) : set :=
-  union (replf x
-    (fun x' => replf (y x') (fun y' => couple x' y'))).
+  union (replf x (fun x' => replf (y x') (fun y' => couple x' y'))).
+
+Instance cc_lam_morph : Proper (eq_set ==> (eq_set ==> eq_set) ==> eq_set) cc_lam.
+unfold cc_lam; do 3 red; intros.
+apply union_morph; apply replf_morph; trivial.
+red; intros.
+apply replf_morph.
+ apply H0; trivial.
+
+ red; intros; apply couple_morph; trivial.
+Qed.
 
 Lemma cc_lam_fun1 : forall x x',
   ext_fun x (fun y' => couple x' y').
@@ -139,7 +148,24 @@ Definition cc_prod (x:set) (y:set->set) : set :=
   replf (dep_func x y)
     (fun f => cc_lam x (fun x' => app f x')).
 
+Instance cc_prod_morph : Proper (eq_set ==> (eq_set ==> eq_set) ==> eq_set) cc_prod.
+unfold cc_prod; do 3 red; intros.
+apply replf_morph.
+ apply dep_func_ext; trivial.
+ red; auto.
+
+ red; intros.
+ apply cc_lam_morph; trivial.
+ red; intros; apply app_morph; trivial.
+Qed.
+
 Definition cc_arr A B := cc_prod A (fun _ => B).
+
+Instance cc_arr_morph : morph2 cc_arr.
+do 3 red; intros.
+apply cc_prod_morph; trivial.
+red; trivial.
+Qed.
 
 Lemma cc_prod_fun1 : forall A x,
   ext_fun A (fun f => cc_lam x (fun x' => app f x')).

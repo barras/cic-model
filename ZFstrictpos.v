@@ -32,20 +32,15 @@ Inductive eq_pos : positive -> positive -> Prop :=
    eq_pos p1 p2 -> eq_pos q1 q2 -> eq_pos (P_ConsRec p1 q1) (P_ConsRec p2 q2)
 | EP_ConsNoRec : forall A A' p1 p2,
    A == A' ->
-   (forall x x', x \in A -> x == x' -> eq_pos (p1 x) (p2 x')) ->
+   (forall x x', x == x' -> eq_pos (p1 x) (p2 x')) ->
    eq_pos (P_ConsNoRec A p1) (P_ConsNoRec A' p2)
 | EP_Param : forall A A' p1 p2,
    A == A' ->
-   (forall x x', x \in A -> x == x' -> eq_pos (p1 x) (p2 x')) ->
+   (forall x x', x == x' -> eq_pos (p1 x) (p2 x')) ->
    eq_pos (P_Param A p1) (P_Param A' p2).
 
 Instance eq_pos_sym : Symmetric eq_pos.
 red; induction 1; constructor; auto with *.
- intros.
- rewrite <- H in H2; rewrite H3 in H2; auto with *.
-
- intros.
- rewrite <- H in H2; rewrite H3 in H2; auto with *.
 Qed.
 
 Instance eq_pos_trans : Transitive eq_pos.
@@ -55,13 +50,7 @@ intros x y z ep1 ep2; revert z ep2; induction ep1; intros; inversion_clear ep2;
  transitivity A'; trivial.
  transitivity A'; trivial.
 
- apply H1 with x; auto with *.
- rewrite H in H4; auto.
-
  transitivity A'; trivial.
-
- apply H1 with x; auto with *.
- rewrite H in H4; auto.
 Qed.
 
 Lemma eq_pos_left : forall p1 p2, eq_pos p1 p2 -> eq_pos p1 p1.
@@ -76,11 +65,11 @@ Lemma pos_rect : forall (P:positive->Type),
   (forall p1 p2, eq_pos p1 p1 -> eq_pos p2 p2 -> P p1 -> P p2 -> P (P_Sum p1 p2)) ->
   (forall p1 p2, eq_pos p1 p1 -> eq_pos p2 p2 -> P p1 -> P p2 -> P (P_ConsRec p1 p2)) ->
   (forall A p,
-   (forall x x', x \in A -> x == x' -> eq_pos (p x) (p x')) ->
+   (forall x x', x == x' -> eq_pos (p x) (p x')) ->
    (forall x, x \in A -> P (p x)) ->
    P (P_ConsNoRec A p)) ->
   (forall A p,
-   (forall x x', x \in A -> x == x' -> eq_pos (p x) (p x')) ->
+   (forall x x', x == x' -> eq_pos (p x) (p x')) ->
    (forall x, x \in A -> P (p x)) ->
    P (P_Param A p)) ->
   forall p, eq_pos p p -> P p.
@@ -131,7 +120,7 @@ induction H; simpl; intros; auto with *.
 
  apply prodcart_morph; auto.
 
- apply sigma_morph; auto with *.
+ apply sigma_ext; auto with *.
 
  apply cc_prod_ext; intros; auto.
  red; auto.
@@ -206,6 +195,16 @@ Qed.
   Definition INDi p o :=
     TI (pos_oper p) o.
 
+  Instance INDi_morph : Proper (eq_pos ==> eq_set ==> eq_set) INDi.
+do 3 red; intros.
+unfold INDi.
+apply TR_morph_gen; trivial.
+do 2 red; intros.
+apply sup_morph; trivial.
+red; intros.
+apply pos_oper_morph; auto.
+Qed.
+
   Lemma INDi_succ_eq : forall p o,
     eq_pos p p -> isOrd o -> INDi p (osucc o) == pos_oper p (INDi p o).
 unfold INDi; intros.
@@ -258,9 +257,10 @@ induction 1; simpl; intros; auto with *.
 
  rewrite IHeq_pos1; rewrite IHeq_pos2; reflexivity.
 
- apply sigma_morph; auto.
+ apply sigma_ext; auto.
 
  apply cc_prod_ext; auto.
+ red; auto.
 Qed.
 
 (* Subterm index part of the constructor *)
@@ -277,6 +277,29 @@ Fixpoint pos_to_w2 p :=
       (fun f => sigma X (fun x => pos_to_w2 (p x) (cc_app f x)))
   end.
 
+Instance pos_to_w2_morph : Proper (eq_pos ==> eq_set ==> eq_set) pos_to_w2.
+do 3 red.
+induction 1; simpl; intros; auto with *.
+ (* Sum *)
+ apply sum_case_morph; auto.
+
+ (* ConsRec *)
+ apply sum_morph.
+  apply IHeq_pos1; apply fst_morph; trivial.
+  apply IHeq_pos2; apply snd_morph; trivial.
+
+ (* ConsNoRec *)
+ apply H1.
+  apply fst_morph; trivial.
+  apply snd_morph; trivial.
+
+ (* Param *)
+ apply sigma_morph; auto.
+ red; intros.
+ apply H1; trivial.
+ apply cc_app_morph; trivial.
+Qed.
+(*
 Lemma pos_to_w2_morph : forall x y,
    eq_pos x y ->
    forall x0 y0, x0 \in pos_to_w1 x -> x0 == y0 -> pos_to_w2 x x0 == pos_to_w2 y y0.
@@ -305,13 +328,13 @@ induction 1; simpl; intros; auto with *.
 
   apply snd_morph; trivial.
 
- apply sigma_morph; intros; auto.
+ apply sigma_ext; intros; auto.
  apply H1; trivial.
   apply cc_prod_elim with (1:=H2); trivial.
 
   apply cc_app_morph; trivial.
 Qed.
-
+*)
 Lemma pos_to_w2_morph' :
   forall p, eq_pos p p -> ext_fun (pos_to_w1 p) (pos_to_w2 p).
 do 2 red; intros.
@@ -386,7 +409,7 @@ Lemma W_F_sum_commut A1 A2 B1 B2 X:
               (fun x => cc_prod (B2 x) (fun _ => X))) ==
   W_F (sum A1 A2) (sum_case B1 B2) X.
 unfold W_F; intros.
-apply sigma_morph; intros; auto with *.
+apply sigma_ext; intros; auto with *.
 apply cc_prod_sum_case_commut with (1:=H) (2:=H0); auto with *.
 Qed.
 
@@ -542,7 +565,7 @@ eapply iso_fun_trans.
 
    apply wfm1.
    do 2 red; intros.
-   apply sigma_morph; intros; auto with *.
+   apply sigma_ext; intros; auto with *.
    apply H1; trivial.
     apply cc_prod_elim with (1:=H4); trivial.
     apply cc_app_morph; auto.
@@ -550,7 +573,7 @@ eapply iso_fun_trans.
    red; intros.
    unfold cc_prod_isocurry.
    apply cc_lam_ext.
-    apply sigma_morph; intros; auto with *.
+    apply sigma_ext; intros; auto with *.
     apply H1; trivial.
      apply cc_prod_elim with (1:=H4); trivial.
      apply cc_app_morph; auto.
@@ -563,7 +586,7 @@ eapply iso_fun_trans.
    eapply iso_change_rhs.
    2:apply cc_prod_curry_iso_fun.
     apply cc_prod_ext; trivial.
-    apply sigma_morph; intros; auto with *.
+    apply sigma_ext; intros; auto with *.
     apply H1; trivial.
      apply cc_prod_elim with (1:=H4); trivial.
      apply cc_app_morph; auto.
@@ -585,6 +608,7 @@ Fixpoint trad_pos_w f p :=
   | P_ConsNoRec A p => trad_sigma (fun a => trad_pos_w f (p a))
   | P_Param A p => trad_cc_prod A (fun a => pos_to_w2 (p a)) (fun a => trad_pos_w f (p a))
   end.
+
 
 Lemma trad_pos_w_morph_gen :
   forall X Y f f' p p',
@@ -622,7 +646,7 @@ induction eqp; try (destruct IHeqp1; destruct IHeqp2||destruct IHeq_pos);
  eapply comp_iso_eq_fun.
   apply sum_isomap_typ with (1:=H0) (2:=H2).
 
-  apply sum_isomap_morph; trivial.
+  apply sum_isomap_ext; trivial.
 
   red; intros; apply sum_sigma_iso_morph; trivial.
 
@@ -645,7 +669,7 @@ induction eqp; try (destruct IHeqp1; destruct IHeqp2||destruct IHeq_pos);
   eassumption.
 
   intros x x' tyx; rewrite sigma_nodep in tyx; revert x x' tyx.
-  apply sigma_isomap_morph; auto with *.
+  apply sigma_isomap_ext; auto with *.
  eapply comp_iso_eq_fun.
   intros x tyx; rewrite <- sigma_nodep in tyx; revert x tyx.
   apply eq_pos_left in eqp1; apply eq_pos_left in eqp2.
@@ -654,7 +678,7 @@ induction eqp; try (destruct IHeqp1; destruct IHeqp2||destruct IHeq_pos);
   red; intros; unfold prodcart_sigma_iso.
   rewrite H4; reflexivity.
 
-  apply sigma_isomap_morph; intros.
+  apply sigma_isomap_ext; intros.
    do 2 red; intros; apply prodcart_morph;
      (apply cc_prod_ext; [apply pos_to_w2_morph';trivial|red;reflexivity]).
     apply eq_pos_left in eqp1; trivial.
@@ -715,11 +739,10 @@ induction eqp; try (destruct IHeqp1; destruct IHeqp2||destruct IHeq_pos);
 
  (* ConsNonRecArg *)
  red; intros.
- assert (pm : forall x x', x \in A -> x == x' -> eq_pos (p1 x) (p1 x')).
+ assert (pm : forall x x', x == x' -> eq_pos (p1 x) (p1 x')).
   intros.
   transitivity (p2 x'0); auto with *.
   symmetry; apply H0; auto with *.
-  rewrite <- H5; trivial.
  assert (Hrec : forall p p', p \in sigma A (fun x => pos_oper (p1 x) X) ->
    p == p' ->
    trad_pos_w f (p1 (fst p)) (snd p) == trad_pos_w f' (p2 (fst p')) (snd p')).
@@ -739,11 +762,10 @@ induction eqp; try (destruct IHeqp1; destruct IHeqp2||destruct IHeq_pos);
 
   apply snd_morph; auto.
 
- assert (pm : forall x x', x \in A -> x == x' -> eq_pos (p1 x) (p1 x')).
+ assert (pm : forall x x', x == x' -> eq_pos (p1 x) (p1 x')).
   intros.
   transitivity (p2 x'); auto.
   symmetry; apply H0; auto with *.
-  rewrite <- H3; trivial.
  unfold trad_sigma.
  eapply comp_iso_typ.
   apply sigma_isomap_typ
@@ -762,11 +784,10 @@ induction eqp; try (destruct IHeqp1; destruct IHeqp2||destruct IHeq_pos);
    apply pos_to_w2_morph; auto with *.
 
  (* Param *)
- assert (pm : forall x x', x \in A -> x == x' -> eq_pos (p1 x) (p1 x')).
+ assert (pm : forall x x', x == x' -> eq_pos (p1 x) (p1 x')).
   intros.
   transitivity (p2 x'); auto.
   symmetry; apply H0; auto with *.
-  rewrite <- H3; trivial.
  unfold trad_cc_prod.
  eapply comp_iso_eq_fun.
   apply cc_prod_isomap_typ with (4:=fun _ h=>h).
@@ -785,7 +806,7 @@ induction eqp; try (destruct IHeqp1; destruct IHeqp2||destruct IHeq_pos);
     symmetry; apply H1; auto with *.
     revert H4; apply eq_elim; symmetry; apply pos_oper_morph; auto with *.
 
-  apply cc_prod_isomap_morph; intros; auto with *.
+  apply cc_prod_isomap_ext; intros; auto with *.
    do 2 red; intros; apply pos_oper_morph; auto with *.
    red; trivial.
    apply H1; trivial.
@@ -798,29 +819,26 @@ induction eqp; try (destruct IHeqp1; destruct IHeqp2||destruct IHeq_pos);
 
   red; intros; apply cc_prod_sigma_iso_morph; trivial.
 
-  apply sigma_isomap_morph; auto with *.
+  apply sigma_isomap_ext; auto with *.
    do 2 red; intros; apply cc_prod_ext; auto with *.
    red; intros; apply cc_prod_ext;[|red; reflexivity].
    apply pos_to_w2_morph; auto with *.
-    apply cc_prod_elim with (1:=H2); trivial.
-    apply cc_app_morph; trivial.
+   apply cc_app_morph; trivial.
 
    red; trivial.
 
    unfold cc_prod_isocurry; intros.
    apply cc_lam_ext; auto with *.
-    apply sigma_morph; intros; auto.
+    apply sigma_ext; intros; auto.
     apply pos_to_w2_morph; auto with *.
-     apply cc_prod_elim with (1:=H2); trivial.
-     apply cc_app_morph; trivial.
+    apply cc_app_morph; trivial.
     red; intros.
     rewrite H5; rewrite H7; reflexivity.
 
- assert (pm : forall x x', x \in A -> x == x' -> eq_pos (p1 x) (p1 x')).
+ assert (pm : forall x x', x == x' -> eq_pos (p1 x) (p1 x')).
   intros.
   transitivity (p2 x'); auto.
   symmetry; apply H0; auto with *.
-  rewrite <- H3; trivial.
  unfold trad_cc_prod.
  eapply comp_iso_typ.
   apply cc_prod_isomap_typ
@@ -838,10 +856,8 @@ induction eqp; try (destruct IHeqp1; destruct IHeqp2||destruct IHeq_pos);
     apply H1; trivial.
 
     symmetry; apply H1; auto with *.
-     rewrite <- H3; trivial.
-
-     rewrite <- H5; revert H4; apply eq_elim.
-     apply pos_oper_morph; auto with *.
+    rewrite <- H5; revert H4; apply eq_elim.
+    apply pos_oper_morph; auto with *.
 
    intros.
    apply (H1 x x); auto with *.
@@ -859,15 +875,13 @@ induction eqp; try (destruct IHeqp1; destruct IHeqp2||destruct IHeq_pos);
    red; intros.
    apply cc_prod_ext;[|red;reflexivity].
    apply pos_to_w2_morph; auto.
-    apply cc_prod_elim with (1:=H2); trivial.
-    apply cc_app_morph; trivial.
+   apply cc_app_morph; trivial.
 
    do 2 red; intros.
    apply cc_prod_ext; [|red;reflexivity].
-   apply sigma_morph; intros; auto with *.
+   apply sigma_ext; intros; auto with *.
    apply pos_to_w2_morph; auto.
-    apply cc_prod_elim with (1:=H2); trivial.
-    apply cc_app_morph; trivial.
+   apply cc_app_morph; trivial.
 
    red; trivial.
 
@@ -875,13 +889,90 @@ induction eqp; try (destruct IHeqp1; destruct IHeqp2||destruct IHeq_pos);
    apply cc_prod_isocurry_typ.
     do 2 red; intros.
     apply pos_to_w2_morph; auto with *.
-     apply cc_prod_elim with (1:=H2); trivial.
-     apply cc_app_morph; auto with *.
+    apply cc_app_morph; auto with *.
 
     red; reflexivity.
 Qed.
 
-Lemma trad_pos_w_morph : forall X f f' p p',
+
+Lemma trad_pos_w_morph : Proper ((eq_set==>eq_set)==>eq_pos==>eq_set==>eq_set) trad_pos_w.
+do 4 red.
+induction 2; simpl; intros.
+ (* Cst *)
+ unfold trad_cst.
+ apply couple_morph; trivial.
+ apply cc_lam_ext; auto with *.
+
+ (* Rec *)
+ unfold trad_reccall.
+ apply comp_iso_morph; trivial.
+ red; intros.
+ apply comp_iso_morph; trivial.
+ 2:apply couple_morph; auto with *.
+ red; intros.
+ apply cc_lam_ext; auto with *.
+ red; trivial.
+
+ (* Sum *)
+ unfold trad_sum.
+ apply comp_iso_morph; trivial.
+  apply sum_isomap_morph; auto.
+  apply sum_sigma_iso_morph.
+
+ (* ConsRec *)
+ unfold trad_prodcart.
+ apply comp_iso_morph; trivial.
+  apply sigma_isomap_morph; auto.
+  red; intros; auto.
+
+  apply comp_iso_morph.
+   red; intros.
+   unfold prodcart_sigma_iso.
+   rewrite H1; reflexivity.
+
+   apply sigma_isomap_morph.
+    red; auto.
+
+    do 2 red; intros.
+    apply prodcart_cc_prod_iso_morph; trivial.
+    apply sum_morph; apply pos_to_w2_morph; trivial.
+     apply fst_morph; trivial.
+     apply snd_morph; trivial.
+
+ (* ConsNoRec *)
+ unfold trad_sigma.
+ apply comp_iso_morph; trivial.
+  apply sigma_isomap_morph; auto with *.
+  red; auto.
+
+  apply sigma_isoassoc_morph.
+
+ (* Param *)
+ unfold trad_cc_prod.
+ apply comp_iso_morph; trivial.
+  apply cc_prod_isomap_morph; auto with *.
+  red; auto.
+
+  apply comp_iso_morph; trivial.
+   apply cc_prod_sigma_iso_morph; trivial.
+
+   apply sigma_isomap_morph.
+    red; auto.
+
+    unfold cc_prod_isocurry.
+    do 2 red; intros.
+    apply cc_lam_ext.
+     apply sigma_morph; trivial.
+     red; intros.
+     apply pos_to_w2_morph; auto.
+     apply cc_app_morph; trivial.
+
+     red; intros.
+     rewrite H5; rewrite H7; reflexivity.
+Qed.
+
+
+Lemma trad_pos_w_morph0 : forall X f f' p p',
   eq_pos p p' ->
   eq_fun X f f' ->
   eq_fun (pos_oper p X) (trad_pos_w f p) (trad_pos_w f' p').
@@ -900,16 +991,149 @@ Lemma trad_pos_w_typ : forall X Y f p,
 intros.
 apply trad_pos_w_morph_gen with (1:=H)(2:=H0)(3:=H1).
 Qed.
+(*
+Lemma trad_pos_w_typ :
+  forall X Y f p,
+  eq_pos p p -> morph1 f -> typ_fun f X Y ->
+  typ_fun (trad_pos_w f p) (pos_oper p X) (W_F (pos_to_w1 p) (pos_to_w2 p) Y).
+intros X Y f p eqp ef tyf.
+assert (posw2m := pos_to_w2_morph').
+red.
+elim eqp using pos_rect; simpl; intros.
+ (* Cst *)
+ unfold trad_cst.
+ apply sigma_1r_iso_typ; intros; auto.
+ apply cc_prod_intro; intros; auto with *.
+ apply empty_ax in H1; contradiction.
+
+ (* Rec *)
+ unfold trad_reccall, comp_iso.
+ apply couple_intro_sigma; auto.
+  apply singl_intro.
+
+  apply cc_prod_intro; intros; auto with *.
+
+ (* Sum *)
+ unfold trad_sum.
+ eapply comp_iso_typ with (3:=H3).
+  apply sum_isomap_typ with (1:=H1) (2:=H2).
+
+  rewrite <- W_F_sum_commut; auto.
+  apply sum_sigma_iso_typ; auto.
+
+ (* ConsRecArg *)
+ unfold trad_prodcart.
+ eapply comp_iso_typ with (3:=H3).
+  apply sigma_isomap_typ_prod; [eexact H1|eexact H2].
+ eapply comp_iso_typ.
+  apply prodcart_sigma_iso_typ; auto.
+
+  apply sigma_isomap_typ; intros.
+  3:red; auto.
+   do 2 red; intros; apply prodcart_morph; (apply cc_prod_ext;[|red; reflexivity]).
+    apply fst_morph in H5.
+    apply pos_to_w2_morph; trivial.
+
+    apply snd_morph in H5.
+    apply pos_to_w2_morph; trivial.
+
+   do 2 red; intros; apply cc_prod_ext;[|red; reflexivity].
+   apply sum_morph; apply pos_to_w2_morph; trivial.
+    apply fst_morph; trivial.
+    apply snd_morph; trivial.
+
+   red; intros.
+   apply eq_elim with
+     (cc_prod (sum (pos_to_w2 p1 (fst x0)) (pos_to_w2 p2 (snd x0)))
+        (sum_case (fun _ => Y) (fun _ => Y))).
+    apply cc_prod_ext; auto with *.
+    red; intros.
+    apply sum_case_ind with (6:=H6); auto with *.
+     do 2 red; intros.
+     rewrite H8; reflexivity.
+
+     do 2 red; reflexivity.
+     do 2 red; reflexivity.
+   apply prodcart_cc_prod_iso_typ; trivial.
+
+ (* ConsNonRecArg *)
+ unfold trad_sigma.
+ eapply comp_iso_typ with (3:=H1); clear x H1.
+  apply sigma_isomap_typ
+    with (3:=fun _ h=>h)(B':=fun x => W_F (pos_to_w1 (p0 x)) (pos_to_w2 (p0 x)) Y); intros.
+   do 2 red; intros; apply pos_oper_morph; auto with *.
+
+   do 2 red; intros; apply W_F_ext; auto with *.
+    apply pos_to_w1_morph; auto with *.
+    red; intros; apply pos_to_w2_morph; auto with *.
+
+   red; apply (H0 x H1); auto with *.
+
+  apply sigma_isoassoc_typ.
+   do 2 red; intros; apply pos_to_w1_morph; auto with *.
+   red; intros; apply cc_prod_ext;[|red;reflexivity].
+   apply pos_to_w2_morph; auto with *.
+
+ (* Param *)
+ unfold trad_cc_prod.
+ eapply comp_iso_typ with (3:=H1); clear x H1.
+  apply cc_prod_isomap_typ
+    with (4:=fun a h=>h) (B':=fun x => W_F (pos_to_w1 (p0 x)) (pos_to_w2 (p0 x)) Y).
+   do 2 red; intros; apply W_F_ext; auto with *.
+    apply pos_to_w1_morph; auto.
+
+    red; intros.
+    apply pos_to_w2_morph; auto.
+
+   do 2 red; trivial.
+
+   red; intros.
+   apply trad_pos_w_morph; auto.
+
+   intros.
+   red; apply H0; trivial.
+
+ eapply comp_iso_typ.
+  apply cc_prod_sigma_iso_typ.
+   do 2 red; intros; apply pos_to_w1_morph; auto.
+
+   red; intros; apply cc_prod_ext;[|red; reflexivity].
+   apply pos_to_w2_morph; auto.
+
+  apply sigma_isomap_typ.
+   do 2 red; intros.
+   apply cc_prod_ext; intros; auto with *.
+   red; intros.
+   apply cc_prod_ext;[|red;reflexivity].
+   apply pos_to_w2_morph; auto.
+   apply cc_app_morph; trivial.
+
+   do 2 red; intros.
+   apply cc_prod_ext; [|red;reflexivity].
+   apply sigma_ext; intros; auto with *.
+   apply pos_to_w2_morph; auto.
+   apply cc_app_morph; trivial.
+
+   red; trivial.
+
+   intros.
+   apply cc_prod_isocurry_typ.
+    do 2 red; intros.
+    apply pos_to_w2_morph; auto with *.
+    apply cc_app_morph; auto with *.
+
+    red; reflexivity.
+Qed.
+*)
 
 Lemma trad_w_iso_fun :
   forall X Y f p,
   eq_pos p p -> iso_fun X Y f ->
   iso_fun (pos_oper p X) (W_F (pos_to_w1 p) (pos_to_w2 p) Y) (trad_pos_w f p).
 intros X Y f p eqp isof.
-set (p':=p) in eqp at 2.
 assert (tyf := iso_typ isof).
 assert (fm := iso_funm isof).
-induction eqp; simpl; intros.
+elim eqp using pos_rect; simpl; intros.
  (* Cst *)
  apply iso_cst.
 
@@ -917,26 +1141,17 @@ induction eqp; simpl; intros.
  apply iso_reccall; trivial.
 
  (* Sum *)
- apply eq_pos_left in eqp1.
- apply eq_pos_left in eqp2.
  apply iso_sum; trivial.
   apply pos_to_w2_morph'; trivial.
   apply pos_to_w2_morph'; trivial.
 
  (* ConsRecArg *)
- apply eq_pos_left in eqp1.
- apply eq_pos_left in eqp2.
  apply iso_prodcart; trivial.
   apply pos_to_w2_morph'; trivial.
   apply pos_to_w2_morph'; trivial.
 
  (* ConsNonRecArg *)
- assert (pm : forall x x', x \in A -> x == x' -> eq_pos (p1 x) (p1 x')).
-  intros.
-  transitivity (p2 x'); auto.
-  symmetry; apply H0; auto with *.
-  rewrite <- H3; trivial.
- apply iso_arg_norec with (B:=fun x => pos_to_w2 (p1 x)); intros.
+ apply iso_arg_norec with (B:=fun x => pos_to_w2 (p0 x)); intros.
   do 2 red; intros.
   apply pos_oper_morph; auto with *.
 
@@ -945,17 +1160,12 @@ induction eqp; simpl; intros.
   red; intros; apply pos_to_w2_morph; auto with *.
 
   red; intros.
-  apply (trad_pos_w_morph X); auto with *.
+  revert H3 H4; apply trad_pos_w_morph0; auto with *.
 
-  apply (H1 x x); auto with *. 
+  apply H0; auto with *. 
 
  (* Param *)
- assert (pm : forall x x', x \in A -> x == x' -> eq_pos (p1 x) (p1 x')).
-  intros.
-  transitivity (p2 x'); auto with *.
-  symmetry; apply H0; auto with *.
-  rewrite <- H3; trivial.
- apply iso_param with (B:=fun x => pos_to_w2 (p1 x)); intros.
+ apply iso_param with (B:=fun x => pos_to_w2 (p0 x)); intros.
   do 2 red; intros.
   apply pos_oper_morph; auto with *.
 
@@ -964,10 +1174,64 @@ induction eqp; simpl; intros.
   red; intros; apply pos_to_w2_morph; auto with *.
 
   red; intros.
-  apply (trad_pos_w_morph X); auto with *.
+  revert H3 H4; apply trad_pos_w_morph0; auto with *.
 
-  apply (H1 x x); auto with *. 
+  apply H0; auto with *. 
 Qed.
+(*
+Lemma trad_w_iso_fun :
+  forall X Y f p,
+  morph1 f ->
+  eq_pos p p -> iso_fun X Y f ->
+  iso_fun (pos_oper p X) (W_F (pos_to_w1 p) (pos_to_w2 p) Y) (trad_pos_w f p).
+intros X Y f p fm eqp isof.
+assert (tyf := iso_typ isof).
+elim eqp using pos_rect; simpl; intros.
+ (* Cst *)
+ apply iso_cst.
+
+ (* Rec *)
+ apply iso_reccall; trivial.
+
+ (* Sum *)
+ apply iso_sum; trivial.
+  apply pos_to_w2_morph'; trivial.
+  apply pos_to_w2_morph'; trivial.
+
+ (* ConsRecArg *)
+ apply iso_prodcart; trivial.
+  apply pos_to_w2_morph'; trivial.
+  apply pos_to_w2_morph'; trivial.
+
+ (* ConsNonRecArg *)
+ apply iso_arg_norec with (B:=fun x => pos_to_w2 (p0 x)); intros.
+  do 2 red; intros.
+  apply pos_oper_morph; auto with *.
+
+  do 2 red; intros; apply pos_to_w1_morph; auto with *.
+
+  red; intros; apply pos_to_w2_morph; auto with *.
+
+  red; intros.
+  apply trad_pos_w_morph; auto with *.
+
+  apply H0; auto with *. 
+
+ (* Param *)
+ apply iso_param with (B:=fun x => pos_to_w2 (p0 x)); intros.
+  do 2 red; intros.
+  apply pos_oper_morph; auto with *.
+
+  do 2 red; intros; apply pos_to_w1_morph; auto with *.
+
+  red; intros; apply pos_to_w2_morph; auto with *.
+
+  red; intros.
+  apply trad_pos_w_morph; auto with *.
+
+  apply H0; auto with *. 
+Qed.
+*)
 
 Lemma trad_w_iso_id :
   forall X p,
@@ -976,9 +1240,10 @@ Lemma trad_w_iso_id :
     (trad_pos_w (fun x => x) p).
 intros.
 apply trad_w_iso_fun; trivial.
-apply id_iso_fun.
-Qed.
+(* do 2 red; auto.*)
 
+ apply id_iso_fun.
+Qed.
 
 
 Section InductiveFixpoint.
@@ -1015,14 +1280,16 @@ pose (isow := TI_iso (pos_oper p) (fun f => trad_pos_w f p) IND_clos_ord).
 destruct TI_iso_fun with 
   (F:=pos_oper p) (G:=WFf) (g:=fun f => trad_pos_w f p) (o:=IND_clos_ord) as
  (isof, expTI); intros.
-  apply stable2_weaker; auto with *.
-  apply sp_stable; trivial.
+(*  apply stable2_weaker; auto with *.
+  apply sp_stable; trivial.*)
 
   apply sp_mono; trivial.
 
   apply W_F_mono; trivial.
 
-  apply trad_pos_w_morph; trivial.
+  do 2 red; intros; apply trad_pos_w_morph; trivial.
+
+  apply trad_pos_w_morph0; trivial.
 
   apply trad_w_iso_fun; trivial.
 
@@ -1064,3 +1331,155 @@ apply H1; trivial.
 Qed.
 
 End InductiveFixpoint.
+
+Require Import ZFgrothendieck.
+Section InductiveUniverse.
+
+  Variable U : set.
+  Hypothesis Ugrot : grot_univ U.
+  Hypothesis Unontriv : omega \in U.
+
+  Let Unonmt : empty \in U.
+apply G_trans with omega; trivial.
+apply zero_omega.
+Qed.
+
+  Inductive pos_universe : positive -> Prop :=
+    PU_Cst A : A \in U -> pos_universe (P_Cst A)
+  | PU_Rec : pos_universe P_Rec
+  | PU_Sum p1 p2 : pos_universe p1 -> pos_universe p2 -> pos_universe (P_Sum p1 p2)
+  | PU_ConsRec p1 p2 : pos_universe p1 -> pos_universe p2 -> pos_universe (P_ConsRec p1 p2)
+  | PU_ConsNoRec A p : A \in U -> (forall x, x \in A -> pos_universe (p x)) ->
+       pos_universe (P_ConsNoRec A p)
+  | PU_Param A p : A \in U -> (forall x, x \in A -> pos_universe (p x)) ->
+       pos_universe (P_Param A p).
+
+
+  Lemma G_sum X Y : X \in U -> Y \in U -> sum X Y \in U.
+unfold sum; intros.
+apply G_subset; trivial.
+apply G_prodcart; trivial.
+ unfold ZFnats.succ, ZFnats.zero.
+ assert (empty \in U) by (apply G_trans with omega; auto; apply zero_omega).
+ eauto 10 using G_union2, G_singl.
+
+ apply G_union2; trivial.
+Qed.
+
+
+  Lemma pos_univ_oper_ok p X :
+    eq_pos p p -> pos_universe p -> X \in U -> pos_oper p X \in U.
+intros.
+revert H; elim H0; simpl; intros; trivial.
+ inversion_clear H5.
+ apply G_sum; auto.
+
+ inversion_clear H5.
+ apply G_prodcart; auto.
+
+ inversion_clear H4.
+ apply G_sigma; auto with *.
+ do 2 red; intros; apply pos_oper_morph; auto with *.
+
+ inversion_clear H4.
+ apply G_cc_prod; auto with *.
+ do 2 red; intros; apply pos_oper_morph; auto with *.
+Qed.
+
+
+  Lemma G_posw1 p : eq_pos p p -> pos_universe p ->
+   pos_to_w1 p \in U.
+intros p_ok.
+elim p_ok using pos_rect; simpl; intros.
+ inversion_clear H; trivial.
+
+ apply G_singl; trivial.
+
+ inversion_clear H3.
+ apply G_sum; auto.
+
+ inversion_clear H3.
+ apply G_prodcart; auto.
+
+ inversion_clear H1.
+ apply G_sigma; auto.
+ do 2 red; intros; apply pos_to_w1_morph; auto.
+
+ inversion_clear H1.
+ apply G_cc_prod; auto.
+ do 2 red; intros; apply pos_to_w1_morph; auto.
+Qed.
+
+  Lemma G_posw2 p x :
+    eq_pos p p ->
+    pos_universe p -> x \in pos_to_w1 p -> pos_to_w2 p x \in U.
+intros p_ok.
+revert x; elim p_ok using pos_rect; simpl; intros.
+ apply G_trans with omega; trivial.
+ apply zero_omega.
+
+ apply G_singl; trivial.
+
+ inversion_clear H3.
+ apply sum_ind with (3:=H4); intros.
+  rewrite sum_case_inl0; eauto.
+  apply H1; trivial.
+  rewrite H7; rewrite dest_sum_inl; trivial.
+
+  rewrite sum_case_inr0; eauto.
+  apply H2; trivial.
+  rewrite H7; rewrite dest_sum_inr; trivial.
+
+ inversion_clear H3.
+ apply G_sum; auto.
+  apply fst_typ in H4; auto.
+  apply snd_typ in H4; auto.
+
+ inversion_clear H1.
+ apply H0.
+  apply fst_typ_sigma in H2; trivial.
+
+  apply H4.
+  apply fst_typ_sigma in H2; trivial.
+
+  apply snd_typ_sigma with (2:=H2); auto with *.
+  do 2 red; intros; apply pos_to_w1_morph; auto.
+
+ inversion_clear H1.
+ apply G_sigma; trivial.
+  do 2 red; intros; apply pos_to_w2_morph; auto with *.
+  apply cc_app_morph; auto with *.
+
+  intros.
+  apply H0; auto.
+  apply cc_prod_elim with (1:=H2); trivial.
+Qed.
+
+  Lemma G_IND p : eq_pos p p -> pos_universe p -> IND p \in U.
+intros.
+unfold IND, INDi.
+apply G_TI; trivial.
+ apply pos_oper_morph; trivial.
+
+ apply W_o_o; trivial.
+ apply pos_to_w2_morph'; trivial.
+
+ apply G_W_ord; trivial.
+  apply pos_to_w2_morph'; trivial.
+
+  apply G_posw1; trivial.
+
+  intros; apply G_posw2; trivial.
+
+ intros; apply pos_univ_oper_ok; trivial.
+Qed.
+
+  Lemma G_INDi p o : eq_pos p p -> pos_universe p -> isOrd o -> INDi p o \in U.
+intros.
+apply G_incl with (IND p); trivial.
+ apply G_IND; trivial.
+
+ apply INDi_IND; trivial.
+Qed.
+
+End InductiveUniverse.

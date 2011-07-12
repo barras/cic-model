@@ -1,5 +1,7 @@
 Require Import ZF.
-Require Import ZFpairs ZFrelations ZFrepl.
+Require Import ZFpairs ZFrelations ZFrepl ZFwf ZFord ZFfix.
+Require Import ZFcoc.
+Require Import ZFlist.
 Import IZF.
 
 Record grot_univ (U:set) : Prop := {
@@ -179,6 +181,253 @@ apply G_union_repl; trivial; intros.
 
  rewrite H3; auto.
 Qed.
+
+  Lemma G_sup A B :
+    ext_fun A B ->
+    A \in U ->
+    (forall x, x \in A -> B x \in U) ->
+    sup A B \in U.
+intros.
+apply G_union; trivial.
+apply G_replf; trivial.
+Qed.
+
+  Lemma G_sigma A B :
+    ext_fun A B ->
+    A \in U ->
+    (forall x, x \in A -> B x \in U) ->
+    sigma A B \in U.
+intros.
+apply G_subset; trivial.
+apply G_prodcart; trivial.
+apply G_sup; trivial.
+Qed.
+
+  Lemma G_cc_prod A B :
+    ext_fun A B ->
+    A \in U ->
+    (forall x, x \in A -> B x \in U) ->
+    cc_prod A B \in U.
+intros.
+unfold cc_prod.
+apply G_replf; auto with *.
+ apply G_dep_func; intros; auto with *.
+
+ intros.
+ unfold cc_lam.
+ apply G_union; trivial.
+ apply G_replf; trivial.
+  apply cc_lam_fun2.
+  do 2 red; intros; apply app_morph; auto with *.
+
+  intros.
+  assert (app x x0 \in U).
+   unfold app.
+   apply G_union; trivial.
+   apply G_subset; trivial.
+   unfold rel_image.
+   apply G_subset; trivial.
+   apply G_union; trivial.
+   apply G_union; trivial.
+   apply G_trans with (2:=H2); trivial.
+   apply G_dep_func; intros; auto with *.
+  apply G_replf; intros; trivial.
+  apply G_couple; trivial.
+   apply G_trans with A; trivial.
+
+   apply G_trans with (app x x0); trivial.
+Qed.
+
+  Lemma G_TR F o :
+    (forall o o' f f', o == o' -> eq_fun o f f' -> F f o == F f' o') ->
+    isOrd o ->
+    o \in U ->
+    (forall f o, ext_fun o f -> o \in U ->
+     (forall o', o' \in o -> f o' \in U) ->
+     F f o \in U) ->
+    TR F o \in U.
+intros Fext oo oU FU.
+apply TR_typ with (X:=fun _ => U); trivial.
+ do 2 red; reflexivity.
+intros.
+apply FU; auto.
+apply G_incl with o; trivial.
+Qed.
+
+  Lemma G_TI F o :
+    morph1 F ->
+    isOrd o ->
+    o \in U ->
+    (forall x, x \in U -> F x \in U) ->
+    TI F o \in U.
+intros.
+apply G_TR; trivial; intros.
+ apply sup_morph; trivial.
+ red; intros.
+ apply H; auto.
+
+ apply G_sup; auto.
+ do 2 red; intros; apply H; auto.
+Qed.
+
+Lemma G_osup2 x y :
+  isWf x -> x \in U -> y \in U -> osup2 x y \in U.
+intro wfx; revert y; induction wfx using isWf_ind.
+intros.
+rewrite osup2_def; trivial.
+ apply G_union2; trivial.
+  apply G_union2; trivial.
+
+  apply G_union; trivial.
+  apply G_replf; trivial; intros.
+   do 2 red; intros; apply replf_morph; auto with *.
+   red; intros; apply osup2m; trivial.
+
+   apply G_replf; trivial; intros.
+    do 2 red; intros; apply osup2m; auto with *.
+
+    apply H; eauto using G_trans.
+Qed.
+
+  Lemma G_Ffix F A : A \in U -> Ffix F A \in U.
+intros.
+unfold Ffix.
+apply G_subset; trivial.
+Qed.
+(*
+  Lemma G_Ffix_ord F A : A \in U -> Ffix_ord F A \in U.
+intros.
+unfold Ffix_ord.
+apply G_osup; intros; trivial.
+ do 2 red; intros; apply osucc_morph.
+ admit.
+
+ apply isOrd_succ.
+ apply F_a_ord; auto.
+
+ apply G_Ffix; trivial.
+ apply G_Wdom; trivial.
+
+ unfold osucc; apply G_subset; trivial; apply G_power; trivial.
+ unfold Fix_rec.
+ admit.
+Qed.
+*)
+
+Section NonTrivial.
+
+  Hypothesis Unontriv : empty \in U.
+
+End NonTrivial.
+
+
+Section Infinite.
+
+  Hypothesis Uinf : omega \in U.
+
+  Lemma G_inf_nontriv : empty \in U.
+apply G_trans with omega; trivial.
+apply zero_omega.
+Qed.
+  Hint Resolve G_inf_nontriv.
+
+
+  Lemma G_List A : A \in U -> List A \in U.
+intros.
+unfold List.
+apply G_TI; intros; trivial.
+ apply LISTf_morph.
+
+ unfold LISTf.
+ apply G_union2; trivial.
+  apply G_pair; trivial; apply G_trans with omega; trivial; apply zero_omega.
+
+  apply G_sup; trivial.  
+   do 2 red; intros; apply replf_morph; auto with *.
+   red; intros; apply couple_morph; trivial.
+
+   intros.
+   apply G_replf; intros; trivial.
+   apply G_couple; eauto using G_trans.
+Qed.
+
+  Lemma G_N : ZFnats.N \in U.
+pose (f := fun X => union2 (singl ZFnats.zero) (replf X ZFnats.succ)).
+assert (fm : morph1 f).
+ do 2 red; intros.
+ apply union2_morph; auto with *.
+ apply replf_morph; trivial.
+ red; intros; apply ZFnats.succ_morph; trivial.
+assert (ZFnats.N \incl TI f omega).
+ red; intros.
+ apply ZFnats.nat2set_reflect in H.
+ destruct H.
+ rewrite H.
+ clear z H.
+ induction x; simpl.
+  apply TI_intro with empty; trivial.
+  apply union2_intro1.
+  apply singl_intro.
+
+  apply TI_elim in IHx; trivial.
+  destruct IHx.
+  apply TI_intro with (osucc x0); auto.
+  apply union2_intro2.
+  rewrite replf_ax.
+  2:do 2 red; intros; apply ZFnats.succ_morph; trivial.
+  exists (ZFnats.nat2set x); auto with *.
+  apply TI_intro with x0; auto.
+   eauto using isOrd_inv.
+
+   apply lt_osucc; eauto using isOrd_inv.
+apply G_incl with (2:=H); trivial.
+apply G_TI; trivial; intros.
+apply G_union2; trivial.
+ apply G_singl; trivial.
+
+ apply G_replf; trivial.
+  do 2 red; intros; apply ZFnats.succ_morph; trivial.
+
+  intros.
+  unfold ZFnats.succ.
+  apply G_union2; eauto using G_trans.
+  apply G_singl; trivial.
+  apply G_trans with x; trivial.
+Qed.
+
+Lemma G_osup I f :
+  ext_fun I f ->
+  (forall x, x \in I -> isOrd (f x)) ->
+  I \in U ->
+  (forall x, x \in I -> f x \in U) ->
+  osup I f \in U.
+intros ef ford IU fU.
+unfold osup.
+unfold ord_sup.
+apply G_union; trivial.
+apply G_repl; trivial.
+ apply repl_sup.
+
+ apply G_N.
+intros.
+destruct H0.
+rewrite <- H1.
+clear H0 H1.
+induction x0; simpl; intros.
+ apply G_sup; trivial.
+
+ apply G_sup; intros; trivial.
+  do 2 red; intros; apply replf_morph; auto with *.
+  red; intros; apply osup2m; trivial.
+
+  apply G_replf; intros; trivial.
+   do 2 red; intros; apply osup2m; auto with *.
+
+   apply G_osup2; eauto using G_trans.
+   apply isOrd_osupfn in H0; auto.
+Qed.
+
+End Infinite.
 
 End GrothendieckUniverse.
 

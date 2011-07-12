@@ -181,7 +181,7 @@ exists (osucc x0).
  apply H.
 Qed.
 
-
+(*
   Lemma VNlim_pair : forall o x y, isDir o -> limitOrd o ->
     x \in VN o -> y \in VN o -> pair x y \in VN o.
 intros o x y dir lim; intros.
@@ -201,6 +201,25 @@ exists (osucc x2).
 
   revert H1; apply VN_mono_le; trivial.
   revert H2; apply VN_mono_le; trivial.
+Qed.
+*)
+
+  Lemma VNlim_pair : forall o x y, limitOrd o ->
+    x \in VN o -> y \in VN o -> pair x y \in VN o.
+intros o x y lim; intros.
+rewrite VNlim_def in H,H0|-*; auto.
+destruct H; destruct H0.
+assert (o0 : isOrd x0) by eauto using isOrd_inv.
+assert (o1 : isOrd x1) by eauto using isOrd_inv.
+exists (osucc (osup2 x0 x1)).
+ apply lim.
+ apply osup2_lt; auto.
+
+ apply VNsucc_pair.
+  apply isOrd_osup2; trivial.
+
+  revert H1; apply VN_mono_le; trivial; [apply isOrd_osup2|apply osup2_incl1]; auto.
+  revert H2; apply VN_mono_le; trivial; [apply isOrd_osup2|apply osup2_incl2]; auto.
 Qed.
 
 
@@ -236,7 +255,7 @@ Definition VN_regular o :=
 Definition bound_ord A o :=
   forall F, ext_fun A F ->
   (forall n, n \in A -> lt (F n) o) ->
-  lt (sup A F) o.
+  lt (osup A F) o.
 
 Lemma VN_reg_ord : forall o,
   isOrd o -> 
@@ -245,14 +264,18 @@ Lemma VN_reg_ord : forall o,
   ext_fun x F ->
   x \in VN o ->
   (forall y, y \in x -> lt (F y) o) ->
-  lt (sup x F) o.
+  lt (osup x F) o.
 intros.
 apply VN_ord_inv; trivial.
- apply isOrd_supf; eauto using isOrd_inv.
+ apply isOrd_osup; eauto using isOrd_inv.
 
+admit.
+(* TODO: fix
+unfold osup.
+unfold ord_sup.
  apply H0; intros; trivial.
  apply VN_intro; trivial.
- apply H3; trivial.
+ apply H3; trivial.*)
 Qed.
 
 Definition VN_inaccessible o :=
@@ -287,6 +310,7 @@ Qed.
 
 Let mul : limitOrd mu := conj mu_ord mu_lim.
 
+(*
   Lemma isDir_regular : isDir mu.
 red; intros.
 pose (R := fun n z => n==zero /\ z==osucc x \/ n==osucc zero /\ z==osucc y).
@@ -337,13 +361,13 @@ exists (union (repl (osucc (osucc zero)) R)).
 
     right; split; auto with *.
 Qed.
-
+*)
 
   Lemma VN_clos_pair : forall x y,
     x \in VN mu -> y \in VN mu -> pair x y \in VN mu.
 intros.
 apply VNlim_pair; trivial.
-apply isDir_regular.
+(*apply isDir_regular.*)
 Qed.
 
   Definition lt_cardf a b :=
@@ -353,7 +377,7 @@ Qed.
   Lemma VN_cardf : forall a,
     a \in VN mu -> lt_cardf a mu.
 red; intros.
-pose (mu' := sup (subset a (fun x => F x \in mu)) F).
+pose (mu' := osup (subset a (fun x => F x \in mu)) F).
 assert (ext : ext_fun (subset a (fun x : set => F x \in mu)) F).
  red; red; intros.
  apply H0; trivial.
@@ -379,8 +403,7 @@ exists (osucc mu').
  red; intros.
  apply (lt_antirefl mu'); trivial.
  unfold mu' at 2.
- rewrite sup_ax; trivial.
- exists x.
+ apply osup_intro with x; trivial.
   apply subset_intro; trivial.
   rewrite <- H4.
   apply mu_lim; trivial.
@@ -394,70 +417,68 @@ Require Import ZFcard.
   Lemma VNcard : forall x,
     x \in VN mu -> lt_card x mu.
 red; red; intros.
-destruct H0.
+destruct H0 as (R,?,(?,?)).
 rewrite VN_def in H; auto; destruct H.
-pose (mu' := sup (subset x (fun x' => exists2 w, w \in mu & x0 w x'))
-              (fun x' => union (subset mu (fun o => exists2 x'', x'' == x' & x0 o x'')))).
-assert (ext : ext_fun (subset x (fun x' => exists2 w, w \in mu & x0 w x'))
-   (fun x' => union (subset mu (fun o => exists2 x'', x'' == x' & x0 o x'')))).
+pose (mu' := osup (subset x (fun x' => exists2 w, w \in mu & R w x'))
+              (fun x' => uchoice (fun o => o \in mu /\ R o x'))).
+assert (ext : ext_fun (subset x (fun x' => exists2 w, w \in mu & R w x'))
+   (fun x' => uchoice (fun o => o \in mu /\ R o x'))).
  red; red; intros.
- apply union_morph.
- apply subset_morph; auto with *.
+ apply uchoice_morph_raw.
  red; intros.
-  apply ex2_morph.
-   red; intros.
-   rewrite H4; reflexivity.
-
-   red; intros; reflexivity.
+ rewrite H5; rewrite H6; reflexivity.
 assert (mu' \in mu).
  unfold mu'; apply VN_reg_ord; auto.
   exact VN_regular_weaker.
 
+  apply VN_subset; trivial.
   rewrite VN_def; trivial.
-  exists x1; trivial.
-  red; intros.
-  apply subset_elim1 in H3; auto.
+  exists x0; trivial.
 
   intros.
-  rewrite subset_ax in H3; destruct H3.
-  destruct H4.
+  rewrite subset_ax in H4; destruct H4.
   destruct H5.
-  apply isOrd_plump with x3; trivial.
-   apply isOrd_union; intros.
-   apply subset_elim1 in H7; eauto using isOrd_inv.
+  destruct H6.
+  rewrite <- H5 in H7; clear x1 H5.
+  assert (uchoice_pred (fun o => o \in mu /\ R o y)).
+   split; [|split]; intros; eauto.
+    rewrite <- H5; trivial.
 
-   red; intros.
-   apply union_elim in H7; destruct H7.
-   rewrite subset_ax in H8; destruct H8.
-   destruct H9.
-   destruct H10.
-   rewrite H9 in H7,H8; clear H9 x4.
-   setoid_replace x3 with x5; trivial.
-   apply H1 with x2 x6; auto with *.
-    rewrite <- H4; trivial.
-    rewrite H10; trivial.
-    symmetry; transitivity y; trivial.
+    destruct H5; destruct H8.
+    eauto with *.
+  destruct (uchoice_def _ H5); trivial.
 assert (mu == mu').
  apply eq_intro; intros.
-  destruct (H0 _ (mu_lim _ H4)).
+  destruct (H1 _ (mu_lim _ H5)).
   unfold mu'.
-  rewrite sup_ax; trivial.
-  exists x2; trivial.
+  apply osup_intro with (x:=x1).
+   do 2 red; intros; apply uchoice_morph_raw.
+   red; intros.
+   rewrite H9; rewrite H10; reflexivity.
+
    apply subset_intro; trivial.
    exists (osucc z); trivial.
    apply mu_lim; trivial.
 
-   apply union_intro with (osucc z).
-    apply lt_osucc; apply isOrd_inv with mu; trivial.
+   rewrite <- (uchoice_ext _ (osucc z)).
+    apply lt_osucc; eauto using isOrd_inv.
 
-    apply subset_intro.
+    split; [|split]; intros; eauto.
+     rewrite <- H8; trivial.
+
+     exists (osucc z); auto.
+     split; auto.
      apply mu_lim; trivial.
 
-     exists x2; auto with *.
+     destruct H8; destruct H9.
+     eauto with *.
+
+    split; trivial.
+    apply mu_lim; trivial.
 
   apply isOrd_trans with mu'; trivial.
-rewrite <- H4 in H3.
-revert H3; apply lt_antirefl; trivial.
+rewrite <- H5 in H4.
+revert H4; apply lt_antirefl; trivial.
 Qed.
 
   Lemma reg_card : isCard mu.

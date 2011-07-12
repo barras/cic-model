@@ -111,39 +111,40 @@ assert (Ford : forall x, x \in X -> isOrd (G x)).
  intros.
  apply isOrd_inv with mu; auto.
 rewrite sup_ax; auto.
-assert (lt (sup X G) mu) by (apply X_small; trivial).
-exists (sup X G); trivial.
+assert (lt (osup X G) mu) by (apply X_small; trivial).
+exists (osup X G); trivial.
 apply func_narrow with (1:=H); intros.
 apply Fincr with (G x); auto.
-apply isOrd_inv with mu; auto.
+ apply isOrd_osup; auto.
+
+ apply osup_intro; trivial.
 Qed.
 
 
-  Hypothesis mu_bound : lt (sup (func X mu) (fun f => sup X (app f))) mu.
+  Hypothesis mu_bound : lt (osup (func X mu) (fun f => osup X (app f))) mu.
 
 
   Lemma func_bound : bound_ord X mu.
 red; intros.
 apply isOrd_plump with (4:=mu_bound); auto.
- apply isOrd_supf; auto.
+ apply isOrd_osup; auto.
  intros.
  apply isOrd_inv with mu; auto.
 
  red; intros.
- rewrite sup_ax; auto.
- exists (lam X F).
+ apply osup_intro with (x:=lam X F).
+  do 2 red; intros.
+  apply osup_morph; auto with *.
+  red; intros.
+  apply app_morph; trivial.
+
   apply lam_is_func; auto.
 
   apply eq_elim with (2:=H1).
-  apply sup_morph; auto with *.
+  apply osup_morph; auto with *.
   red; intros.
   rewrite beta_eq; auto.
   rewrite <- H3; trivial.
-
-  red; red; intros.
-  apply sup_morph; auto with *.
-  red; intros.
-  apply app_morph; trivial.
 Qed.
 (*
 Goal lt_cardf X mu.

@@ -5,47 +5,59 @@ Import IZF.
 
 Definition le_card (x y:set) : Prop :=
   exists2 R : set -> set -> Prop,
-    (forall x', x' \in x -> exists2 y', y' \in y & R x' y') &
+    Proper (eq_set ==> eq_set ==> iff) R &
+    (forall x', x' \in x -> exists2 y', y' \in y & R x' y') /\
     (forall x1 y1 x2 y2, x1 \in x -> x2 \in x -> y1 \in y -> y2 \in y ->
      R x1 y1 -> R x2 y2 -> y1 == y2 -> x1 == x2).
 
 Instance le_card_morph : Proper (eq_set ==> eq_set ==> iff) le_card.
 split; destruct 1.
- exists x1; intros.
-  rewrite <- H in H3.
-  elim H1 with x'; intros; trivial.
+ destruct H2.
+ exists x1; trivial; split; intros.
+  rewrite <- H in H4.
+  elim H2 with x'; intros; trivial.
   exists x2; trivial.
   rewrite <- H0; trivial.
 
-  rewrite <- H in H3,H4|-.
-  rewrite <- H0 in H5,H6|-.
+  rewrite <- H in H4,H5|-.
+  rewrite <- H0 in H6,H7|-.
   eauto.
 
- exists x1; intros.
-  rewrite H in H3.
-  elim H1 with x'; intros; trivial.
+ destruct H2.
+ exists x1; trivial; split; intros.
+  rewrite H in H4.
+  elim H2 with x'; intros; trivial.
   exists x2; trivial.
   rewrite H0; trivial.
 
-  rewrite H in H3,H4|-.
-  rewrite H0 in H5,H6|-.
+  rewrite H in H4,H5|-.
+  rewrite H0 in H6,H7|-.
   eauto.
 Qed.
 
 Instance le_card_refl : Reflexive le_card.
 exists (fun x' y' => x' == y').
- intros.
- exists x'; trivial; reflexivity.
+ do 3 red; intros.
+ rewrite H; rewrite H0; reflexivity.
 
- intros.
- rewrite H3; rewrite H4; trivial.
+ split; intros.
+  exists x'; trivial; reflexivity.
+
+  rewrite H3; rewrite H4; trivial.
 Qed.
 
 Instance le_card_trans : Transitive le_card.
 red.
-destruct 1 as (R,incl,inj);
-destruct 1 as (R',incl',inj').
-exists (fun x' z' => exists2 y', y' \in y & R x' y' /\ R' y' z'); intros.
+destruct 1 as (R,Rm,(incl,inj));
+destruct 1 as (R',R'm,(incl',inj')).
+exists (fun x' z' => exists2 y', y' \in y & R x' y' /\ R' y' z'); [|split;intros].
+ do 3 red; intros.
+ apply ex2_morph.
+  red; reflexivity.
+
+  red; intros.
+  rewrite H; rewrite H0; reflexivity.
+
  elim incl with x'; trivial; intros.
  elim incl' with x0; trivial; intros.
  exists x1; trivial.
@@ -61,7 +73,10 @@ Definition lt_card x y :=
 
 Lemma incl_le_card : forall x y, x \incl y -> le_card x y.
 intros.
-exists (fun x y => x == y); intros.
+exists (fun x y => x == y); [|split;intros].
+ do 3 red; intros.
+ rewrite H0; rewrite H1; reflexivity.
+
  exists x'; auto.
  reflexivity.
 
@@ -70,7 +85,7 @@ Qed.
 
 Lemma cantor_le : forall x, lt_card x (power x).
 red; red; intros.
-destruct H as (R,incl,Rfun).
+destruct H as (R,Rm,(incl,Rfun)).
 pose (D := subset x (fun x' => forall x'' z, z \in power x ->
              x'' == x' -> R z x'' -> ~ x'' \in z)).
 assert (D \in power x).
@@ -104,69 +119,65 @@ Qed.
 
 Definition equi_card (x y:set) : Prop :=
   exists2 R : set -> set -> Prop,
+    Proper (eq_set ==> eq_set ==> iff) R &
     (forall x', x' \in x -> exists2 y', y' \in y & R x' y') /\
-    (forall y', y' \in y -> exists2 x', x' \in x & R x' y') &
+    (forall y', y' \in y -> exists2 x', x' \in x & R x' y') /\
     (forall x1 y1 x2 y2, x1 \in x -> x2 \in x -> y1 \in y -> y2 \in y ->
      R x1 y1 -> R x2 y2 -> (x1 == x2 <-> y1 == y2)).
 
 Instance equi_card_morph : Proper (eq_set ==> eq_set ==> iff) equi_card.
-unfold equi_card; split; destruct 1.
- destruct H1.
- exists x1; intros.
-  split; intros.
-   rewrite <- H in H4.
-   destruct (H1 x'); trivial.
-   rewrite H0 in H5.
-   exists x2; trivial.
+apply morph_impl_iff2; auto with *.
+unfold equi_card; do 4 red; intros.
+destruct H1 as (R,Rm,(incl1,(incl2,bij))).
+exists R; [trivial|split;[|split]]; intros.
+ rewrite <- H in H1.
+ destruct (incl1 x'); trivial.
+ rewrite H0 in H2.
+ exists x1; trivial.
 
-   rewrite <- H0 in H4.
-   destruct (H3 y'); trivial.
-   rewrite H in H5.
-   exists x2; trivial.
+ rewrite <- H0 in H1.
+ destruct (incl2 y'); trivial.
+ rewrite H in H2.
+ exists x1; trivial.
 
- rewrite <- H in H4,H5.
- rewrite <- H0 in H6,H7.
- auto.
-
- destruct H1.
- exists x1; intros.
-  split; intros.
-   rewrite H in H4.
-   destruct (H1 x'); trivial.
-   rewrite <- H0 in H5.
-   exists x2; trivial.
-
-   rewrite H0 in H4.
-   destruct (H3 y'); trivial.
-   rewrite <- H in H5.
-   exists x2; trivial.
-
- rewrite H in H4,H5.
- rewrite H0 in H6,H7.
+ rewrite <- H in H1,H2.
+ rewrite <- H0 in H3,H4.
  auto.
 Qed.
 
 Instance equi_card_refl : Reflexive equi_card.
 exists (fun x' y' => x' == y').
- split; intros.
+ do 3 red; intros.
+ rewrite H; rewrite H0; reflexivity.
+
+ split; [|split]; intros.
   exists x'; trivial; reflexivity.
   exists y'; trivial; reflexivity.
- intros.
- rewrite H3; rewrite H4; reflexivity.
+  rewrite H3; rewrite H4; reflexivity.
 Qed.
 
 Instance equi_card_sym : Symmetric equi_card.
-red; destruct 1 as (R,(incl1,incl2),bij).
+red; destruct 1 as (R,Rm,(incl1,(incl2,bij))).
 exists (fun x' y' => R y' x'); intros; auto.
-symmetry; auto.
+ do 3 red; intros; apply Rm; trivial.
+
+ split;[|split]; trivial.
+ symmetry; auto.
 Qed.
 
 Instance equi_card_trans : Transitive equi_card.
 red.
-destruct 1 as (R,(incl1,incl2),bij);
-destruct 1 as (R',(incl1',incl2'),bij').
+destruct 1 as (R,Rm,(incl1,(incl2,bij)));
+destruct 1 as (R',R'm,(incl1',(incl2',bij'))).
 exists (fun x' z' => exists2 y', y' \in y & R x' y' /\ R' y' z').
- split; intros.
+ do 3 red; intros.
+ apply ex2_morph.
+  red; reflexivity.
+
+  red; intros.
+  rewrite H; rewrite H0; reflexivity.
+
+ split; [|split]; intros.
   elim incl1 with x'; trivial; intros.
   elim incl1' with x0; trivial; intros.
   exists x1; trivial.
@@ -177,16 +188,14 @@ exists (fun x' z' => exists2 y', y' \in y & R x' y' /\ R' y' z').
   exists x1; trivial.
   exists x0; auto.
 
- intros.
- destruct H3 as (y1',in1,(r1,r1'));
-   destruct H4 as (y2',in2,(r2,r2')).
- transitivity (y1' == y2'); auto.
+  destruct H3 as (y1',in1,(r1,r1'));
+    destruct H4 as (y2',in2,(r2,r2')).
+  transitivity (y1' == y2'); auto.
 Qed.
 
 Lemma equi_card_le : forall x y, equi_card x y -> le_card x y.
-destruct 1 as (R,(incl1,incl2),bij).
-exists R; auto.
-intros.
+destruct 1 as (R,Rm,(incl1,(incl2,bij))).
+exists R; [trivial|split;intros;auto].
 refine (proj2 (bij _ _ _ _ _ _ _ _ H3 H4) H5); trivial.
 Qed.
 
@@ -261,12 +270,12 @@ Definition lt_card2 a b :=
 Lemma lt_card_weaker : forall a b,
   lt_card2 a b -> lt_card a b.
 red; red; intros.
-destruct H0 as (R,?,?).
+destruct H0 as (R,?,(?,?)).
 destruct (H (fun x y => R y x)).
  intros.
- apply H1 with x x'; trivial.
- rewrite <- H7; trivial.
+ apply H2 with x x'; trivial.
+ rewrite <- H8; trivial.
 
- destruct H0 with x; trivial.
- eapply H3; eauto.
+ destruct H1 with x; trivial.
+ eapply H4; eauto.
 Qed.  

@@ -1,4 +1,5 @@
 Require Import ZF ZFpairs ZFsum ZFnats ZFrelations ZFord ZFfix ZFstable.
+Require Import ZFgrothendieck.
 Require Import ZFcoc ZFlist.
 Import IZF ZFrepl.
 
@@ -875,6 +876,109 @@ apply eq_intro; intros.
  revert H; apply Wi_W; auto.
 Qed.
 
+
+Section W_Univ.
+
+(* Universe facts *)
+  Variable U : set.
+  Hypothesis Ugrot : grot_univ U.
+  Hypothesis Unontriv : omega \in U.  
+
+  Hypothesis aU : A \in U.
+  Hypothesis bU : forall a, a \in A -> B a \in U.
+
+  Lemma G_Wdom : Wdom \in U.
+unfold Wdom.
+apply G_rel; trivial.
+apply G_List; trivial.
+apply G_sup; trivial.
+Qed.
+
+  Lemma G_W : W \in U.
+apply G_subset; trivial.
+apply G_Wdom.
+Qed.
+
+  Lemma G_W_F X : X \in U -> W_F X \in U.
+intros.
+unfold W_F.
+apply G_sigma; intros; trivial.
+apply G_cc_prod; auto.
+Qed.
+
+  Lemma G_W_ord : W_ord \in U.
+unfold W_ord.
+unfold Ffix_ord.
+apply G_osup; intros; trivial.
+ do 2 red; intros; apply osucc_morph.
+ unfold Fix_rec.
+ apply uchoice_morph_raw.
+ red; intros.
+ apply Ffix_rel_morph; trivial.
+
+ apply isOrd_succ.
+ apply F_a_ord; auto.
+
+ apply G_Ffix; trivial.
+ apply G_Wdom; trivial.
+
+ unfold osucc; apply G_subset; trivial; apply G_power; trivial.
+ apply subset_elim1 with (P:=isOrd).
+ apply Fix_rec_typ with U; auto.
+  intros; apply F_a_morph; trivial.
+
+  red; intros.
+  apply G_trans with (2:=H0); trivial.
+  apply G_Ffix; trivial.
+  apply G_Wdom.
+
+  intros.
+  apply subset_intro.
+   unfold F_a.
+   apply G_osup; trivial.
+    do 2 red; intros; apply osucc_morph; apply H0; trivial.
+
+    intros.
+    apply isOrd_succ.
+    apply H2 in H3.
+    apply subset_elim2 in H3; destruct H3.
+    rewrite H3; trivial.
+
+    unfold fsub.
+    apply G_subset; trivial.
+    apply G_Wdom; trivial.
+
+    intros.
+    unfold osucc.
+    apply G_subset; trivial.
+    apply G_power; trivial.
+    apply H2 in H3.
+    apply subset_elim1 in H3; trivial.
+
+    apply isOrd_osup.
+     do 2 red; intros; apply osucc_morph; apply H0; trivial.
+
+     intros.
+     apply isOrd_succ.
+     apply H2 in H3.
+     apply subset_elim2 in H3; destruct H3.
+     rewrite H3; trivial.
+Qed.
+
+
+  Lemma G_W2 : W2 \in U.
+apply G_TI; intros; trivial.
+ do 2 red; intros; apply sigma_ext; intros; auto with *.
+ apply cc_prod_morph; auto with *.
+ red; trivial.
+
+ apply G_W_ord.
+
+ apply G_W_F; trivial.
+Qed.
+
+End W_Univ.
+
 End W_theory.
 
 (* More on W_F: *)
@@ -882,7 +986,7 @@ End W_theory.
 Lemma W_F_morph : Proper (eq_set ==> (eq_set ==> eq_set) ==> eq_set ==> eq_set) W_F.
 do 4 red; intros.
 unfold W_F.
-apply sigma_morph; trivial.
+apply sigma_ext; trivial.
 intros.
 apply cc_prod_ext; auto with *.
 red; trivial.
@@ -895,7 +999,7 @@ Lemma W_F_ext : forall A A' B B' X X',
   X == X' ->
   W_F A B X == W_F A' B' X'.
 unfold W_F; intros.
-apply sigma_morph; trivial.
+apply sigma_ext; trivial.
 intros.
 apply cc_prod_ext; auto with *.
 red; auto.

@@ -214,3 +214,51 @@ split; intros.
  destruct H3.
  rewrite (H4 _ _ H0 H1); trivial.
 Qed.
+
+
+(* Relations between repl and uchoice *)
+(*Lemma repl_rel_uchoice_pred A R :
+  (forall x, x \in A -> uchoice_pred (R x)) ->
+  repl_rel A R.
+split; intros.
+ destruct (H _ H0) as (?,_); eauto with *.
+
+ destruct H as (?,?).
+ split; [|split]; intros.
+  destruct H; eauto with *.
+
+  exists 
+*)
+
+(*
+Lemma repl_is_choice A R :
+  repl_rel A R ->
+  repl A R == replf A (fun x => uchoice (R x)).
+intros.
+assert (ext_fun A (fun x => uchoice (R x))).
+ destruct H as (?,_).
+ do 2 red; intros.
+ apply uchoice_morph_raw.
+ red; intros.
+ split; intros.
+  apply H with x x0; auto with *.
+  
+  apply H with x' y; auto with *.
+  rewrite <- H1; trivial.
+apply eq_intro; intros.
+ apply repl_elim in H1; trivial; destruct H1.
+ rewrite replf_ax; trivial.
+ exists x; trivial.
+ apply uchoice_ext; trivial.
+ destruct H as (?,?).
+ split; [|split]; intros; eauto.
+ apply H with x x0; auto with *.
+
+ rewrite replf_ax in H1; trivial.
+ destruct H1.
+ rewrite H2; clear z H2.
+ apply repl_intro with x; trivial.
+ apply uchoice_def.
+*)
+
+

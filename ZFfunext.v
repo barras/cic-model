@@ -1,5 +1,5 @@
 Require Export basic.
-Require Import ZF ZFrelations ZFnats ZFord ZFstable ZFcoc.
+Require Import ZF ZFrelations ZFnats ZFcoc.
 Import IZF.
 
 

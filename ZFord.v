@@ -1,20 +1,7 @@
-Require Import ZFnats.
+Require Import Arith.
+Require Import ZFnats ZFwf.
 Require Export ZF.
 Import IZF.
-
-(* duplicate ZFnats *)
-(*Definition lt := in_set.
-Instance lt_morph : Proper (eq_set ==> eq_set ==> iff) lt.
-exact in_set_morph.
-Qed.
-Definition zero := empty.
-*)
-
-(* e' \incl e
-ord e e' <->
-(forall a, a \in e -> a \in e' -> ord a a) /\
-(forall a b, ord b a -> a \incl b -> b \in e -> b \in e' -> a \in e').
-*)
 
 Instance wf_morph : Proper (eq_set ==> iff) (Acc in_set).
 do 2 red; intros.
@@ -43,49 +30,64 @@ Definition isDir o := forall x y,
 Fixpoint plump ub (p:Acc in_set ub) x : Prop :=
   (forall y (q: y \in ub), y \in x -> plump y (Acc_inv p _ q) y) /\
   (forall z y (q: y \in ub), plump y (Acc_inv p _ q) z ->
-   z \incl y -> y \in x -> z \in x).
+   z \incl y -> y \in x -> z \in x) /\
+  isDir x.
 
 Lemma plump_morph : forall x x' p p' y y',
   x == x' -> y == y' -> (plump x p y <-> plump x' p' y').
 intros x x' p; revert x'.
 induction p using Acc_indd; simpl; intros.
 destruct p'; simpl.
-split; destruct 1; split; intros.
+split; destruct 1 as (?,(?,?)); (split; [|split]); intros.
  assert (q' := q).
  rewrite <- H0 in q'.
- rewrite <- H1 in H4.
+ rewrite <- H1 in H5.
  rewrite <- (H y0 q' _ _ y0 y0); auto with *.
 
  assert (q' := q).
  rewrite <- H0 in q'.
- rewrite <- H1 in H6|-*.
- rewrite <- (H y0 q' _ _ z z) in H4; eauto with *.
+ rewrite <- H1 in H7|-*.
+ rewrite <- (H y0 q' _ _ z z) in H5; eauto with *.
+
+ red; intros.
+ destruct H4 with x0 y0.
+  rewrite H1; trivial.
+  rewrite H1; trivial.
+  exists x1; trivial.
+  rewrite <- H1; trivial.
 
  assert (q' := q).
  rewrite H0 in q'.
- rewrite H1 in H4.
+ rewrite H1 in H5.
  rewrite (H _ _ y0 (a0 _ q') _ y0); auto with *.
 
  assert (q' := q).
  rewrite H0 in q'.
- rewrite H1 in H6|-*.
- rewrite (H _ _ y0 (a0 _ q') _ z) in H4; eauto with *.
+ rewrite H1 in H7|-*.
+ rewrite (H _ _ y0 (a0 _ q') _ z) in H5; eauto with *.
+
+ red; intros.
+ destruct H4 with x0 y0.
+  rewrite <- H1; trivial.
+  rewrite <- H1; trivial.
+  exists x1; trivial.
+  rewrite H1; trivial.
 Qed.
 
 Lemma plump_bound : forall ub1 ub2 p1 p2 x,
  x \incl ub1 ->
  plump ub1 p1 x -> plump ub2 p2 x.
 destruct p1; destruct p2; simpl; intros.
-destruct H0.
-split; intros.
+destruct H0 as (?,(?,?)).
+split; [|split]; intros; trivial.
  assert (y \in ub1).
   apply H; trivial.
- rewrite (plump_morph _ y _ (a _ H3) _ y); auto with *.
+ rewrite (plump_morph _ y _ (a _ H4) _ y); auto with *.
 
  assert (y \in ub1).
   apply H; trivial.
- rewrite (plump_morph _ y _ (a _ H5) _ z) in H2; auto with *.
- apply H1 with y H5; auto.
+ rewrite (plump_morph _ y _ (a _ H6) _ z) in H3; auto with *.
+ apply H1 with y H6; auto.
 Qed.
 
 Lemma plump_Acc : forall ub p x,
@@ -130,26 +132,34 @@ Lemma isOrd_plump : forall z, isOrd z ->
 destruct 1; intros.
 revert p.
 destruct x;simpl; intros.
-destruct p.
-apply H3 with y H1; trivial.
+destruct p as (_,(?,_)).
+apply H2 with y H1; trivial.
 destruct H.
 apply plump_bound with (2:=p); reflexivity.
+Qed.
+
+Lemma isOrd_dir : forall z, isOrd z -> isDir z.
+destruct 1; intros.
+revert p.
+destruct x;simpl; intros.
+destruct p as (_,(_,?)); trivial.
 Qed.
 
 
 Lemma isOrd_intro : forall x,
   (forall a b, isOrd a -> a \incl b -> b \in x -> a \in x) ->
+  isDir x ->
   (forall y, y \in x -> isOrd y) ->
   isOrd x.
 intros.
-exists (Acc_intro _ (fun y h => proj1_sig (H0 y h))); simpl.
-split; intros.
- destruct (H0 y H1).
+exists (Acc_intro _ (fun y h => proj1_sig (H1 y h))); simpl.
+split; [|split]; intros; trivial.
+ destruct (H1 y H2).
  rewrite <- (plump_morph y y x0 _ y y); auto with *.
 
  apply H with y; trivial.
- exists (plump_Acc _ _ _ H1 H2).
- apply plump_bound with (2:=H1); trivial.
+ exists (plump_Acc _ _ _ H2 H3).
+ apply plump_bound with (2:=H2); trivial.
 Qed.
 
 
@@ -207,6 +217,10 @@ Qed.
 Lemma isOrd_zero : isOrd zero.
 apply isOrd_intro; intros.
  elim empty_ax with b; trivial.
+
+ red; intros.
+ elim empty_ax with x; trivial.
+
  elim empty_ax with y; trivial.
 Qed.
 
@@ -269,6 +283,20 @@ apply isOrd_intro; intros.
  apply H1 in H3.
  apply power_elim with (1:=H2); trivial.
 
+ red; intros.
+ exists n.
+  apply subset_intro; trivial.
+  apply power_intro; auto.
+
+  split.
+   red; intros.
+   apply power_elim with x; trivial.
+   apply subset_elim1 in H0; trivial.
+
+   red; intros.
+   apply power_elim with y; trivial.
+   apply subset_elim1 in H1; trivial.
+
  apply subset_elim2 in H0.
  destruct H0.
  rewrite H0; trivial.
@@ -298,6 +326,7 @@ apply subset_intro; trivial.
 apply power_intro; auto.
 Qed.
 
+(* TODO: use ordinal sup ... *)
 Lemma isOrd_eq : forall o, isOrd o -> o == sup o osucc.
 intros.
 apply eq_intro; intros.
@@ -320,9 +349,9 @@ Definition ord_1 := osucc ord_0.
 Definition ord_2 := osucc ord_1.
 
 (* 1 = {0} *)
-Lemma ord1 : forall x, x \in osucc zero <-> x == zero.
+Lemma ord1 : forall x, x \in ord_1 <-> x == zero.
 intros.
-unfold osucc.
+unfold ord_1, osucc.
 rewrite subset_ax.
 split; intros.
  destruct H.
@@ -368,6 +397,19 @@ apply isOrd_intro; intros.
  apply isOrd_plump with b; auto.
  unfold ord_1; auto.
 
+ red; intros.
+ assert P.
+  apply subset_elim2 in H; destruct H; trivial.
+ apply subset_elim1 in H.
+ apply subset_elim1 in H0.
+ apply ord1 in H.
+ apply ord1 in H0.
+ exists empty.
+  apply subset_intro; trivial.
+  apply ord1; reflexivity.
+
+  rewrite H; rewrite H0; split; reflexivity.
+
  apply subset_elim1 in H.
  apply isOrd_inv with (osucc zero); auto.
 Qed.
@@ -408,7 +450,9 @@ Qed.
 Definition ord_rk_2 (P2:Prop->Prop) :=
   subset ord_2 (fun x => exists2 P, x == ord_rk_1 P & P2 P).
 
-Definition decr_2 (P2:Prop->Prop) := forall P Q:Prop, (P -> Q) -> (P2 Q -> P2 P).
+Definition decr_2 (P2:Prop->Prop) :=
+   (forall P Q:Prop, (P -> Q) -> (P2 Q -> P2 P)) /\
+   (forall P Q:Prop, P2 P -> P2 Q -> P2 (P\/Q)).
 
 Lemma isOrd_rk_2 : forall P2, decr_2 P2 -> isOrd (ord_rk_2 P2).
 intros.
@@ -424,9 +468,31 @@ apply isOrd_intro; intros.
  unfold ord_rk_2 in H2; rewrite subset_ax in H2; destruct H2.
  destruct H4.
  destruct H5.
- apply (H x x1); trivial.
+ apply (proj1 H x x1); trivial.
  rewrite H4 in H1; rewrite H5 in H1; rewrite H3 in H1.
  rewrite <- rk1_order; trivial.
+
+ red; intros.
+  unfold ord_rk_2 in H0,H1.
+  rewrite subset_ax in H0; destruct H0.
+  destruct H2.
+  destruct H3 as (P,?,?).
+  rewrite <- H2 in H3; clear x0 H2.
+  rewrite subset_ax in H1; destruct H1.
+  destruct H2.
+  destruct H5 as (Q,?,?).
+  rewrite <- H2 in H5; clear x0 H2.
+  exists (ord_rk_1 (P\/Q)).
+   apply subset_intro.
+    apply ord2.
+    exists (P\/Q); auto with *.
+
+    exists (P\/Q); auto with *.
+    apply (proj2 H); trivial.
+
+   split.
+    rewrite H3; apply rk1_order; auto.
+    rewrite H5; apply rk1_order; auto.
 
  apply subset_elim1 in H0.
  apply isOrd_inv with (osucc (osucc zero)); auto.
@@ -444,15 +510,28 @@ split; intros.
  destruct H0.
  rewrite <- H0 in H1; clear H0 x0.
  exists (fun P => ord_rk_1 P \in x).
-  red; intros.
-  apply isOrd_plump with (ord_rk_1 Q); trivial.
-   assert (ord_rk_1 P \in ord_2).
-    rewrite ord2.
-    exists P; auto with *.
-   apply isOrd_inv with ord_2; auto.
-   unfold ord_2, ord_1; auto.
+  split; intros.
+   apply isOrd_plump with (ord_rk_1 Q); trivial.
+    assert (ord_rk_1 P \in ord_2).
+     rewrite ord2.
+     exists P; auto with *.
+    apply isOrd_inv with ord_2; auto.
+    unfold ord_2, ord_1; auto.
 
-   rewrite rk1_order; trivial.
+    rewrite rk1_order; trivial.
+
+   destruct (isOrd_dir _ H1 _ _ H0 H2).
+   destruct H4.
+   apply isOrd_plump with x0; trivial.
+    apply isOrd_rk_1.
+
+    assert (h := H _ H3).
+    apply ord2 in h.
+    destruct h as (R,h).
+    rewrite h in H4,H5|-*.
+    apply rk1_order; destruct 1.
+     apply (proj1 (rk1_order P R)); trivial.
+     apply (proj1 (rk1_order Q R)); trivial.
 
   apply subset_ext; intros; auto.
    apply ord2 in H0.
@@ -483,10 +562,7 @@ End Examples.
 
 Definition increasing F :=
   forall x y, isOrd x -> isOrd y -> y \incl x -> F y \incl F x.
-(*
-Definition directed o F :=
-  forall o', isOrd o -> lt o' o -> F o' \incl F o.
-*)
+
 Definition increasing_bounded o F :=
   forall x x', lt x' o -> lt x x' -> F x \incl F x'.
 
@@ -537,33 +613,41 @@ elim lt_antirefl with o; trivial.
 Qed.
 
 
-Lemma isOrd_union2 : forall x y,
-  isOrd x ->
-  isOrd y ->
-  isOrd (union2 x y).
-intros.
-apply isOrd_intro; intros.
- apply union2_elim in H3; destruct H3.
-  apply union2_intro1.
-  apply isOrd_plump with b; trivial.
-
-  apply union2_intro2.
-  apply isOrd_plump with b; trivial.
-
- apply union2_elim in H1; destruct H1.
-  apply isOrd_inv with x; trivial.
-  apply isOrd_inv with y; trivial.
-Qed.
 
 Lemma isOrd_inter2 : forall x y,
   isOrd x -> isOrd y -> isOrd (inter2 x y).
 intros.
+revert y H0; apply isOrd_ind with (2:=H); intros.
+clear x H H1; rename y into x; rename y0 into y.
 apply isOrd_intro; intros.
- rewrite inter2_def in H3|-*; destruct H3; split.
+ rewrite inter2_def in H4|-*; destruct H4; split.
   apply isOrd_plump with b; trivial.
   apply isOrd_plump with b; trivial.
 
- apply inter2_incl1 in H1.
+ red; intros.
+ rewrite inter2_def in H; destruct H.
+ rewrite inter2_def in H1; destruct H1.
+ destruct (isOrd_dir _ H0 _ _ H H1).
+ destruct H7.
+ destruct (isOrd_dir _ H3 _ _ H4 H5).
+ destruct H10.
+ exists (inter2 x1 x2).
+  rewrite inter2_def; split.
+   apply isOrd_plump with x1; trivial.
+    apply H2; trivial.
+    apply isOrd_inv with y; trivial.
+
+    apply inter2_incl1.
+
+   apply isOrd_plump with x2; trivial.
+    apply H2; trivial.
+    apply isOrd_inv with y; trivial.
+
+    apply inter2_incl2.
+
+  split; red; intros; rewrite inter2_def; split; auto.
+
+ rewrite inter2_def in H; destruct H.
  apply isOrd_inv with x; trivial.
 Qed.
 
@@ -594,174 +678,58 @@ apply eq_intro; intros.
 Qed.
 
 
-Module NotDirected.
-Import Examples.
-Section S.
-
- Variable P Q:Prop.
-
- Definition a := ord_rk_2 (fun A => (A->P) \/ (A->Q)).
-
- Lemma P_in_a : ord_rk_1 P \in a.
-unfold a, ord_rk_2.
-apply subset_intro.
- rewrite ord2.
- exists P; auto with *.
-
- exists P; auto with *.
-Qed.
-
- Lemma PQ_in_a : ord_rk_1 (P\/Q) \in a -> (P->Q) \/ (Q->P).
-unfold a, ord_rk_2; intros.
-apply subset_elim2 in H; destruct H.
-destruct H0.
-rewrite H0 in H.
-assert (P\/Q->x0).
- rewrite <- rk1_order.
- rewrite H; reflexivity.
-tauto.
-Qed.
-
-End S.
-End NotDirected.
-
-
-Section OrdinalUpperBound.
-
-  Variable I : set.
-  Variable f : set -> set.
-  Hypothesis f_ext : ext_fun I f.
-  Hypothesis f_ord : forall x, x \in I -> isOrd (f x).
-
-  Lemma isOrd_supf_intro : forall n, n \in I -> f n \incl sup I f.
-red; intros.
-rewrite sup_ax; trivial.
-exists n; trivial.
-Qed.
-
-  Lemma isOrd_supf_elim : forall x, lt x (sup I f) -> exists2 n, n \in I & lt x (f n).
-intros.
-rewrite sup_ax in H; trivial.
-Qed.
-
-  Lemma isOrd_supf : isOrd (sup I f).
-apply isOrd_intro; intros.
- elim isOrd_supf_elim with (1:=H1); intros.
- apply isOrd_supf_intro with x; trivial.
- apply isOrd_plump with b; auto.
-
- elim isOrd_supf_elim with (1:=H); intros.
- apply isOrd_inv with (f x); auto.
-Qed.
-
-End OrdinalUpperBound.
-
-(* Projection toward ordinals *)
-
-Definition toOrd (x : set) :=
-  sup (subset x isOrd) osucc.
-
-Instance toOrd_morph : morph1 toOrd.
-do 2 red; intros.
-unfold toOrd.
-apply sup_morph.
- apply subset_morph; auto with *.
-
- red; intros; rewrite H1; reflexivity.
-Qed.
-
-Lemma toOrd_isOrd : forall x, isOrd (toOrd x).
-intros.
-unfold toOrd.
-apply isOrd_supf; intros.
- red; red; intros.
- rewrite H0; reflexivity.
-
- apply isOrd_succ.
- destruct subset_elim2 with (1:=H).
- rewrite H0; trivial.
-Qed.
-
-Lemma toOrd_ord : forall o, isOrd o -> toOrd o == o.
-intros.
-unfold toOrd.
-apply eq_intro; intros.
- rewrite sup_ax in H0.
- 2:red; red; intros; rewrite H2; reflexivity.
- destruct H0.
- apply le_lt_trans with x; auto.
- apply subset_elim1 with (1:=H0).
-
- rewrite sup_ax.
- 2:red; red; intros; rewrite H2; reflexivity.
- exists z.
-  apply subset_intro; trivial.
-  apply isOrd_inv with o; trivial.
-
-  apply lt_osucc.
-  apply isOrd_inv with o; trivial.
-Qed.
-
-
-
 Section TransfiniteRecursion.
 
   Variable F : (set -> set) -> set -> set.
+  Hypothesis Fmorph : forall o o' f f', o == o' -> eq_fun o f f' -> F f o == F f' o'.
 
-  Variable ord : set.
-  Hypothesis Fmorph : forall o o' f f', isOrd o -> o \incl ord ->
-    o == o' -> eq_fun o f f' -> F f o == F f' o'.
-
-  Definition TR_rel o y := (isOrd o/\o\incl ord) /\
-    forall (P:set->set->Prop),
-    (forall o o' x x', isOrd o -> o \incl ord -> o == o' -> x == x' -> P o x -> P o' x') ->
-    (forall o' f, isOrd o' -> o' \incl ord -> ext_fun o' f ->
+  Definition TR_rel o y :=
+    forall P,
+    Proper (eq_set ==> eq_set ==> iff) P ->
+    (forall o' f, morph1 f ->
      (forall n, lt n o' -> P n (f n)) ->
      P o' (F f o')) ->
     P o y.
 
   Instance TR_rel_morph : Proper (eq_set ==> eq_set ==> iff) TR_rel.
-apply morph_impl_iff2; auto with *.
-do 4 red; unfold TR_rel; intros.
-destruct H1 as ((xo, xle),Hrec); split; intros.
- rewrite <- H; auto.
+do 3 red; unfold TR_rel; split; intros.
+ rewrite <- H; rewrite <- H0; apply H1; auto.
 
- apply (H1 x y x0 y0); auto.
- apply Hrec; auto.
+ rewrite H; rewrite H0; apply H1; auto.
 Qed.
 
   Lemma TR_rel_intro : forall x f,
-    isOrd x ->
-    x \incl ord ->
-    ext_fun x f ->
+    morph1 f ->
     (forall y, y \in x -> TR_rel y (f y)) ->
     TR_rel x (F f x).
 red; intros.
-split; intros; auto.
-apply H4; trivial; intros.
-apply H2; trivial.
+apply H2; trivial; intros.
+apply H0; trivial.
 Qed.
 
   Lemma TR_rel_inv : forall x y,
     TR_rel x y ->
     exists2 f,
-      ext_fun x f /\ (forall y, y \in x -> TR_rel y (f y)) &
+      morph1 f /\ (forall y, y \in x -> TR_rel y (f y)) &
       y == F f x.
 intros.
 apply (@proj2 (TR_rel x y)).
-destruct H as ((H,Hle),H0).
-apply H0; intros.
- destruct H5; split.
-  rewrite <- H3; rewrite <- H4; trivial.
+apply H; intros.
+ do 3 red; intros.
+ rewrite <- H0; rewrite <- H1.
+ split; destruct 1 as (Htr,(f,(fm,eqf),eqF)); split; trivial; exists f; trivial.
+  split; intros; trivial.
+  rewrite <- H0 in H2; auto.
 
-  destruct H6 as (f,(fm,eqf),eqF); exists f; trivial.
-   split; intros.
-    do 2 red; intros.
-    rewrite <- H3 in H6; auto.
-    rewrite <- H3 in H6; auto.
+  rewrite <- H1; rewrite eqF; apply Fmorph; intros; auto with *.
+  red; intros; apply fm; trivial.
 
-    rewrite <- H4; rewrite eqF; auto.
-assert (TR_relsub := fun n h => proj1 (H4 n h)); clear H4.
+  split; intros; trivial.
+  rewrite H0 in H2; auto.
+
+  symmetry in H0; rewrite H1; rewrite eqF; apply Fmorph; intros; auto.
+  red; intros; apply fm; trivial.
+assert (TR_relsub := fun n h => proj1 (H1 n h)); clear H1.
 split.
  apply TR_rel_intro; trivial.
 
@@ -771,16 +739,20 @@ Qed.
 
   Lemma TR_rel_fun :
     forall x y, TR_rel x y -> forall y', TR_rel x y' -> y == y'.
-intros x y (xo,H).
+intros x y H.
 apply H; intros.
- rewrite <- H3; rewrite <- H2 in H5; auto.
-apply TR_rel_inv in H4; destruct H4.
-destruct H4.
-rewrite H5; clear y' H5.
-apply Fmorph; intros; auto with *.
+ do 3 red; intros.
+ split; intros.
+  rewrite <- H1; rewrite <- H0 in H3; auto.
+  rewrite H1; rewrite H0 in H3; auto.
+apply TR_rel_inv in H2; destruct H2.
+destruct H2.
+rewrite H3; clear y' H3.
+apply Fmorph; intros.
+ reflexivity.
 red; intros.
-apply H3; trivial.
-rewrite H7 in H5|-*; auto.
+apply H1; trivial.
+rewrite H5 in H3|-*; auto.
 Qed.
 
 Require Import ZFrepl.
@@ -793,211 +765,114 @@ split; intros.
  apply TR_rel_fun with x0; trivial.
 Qed.
 
-  Lemma TR_rel_def : forall o, isOrd o -> o \incl ord -> exists y, TR_rel o y.
+  Lemma TR_rel_def : forall o, isOrd o -> exists y, TR_rel o y.
 induction 1 using isOrd_ind; intros.
 assert (forall z, lt z y -> uchoice_pred (fun y => TR_rel z y)).
  intros.
- destruct H1 with z; trivial.
-  red; intros; apply H2; apply isOrd_trans with z; trivial.
+ specialize H1 with (1:=H2).
+ destruct H1.
  split; intros.
-  rewrite <- H5; trivial.
+  rewrite <- H3; trivial.
  split; intros.
   exists x; trivial.
  apply TR_rel_fun with z; trivial.
 exists (F (fun z => uchoice (fun y => TR_rel z y)) y).
-apply TR_rel_intro; intros; trivial.
+apply TR_rel_intro; intros.
  do 2 red; intros.
- apply uchoice_morph; intros; auto.
- rewrite H5; reflexivity.
+ apply uchoice_morph_raw; intros; auto.
+ red; intros.
+ apply TR_rel_morph; trivial.
 apply uchoice_def; auto.
 Qed.
 
-  Lemma TR_rel_choice_pred : forall o, isOrd o -> o \incl ord ->
+  Lemma TR_rel_choice_pred : forall o, isOrd o ->
     uchoice_pred (fun y => TR_rel o y).
 split; intros.
- rewrite <- H1; trivial.
+ rewrite <- H0; trivial.
 split; intros.
  apply TR_rel_def; trivial.
 apply TR_rel_fun with o; trivial.
 Qed.
 
-  Definition TR := uchoice (fun y => TR_rel ord y).
+  Definition TR o := uchoice (fun y => TR_rel o y).
 
-(*
-  Lemma TR_morph : forall x x', isOrd x -> x == x' -> TR x == TR x'.
-intros.
-unfold TR.
-unfold uchoice.
-apply union_morph.
-apply eq_intro; intros.
- rewrite repl_ax in H1; intros.
-  rewrite repl_ax; intros.
-   destruct H1.
-   destruct H2.
-   exists x0; trivial.
-   exists x1; trivial.
-   revert H3; apply basic.iff_impl.
-   apply TR_rel_morph; auto with *.
-
-   apply TR_rel_fun with x'; trivial.
-
-  apply TR_rel_fun with x; trivial.
-
- rewrite repl_ax in H1; intros.
-  rewrite repl_ax; intros.
-   destruct H1.
-   destruct H2.
-   exists x0; trivial.
-   exists x1; trivial.
-   revert H3; apply basic.iff_impl.
-   apply TR_rel_morph; auto with *.
-
-   apply TR_rel_fun with x; trivial.
-
-  apply TR_rel_fun with x'; trivial.
-Qed.
-*)
-
-  Lemma TR_eqn0 : forall o, isOrd o -> o \incl ord ->
-     uchoice (fun y => TR_rel o y) == F (fun o => uchoice (fun y => TR_rel o y)) o.
-intros.
-specialize TR_rel_choice_pred with (1:=H) (2:=H0); intro.
-apply uchoice_def in H1.
-apply TR_rel_inv in H1.
-destruct H1.
-destruct H1.
-rewrite H2.
-apply Fmorph; intros; auto with *.
-red; intros.
-apply TR_rel_fun with x'.
- rewrite <- H5; auto.
-
- apply uchoice_def.
- apply TR_rel_choice_pred.
- rewrite <- H5; apply isOrd_inv with o; trivial.
- red; intros; apply H0; apply isOrd_trans with x'; trivial.
- rewrite <- H5; trivial.
-Qed.
-
-End TransfiniteRecursion.
-
-  Lemma TR_rel_irrel : forall F b1 b2 o y,
-    o \incl b2 ->
-    TR_rel F b1 o y -> TR_rel F b2 o y.
-intros.
-revert H; apply H0; intros.
- rewrite <- H2 in H5.
- generalize (H4 H5).
- apply TR_rel_morph; auto with *.
-
- apply TR_rel_intro; trivial; intros.
- apply H3; trivial.
- transitivity o'; trivial.
- red; intros; apply isOrd_trans with y0; trivial.
-Qed.
-
-  Instance TR_morph : forall F, morph1 (TR F).
+  Instance TR_morph : morph1 TR.
 do 2 red; intros.
 unfold TR.
 apply uchoice_morph_raw.
 red; intros.
-transitivity (TR_rel F x y y0).
- apply TR_rel_morph; trivial. 
-
- split; apply TR_rel_irrel; auto with *.
- rewrite H; reflexivity.
+apply TR_rel_morph; trivial.
 Qed.
 
-  Lemma TR_morph_gen : forall o o' F F',
-    isOrd o ->
-    (forall x x' f f', isOrd x -> x \incl o -> x == x' -> eq_fun x f f' -> F f x == F' f' x') ->
-    o == o' -> TR F o == TR F' o'.
+  Lemma TR_eqn : forall o, isOrd o -> TR o == F TR o.
 unfold TR; intros.
-apply uchoice_morph_raw.
+specialize TR_rel_choice_pred with (1:=H); intro.
+apply uchoice_def in H0.
+apply TR_rel_inv in H0.
+destruct H0.
+destruct H0.
+rewrite H1.
+apply Fmorph; intros; auto with *.
 red; intros.
-split; intros.
- red; intros.
- destruct H3; split.
-  rewrite <- H1; trivial.
+apply TR_rel_fun with x'.
+ rewrite <- H4; auto.
 
-  intros.
-  destruct H3.
-  apply H5 with o x; trivial.
-   rewrite H1; reflexivity.
-
-   apply H4; intros.
-    rewrite H1 in H9; eauto.
-
-    rewrite H1 in H9.
-    apply H5 with o'0 (F' f o'0); auto with *.
-    symmetry; apply H0; auto with *.
-    rewrite H1; trivial.
-
- red; intros.
- destruct H3; split.
-  rewrite H1; trivial.
-
-  intros.
-  destruct H3.
-  apply H5 with o' y; auto with *.
-   rewrite H1; reflexivity.
-
-   apply H4; intros.
-    rewrite <- H1 in H9; eauto.
-
-    rewrite <- H1 in H9.
-    apply H5 with o'0 (F f o'0); auto with *.
+ apply uchoice_def.
+ apply TR_rel_choice_pred.
+ rewrite <- H4; apply isOrd_inv with o; trivial.
 Qed.
 
-  Lemma TR_eqn : forall F o,
-    isOrd o ->
-    (forall x x' f f', isOrd x -> x \incl o -> x == x' -> eq_fun x f f' -> F f x == F f' x') ->
-    TR F o == F (TR F) o.
-intros.
-unfold TR; rewrite TR_eqn0; eauto with *.
-apply H0; auto with *.
-red; intros.
-apply uchoice_morph_raw.
-red; intros.
-transitivity (TR_rel F o x' y).
- apply TR_rel_morph; trivial.
-rewrite H2 in H1.
-split; apply TR_rel_irrel; auto with *.
-red; intros; apply isOrd_trans with x'; trivial.
-Qed.
-
-  Lemma TR_ind : forall F o (P:set->set->Prop),
-    (forall x x' f f', isOrd x -> x \incl o -> x == x' -> eq_fun x f f' -> F f x == F f' x') ->
+  Lemma TR_ind : forall o (P:set->set->Prop),
     (forall x, isOrd x -> x \incl o ->
      forall y y', y == y' -> P x y -> P x y') ->
     isOrd o ->
     (forall y, isOrd y -> y \incl o ->
-     (forall x, lt x y -> P x (TR F x)) ->
-     P y (F (TR F) y)) ->
-    P o (TR F o).
-induction 3 using isOrd_ind; intros.
-apply H0 with (F (TR F) y); auto with *.
- symmetry; apply TR_eqn; trivial; intros.
- apply H; auto.
- transitivity y; trivial.
-apply H4; trivial; intros.
- reflexivity.
+     (forall x, lt x y -> P x (TR x)) ->
+     P y (F TR y)) ->
+    P o (TR o).
+induction 2 using isOrd_ind; intros.
+apply H with (F TR y); auto with *.
+ symmetry; apply TR_eqn; trivial.
 apply H3; trivial; intros.
-apply H4; trivial.
-red; intros; apply isOrd_trans with x; auto.
-apply H7; trivial.
+ reflexivity.
+apply H2; trivial; intros.
+apply H3; trivial.
+red; intros.
+apply H6 in H8.
+apply isOrd_trans with x; trivial.
 Qed.
 
-  Lemma TR_typ : forall F o X,
-    isOrd o ->
-    (forall x x' f f', isOrd x -> x \incl o -> x == x' -> eq_fun x f f' -> F f x == F f' x') ->
+
+  Lemma TR_typ : forall n X,
     morph1 X ->
-    (forall y f, isOrd y -> y \incl o ->
+    isOrd n ->
+    (forall y f, morph1 f -> isOrd y -> y \incl n ->
      (forall z, lt z y -> f z \in X z) -> F f y \in X y) ->
-    TR F o \in X o.
-intros F o X oo Fm Xm Hrec.
-apply TR_ind; intros; auto.
-rewrite <- H1; trivial.
+    TR n \in X n.
+intros n X Xm is_ord.
+apply TR_ind with (o:=n); intros; trivial.
+ rewrite <- H1; auto.
+apply H2; intros; auto with *.
+apply H1; trivial; intros.
+apply H2; auto.
+red; intros.
+apply H6 in H8.
+apply isOrd_trans with z; trivial.
+Qed.
+
+End TransfiniteRecursion.
+
+  Instance TR_morph_gen :
+    Proper (((eq_set==>eq_set)==>eq_set==>eq_set)==>eq_set ==> eq_set) TR.
+do 3 red; intros.
+unfold TR.
+apply uchoice_morph_raw.
+red; intros.
+revert x y H x0 y0 H0 x1 y1 H1; apply morph_impl_iff3; auto with *.
+do 5 red; intros.
+red; intros.
+rewrite <- H0; rewrite <- H1; apply H2; intros; auto.
+rewrite (H _ _ H5 _ _ (reflexivity o')); auto.
 Qed.
 
 (* Specialized version where the case of limit ordinals is union *)
@@ -1104,6 +979,799 @@ End TransfiniteIteration.
 Hint Resolve TI_fun_ext.
 
 
+
+Lemma isOrd_wf o : isOrd o -> isWf o.
+induction 1 using isOrd_ind; intros; apply isWf_intro; auto.
+Qed.
+Hint Resolve isOrd_wf.
+
+Lemma isWf_inter2 : forall x y, isWf x -> isWf y -> isWf (inter2 x y).
+unfold inter2; intros.
+unfold inter.
+apply isWf_subset.
+apply isWf_union.
+apply isWf_pair; trivial.
+Qed.
+
+
+
+  Definition osup2_rel x y z :=
+    forall P,
+    Proper (eq_set ==> eq_set ==> eq_set ==> iff) P ->
+    (forall x y g,
+     morph2 g ->
+     (forall x' y', x' \in x -> y' \in y -> P x' y' (g x' y')) ->
+     P x y (union2 (union2 x y) (sup x (fun x' => replf y (fun y' => g x' y'))))) ->
+    P x y z.
+
+  Instance osup2_relm : Proper (eq_set ==> eq_set ==> eq_set ==> iff) osup2_rel.
+apply morph_impl_iff3; auto with *.
+do 6 red; intros.
+rewrite <- H; rewrite <- H0; rewrite <- H1.
+apply H2; trivial.
+Qed.
+
+  Lemma osup2_rel_intro : forall x y g,
+    morph2 g ->
+    (forall x' y', x' \in x -> y' \in y -> osup2_rel x' y' (g x' y')) ->
+    osup2_rel x y (union2 (union2 x y) (sup x (fun x' => replf y (fun y' => g x' y')))).
+red; intros.
+apply H2; trivial.
+intros; apply H0; trivial.
+Qed.
+
+  Lemma osup2_rel_elim x y z :
+    osup2_rel x y z ->
+    exists2 g, morph2 g &
+    (forall x' y', x' \in x -> y' \in y -> osup2_rel x' y' (g x' y')) /\
+    z == union2 (union2 x y) (sup x (fun x' => replf y (fun y' => g x' y'))).
+intros.
+apply (@proj2 (osup2_rel x y z)).
+apply H; intros.
+ apply morph_impl_iff3; auto with *.
+ do 5 red; intros.
+ destruct H3; split.
+  revert H3; apply osup2_relm; symmetry; trivial.
+
+  destruct H4 as (g,?,(?,?)); exists g; trivial.
+  split; intros.
+   rewrite <- H0 in H7; rewrite <- H1 in H8; auto.
+
+   rewrite <- H2; rewrite H6.
+   apply union2_morph.
+    apply union2_morph; trivial.
+
+    apply sup_morph; auto with *.
+    red; intros.
+    apply replf_morph; trivial.
+    red; intros.
+    apply H4; trivial.
+
+ split.
+  apply osup2_rel_intro; trivial.
+  intros; apply H1; trivial.
+
+  exists g; trivial.
+  split; intros; auto with *.
+  apply H1; trivial.
+Qed.
+
+  Lemma osup2_rel_unique x y z z' :
+    osup2_rel x y z ->
+    osup2_rel x y z' ->
+    z == z'.
+intros.
+revert z' H0.
+apply H; intros.
+ apply morph_impl_iff3; auto with *.
+ do 5 red; intros.
+ rewrite <- H0 in H4; rewrite <- H1 in H4; rewrite <- H2; auto.
+
+ apply osup2_rel_elim in H2.
+ destruct H2 as (g',?,(?,?)).
+ rewrite H4; apply union2_morph; auto with *.
+ apply sup_morph; auto with *.
+ red; intros.
+ apply replf_morph; auto with *.
+ red; intros.
+ apply H1; trivial.
+ rewrite <- H6; rewrite <- H8; auto.
+Qed.
+
+  Lemma uchoice_pred_osup2 : forall x y, isWf x -> uchoice_pred (osup2_rel x y).
+intros x y wfx; revert y; induction wfx using isWf_ind; intros.
+split; intros.
+ rewrite <- H0; trivial.
+split; intros.
+ exists (union2 (union2 a y) (sup a (fun x' => replf y (fun y' => uchoice (osup2_rel x' y'))))).
+ apply osup2_rel_intro; intros.
+  do 3 red; intros; apply uchoice_morph_raw.
+  red; intros; apply osup2_relm; trivial.
+
+  apply uchoice_def; auto.
+
+ apply osup2_rel_unique with (1:=H0) (2:=H1).
+Qed.
+
+  Definition osup2 x y := uchoice (osup2_rel x y).
+
+  Lemma osup2m : morph2 osup2.
+unfold osup2; do 3 red; intros.
+apply uchoice_morph_raw.
+red; intros.
+apply osup2_relm; trivial.
+Qed.
+
+  Lemma osup2_def : forall x y, isWf x ->
+  osup2 x y ==
+  union2 (union2 x y) (sup x (fun x' => replf y (fun y' => osup2 x' y'))).
+intros.
+assert (Hdef := uchoice_def _ (uchoice_pred_osup2 _ y H)).
+apply osup2_rel_unique with (1:=Hdef).
+apply osup2_rel_intro.
+ apply osup2m.
+
+ intros.
+ unfold osup2; apply uchoice_def.
+ apply uchoice_pred_osup2; trivial.
+ apply isWf_inv with x; trivial.
+Qed.
+
+Lemma osup2_ax : forall x y z,
+  isWf x ->
+  (z \in osup2 x y <->
+   z \in x \/ z \in y \/
+   exists2 x', x' \in x & exists2 y', y' \in y & z == osup2 x' y').
+intros x y z wfx.
+rewrite osup2_def; trivial.
+split; intros.
+ apply union2_elim in H; destruct H.
+  apply union2_elim in H; destruct H; auto.
+
+  rewrite sup_ax in H.
+   destruct H.
+   rewrite replf_ax in H0.
+    destruct H0; eauto.
+
+    red; red; intros.
+    apply osup2m; auto with *.
+
+   red; red; intros.
+   apply replf_morph; auto with *.
+   red; intros.
+   apply osup2m; trivial.
+
+ destruct H as [?|[?|?]].
+  apply union2_intro1; apply union2_intro1; trivial.
+
+  apply union2_intro1; apply union2_intro2; trivial.
+
+  apply union2_intro2.
+  destruct H.
+  destruct H0.
+  rewrite sup_ax.
+   exists x0; trivial.
+   rewrite replf_ax.
+    exists x1; trivial.
+
+    red; red; intros.
+    apply osup2m; auto with *.
+
+   red; red; intros.
+   apply replf_morph; auto with *.
+   red; intros.
+   apply osup2m; trivial.
+Qed.
+
+Lemma osup2_incl1 : forall x y, isWf x -> x \incl osup2 x y.
+red; intros.
+rewrite osup2_ax; auto.
+Qed.
+
+Lemma osup2_incl2 : forall x y, isWf x -> y \incl osup2 x y.
+red; intros.
+rewrite osup2_ax; auto.
+Qed.
+
+
+Lemma osup2_sym : forall x y, isWf x -> isWf y -> osup2 x y == osup2 y x.
+intros x y wfx wfy.
+revert y wfy ; apply isWf_ind with (2:=wfx); intros.
+apply eq_intro; intros.
+ rewrite osup2_ax in H1|-*; trivial.
+ destruct H1 as [?|[?|(x',?,(y',?,?))]];[right;left|left|right;right]; trivial.
+ exists y'; trivial.
+ exists x'; trivial.
+ rewrite H3; apply H0; eauto using isWf_inv.
+
+ rewrite osup2_ax in H1|-*; trivial.
+ destruct H1 as [?|[?|(x',?,(y',?,?))]];[right;left|left|right;right]; trivial.
+ exists y'; trivial.
+ exists x'; trivial.
+ rewrite H3; symmetry; apply H0; eauto using isWf_inv.
+Qed.
+
+(*
+Lemma osup2_assoc : forall x y z, isWf x -> isWf y -> isWf z ->
+  osup2 x (osup2 y z) == osup2 (osup2 x y) z.
+intros.
+revert y z H0 H1.
+apply isWf_ind with (2:=H); intros.
+apply eq_intro; intros.
+ rewrite osup2_ax in H4|-*.
+ destruct H4.
+  left.
+  apply osup2_incl1; trivial.
+ destruct H3.
+  rewrite osup2_ax in H3; destruct H3.
+   left; apply osup2_incl2; trivial.
+
+   destruct H3; auto.
+   destruct H3.
+   destruct H4.
+   right; right.
+   exists x0.
+    apply osup2_incl2; trivial.
+   exists x1; trivial.
+
+  destruct H3.
+  destruct H4.
+  rewrite osup2_ax in H4; destruct H4.
+   left.
+   rewrite osup2_ax; right; right; eauto.
+  destruct H4.
+   right; right.
+   exists x0; eauto.
+   apply osup2_incl1; trivial.
+
+   destruct H4.   
+   destruct H6.
+   right; right.
+   exists (osup2 x0 x2).
+    rewrite osup2_ax; right; right; eauto with *.
+   exists x3; trivial.
+   rewrite H5.
+   rewrite <- H1; eauto using isWf_inv.
+   apply osup2m; auto with *.
+
+ rewrite osup2_ax in H3|-*.
+ destruct H3 as [?|[?|(xy',?,(z',?,?))]].
+  rewrite osup2_ax in H3; destruct H3 as [?|[?|(x',?,(y',?,?))]]; auto.
+   right; left; apply osup2_incl1; trivial.
+
+   right; right; exists x'; trivial; exists y'; trivial.
+   apply osup2_incl1; trivial.
+
+  right; left; apply osup2_incl2; trivial.
+
+  rewrite osup2_ax in H3; destruct H3 as [?|[?|(x',?,(y',?,?))]].
+   right; right; exists xy'; trivial; exists z'; trivial.
+   apply osup2_incl2; trivial.
+
+   right; left; rewrite osup2_ax; eauto.
+
+   right; right; exists x'; trivial; exists (osup2 y' z').
+    rewrite osup2_ax; right; right; eauto with *.
+
+    rewrite H5; rewrite H1; eauto using isWf_inv.
+    apply osup2m; auto with *.
+Qed.
+*)
+
+Lemma osup2_mono x x' y y' :
+  isWf x' -> x \incl x' -> y \incl y' ->
+  osup2 x y \incl osup2 x' y'.
+red; intros.
+assert (isWf x).
+ apply isWf_intro; intros.
+ apply H0 in H3; apply isWf_inv with x'; trivial.
+rewrite osup2_ax in H2|-*; trivial.
+destruct H2 as [?|[?|(a,?,(b,?,?))]]; auto.
+right; right.
+exists a; auto.
+exists b; auto with *.
+Qed.
+
+Lemma isDir_osup2 : forall x y, isWf x -> isDir x -> isDir y -> isDir (osup2 x y).
+red; unfold lt; intros x y wfx H H0; intros.
+assert (wfi := isWf_inv).
+rewrite osup2_ax in H1,H2; trivial.
+destruct H1 as [?|[?|(x1,?,(x2,?,?))]];
+  destruct H2 as [?|[?|(y1,?,(y2,?,?))]].
+ destruct (H x0 y0); trivial.
+ exists x1; trivial.
+ apply osup2_incl1; trivial.
+
+ exists (osup2 x0 y0).
+  rewrite osup2_ax; trivial; right; right; eauto with *.
+
+  split.
+   apply osup2_incl1; eauto.
+   apply osup2_incl2; eauto.
+
+ destruct (H x0 y1); trivial.
+ destruct H6.
+ exists (osup2 x1 y2).
+  rewrite osup2_ax; trivial; right; right; eauto with *.
+
+  split.
+   transitivity x1; trivial.
+   apply osup2_incl1; eauto.
+
+   rewrite H4; apply osup2_mono; eauto with *.
+
+ exists (osup2 y0 x0).
+  rewrite osup2_ax; trivial; right; right; eauto with *.
+
+  split.
+   apply osup2_incl2; eauto.
+   apply osup2_incl1; eauto.
+
+ destruct (H0 x0 y0); trivial.
+ exists x1; trivial.
+ apply osup2_incl2; trivial.
+
+ destruct (H0 x0 y2); trivial.
+ destruct H6.
+ exists (osup2 y1 x1).
+  rewrite osup2_ax; trivial; right; right; eauto with *.
+
+  split.
+   transitivity x1; trivial.
+   apply osup2_incl2; eauto.
+
+   rewrite H4; apply osup2_mono; eauto with *.
+
+ destruct (H x1 y0); trivial.
+ destruct H6.
+ exists (osup2 x3 x2).
+  rewrite osup2_ax; trivial; right; right; eauto with *.
+
+  split.
+   rewrite H4; apply osup2_mono; eauto with *.
+
+   transitivity x3; trivial; apply osup2_incl1; eauto.
+
+ destruct (H0 x2 y0); trivial.
+ destruct H6.
+ exists (osup2 x1 x3).
+  rewrite osup2_ax; trivial; right; right; eauto with *.
+
+  split.
+   rewrite H4; apply osup2_mono; eauto with *.
+
+   transitivity x3; trivial; apply osup2_incl2; eauto.
+
+ destruct (H x1 y1); trivial.
+ destruct H8.
+ destruct (H0 x2 y2); trivial.
+ destruct H11.
+ exists (osup2 x3 x4).
+  rewrite osup2_ax; trivial; right; right; eauto with *.
+
+  split.
+   rewrite H4; apply osup2_mono; eauto with *.
+
+   rewrite H6; apply osup2_mono; eauto with *.
+Qed.
+
+
+Lemma osup2_proof : forall x, isOrd x -> forall y, isOrd y ->
+  isOrd (osup2 x y) /\
+  (forall z, isOrd z -> x \incl z -> y \incl z -> osup2 x y \incl z) /\
+  (forall z, isOrd z -> inter2 z (osup2 x y) == osup2 (inter2 z x) (inter2 z y)).
+induction 1 using isOrd_ind.
+clear H0 x; rename y into x; rename H1 into Hrecx.
+intros y yo.
+rename H into xo.
+split.
+ (* isOrd *)
+ apply isOrd_intro; intros.
+  (* plump *)
+  rewrite osup2_ax in H1|-*; auto.
+  destruct H1 as [?|[?|(x',?,(y',?,?))]].
+   left; apply isOrd_plump with b; trivial.
+
+   right; left; apply isOrd_plump with b; trivial.
+
+   right; right.
+   exists (inter2 a x').
+    apply isOrd_plump with x'; trivial.
+     apply isOrd_inter2; eauto using isOrd_inv.
+     apply inter2_incl2.
+
+    exists (inter2 a y').
+     apply isOrd_plump with y'; trivial.
+      apply isOrd_inter2; eauto using isOrd_inv.
+      apply inter2_incl2.
+
+     destruct Hrecx with x' y' as (_,(_,?)); eauto using isOrd_inv.
+     rewrite <- H4; trivial.
+     apply eq_intro; intros.
+      rewrite inter2_def; split; trivial.
+      rewrite <- H3; auto.
+
+      apply inter2_def in H5; destruct H5; trivial.
+
+  (* dir *)
+  apply isDir_osup2; auto.
+   apply isOrd_dir; trivial.
+   apply isOrd_dir; trivial.
+
+  (* trans *)
+  apply osup2_ax in H; auto.
+  destruct H as [?|[?|(x',?,(y',?,?))]]; eauto using isOrd_inv.
+  rewrite H1; apply Hrecx; eauto using isOrd_inv.
+  
+split; intros.
+ red; intros.
+ rewrite osup2_ax in H2; auto.
+ destruct H2 as [?|[?|(x',?,(y',?,?))]]; auto.
+ destruct (isOrd_dir _ H x' y'); try red; auto.
+ destruct H6.
+ apply isOrd_plump with x0; trivial.
+  rewrite H4.
+  apply Hrecx; eauto using isOrd_inv.
+
+  rewrite H4; apply Hrecx; eauto using isOrd_inv.
+
+ (* inter distrib *)
+assert (wfizx : isWf (inter2 z x)).
+ apply isWf_inter2; auto.
+assert (wfizy : isWf (inter2 z y)).
+ apply isWf_inter2; auto.
+apply eq_intro; intros.
+ rewrite inter2_def in H0; trivial; destruct H0.
+ rewrite osup2_ax in H1; auto.
+ destruct H1 as [?|[?|(x',?,(y',?,?))]].
+  apply osup2_incl1; trivial.
+  rewrite inter2_def; auto.
+
+  apply osup2_incl2; trivial.
+  rewrite inter2_def; auto.
+
+  assert (forall z, isOrd z -> inter2 z (osup2 x' y') == osup2 (inter2 z x') (inter2 z y')).
+   intros; apply Hrecx; eauto using isOrd_inv.
+  rewrite osup2_ax; trivial; right; right.
+  exists (inter2 z0 x').
+   rewrite inter2_def; split.
+    apply isOrd_plump with z0; auto.
+     apply isOrd_inter2; eauto using isOrd_inv.
+     apply inter2_incl1.
+    apply isOrd_plump with x'; auto.
+     apply isOrd_inter2; eauto using isOrd_inv.
+     apply inter2_incl2.
+  exists (inter2 z0 y').
+   rewrite inter2_def; split.
+    apply isOrd_plump with z0; auto.
+     apply isOrd_inter2; eauto using isOrd_inv.
+     apply inter2_incl1.
+    apply isOrd_plump with y'; auto.
+     apply isOrd_inter2; eauto using isOrd_inv.
+     apply inter2_incl2.
+  rewrite <- H4; eauto using isOrd_inv.
+  apply eq_intro; intros.
+   rewrite inter2_def; split; trivial.
+   rewrite <- H3; trivial.
+
+   rewrite inter2_def in H5; destruct H5; trivial.
+
+ rewrite osup2_ax in H0; trivial.
+ destruct H0 as [?|[?|(x',?,(y',?,?))]].
+  rewrite inter2_def in H0; destruct H0; rewrite inter2_def; split; trivial.
+  apply osup2_incl1; auto.
+
+  rewrite inter2_def in H0; destruct H0; rewrite inter2_def; split; trivial.
+  apply osup2_incl2; auto.
+
+  rewrite inter2_def in H0; destruct H0.
+  rewrite inter2_def in H1; destruct H1.
+  rewrite H2; clear z0 H2.
+  assert (forall z, isOrd z -> inter2 z (osup2 x' y') == osup2 (inter2 z x') (inter2 z y')).
+   intros; apply Hrecx; eauto using isOrd_inv.
+ assert (os2m := osup2m).
+  destruct (isOrd_dir _ H x' y'); trivial.
+  destruct H6.
+  rewrite inter2_def; split.
+   apply isOrd_plump with x0; trivial.
+    apply Hrecx; eauto using isOrd_inv.
+    apply Hrecx; eauto using isOrd_inv.
+
+   rewrite (osup2_ax x y); auto; right; right; eauto with *.
+Qed.
+
+
+Lemma isOrd_osup2 : forall x y,
+  isOrd x ->
+  isOrd y ->
+  isOrd (osup2 x y).
+intros.
+apply osup2_proof; trivial.
+Qed.
+
+Lemma osup2_lub : forall x y z,
+  isOrd x -> isOrd y -> isOrd z ->
+  x \incl z -> y \incl z -> osup2 x y \incl z.
+intros.
+apply osup2_proof; trivial.
+Qed.
+
+Lemma osup2_refl x : isOrd x -> osup2 x x == x.
+intros.
+apply eq_intro; intros.
+ revert H0; apply osup2_lub; auto with *.
+
+ apply osup2_incl1; auto.
+Qed.
+
+Lemma osup2_lt x y z : isOrd z -> x \in z -> y \in z -> osup2 x y \in z.
+intros.
+destruct (isOrd_dir _ H x y); trivial.
+destruct H3.
+apply isOrd_plump with x0; trivial.
+ apply isOrd_osup2; eauto using isOrd_inv.
+
+ apply osup2_lub; eauto using isOrd_inv.
+Qed.
+
+(**)
+
+(*
+Definition VN :=
+  TR (fun f y => sup y (fun y' => power (f y'))).
+
+Let VNf_morph :
+  forall x x' f g, x == x' -> eq_fun x f g ->
+  sup x (fun y' => power (f y')) == sup x' (fun y' => power (g y')).
+intros; apply sup_morph; trivial.
+red; intros.
+apply power_morph.
+apply H0; trivial.
+Qed.
+
+  Lemma VN_def : forall x z,
+    isWf x ->
+    (z \in VN x <-> exists2 y, y \in x & z \incl VN y).
+split; intros.
+ unfold VN in H0.
+ rewrite TR_eqn in H0; trivial.
+ 2:exact VNf_morph.
+ rewrite sup_ax in H0.
+  destruct H0.
+  exists x0; trivial.
+  red; intros.
+  eauto using power_elim.
+
+  do 2 red; intros.
+  apply power_morph; apply TR_morph; trivial.
+
+ destruct H0.
+ unfold VN; rewrite TR_eqn; trivial.
+ 2:exact VNf_morph.
+ rewrite sup_ax.
+  exists x0; trivial.
+  apply power_intro; auto.
+
+  do 2 red; intros.
+  apply power_morph; apply TR_morph; trivial.
+Qed.
+
+
+Lemma isWf_rk x : isWf x -> x \incl VN x.
+induction 1 using isWf_ind; intros.
+red; intros.
+rewrite VN_def; trivial.
+exists z; auto.
+Qed.
+
+
+Lemma VN_incl_wf x y :
+  isWf x ->
+  y \incl VN x ->
+  isWf y.
+intro wfx; revert y; induction wfx using isWf_ind; intros.
+apply isWf_intro; intros.
+apply H0 in H1.
+rewrite VN_def in H1; trivial.
+destruct H1; eauto.
+Qed.
+
+Lemma VN_compl x y :
+  isWf x ->
+  y \incl VN x ->
+  VN y \incl VN x.
+intro wfx; revert y; induction wfx using isWf_ind; intros.
+red; intros.
+rewrite VN_def in H1|-*; trivial.
+2:apply VN_incl_wf with a; trivial.
+destruct H1.
+apply H0 in H1.
+rewrite VN_def in H1; trivial.
+destruct H1.
+exists x0; trivial.
+transitivity (VN x); auto.
+Qed.
+
+
+Lemma VN_trans x y : isWf x -> y \in VN x -> y \incl VN x.
+intro wfx; revert y.
+induction wfx using isWf_ind; intros.
+red; intros.
+rewrite VN_def in H0|-*; trivial.
+destruct H0.
+exists x; auto.
+Qed.
+
+Lemma rk_induc :
+  forall P:set->Prop,
+  (forall x, isWf x -> (forall y, y \in VN x -> P y) -> P x) ->
+  forall x, isWf x -> P x.
+intros.
+cut (forall y, isWf y -> VN y \incl VN x -> P y).
+ intros.
+ apply H1; trivial.
+ red; trivial.
+induction H0 using isWf_ind; intros.
+apply H; intros; trivial.
+apply H3 in H4.
+rewrite VN_def in H4; trivial.
+destruct H4.
+apply H1 with x; trivial.
+ apply VN_incl_wf with x; eauto using isWf_inv.
+
+ apply VN_compl; eauto using isWf_inv.
+Qed.
+
+Definition isWf' x :=
+ forall p, (forall a, a \incl VN x -> a \incl p -> a \in p) -> x \in p.
+
+Lemma equivWf : forall x, isWf x <-> isWf' x.
+split ;intros.
+ red; intros.
+ cut (forall x', isWf x' -> x' \incl VN x -> x' \in p).
+  intro h; apply h; trivial.
+  apply isWf_rk; trivial.
+ induction 1 using isWf_ind; intros.
+ apply H0; trivial.
+ red; intros.
+ apply H2; trivial.
+ apply VN_trans; auto.
+
+ red; intros.
+ cut (x \in subset (power (VN x)) P).
+  intro.
+  apply subset_elim2 in H2.
+  destruct H2.
+  symmetry in H2; eauto.
+ apply H; intros.  
+ apply subset_intro.
+  apply power_intro; auto.
+
+  apply H1; intros.
+  apply H3 in H4.
+  apply subset_elim2 in H4.
+  destruct H4.
+  symmetry in H4; eauto.
+Qed.
+
+
+Lemma osup2_plump a b :
+  isOrd a ->
+  isOrd b ->
+  forall x y, isOrd x -> x \incl y -> y \in osup2 a b -> x \in osup2 a b.
+intros.  
+rewrite osup2_ax in H3|-*; auto.
+destruct H3 as [?|[?|(x',?,(y',?,?))]].
+ left; apply isOrd_plump with y; trivial.
+
+ right; left; apply isOrd_plump with y; trivial.
+
+ right; right.
+ exists (inter2 x x').
+  apply isOrd_plump with x'; trivial.
+   apply isOrd_inter2; eauto using isOrd_inv.
+   apply inter2_incl2.
+
+  exists (inter2 x y').
+   apply isOrd_plump with y'; trivial.
+    apply isOrd_inter2; eauto using isOrd_inv.
+    apply inter2_incl2.
+
+apply eq_intro; intros.
+ assert (H7 := H2 _ H6).
+ rewrite H5 in H7.
+ rewrite osup2_ax in H7|-*.
+ 2:apply isWf_inv with a; auto.
+ 2:apply isWf_inter2; eauto using isWf_inv.
+ destruct H7 as [?|[?|(z1,?,(z2,?,?))]].
+  left; rewrite inter2_def; split; trivial.
+
+  right; left; rewrite inter2_def; split; trivial.
+
+  right; right.
+  exists z1.
+   rewrite inter2_def; split; trivial.
+   apply isOrd_plump with z; eauto using isOrd_inv.
+   rewrite H9; apply osup2_incl1; eauto using isWf_inv.
+  exists z2; auto with *.
+  rewrite inter2_def; split; trivial.
+  apply isOrd_plump with z; eauto using isOrd_inv.
+  rewrite H9; apply osup2_incl2; eauto using isWf_inv.
+
+ rewrite osup2_ax in H6.
+ 2:apply isWf_inter2; eauto using isWf_inv.
+ destruct H6 as [?|[?|(z1,?,(z2,?,?))]].
+  rewrite inter2_def in H6; destruct H6; trivial.
+
+  rewrite inter2_def in H6; destruct H6; trivial.
+assert (isOrd z).
+admit.
+  destruct (isOrd_dir _ H1 z1 z2).
+   rewrite inter2_def in H6; destruct H6; trivial.
+   rewrite inter2_def in H7; destruct H7; trivial. 
+  destruct H11.
+  
+ apply isOrd_plump with (osup2 (inter2 x x') (inter2 
+
+
+   destruct Hrecx with x' y' as (_,(_,?)); eauto using isOrd_inv.
+   rewrite <- H4; trivial.
+   apply eq_intro; intros.
+    rewrite inter2_def; split; trivial.
+    rewrite <- H3; auto.
+
+    apply inter2_def in H5; destruct H5; trivial.
+
+*)
+
+Section OrdinalUpperBound.
+
+  Variable I : set.
+  Variable f : set -> set.
+  Hypothesis f_ext : ext_fun I f.
+  Hypothesis f_ord : forall x, x \in I -> isOrd (f x).
+
+  Lemma isOrd_supf_intro : forall n, n \in I -> f n \incl sup I f.
+red; intros.
+rewrite sup_ax; trivial.
+exists n; trivial.
+Qed.
+
+  Lemma isOrd_supf_elim : forall x, lt x (sup I f) -> exists2 n, n \in I & lt x (f n).
+intros.
+rewrite sup_ax in H; trivial.
+Qed.
+
+  Hypothesis supf_dir : forall x y, x \in I -> y \in I ->
+    exists2 z, z \in I & f x \incl f z /\ f y \incl f z.
+
+  Lemma isOrd_supf : isOrd (sup I f).
+apply isOrd_intro; intros.
+ elim isOrd_supf_elim with (1:=H1); intros.
+ apply isOrd_supf_intro with x; trivial.
+ apply isOrd_plump with b; auto.
+
+ red; intros.
+ rewrite sup_ax in H; trivial; destruct H.
+ rewrite sup_ax in H0; trivial; destruct H0.
+ destruct supf_dir with x0 x1; trivial.
+ destruct H4.
+ exists (osup2 x y).
+  rewrite sup_ax; trivial.
+  exists x2; trivial.
+  apply osup2_lt; auto.
+
+  split.
+   apply osup2_incl1; eauto using isWf_inv.
+   apply osup2_incl2; eauto using isWf_inv.
+
+ elim isOrd_supf_elim with (1:=H); intros.
+ apply isOrd_inv with (f x); auto.
+Qed.
+
+End OrdinalUpperBound.
+
+
 (********************************************************************)
 
 Require Import ZFrepl.
@@ -1112,6 +1780,7 @@ Section LimOrd.
 
   Variable f : nat -> set.
   Variable ford : forall n, isOrd (f n).
+  Variable fmono : forall m n, m <= n -> f m \incl f n.
 
   Definition ord_sup :=
     union (repl N (fun x y => exists2 n, x == nat2set n & f n == y)).
@@ -1159,13 +1828,32 @@ apply isOrd_intro; intros.
  apply isOrd_sup_intro with x.
  apply isOrd_plump with b; auto.
 
+ red; intros.
+ apply isOrd_sup_elim in H; destruct H.
+ apply isOrd_sup_elim in H0; destruct H0.
+ exists (osup2 x y).
+  destruct (isOrd_dir _ (ford (x0+x1)) x y).
+   apply (fmono x0); auto with arith.
+   apply (fmono x1); auto with *.
+
+   destruct H2.
+   apply (isOrd_sup_intro (x0+x1)).
+   apply isOrd_plump with x2; auto.
+    apply isOrd_osup2; eauto using isOrd_inv.
+
+    apply osup2_lub; eauto using isOrd_inv.
+
+  split.
+   apply osup2_incl1; eauto using isWf_inv.
+   apply osup2_incl2; eauto using isWf_inv.
+
  elim isOrd_sup_elim with (1:=H); intros.
  apply isOrd_inv with (f x); trivial.
 Qed.
 
 End LimOrd.
 
-
+(* TODO 
 Lemma isOrd_union : forall x,
   (forall y, y \in x -> isOrd y) -> isOrd (union x).
 intros.
@@ -1177,6 +1865,7 @@ apply isOrd_intro; intros.
  rewrite union_ax in H0; destruct H0. 
  apply isOrd_inv with x0; auto.
 Qed.
+*)
 
 Lemma isOrd_inter : forall x,
   (forall y, y \in x -> isOrd y) -> isOrd (inter x).
@@ -1188,6 +1877,18 @@ apply isOrd_intro; intros.
   apply inter_elim with (1:=H2); trivial.
 
   destruct inter_non_empty with (1:=H2); eauto.
+
+ red; intros.
+ destruct inter_non_empty with (1:=H0) as (w,?,?).
+ exists (osup2 x0 y).
+  apply inter_intro; intros; eauto.
+  apply osup2_lt; auto.
+   apply inter_elim with (1:=H0); trivial.
+   apply inter_elim with (1:=H1); trivial.
+
+  split.
+   apply osup2_incl1; eauto using isWf_inv.
+   apply osup2_incl2; eauto using isWf_inv.
 
  destruct inter_non_empty with (1:=H0).
  eauto using isOrd_inv.
@@ -1212,6 +1913,11 @@ Definition omega := ord_sup nat2ordset.
 
 Lemma isOrd_omega : isOrd omega.
 apply isOrd_sup; trivial.
+induction 1; intros; auto with *.
+simpl.
+transitivity (nat2ordset m0); trivial.
+red; intros.
+apply isOrd_trans with (2:=H0); auto.
 Qed.
 Hint Resolve isOrd_omega.
 
@@ -1234,6 +1940,7 @@ split; auto.
 Qed.
 Hint Resolve omega_limit_ord.
 
+(*
 Require Import Peano_dec.
 Require Import Compare_dec.
 
@@ -1272,9 +1979,10 @@ exists (nat2ordset (Peano.max x0 x1)).
 Qed.
 
 Hint Resolve isDir_omega.
+*)
 
 (* Higher ordinals *)
-
+(*
 Inductive ord : Set := OO | OS (o:ord) | OL (f:nat->ord).
 
 Fixpoint ord2set (o:ord) : set :=
@@ -1291,19 +1999,34 @@ induction o; simpl; intros.
  apply isOrd_sup; trivial.
 Qed.
 Hint Resolve ord2set_typ.
+*)
 
 (* f^w(o) *)
 Definition iter_w (f:set->set) o :=
   ord_sup(nat_rect(fun _=>set) o (fun _ => f)).
 
 Lemma isOrd_iter_w : forall f o,
+  o \incl f o ->
+  (forall x y, isOrd x -> isOrd y -> x \incl y -> f x \incl f y) ->
   (forall x, isOrd x -> isOrd (f x)) ->
   isOrd o ->
   isOrd (iter_w f o).
 intros.
 unfold iter_w.
 apply isOrd_sup.
-induction n; simpl; intros; auto.
+ induction n; simpl; intros; auto.
+
+ induction m; simpl; intros.
+  revert o H H2; elim n; simpl; intros; auto with *.
+  transitivity (f o); trivial.
+  apply H0; auto.
+  elim n0; simpl; auto.
+
+  destruct n; simpl.
+   inversion H3.
+  apply H0; auto with arith.
+   elim m; simpl; auto.
+   elim n; simpl; auto.
 Qed.
 
 Definition plus_w := iter_w osucc.
@@ -1311,6 +2034,7 @@ Definition mult_w := iter_w plus_w.
 Definition pow_w := iter_w mult_w.
 Definition epsilon0 : set := iter_w pow_w omega.
 
+(*
 Lemma isOrd_epsilon0: isOrd epsilon0.
 unfold epsilon0, pow_w, mult_w, plus_w.
 apply isOrd_iter_w; intros.
@@ -1328,4 +2052,256 @@ apply isOrd_sup_intro with 0; simpl.
 apply isOrd_sup_intro with 1; simpl.
 apply lt_osucc; trivial.
 Qed.
+*)
 
+
+Section DirOrdinalSup.
+
+  Variable I : set.
+  Variable f : set -> set.
+  Hypothesis f_ext : ext_fun I f.
+  Hypothesis f_ord : forall x, x \in I -> isOrd (f x).
+
+  Let osupf X := sup X (fun x => replf X (fun y => osup2 x y)).
+  Let osupfn n := nat_rect (fun _ => set) (sup I f) (fun _ => osupf) n.
+  Definition osup := ord_sup osupfn.
+
+  Lemma osupf_def X z : z \in osupf X <-> exists2 x, x \in X & exists2 y, y \in X & z == osup2 x y.
+unfold osupf; rewrite sup_ax.
+ apply ex2_morph.
+  red; reflexivity.
+
+  red; intros.
+  rewrite replf_ax.
+   reflexivity.
+
+   do 2 red; intros; apply osup2m; auto with *.
+
+ do 2 red; intros; apply replf_morph; auto with *.
+ red; intros; apply osup2m; trivial.
+Qed.
+
+  Lemma osupf_mono X Y :
+    X \incl Y ->
+    osupf X \incl osupf Y.
+red; intros.
+rewrite osupf_def in H0|-*.
+destruct H0 as (x,?,(y,?,?)); exists x; auto.
+exists y; auto.
+Qed.
+
+  Lemma osupfn_mono m n : m <= n -> osupfn m \incl osupfn n.
+revert n; induction m; simpl; intros.
+ clear H; induction n; simpl; auto with *.
+ apply osupf_mono in IHn.
+ red; intros; apply IHn.
+ rewrite osupf_def.
+ exists z; trivial.
+ exists z; trivial.
+ symmetry; apply osup2_refl.
+ rewrite sup_ax in H; trivial.
+ destruct H.
+ apply isOrd_inv with (f x); auto.
+
+ destruct n; simpl.
+  inversion H.
+ apply osupf_mono; apply IHm; auto with arith.
+Qed.
+
+(*
+  Lemma osup_def z : z \in osup <-> exists n, exists2 x, x \in nat_recy (exists2 x, x \in I & exists2 y, y \in I & z \in osup2 (f x) (f y).
+unfold osup; rewrite sup_ax.
+ apply ex2_morph.
+  red; reflexivity.
+
+  red; intros.
+  rewrite sup_ax.
+   reflexivity.
+
+   do 2 red; intros; apply osup2m; auto with *.
+
+ do 2 red; intros; apply sup_morph; auto with *.
+ red; intros; apply osup2m; auto with *.
+Qed.
+*)
+
+  Lemma osup_intro : forall x, x \in I -> f x \incl osup.
+red; intros.
+unfold osup.
+apply isOrd_sup_intro with (n:=0); simpl.
+rewrite sup_ax; eauto.
+Qed.
+
+  Lemma isOrd_osupfn : forall n x, x \in osupfn n -> isOrd x.
+induction n; simpl; intros.
+ rewrite sup_ax in H; trivial.
+ destruct H; eauto using isOrd_inv.
+
+ rewrite osupf_def in H.
+ destruct H as (y,?,(y',?,?)).
+ rewrite H1; apply isOrd_osup2; eauto using isOrd_inv.
+Qed.
+
+  Lemma isOrd_osup : isOrd osup.
+unfold osup.
+apply isOrd_intro; intros.
+ apply isOrd_sup_elim in H1.
+ destruct H1 as (n,?).
+ apply isOrd_sup_intro with n.
+ revert a b H H0 H1.
+ induction n; simpl; intros.
+  rewrite sup_ax in H1|-*; trivial.
+  destruct H1.
+  exists x; trivial.
+  apply isOrd_plump with b; auto.
+
+  rewrite osupf_def in H1|-*.
+  destruct H1 as (x,?,(y,?,?)).
+  assert (xo : isOrd x).
+   apply isOrd_osupfn in H1; trivial.
+  assert (yo : isOrd y).
+   apply isOrd_osupfn in H2; trivial.
+  exists (inter2 a x).
+   apply IHn with x; trivial.
+    apply isOrd_inter2; trivial.
+
+    apply inter2_incl2.
+
+  exists (inter2 a y).
+   apply IHn with y; trivial.
+    apply isOrd_inter2; trivial.
+
+    apply inter2_incl2.
+
+   destruct osup2_proof with x y as (_,(_,?)); trivial.
+   rewrite <- H4; trivial.
+   apply eq_intro; intros.
+    rewrite inter2_def; split; trivial.
+    rewrite <- H3; auto.
+
+    rewrite inter2_def in H5; destruct H5; trivial.
+
+ red; intros.
+ apply isOrd_sup_elim in H; destruct H as (n,?).
+ apply isOrd_sup_elim in H0; destruct H0 as (m,?).
+ assert (xo : isOrd x).
+  apply isOrd_osupfn in H; trivial.
+ assert (yo : isOrd y).
+   apply isOrd_osupfn in H0; trivial.
+ exists (osup2 x y).
+  apply isOrd_sup_intro with (S(n+m)); simpl.
+  rewrite osupf_def; exists x.
+   revert H; apply osupfn_mono; auto with arith.
+  exists y; auto with *.
+   revert H0; apply osupfn_mono; auto with arith.
+
+  split.
+   apply osup2_incl1; auto.
+   apply osup2_incl2; auto.
+
+ apply isOrd_sup_elim in H; destruct H as (n,?).
+ apply isOrd_osupfn in H; trivial.
+Qed.
+
+  Lemma osup_lub z :
+    isOrd z ->
+    (forall x, x \in I -> f x \incl z) ->
+    osup \incl z.
+red; intros.
+apply isOrd_sup_elim in H1; destruct H1 as (n,?).
+revert z0 H1; induction n; simpl; intros.
+ rewrite sup_ax in H1; trivial.
+ destruct H1.
+ revert H2; apply H0; trivial.
+
+ rewrite osupf_def in H1; destruct H1 as (x,?,(y,?,?)).
+ rewrite H3; apply osup2_lt; auto.
+Qed.
+
+End DirOrdinalSup.
+
+  Lemma osup_morph : forall x x' f f',
+    x == x' -> eq_fun x f f' -> osup x f == osup x' f'.
+unfold osup, ord_sup; intros.
+apply union_morph.
+apply repl_morph_raw; auto with *.
+split; intros.
+ destruct H3.
+ rewrite H1 in H3.
+ exists x2; trivial.
+ rewrite <- H2; rewrite <- H4.
+ elim x2; simpl; intros.
+  symmetry; apply sup_morph; trivial.
+
+  apply sup_morph; trivial.
+  red; intros.
+  apply replf_morph; trivial.
+  red; intros.
+  apply osup2m; trivial.
+
+ destruct H3.
+ rewrite <- H1 in H3.
+ exists x2; trivial.
+ rewrite H2; rewrite <- H4.
+ elim x2; simpl; intros.
+  apply sup_morph; trivial.
+
+  apply sup_morph; trivial.
+  red; intros.
+  apply replf_morph; trivial.
+  red; intros.
+  apply osup2m; trivial.
+Qed.
+
+(* Projection toward ordinals *)
+
+Definition toOrd (x : set) :=
+  osup (subset x isOrd) osucc.
+
+Instance toOrd_morph : morph1 toOrd.
+do 2 red; intros.
+unfold toOrd.
+apply osup_morph.
+ apply subset_morph; auto with *.
+
+ red; intros; rewrite H1; reflexivity.
+Qed.
+
+Lemma toOrd_isOrd : forall x, isOrd (toOrd x).
+intros.
+unfold toOrd.
+apply isOrd_osup; intros.
+ red; red; intros.
+ rewrite H0; reflexivity.
+
+ apply isOrd_succ.
+ destruct subset_elim2 with (1:=H).
+ rewrite H0; trivial.
+Qed.
+
+Lemma toOrd_ord : forall o, isOrd o -> toOrd o == o.
+intros.
+unfold toOrd.
+apply incl_eq.
+ apply osup_lub; trivial.
+  do 2 red; intros; apply osucc_morph; trivial.
+
+  intros.
+  red; intros.
+  assert (isOrd x).
+   apply subset_elim2 in H0; destruct H0.
+   rewrite H0; trivial.
+  apply subset_elim1 in H0.
+  apply isOrd_plump with x; eauto using isOrd_inv.
+  apply olts_le in H1; trivial.
+
+ red; intros.
+ assert (z \in osucc z).
+  apply lt_osucc.
+  apply isOrd_inv with o; trivial.
+ revert H1; apply osup_intro.
+  do 2 red; intros; apply osucc_morph; auto.
+
+  apply subset_intro; trivial.
+  apply isOrd_inv with o; trivial.
+Qed.

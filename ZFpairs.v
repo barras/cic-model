@@ -207,15 +207,25 @@ Qed.
 (* dependent pairs *)
 
 Definition sigma A B :=
-  subset (prodcart A (union (replf A B)))
-    (fun p => snd p \in B (fst p)).
+  subset (prodcart A (sup A B)) (fun p => snd p \in B (fst p)).
 
-Lemma sigma_morph : forall A A' B B',
+Instance sigma_morph : Proper (eq_set ==> (eq_set ==> eq_set) ==> eq_set) sigma.
+unfold sigma; do 3 red; intros.
+apply subset_morph.
+ apply prodcart_morph; trivial.
+ apply sup_morph; trivial.
+ red; intros; auto.
+
+ red; intros.
+ apply in_set_morph; auto with *.
+Qed.
+
+Lemma sigma_ext : forall A A' B B',
   A == A' ->
   (forall x x', x \in A -> x == x' -> B x == B' x') ->
   sigma A B == sigma A' B'.
 unfold sigma; intros.
-assert (peq : union (replf A B) == union (replf A' B')).
+assert (peq : sup A B == sup A' B').
  apply union_morph.
  apply replf_morph; trivial.
 
@@ -246,8 +256,7 @@ Lemma couple_intro_sigma :
 intros; unfold sigma.
 apply subset_intro.
  apply couple_intro; trivial.
- apply union_intro with (B x); trivial.
- apply replf_intro with x; trivial; try reflexivity.
+ rewrite sup_ax; eauto.
 
  rewrite <- (H x (fst(couple x y))); trivial.
   rewrite snd_def; trivial.
@@ -291,4 +300,3 @@ apply couple_intro_sigma; trivial.
 
   apply snd_typ_sigma with (2:=H3); auto with *.
 Qed.
-
