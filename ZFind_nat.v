@@ -372,9 +372,7 @@ Require Import ZFfixrec.
   Variable ord : set.
   Hypothesis oord : isOrd ord.
   Variable F : set -> set -> set.
-  Hypothesis Fm : forall o o' f f',
-    isOrd o -> o == o' -> f == f' ->
-    F o f == F o' f'.
+  Hypothesis Fm : morph2 F.
   Variable U : set -> set -> set.
 
   Hypothesis Umono : forall o o' x x',
@@ -516,8 +514,6 @@ apply REC_wt with (T:=NATi) (Q:=Q); auto.
  apply TI_morph.
 
  apply NATi_cont.
-
- apply NATi_stable2. 
 Qed.
 
 
@@ -528,23 +524,17 @@ apply REC_expand with (T:=NATi) (Q:=Q); auto.
  apply TI_morph.
 
  apply NATi_cont.
-
- apply NATi_stable2. 
 Qed.
 
 End Recursor.
 
 
-Lemma NATREC_morph :
-  forall f1 f2,
-  (eq_set ==> eq_set ==> eq_set)%signature f1 f2 ->
-  forall o1 o2, isOrd o1 ->
-  o1 == o2 ->
-  NATREC f1 o1 == NATREC f2 o2.
-intros.
-unfold NATREC.
-unfold TIO.
-apply TR_morph_gen; trivial; intros.
+Instance NATREC_morph :
+  Proper ((eq_set==>eq_set==>eq_set)==>eq_set==>eq_set) NATREC.
+do 3 red; intros.
+unfold NATREC, REC, TIO.
+apply TR_morph; trivial; intros.
+do 2 red; intros.
 apply sup_morph; intros; auto.
 red; intros.
 apply H; auto.

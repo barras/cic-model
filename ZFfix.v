@@ -6,7 +6,7 @@ Section IterMonotone.
   Variable F : set -> set.
   Variable Fmono : Proper (incl_set ==> incl_set) F.
 
-  Instance Fmono_morph: Proper (eq_set ==> eq_set) F.
+  Instance Fmono_morph: morph1 F.
 do 2 red; intros.
 apply eq_intro; intros.
  apply Fmono with x; trivial.
@@ -64,7 +64,7 @@ rewrite TI_eq; auto.
 apply sup_morph; auto with *.
 red; intros.
 rewrite <- TI_mono_succ.
- apply TI_morph.
+ apply TI_morph; auto.
  rewrite H1; reflexivity.
 
  apply isOrd_inv with o; trivial.
@@ -170,24 +170,6 @@ destruct H0.
 exists x1; eauto using isOrd_inv.
 Qed.
 
-(*
-Section Iter0.
-
-Variable G : (set -> set) -> set -> set.
-Hypothesis Gm : forall x x' g g',
-  eq_fun (fsub x) g g' ->
-  x == x' -> G g x == G g' x'.
-
-
-  Definition Fix_rec :=
-    TR (fun f o =>
-        lam (TI F o) (fun x => G (fun y => ) x
-
-  Lemma Fr_eqn : forall a o,
-    isOrd o ->
-    a \in TI F o ->
-    Fix_rec a == G Fix_rec a.
-*)
 
 Section Iter.
 

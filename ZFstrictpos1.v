@@ -345,20 +345,6 @@ apply subset_morph.
  apply instance_morph; auto with *.
 Qed.
 
-(*
-  Instance DIND_morph : Proper (eq_dpos ==> eq_set ==> eq_set) DIND.
-do 3 red; intros.
-apply subset_morph.
- apply INDi_morph; trivial.
-  apply tr_pos_morph; trivial.
-
-  admit.
-
- red; intros.
- apply instance_morph; auto with *.
-Qed.
-*)
-
   Variable p : dpositive.
   Hypothesis eqp : eq_dpos p p.
 Let eqp' := tr_pos_morph _ _ eqp.

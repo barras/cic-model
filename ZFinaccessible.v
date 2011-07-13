@@ -41,6 +41,7 @@ Section Grothendieck_Universe.
 
   Variable U : set.
   Hypothesis Ug : grot_univ U.
+  Hypothesis Uinf : omega \in U.
 
   Definition grot_ord := subset U isOrd.
 
@@ -67,6 +68,19 @@ apply isOrd_intro; intros.
  apply G_incl with b; trivial.
  apply grot_ord_intro; trivial.
 
+ red; intros.
+ assert (isOrd x) by eauto using isOrd_grot.
+ assert (isOrd y) by eauto using isOrd_grot.
+ assert (x \in U) by (apply grot_ord_intro; trivial).
+ assert (y \in U) by (apply grot_ord_intro; trivial).
+ exists (osup2 x y). 
+  apply subset_intro.
+   apply G_osup2; auto.
+
+   apply isOrd_osup2; trivial.
+
+  split; [apply osup2_incl1|apply osup2_incl2]; auto.
+
  apply isOrd_grot; trivial.
 Qed.
 Hint Resolve isOrd_grot_ord.
@@ -84,44 +98,11 @@ Qed.
   Lemma VN_in_grot :
     forall o, lt o grot_ord -> VN o \in U.
 unfold VN; intros.
-unfold TI.
-unfold TR.
-unfold ZFrepl.uchoice.
-apply G_union; trivial.
-apply G_repl; trivial.
-  split; intros.
-   revert H3; apply TR_rel_morph; auto with *.
-
-   apply TR_rel_fun with (2:=H1)(3:=H2).
-   intros.
-   apply sup_morph; trivial.
-   red; intros.
-   apply power_morph; apply H6; trivial.
-
- apply G_singl; trivial.
- apply grot_ord_intro.
- apply isOrd_plump with o; auto.
- red; intros.
- elim empty_ax with z; trivial.
+apply G_TI; auto with *.
+ apply grot_ord_intro; trivial.
 
  intros.
- red in H1.
- revert H; apply H1.
-  intros.
-  rewrite <- H3 in H6; rewrite <- H4; auto.
-
-  intros.
-  apply G_union; trivial.
-  apply G_replf; trivial.
-   red; red; intros.
-   apply power_morph; apply H3; trivial.
-
-   apply grot_ord_intro; trivial.
-
-   intros.
-   apply G_power; trivial.
-   apply H4; trivial.
-   apply isOrd_trans with o'; trivial.
+ apply G_power; trivial.
 Qed.
 
 
@@ -141,16 +122,13 @@ Qed.
   ext_fun x F ->
   x \in U ->
   (forall y, y \in x -> lt (F y) grot_ord) ->
-  lt (sup x F) grot_ord.
+  lt (osup x F) grot_ord.
 intros.
-assert (sup x F \in U).
- apply G_union; trivial.
- apply G_replf; trivial.
- intros.
- apply H1 in H2.
- apply grot_ord_intro; trivial.
-assert (isOrd (sup x F)).
- apply isOrd_supf; trivial.
+assert (osup x F \in U).
+ apply G_osup; intros; auto.
+ apply grot_ord_intro; auto.
+assert (isOrd (osup x F)).
+ apply isOrd_osup; trivial.
  intros.
  apply isOrd_inv with grot_ord; auto.
 apply grot_ord_inv; trivial.
@@ -183,39 +161,38 @@ assert (eF : ext_fun A F).
 
   red; intros.
   reflexivity.
-exists (sup A F).
+exists (osup A F).
  apply grot_ord_inv.
-  apply isOrd_supf; trivial.
+  apply isOrd_osup; trivial.
 
-  apply G_union; trivial.
-  apply G_replf; trivial.
+  apply grot_ord_intro.  
+  apply G_ord_sup; trivial.
    apply G_subset; trivial.
    apply VN_incl_grot; trivial.
 
    intros.
-   apply grot_ord_intro; trivial.
-   assert (exists2 z, R x0 z & z \in VN grot_ord).
+   assert (exists2 z, R y z & z \in VN grot_ord).
     unfold A in H2; rewrite subset_ax in H2; destruct H2.
     destruct H3.
     destruct H4.
-    exists x2.
-     apply (proj1 H) with x1 x2; auto with *.
+    exists x1.
+     apply (proj1 H) with x0 x1; auto with *.
      rewrite <- H3; trivial.
 
-     apply H1 with x1; trivial.
+     apply H1 with x0; trivial.
      rewrite <- H3; trivial.
    destruct H3 as (z0, r0, ?).
    rewrite VN_def in H3; trivial; destruct H3.
-   apply isOrd_plump with x1; auto.
+   apply isOrd_plump with x0; auto.
    red; intros.
    apply inter_elim with (1:=H5).
    apply subset_intro; trivial.
    exists z0; trivial.
 
- red; intros.
- rewrite union_ax in H2; destruct H2.
- apply ZFrepl.repl_elim in H3; trivial.
- destruct H3.
+red; intros.
+rewrite union_ax in H2; destruct H2.
+apply ZFrepl.repl_elim in H3; trivial.
+destruct H3.
 assert (x0 \incl VN (F x1)).
  red; intros.
  apply VN_stable.
@@ -251,10 +228,9 @@ rewrite VN_def in H2.
 2:apply oF; apply subset_intro; eauto.
 destruct H2.
 rewrite VN_def.
-2:apply isOrd_supf; auto.
+2:apply isOrd_osup; auto.
 exists x2; trivial.
-rewrite sup_ax; trivial.
-exists x1; trivial.
+revert H2; apply osup_intro; trivial.
 apply subset_intro; trivial.
 exists x0; trivial.
 Qed.

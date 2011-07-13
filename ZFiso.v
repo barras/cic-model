@@ -2114,6 +2114,7 @@ destruct
 
   apply iso_cont; trivial.
 
+ do 3 red; intros.
  apply cc_lam_morph; intros.
   apply TI_morph; auto.
   apply osucc_morph; trivial.
@@ -2212,9 +2213,21 @@ constructor; intros.
     apply TIF_morph; reflexivity.
     apply TIF_morph; reflexivity.
    red; intros.
-   admit.
+   transitivity (TIF A F x2 a0).
+    apply TIF_mono; eauto using isOrd_inv.
 
-   admit.
+    red; intro; apply eq_elim.
+    apply TIF_morph; auto with *.
+
+   revert H3; apply Fmono; auto with *.
+    apply TIF_morph; reflexivity.
+    apply TIF_morph; reflexivity.
+   red; intros.
+   transitivity (TIF A F x2 a0).
+    apply TIF_mono; eauto using isOrd_inv.
+
+    red; intro; apply eq_elim.
+    apply TIF_morph; auto with *.
  destruct H4.
  destruct H5.
  apply (iso_inj (iso' _ _ tya H4)); trivial.
@@ -2345,7 +2358,8 @@ destruct
  (* Q continuity *)
  apply TIF_iso_cont with (f:=fun a0 x => cc_app f (couple a0 x)); auto.
 
- (* F morph *) 
+ (* F morph *)
+ do 3 red; intros.
  apply cc_lam_morph; intros.
   apply sigma_morph; auto with *.
   red; intros; apply TIF_morph; trivial.

@@ -209,11 +209,12 @@ End ProductContinuity.
 Lemma func_cont : forall mu X F,
   isOrd mu ->
   VN_regular mu ->
+  omega \in mu ->
   stable_ord F ->
   increasing F ->
   X \in VN mu ->
   func X (sup mu F) == sup mu (fun x => func X (F x)).
-intros mu X F mu_ord mu_reg Fstb Fincr Fsmall.
+intros mu X F mu_ord mu_reg mu_inf Fstb Fincr Fsmall.
 apply eq_intro; intros.
  apply func_cont_gen; trivial.
  red; intros; apply VN_reg_ord; auto.

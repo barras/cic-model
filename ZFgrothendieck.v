@@ -239,15 +239,16 @@ apply G_replf; auto with *.
 Qed.
 
   Lemma G_TR F o :
-    (forall o o' f f', o == o' -> eq_fun o f f' -> F f o == F f' o') ->
+    Proper ((eq_set==>eq_set)==>eq_set==>eq_set) F ->
+    (forall o f f', isOrd o -> eq_fun o f f' -> F f o == F f' o) ->
     isOrd o ->
     o \in U ->
     (forall f o, ext_fun o f -> o \in U ->
      (forall o', o' \in o -> f o' \in U) ->
      F f o \in U) ->
     TR F o \in U.
-intros Fext oo oU FU.
-apply TR_typ with (X:=fun _ => U); trivial.
+intros Fm Fext oo oU FU.
+apply TR_typ with (X:=fun _ => U); auto.
  do 2 red; reflexivity.
 intros.
 apply FU; auto.
@@ -262,7 +263,11 @@ Qed.
     TI F o \in U.
 intros.
 apply G_TR; trivial; intros.
- apply sup_morph; trivial.
+ do 3 red; intros.
+ apply sup_morph; auto.
+ red; intros; auto.
+
+ apply sup_morph; auto with *.
  red; intros.
  apply H; auto.
 
@@ -351,6 +356,7 @@ apply G_TI; intros; trivial.
    apply G_couple; eauto using G_trans.
 Qed.
 
+
   Lemma G_N : ZFnats.N \in U.
 pose (f := fun X => union2 (singl ZFnats.zero) (replf X ZFnats.succ)).
 assert (fm : morph1 f).
@@ -402,29 +408,13 @@ Lemma G_osup I f :
   (forall x, x \in I -> f x \in U) ->
   osup I f \in U.
 intros ef ford IU fU.
-unfold osup.
-unfold ord_sup.
-apply G_union; trivial.
-apply G_repl; trivial.
- apply repl_sup.
-
- apply G_N.
-intros.
-destruct H0.
-rewrite <- H1.
-clear H0 H1.
-induction x0; simpl; intros.
+apply osup_univ; trivial; intros.
  apply G_sup; trivial.
 
- apply G_sup; intros; trivial.
-  do 2 red; intros; apply replf_morph; auto with *.
-  red; intros; apply osup2m; trivial.
+ apply G_singl.
+ apply G_osup2; eauto using G_trans.
 
-  apply G_replf; intros; trivial.
-   do 2 red; intros; apply osup2m; auto with *.
-
-   apply G_osup2; eauto using G_trans.
-   apply isOrd_osupfn in H0; auto.
+ apply G_N.
 Qed.
 
 End Infinite.

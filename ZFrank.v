@@ -243,6 +243,95 @@ apply VN_union; auto.
 apply VNsucc_pair; trivial.
 Qed.
 
+Require Import ZFwf.
+
+Lemma VN_wf o x : isOrd o -> x \in VN o -> isWf x.
+intros oo; revert x; induction oo using isOrd_ind.
+intros.
+apply isWf_intro; intros.
+rewrite VN_def in H1; trivial; destruct H1.
+apply H3 in H2; eauto.
+Qed.
+
+Lemma VN_osup2 o :
+  isOrd o ->
+  forall x y,
+  x \in VN o ->
+  y \in VN o ->
+  osup2 x y \in VN o.
+induction 1 using isOrd_ind; intros.
+rewrite VN_def in H2,H3|-*; trivial.
+destruct H2.
+destruct H3.
+exists (osup2 x0 x1).
+ apply osup2_lt; trivial.
+
+ red; intros.
+ rewrite osup2_ax in H6.
+ 2:apply isWf_intro; intros; eauto using VN_wf, isOrd_inv.
+ assert (x \incl VN (osup2 x0 x1)).
+  red; intros.
+  apply H4 in H7; revert H7; apply VN_mono_le.
+   apply isOrd_inv with y; trivial.
+   apply isOrd_osup2; eauto using isOrd_inv.
+   apply osup2_incl1; eauto using isOrd_inv.
+ assert (y0 \incl VN (osup2 x0 x1)).
+  red; intros.
+  apply H5 in H8; revert H8; apply VN_mono_le.
+   apply isOrd_inv with y; trivial.
+   apply isOrd_osup2; eauto using isOrd_inv.
+   apply osup2_incl2; eauto using isOrd_inv.
+ destruct H6 as [?|[?|(x',?,(y',?,?))]]; auto.
+ rewrite H10; apply H1; auto.
+ apply osup2_lt; trivial.
+Qed.
+
+(*
+Let N_TI :
+  let f := fun X => union2 (singl zero) (replf X succ) in N \incl TI f omega.
+intro f.
+red; intros.
+assert (fm : morph1 f).
+ do 2 red; intros.
+ apply union2_morph; auto with *.
+ apply replf_morph; trivial.
+ red; intros; apply succ_morph; trivial.
+apply nat2set_reflect in H.
+destruct H.
+rewrite H.
+clear z H.
+induction x; simpl.
+ apply TI_intro with empty; trivial.
+ apply union2_intro1.
+ apply singl_intro.
+
+ apply TI_elim in IHx; trivial.
+ destruct IHx.
+ apply TI_intro with (osucc x0); auto.
+ apply union2_intro2.
+ rewrite replf_ax.
+ 2:do 2 red; intros; apply succ_morph; trivial.
+ exists (ZFnats.nat2set x); auto with *.
+ apply TI_intro with x0; auto.
+  eauto using isOrd_inv.
+
+  apply lt_osucc; eauto using isOrd_inv.
+Qed. (* cf ZFgrothendieck *)
+*)
+
+Lemma VN_N : N \incl VN omega.
+red; intros.
+elim H using N_ind; simpl; intros.
+ rewrite <- H1; trivial.
+
+ apply VN_intro; trivial.
+ apply zero_omega.
+
+ unfold succ.
+ apply VN_union; trivial.
+ apply VNlim_pair; trivial.
+ apply VNlim_pair; trivial.
+Qed.
 
 
 Definition VN_regular o :=
@@ -257,9 +346,30 @@ Definition bound_ord A o :=
   (forall n, n \in A -> lt (F n) o) ->
   lt (osup A F) o.
 
+
+
+Lemma VN_ord_sup F o :
+  isOrd o ->
+  VN_regular o ->
+  omega \in o ->
+  (forall n, F n \in VN o) ->
+  ord_sup F \in VN o.
+intros.
+apply ord_sup_typ; trivial; intros.
+apply H0; trivial.
+ do 2 red; intros; apply H3; trivial.
+
+ apply VN_incl with (VN omega); trivial.
+  apply VN_N.
+
+  apply VN_mono; trivial.
+Qed.
+
+
 Lemma VN_reg_ord : forall o,
   isOrd o -> 
   VN_regular o ->
+  omega \in o ->
   forall x F,
   ext_fun x F ->
   x \in VN o ->
@@ -269,13 +379,25 @@ intros.
 apply VN_ord_inv; trivial.
  apply isOrd_osup; eauto using isOrd_inv.
 
-admit.
-(* TODO: fix
-unfold osup.
-unfold ord_sup.
- apply H0; intros; trivial.
- apply VN_intro; trivial.
- apply H3; trivial.*)
+ apply osup_univ; intros; trivial.
+  apply isOrd_inv with o; auto.
+
+  apply H0; trivial.
+
+  rewrite VN_def in H5; trivial; destruct H5.
+  apply H9 in H7; apply H9 in H8.
+  rewrite VN_def; trivial.
+  exists x1; trivial.
+  red; intros.
+  apply singl_elim in H10; rewrite H10; apply VN_osup2; eauto using isOrd_inv.
+
+  apply VN_incl with (VN omega); trivial. (* N \in VN o needed ? (cf osup_univ) *)
+   apply VN_N.
+
+   apply VN_mono; trivial.
+
+  apply VN_intro; auto.
+  apply H4; trivial.
 Qed.
 
 Definition VN_inaccessible o :=
@@ -299,6 +421,8 @@ Section UnionClosure.
   Hypothesis mu_ord : isOrd mu.
   Hypothesis mu_lim : forall x, lt x mu -> lt (osucc x) mu.
   Hypothesis mu_reg : VN_regular_rel mu.
+  Hypothesis mu_inf : omega \in mu.
+
 
   Lemma VN_regular_weaker : VN_regular mu.
 red; intros.
@@ -385,6 +509,8 @@ assert (ext : ext_fun (subset a (fun x : set => F x \in mu)) F).
 assert (mu' \in mu).
  unfold mu'; apply VN_reg_ord; auto.
   exact VN_regular_weaker.
+
+  
 
   apply VN_incl with a; trivial.
   red; intros.

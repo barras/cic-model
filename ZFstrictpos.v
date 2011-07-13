@@ -198,7 +198,7 @@ Qed.
   Instance INDi_morph : Proper (eq_pos ==> eq_set ==> eq_set) INDi.
 do 3 red; intros.
 unfold INDi.
-apply TR_morph_gen; trivial.
+apply TR_morph; trivial.
 do 2 red; intros.
 apply sup_morph; trivial.
 red; intros.

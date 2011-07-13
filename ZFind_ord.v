@@ -1,6 +1,6 @@
 Require Import ZF ZFsum ZFfix ZFnats ZFrelations ZFord ZFcard ZFcont.
 Require Import ZFstable ZFrank ZFgrothendieck ZFinaccessible.
-Require Import ZFind_nat.
+Require Import ZFind_basic ZFind_nat.
 Import IZF ZFrepl.
 
 Section Ord_theory.
@@ -187,7 +187,7 @@ Section OrdConvergence.
     forall F,
     ext_fun NAT F -> 
     (forall n, n \in NAT -> lt (F n) o) ->
-    lt (sup NAT F) o.
+    lt (osup NAT F) o.
 
   Let oo : isOrd o.
 Proof proj1 limo.
@@ -226,7 +226,7 @@ assert (forall n, n \in NAT -> uchoice_pred (P n)).
    elim e2; trivial.
    elim e1; trivial.
 
-exists (sup NAT (fun n => uchoice (P n))).
+exists (osup NAT (fun n => uchoice (P n))).
  apply boundo; trivial.
   intros.
   assert (P n (uchoice (P n))).
@@ -234,22 +234,20 @@ exists (sup NAT (fun n => uchoice (P n))).
   destruct H3 as [(_,e)|(_,e)]; rewrite e; trivial.
 
  split.
-  red; intros.
-  rewrite sup_ax; trivial.
   assert (t0 := ZERO_typ).
-  exists ZERO; trivial.
   assert (P ZERO (uchoice (P ZERO))).
    apply uchoice_def; auto.
-  destruct H3 as [(_,e)|(d,_)].
+  destruct H2 as [(_,e)|(d,_)].
+   red; intros.
+   apply osup_intro with (x:=ZERO); trivial.
    rewrite e; trivial.
 
    elim d; reflexivity.
 
   red; intros.
-  rewrite sup_ax; trivial.
   assert (t1 : SUCC ZERO \in NAT).
    apply SUCC_typ; apply ZERO_typ.
-  exists (SUCC ZERO); trivial.
+  apply osup_intro with (x:=SUCC ZERO); trivial.
   assert (P (SUCC ZERO) (uchoice (P (SUCC ZERO)))).
    apply uchoice_def; auto.
   destruct H3 as [(d,_)|(_,e)].
@@ -400,7 +398,7 @@ apply ORDf_case with (3:=H0); intros.
        exists (osucc(osucc(osucc x1))); auto with *.
        apply subset_intro; trivial.
        repeat apply limo; trivial.
-  assert (lt (sup NAT F) o).
+  assert (lt (osup NAT F) o).
    apply boundo; auto.
    intros; apply pF; trivial.
 (*   apply isOrd_plump with (4:=bound); auto.
@@ -422,7 +420,7 @@ apply ORDf_case with (3:=H0); intros.
   specialize func_eta with (1:=H1); intros.
   rewrite H4.
   unfold lam.
-  apply VN_incl with (VN (sup NAT F)); auto.
+  apply VN_incl with (VN (osup NAT F)); auto.
    assert (eSS : ext_fun NAT (fun x : set => singl (ZFpairs.couple x (app f x)))).
     red; red; intros.
     rewrite H6; reflexivity.
@@ -437,9 +435,11 @@ apply ORDf_case with (3:=H0); intros.
      apply isOrd_inv with o; auto.
      apply pF; trivial.
 
-     apply isOrd_supf; trivial; intros.
+     apply isOrd_osup; trivial; intros.
      apply isOrd_inv with o; auto.
      apply pF; trivial.
+
+     apply osup_intro; trivial.
 
      apply pF; trivial.
     assert (ext_fun NAT (fun x : set => ZFpairs.couple x (app f x))).
@@ -565,14 +565,14 @@ Qed.
 Section FirstAttempt.
 (* We can already build the fixpoint (at iteration mu), but we cannot
    prove we stay within the universe U *)
-
+(*
   Let mu_dir : isDir mu.
 apply isDir_regular; trivial.
  apply G_limit; trivial.
 
  apply G_regular; trivial.
 Qed.
-
+*)
   Let mu_omega : lt omega mu.
 apply grot_ord_inv; trivial.
 Qed.
@@ -622,19 +622,23 @@ apply NAT_in_mu.
 Qed.
 *)
 
+Lemma mu_omega : omega \in mu.
+Admitted.
+Hint Resolve mu_omega.
+
 Lemma no_nat_cof :
   forall F,
   ext_fun NAT F ->
   (forall n, n \in NAT -> lt (F n) mu) ->
-  exists2 o, lt o mu & lt (sup NAT F) o.
+  exists2 o, lt o mu & lt (osup NAT F) o.
 intros.
-exists (osucc (sup NAT F)).
+exists (osucc (osup NAT F)).
  apply mu_lim.
  apply VN_reg_ord; auto.
  apply NAT_in_mu.
 
  apply lt_osucc.
- apply isOrd_supf; trivial; intros.
+ apply isOrd_osup; trivial; intros.
  apply isOrd_inv with mu; auto.
 Qed.
 
@@ -642,7 +646,7 @@ Qed.
   Definition bound_ord_mu A o :=
     forall F, ext_fun A F ->
     (forall n, n \in A -> lt (F n) mu) ->
-    lt (sup A F) o.
+    lt (osup A F) o.
 
   Lemma bound_ord_mu_inter : forall A a,
     (exists w, w \in a) ->
@@ -657,6 +661,7 @@ Qed.
   Lemma mu_bound : forall A, A \in VN mu -> bound_ord_mu A mu.
 red; intros.
 apply VN_reg_ord; auto; intros.
+
 Qed.
 
   Definition nat_bound :=
@@ -943,7 +948,7 @@ specialize co_inclapply
   Lemma clos_ord_induc :
     exists2 F,
       ext_fun NAT F /\ (forall n, n \in NAT -> lt (F n) mu) &
-      clos_ord \incl sup NAT F.
+      clos_ord \incl osup NAT F.
 (*
 destruct clos_ord_step as (?,(?,?)).
 assert (clos_ord \incl sup (func NAT clos_ord) (fun f => sup NAT (app f))).
@@ -978,7 +983,7 @@ Admitted.
 *)
   Lemma clos_ord_lt_mu : lt clos_ord mu.
 destruct clos_ord_induc as (?,(?,?)).
-apply isOrd_plump with (sup NAT x); auto.
+apply isOrd_plump with (osup NAT x); auto.
  apply isOrd_clos_ord.
 apply VN_reg_ord; auto.
 apply NAT_in_mu.
@@ -1003,21 +1008,21 @@ Admitted.
 
 (* card(X) = card(A->X) if card(X) >= card(2^card(A)) *)
 
-  Definition NATfb o := sup (func NAT o) (fun f => sup NAT (app f)).
+  Definition NATfb o := osup (func NAT o) (fun f => osup NAT (app f)).
 
   Instance NATfb_morph : morph1 NATfb.
 unfold NATfb.
 do 2 red; intros.
-apply sup_morph; auto with *.
+apply osup_morph; auto with *.
  rewrite H; reflexivity.
 red; intros.
-apply sup_morph; auto with *.
+apply osup_morph; auto with *.
 red; intros; apply app_morph; trivial.
 Qed.
 
-  Lemma ext1 : forall A, ext_fun A (fun f => sup NAT (app f)).
+  Lemma ext1 : forall A, ext_fun A (fun f => osup NAT (app f)).
 red; red; intros.
-apply sup_morph; auto with *.
+apply osup_morph; auto with *.
 red; intros.
 rewrite H0,H2; reflexivity.
 Qed.
@@ -1025,8 +1030,8 @@ Hint Resolve ext1.
 
   Lemma NATfb_ord : forall o, isOrd o -> isOrd (NATfb o).
 unfold NATfb; intros.
-apply isOrd_supf; trivial; intros.
-apply isOrd_supf; intros.
+apply isOrd_osup; trivial; intros.
+apply isOrd_osup; intros.
  red; red; intros.
  rewrite H2; reflexivity.
 
@@ -1036,19 +1041,36 @@ Qed.
 
   Lemma NATfb_mono : increasing NATfb.
 unfold NATfb.
-red; red; intros.
-rewrite sup_ax in H2|-*; trivial.
-destruct H2.
-exists x0; trivial.
-apply func_narrow with y; trivial.
-intros.
-apply H1.
-apply app_typ with NAT; trivial.
+red; intros.
+apply osup_lub; intros.
+ do 2 red; intros; apply osup_morph; auto with *.
+ red; intros; apply app_morph; trivial.
+
+ apply isOrd_osup; intros; auto. 
+ apply isOrd_osup; intros; auto.
+  do 2 red; intros; apply app_morph; auto with *.
+
+  apply isOrd_inv with x; trivial.
+  apply app_typ with (1:=H2); trivial.
+
+ apply osup_intro with (f:=fun x => osup NAT (app x)) (x:=x0).
+  do 2 red; intros; apply osup_morph; auto with *.
+  red; intros; apply app_morph; trivial.
+
+  apply func_narrow with (1:=H2); intros. (* covariant *)
+  apply H1.
+  apply app_typ with (1:=H2); trivial.
 Qed.
 
   Lemma plw_ord : forall o, isOrd o -> isOrd (plus_w o).
 intros.
 apply isOrd_iter_w; auto.
+ red; intros; apply isOrd_trans with o; auto.
+
+ intros.
+ red; intros.
+ apply le_lt_trans with x; auto.
+ apply ole_lts; auto.
 Qed.
 
   Lemma plw_lim : forall o, isOrd o -> limitOrd (plus_w o).

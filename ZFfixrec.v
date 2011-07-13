@@ -78,9 +78,9 @@ Qed.
 
   Variable F : set -> set -> set.
 
-  Hypothesis Fm : forall o o' f f',
-    o == o' -> f == f' ->
-    F o f == F o' f'.
+  Hypothesis Fm : morph2 F.
+  Hypothesis Fext : forall o f f',
+    isOrd o -> f == f' -> F o f == F o f'.
 
   Hypothesis Ftyp : forall o f,
     isOrd o -> o \incl ord ->

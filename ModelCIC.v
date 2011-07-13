@@ -292,16 +292,11 @@ Import ModelZF.CCM.
 Definition NatFix (O U M:term) : term.
 left.
 exists (fun i =>
-  NATREC (fun o' f => int M (V.cons f (V.cons o' i))) (toOrd (int O i))).
+  NATREC (fun o' f => int M (V.cons f (V.cons o' i))) (int O i)).
 red; red; intros.
-setoid_replace (toOrd (int O x)) with (toOrd (int O y)).
- apply NATREC_morph.
-  do 2 red; intros.
-  rewrite H; rewrite H0; rewrite H1; reflexivity.
-
-  apply toOrd_isOrd.
-
-  reflexivity.
+apply NATREC_morph.
+ do 2 red; intros.
+ rewrite H; rewrite H0; rewrite H1; reflexivity.
   
  rewrite H.
  reflexivity.
@@ -578,8 +573,8 @@ assert (isOrd (int O i)).
  apply ty_O in H.
  simpl in H.
  apply isOrd_inv with infty; trivial.
-unfold NATi; rewrite toOrd_ord; trivial.
-apply eq_elim with (prod (NATi (int O i)) (fun x => int U (V.cons x (V.cons (int O i) i)))).
+apply eq_elim with
+   (prod (NATi (int O i)) (fun x => int U (V.cons x (V.cons (int O i) i)))).
  apply prod_ext.
   reflexivity.
   red; intros.
@@ -626,7 +621,7 @@ red; intros.
 generalize ty_fix_body; intro tfb.
 generalize fix_body_irrel; intro ifb.
 change
- (app (NATREC (fun o f => int M (V.cons f (V.cons o i))) (toOrd (int O i))) (int N i) ==
+ (app (NATREC (fun o f => int M (V.cons f (V.cons o i))) (int O i)) (int N i) ==
   app (int (subst O (subst (lift 1 (NatFix O U M)) M)) i) (int N i)).
 do 2 rewrite int_subst_eq.
 rewrite simpl_int_lift.
@@ -638,33 +633,18 @@ simpl in O_lt.
 assert (isOrd (int O i)).
  apply isOrd_inv with infty; trivial.
 refine (let FX_exp :=
-    NATREC_expand (toOrd (int O i)) _
+    NATREC_expand (int O i) _
       (fun o f => int M (V.cons f (V.cons o i))) _
       (fun o x => int U (V.cons x (V.cons o i)))
     in _); auto.
- apply toOrd_isOrd.
-
- intros.
- rewrite H3; rewrite H4; reflexivity.
+ do 3 red; intros.
+ rewrite H2; rewrite H3; reflexivity.
 rewrite FX_exp; clear FX_exp.
  apply app_ext; try reflexivity.
- apply int_morph; auto with *.
- apply V.cons_morph.
-  apply NATREC_morph; auto with *.
-   do 2 red; intros.
-   apply int_morph; auto with *.
-   apply V.cons_morph; trivial.
-   rewrite H2.
-   reflexivity.
-
-   apply toOrd_isOrd.
-
-   rewrite toOrd_ord; auto with *.
 
  intros.
  apply fx_sub_U.
  apply val_push_var; simpl; auto.
-  rewrite toOrd_ord in H3; trivial.
   apply ole_lts in H3; trivial.
   apply val_push_ord; simpl; auto.
    apply val_mono_refl; trivial.
@@ -680,21 +660,16 @@ rewrite FX_exp; clear FX_exp.
 
  intros.
  apply tfb; trivial.
- rewrite toOrd_ord in H3; trivial.
  apply ole_lts in H3; trivial.
 
  red; intros; apply ifb; trivial.
- rewrite toOrd_ord in H3; trivial.
 
- rewrite toOrd_ord; trivial.
  apply H in H0; trivial.
 Qed.
 
 End NatFixRules.
 
 Print Assumptions typ_nat_fix.
-
-
 
 Lemma typ_var' : forall e n T,
   match nth_error e n with value T' => eq_term (lift (S n) T') T | _ => False end ->

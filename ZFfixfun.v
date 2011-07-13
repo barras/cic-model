@@ -33,35 +33,46 @@ apply incl_eq.
 Qed.
 Hint Resolve FFmono_ext.
 
-  Definition TIF o :=
-    cc_app (TR (fun f o => cc_lam A (fun a => sup o (fun o' => F (cc_app (f o')) a))) o).
+  Let G f o := cc_lam A (fun a => sup o (fun o' => F (cc_app (f o')) a)).
 
-  Let m1 : forall o o' f f', isOrd o -> o == o' -> eq_fun o f f' ->
-    cc_lam A (fun a => sup o (fun o' => F (cc_app (f o')) a)) ==
-    cc_lam A (fun a => sup o' (fun o' => F (cc_app (f' o')) a)).
-intros.
+  Let Gm : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) G.
+do 3 red; intros.
+unfold G.
 apply cc_lam_ext; intros; auto with *.
 red; intros.
 apply sup_morph; trivial.
 red; intros.
 apply FFmono_ext; trivial.
- apply cc_app_morph.
- transitivity (f' x0); auto with *.
- symmetry; auto with *.
+ apply cc_app_morph; reflexivity.
 
- apply cc_app_morph.
- rewrite H5 in H4.
- transitivity (f x'0); auto with *.
- symmetry; auto with *.
+ apply cc_app_morph; reflexivity.
 
  red; intros.
  apply cc_app_morph; auto with *.
 Qed.
 
+  Let Gext : forall o f f', isOrd o -> eq_fun o f f' -> G f o == G f' o.
+intros.
+unfold G.
+apply cc_lam_ext; intros; auto with *.
+red; intros.
+apply sup_morph; auto with *.
+red; intros.
+apply FFmono_ext; trivial.
+ apply cc_app_morph; reflexivity.
+
+ apply cc_app_morph; reflexivity.
+
+ red; intros.
+ apply cc_app_morph; auto with *.
+Qed.
+
+  Definition TIF o := cc_app (TR G o).
+
   Instance TIF_morph : morph2 TIF.
 unfold TIF; do 3 red; intros.
 apply cc_app_morph; trivial.
-apply TR_morph; auto with *.
+apply TR_morph0; auto with *.
 Qed.
 
   Let m2: forall a a' o o', a \in A -> a == a' -> isOrd o -> o == o' ->
@@ -81,21 +92,12 @@ Qed.
 intros.
 unfold TIF.
 rewrite TR_eqn; intros; auto.
- rewrite cc_beta_eq; auto with *.
- do 2 red; intros.
- apply sup_morph; auto with *.
- red; intros.
- apply m2; trivial.
- apply isOrd_inv with o; trivial.
-
- apply cc_lam_ext; auto with *.
- red; intros.
- apply sup_morph; trivial.
- red; intros.
- apply FFmono_ext; trivial.
-  apply cc_app_morph; reflexivity.
-  apply cc_app_morph; reflexivity.
-  red; intros; apply cc_app_morph; auto.
+unfold G at 1; rewrite cc_beta_eq; auto with *.
+do 2 red; intros.
+apply sup_morph; auto with *.
+red; intros.
+apply m2; trivial.
+apply isOrd_inv with o; trivial.
 Qed.
 
   Lemma TIF_intro : forall o o' a x,
@@ -306,7 +308,7 @@ destruct H2.
 exists x1; eauto using isOrd_inv.
 Qed.
 
-
+(*
 Section Iter.
 
 Variable G : (set -> set -> set) -> set -> set -> set.
@@ -478,7 +480,7 @@ Qed.
 *)
 
 End Iter.
-
+*)
 (*
   Definition F_a g x := sup (fsub x) (fun a => osucc (g a)).
 
