@@ -273,6 +273,11 @@ apply isOrd_plump with y; trivial.
  apply olts_le; trivial.
 Qed.
 
+Lemma ord_lt_le : forall o o', isOrd o -> o' \in o -> o' \incl o.
+red; intros; apply isOrd_trans with o'; trivial.
+Qed.
+Hint Resolve ord_lt_le.
+
 Lemma isOrd_succ : forall n, isOrd n -> isOrd (osucc n).
 unfold osucc.
 intros.
@@ -686,7 +691,8 @@ Section TransfiniteRecursion.
   Hypothesis Fmorph :
     forall x f f', isOrd x -> x \incl ord -> eq_fun x f f' -> F f x == F f' x.
 
-  Definition TR_rel o y := (isOrd o/\o\incl ord) /\
+  Definition TR_rel o y :=
+    (isOrd o /\ o \incl ord) /\
     forall (P:set->set->Prop),
     Proper (eq_set ==> eq_set ==> iff) P ->
     (forall o' f, isOrd o' -> o' \incl ord -> morph1 f ->
@@ -854,19 +860,6 @@ transitivity (TR_rel F x y y0).
  rewrite H; reflexivity.
 Qed.
 
-(* --> basic *)
-Lemma impl_morph A A' B B' :
-  (A <-> A') ->
-  (A -> (B <-> B')) ->
-  ((A -> B) <-> (A' -> B')).
-split; intros.
- rewrite <- H in H2.
- rewrite <- H0; auto.
-
- rewrite H0; auto.
- rewrite H in H2; auto.
-Qed.
-
   Instance TR_morph :
     Proper (((eq_set ==> eq_set) ==> eq_set ==> eq_set) ==> eq_set ==> eq_set) TR.
 do 3 red; intros.
@@ -911,7 +904,6 @@ transitivity (TR_rel F o x' y).
 
  rewrite H0 in H.
  split; apply TR_rel_irrel; auto with *.
- red; intros; apply isOrd_trans with x'; trivial.
 Qed.
 
   Lemma TR_ind : forall o (P:set->set->Prop),
@@ -928,12 +920,10 @@ rewrite TR_eqn; trivial.
 apply H1; auto with *; intros.
 apply H0; intros; trivial.
  assert (x0 \incl y).
-  red; intros; apply isOrd_trans with x; auto.
-  red; auto.
+  transitivity x; auto.
  auto.
 apply H1; trivial.
-red; intros; apply isOrd_trans with x; auto.
-red; auto.
+transitivity x; auto.
 Qed.
 
   Lemma TR_typ : forall o X,

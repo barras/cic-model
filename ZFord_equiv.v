@@ -38,21 +38,19 @@ split; intros.
  apply isOrd_eqv1'; trivial.
 
  apply ZFordcl.isOrd_ind; trivial; intros.
-  rewrite <- H2; auto.
+ apply ZFord.isOrd_intro; intros; auto.
+  apply ZFordcl.ClassicOrdinal.ord_incl_le in H4.
+   apply le_case in H4.
+   destruct H4.
+    rewrite H4; trivial.
 
-  apply ZFord.isOrd_intro; intros; auto.
-   apply ZFordcl.ClassicOrdinal.ord_incl_le in H4.
-    apply le_case in H4.
-    destruct H4.
-     rewrite H4; trivial.
+    apply ZFordcl.isOrd_trans with b; trivial.
 
-     apply ZFordcl.isOrd_trans with b; trivial.
+   apply isOrd_eqv1'; trivial.
 
-    apply isOrd_eqv1'; trivial.
+   apply ZFordcl.isOrd_inv with y; trivial.
 
-    apply ZFordcl.isOrd_inv with y; trivial.
-
-   apply isOrd_dir; trivial.
+  apply isOrd_dir; trivial.
 Qed.
 
 Lemma isOrd_equiv : forall x,
@@ -61,19 +59,17 @@ split; intros.
  apply isOrd_eqv1; trivial.
 
  apply ZFordcl.isOrd_ind; trivial; intros.
-  rewrite <- H2; auto.
+ apply ZFplump.isOrd_intro; intros; auto.
+ apply ZFordcl.ClassicOrdinal.ord_incl_le in H4.
+  apply le_case in H4.
+  destruct H4.
+   rewrite H4; trivial.
 
-  apply ZFplump.isOrd_intro; intros; auto.
-  apply ZFordcl.ClassicOrdinal.ord_incl_le in H4.
-   apply le_case in H4.
-   destruct H4.
-    rewrite H4; trivial.
+   apply ZFordcl.isOrd_trans with b; trivial.
 
-    apply ZFordcl.isOrd_trans with b; trivial.
+  apply isOrd_eqv1; trivial.
 
-   apply isOrd_eqv1; trivial.
-
-   apply ZFordcl.isOrd_inv with y; trivial.
+  apply ZFordcl.isOrd_inv with y; trivial.
 Qed.
 
 Lemma succ_equiv : forall x,

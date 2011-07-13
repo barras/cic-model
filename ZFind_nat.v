@@ -347,7 +347,7 @@ Qed.
 
 (* Fixpoints *)
 
-Require Import ZFfunext ZFfixfuntyp.
+Require Import ZFfunext ZFfixrec.
 
 Section Recursor.
 
@@ -365,22 +365,20 @@ Qed.
 
 (* Recursor *)
 
-Require Import ZFfixrec.
-
   Notation prod := ZFcoc.cc_prod.
 
   Variable ord : set.
   Hypothesis oord : isOrd ord.
+
   Variable F : set -> set -> set.
   Hypothesis Fm : morph2 F.
-  Variable U : set -> set -> set.
 
+  Variable U : set -> set -> set.
   Hypothesis Umono : forall o o' x x',
     isOrd o' -> o' \incl ord -> isOrd o -> o \incl o' ->
     x \in NATi o -> x == x' ->
     U o x \incl U o' x'.
-(*  Hypothesis Umono : forall o o', lt o' ord -> isOrd o -> o \incl o' ->
-    forall x x', x \in NATi o -> x == x' -> U o x \incl U o' x'. *)
+
   Let Ty o := prod (NATi o) (U o).
   Hypothesis Ftyp : forall o f, isOrd o -> o \incl ord ->
     f \in Ty o -> F o f \in Ty (osucc o).
@@ -396,10 +394,7 @@ Require Import ZFfixrec.
 
   Hypothesis Firrel : NAT_ord_irrel.
 
-
-
   Definition NATREC := REC F.
-
 
 Lemma Umorph : forall o o', isOrd o' -> o' \incl ord -> o == o' ->
     forall x x', x \in NATi o -> x == x' -> U o x == U o' x'. 
@@ -494,7 +489,7 @@ split.
  apply ZFcoc.cc_prod_elim with (1:=H3); trivial.
 Qed.
 
-  Lemma Fstab_NAT : stab_fix_prop ord NATi Q F.
+  Lemma Firrel_NAT : stage_irrelevance ord NATi Q F.
 red; red; intros.
 destruct H1 as (oo,(ofun,oty)); destruct H2 as (o'o,(o'fun,o'ty)).
 apply Firrel; trivial.
@@ -503,7 +498,7 @@ apply Firrel; trivial.
 
  apply NATREC_typing; trivial. 
 Qed.
-Hint Resolve Fstab_NAT.
+Hint Resolve Firrel_NAT.
 
   (* Main properties of NATREC: typing and equation *)
   Lemma NATREC_wt : NATREC ord \in Ty ord.
@@ -532,7 +527,7 @@ End Recursor.
 Instance NATREC_morph :
   Proper ((eq_set==>eq_set==>eq_set)==>eq_set==>eq_set) NATREC.
 do 3 red; intros.
-unfold NATREC, REC, TIO.
+unfold NATREC, REC.
 apply TR_morph; trivial; intros.
 do 2 red; intros.
 apply sup_morph; intros; auto.

@@ -1,6 +1,6 @@
 
 Require Import List Models.
-Require Import ZFfunext ZFecc ZFind_nat.
+Require Import ZFfunext ZFfixrec ZFecc ZFind_nat.
 Require ModelZF.
 Import ZFgrothendieck.
 Import ZF ZFsum ZFnats ZFord ZFfix IZF.
@@ -284,7 +284,6 @@ Qed.
 
 (* Recursor (without case analysis) *)
 
-Require Import ZFfixfuntyp.
 Import ModelZF.CCM.
 
 

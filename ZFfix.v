@@ -32,8 +32,7 @@ Qed.
     TI F o' \incl TI F o.
 intros.
 apply TI_mono; trivial; auto.
- apply isOrd_inv with o; trivial.
- red; intros; apply isOrd_trans with o'; trivial.
+apply isOrd_inv with o; trivial.
 Qed.
 
   Lemma TI_mono_succ : forall o,

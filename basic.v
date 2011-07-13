@@ -1,6 +1,18 @@
 Require Export Coq.Program.Basics.
 Require Export Setoid Morphisms Morphisms_Prop.
 
+Lemma impl_morph A A' B B' :
+  (A <-> A') ->
+  (A -> (B <-> B')) ->
+  ((A -> B) <-> (A' -> B')).
+split; intros.
+ rewrite <- H in H2.
+ rewrite <- H0; auto.
+
+ rewrite H0; auto.
+ rewrite H in H2; auto.
+Qed.
+
 Lemma fa_mono : forall A (B B':A->Prop),
   (forall x, impl (B x) (B' x)) -> impl (forall x, B x) (forall x, B' x).
 unfold impl; intros; auto.

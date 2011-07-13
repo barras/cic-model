@@ -2093,7 +2093,7 @@ destruct
   let Q:=fun o f => iso_fun (TI F o) (TI G o) (cc_app f) in
   let F:=fun o f => cc_lam (TI F (osucc o)) (g (cc_app f)) in
   fun Tm Tc Qm Qc Fm Ftyp Tstb =>
-  conj (REC_typ o oo T Tm Tc Q Qm Qc F Fm Ftyp Tstb)
+  conj (REC_typing o oo T Tm Tc Q Qm Qc F Fm Ftyp Tstb)
        (REC_expand o oo T Tm Tc Q Qm Qc F Fm Ftyp Tstb))
  as (isoTI,expTI); intros; auto.
  apply TI_morph.
@@ -2328,7 +2328,7 @@ destruct
   let F:=fun o f =>  cc_lam (sigma A (fun a' => TIF A F (osucc o) a'))
      (fun p => g (fun x y => cc_app f (couple x y)) (fst p) (snd p)) in
   fun Tm Tc Qm Qc Fm Ftyp Tstb =>
-  conj (REC_typ o oo T Tm Tc Q Qm Qc F Fm Ftyp Tstb)
+  conj (REC_typing o oo T Tm Tc Q Qm Qc F Fm Ftyp Tstb)
        (REC_expand o oo T Tm Tc Q Qm Qc F Fm Ftyp Tstb))
  as (isoTI,expTI); intros; auto.
  do 2 red; intros; apply sigma_morph; auto with *.

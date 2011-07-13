@@ -4,64 +4,79 @@ Import IZF.
 
 Definition isOrd x :=
   forall P : set -> Prop,
-  (forall x x', x == x' -> P x -> P x') ->
   (forall y,
    (forall a b, a \in b -> b \in y -> a \in y) ->
    (forall z, z \in y -> P z)-> P y) -> P x.
 
-Lemma isOrd_ext : forall x y, x == y -> isOrd x -> isOrd y.
-unfold isOrd; intros.
-apply H1 with x; trivial.
-apply H0; trivial.
-Qed.
-
-Instance isOrd_morph : Proper (eq_set ==> iff) isOrd.
-do 2 red; split; intros.
- apply isOrd_ext with x; trivial.
-
- symmetry in H.
- apply isOrd_ext with y; trivial.
-Qed.
-
-Lemma isOrd_intro : forall x,
+Lemma isOrd_intro x :
   (forall a b, a \in b -> b \in x -> a \in x) ->
   (forall y, y \in x -> isOrd y) ->
   isOrd x.
 red; intros.
-apply H2; trivial.
+apply H1; trivial.
 intros.
 red in H0.
 apply H0; trivial.
 Qed.
 
-Lemma isOrd_elim : forall x (P:set->Prop),
-  (forall x x', isOrd x -> x == x' -> P x -> P x') ->
-  (forall y,
-   (forall a b, a \in b -> b \in y -> a \in y) ->
-   (forall z, z \in y -> isOrd z) ->
-   (forall z, z \in y -> P z) -> P y) ->
-  isOrd x -> P x.
-intros.
-apply proj2 with (isOrd x).
-red in H1; pattern x; apply H1; intros.
- destruct H3; split; eauto.
- rewrite <- H2; trivial.
-
- split.
-  apply isOrd_intro; trivial; intros.
-  elim H3 with y0; trivial.
-
-  apply H0; trivial; intros.
-   elim H3 with z; trivial.
-   elim H3 with z; trivial.
+Lemma isOrd_elim x :
+  isOrd x ->
+  (forall a b, a \in b -> b \in x -> a \in x) /\
+  (forall y, y \in x -> isOrd y).
+intro xo; apply xo; intros.
+split; intros; eauto.
+apply H0 in H1.
+destruct H1.
+apply isOrd_intro; intros; eauto.
 Qed.
 
-Lemma isOrd_inv : forall x y,
+
+Lemma isOrd_inv x y :
   isOrd x -> lt y x -> isOrd y.
 intros.
-generalize y H0; clear y H0.
-elim H using isOrd_elim; intros; auto.
-unfold lt in *; rewrite <- H1 in H3; auto.
+apply isOrd_elim in H; destruct H; eauto.
+Qed.
+
+Lemma isOrd_trans x y z :
+  isOrd x -> lt z y -> lt y x -> lt z x.
+intros xo.
+unfold lt.
+apply isOrd_elim in xo; destruct xo; eauto.
+Qed.
+
+Lemma isOrd_ext : forall x y, x == y -> isOrd x -> isOrd y.
+intros.
+apply isOrd_elim in H0; destruct H0.
+apply isOrd_intro; intros.
+ rewrite <- H in H3|-*; eauto.
+
+ rewrite <- H in H2; auto.
+Qed.
+
+Instance isOrd_morph : Proper (eq_set ==> iff) isOrd.
+apply morph_impl_iff1; auto with *.
+exact isOrd_ext.
+Qed.
+
+Lemma isOrd_ind : forall x (P:set->Prop),
+  (forall y, isOrd y -> y \incl x ->
+   (forall z, lt z y -> P z) -> P y) ->
+  isOrd x -> P x.
+intros.
+cut (isOrd x /\ (x \incl x -> P x)).
+ destruct 1 as (_,?); auto with *.
+pattern x at -3.
+apply H0; intros.
+assert (isOrd y).
+ apply isOrd_intro; intros; eauto.
+ apply H2; trivial.
+split; intros; trivial.
+apply H; intros; trivial.
+destruct H2 with (1:=H5) as (_,?).
+apply H6.
+red; intros.
+apply H4.
+apply isOrd_trans with z; auto.
 Qed.
 
 Lemma isOrd_le : forall x y,
@@ -73,66 +88,11 @@ apply le_case in H0; destruct H0.
  apply isOrd_inv with x; trivial.
 Qed.
 
-Lemma isOrd_trans : forall x y z,
-  isOrd x -> lt z y -> lt y x -> lt z x.
-unfold lt; intros.
-generalize y z H0 H1; clear y z H0 H1.
-elim H using isOrd_elim; intros; eauto.
-rewrite <- H1 in H4|-*; eauto.
-Qed.
-
-Lemma isOrd_ind : forall x (P:set->Prop),
-  (forall y y', isOrd y -> y \incl x -> y == y' -> P y -> P y') ->
-  (forall y, isOrd y ->
-   y \incl x ->
-   (forall z, lt z y -> P z) -> P y) ->
-  isOrd x -> P x.
-intros.
-generalize H1 H H0; clear H H0.
-cut (x \incl x).
- pattern x at -2.
- elim H1 using isOrd_elim; intros.
-  apply H5 with x0; trivial.
-   rewrite H0; red; auto.
-
-   apply H2; trivial.
-    rewrite H0; trivial.
-
-    intros.
-    apply H5 with y; trivial.
-    rewrite <- H0; trivial.
-
-    intros.
-    apply H6; trivial.
-    rewrite <- H0; trivial.
-
-  apply H6; trivial; intros.
-   red; auto.
-
-   apply H2; auto; intros.
-    red; intros.
-    apply isOrd_trans with z; auto.
-    red in H3|-*; auto.
-
-    apply H5 with y0; trivial.
-    red in H9,H3,H7|-*; intros.
-    apply isOrd_trans with z; auto.
-    red; auto.
-
-    apply H6; auto.
-    red in H9,H3,H7|-*; intros.
-    apply isOrd_trans with z; auto.
-    red; auto.
-
- red; auto.
-Qed.
-
 Lemma isOrd_zero : isOrd zero.
 apply isOrd_intro; intros.
  elim empty_ax with b; trivial.
  elim empty_ax with y; trivial.
 Qed.
-
 
 Lemma isOrd_succ : forall n, isOrd n -> isOrd (succ n).
 intros.
@@ -167,9 +127,7 @@ Qed.
 
 Lemma lt_antirefl : forall x, isOrd x -> ~ lt x x.
 induction 1 using isOrd_ind; intros.
- rewrite <- H1; trivial.
-
- red; intros; apply H1 with y; trivial.
+red; intros; apply H1 with y; trivial.
 Qed.
 
 Lemma isOrd_eq : forall o, isOrd o -> o == sup o succ.
@@ -198,75 +156,69 @@ Axiom EM : forall A, A \/ ~A.
 Lemma ord_tricho : forall x y,
   isOrd x -> isOrd y -> lt x y \/ x == y \/ lt y x.
 intros x y xord; revert y.
-apply isOrd_ind with (3:=xord).
- intros.
- rewrite <- H1; auto.
-
- clear xord; intros x0 xord _ Hrec y yord; clear x; rename x0 into x.
- apply isOrd_ind with (3:=yord).
-  intros.
+apply isOrd_ind with (2:=xord).
+clear xord; intros x0 xord _ Hrec y yord; clear x; rename x0 into x.
+apply isOrd_ind with (2:=yord).
+clear yord; intros y0 yord _ Hrecy; clear y; rename y0 into y.
+destruct (EM (exists2 x1, lt x1 x & forall y1, lt y1 y -> lt y1 x1)).
+ right; right.
+ destruct H.
+ destruct (Hrec x0 H y yord).
+  elim (@lt_antirefl x0); auto.
+  apply isOrd_inv with y; trivial.
+ destruct H1.
   rewrite <- H1; trivial.
 
- clear yord; intros y0 yord _ Hrecy; clear y; rename y0 into y.
- destruct (EM (exists2 x1, lt x1 x & forall y1, lt y1 y -> lt y1 x1)).
-  right; right.
-  destruct H.
-  destruct (Hrec x0 H y yord).
-   elim (lt_antirefl x0); auto.
+  apply isOrd_trans with x0; trivial.
+
+destruct (EM (exists2 y1, lt y1 y & forall x1, lt x1 x -> lt x1 y1)).
+ left.
+ destruct H0.
+ destruct (Hrecy x0 H0).
+  apply isOrd_trans with x0; trivial.
+ destruct H2.
+  rewrite H2; trivial.
+
+  elim (@lt_antirefl x0); auto.
+  apply isOrd_inv with x; trivial.
+
+ assert (forall x1, lt x1 x -> exists2 y1, lt y1 y & le x1 y1).
+  intros.
+  destruct (EM (exists2 y1, lt y1 y & le x1 y1)); trivial.
+  elim H.
+  exists x1; trivial.
+  intros.
+  destruct (Hrec _ H1 y1).
    apply isOrd_inv with y; trivial.
-  destruct H1.
-   rewrite <- H1; trivial.
 
-   apply isOrd_trans with x0; trivial.
-
- destruct (EM (exists2 y1, lt y1 y & forall x1, lt x1 x -> lt x1 y1)).
-  left.
-  destruct H0.
-  destruct (Hrecy x0 H0).
-   apply isOrd_trans with x0; trivial.
-  destruct H2.
-   rewrite H2; trivial.
-
-   elim (lt_antirefl x0); auto.
-   apply isOrd_inv with x; trivial.
-
-  assert (forall x1, lt x1 x -> exists2 y1, lt y1 y & le x1 y1).
-   intros.
-   destruct (EM (exists2 y1, lt y1 y & le x1 y1)); trivial.
-   elim H.
-   exists x1; trivial.
-   intros.
-   destruct (Hrec _ H1 y1).
-    apply isOrd_inv with y; trivial.
-
-    elim H2.
-    exists y1; trivial.
-    apply lt_is_le; trivial.
-
-    destruct H4; trivial.
-    elim H2.
-    exists y1; trivial.
-    rewrite <- H4; apply le_refl.
-  assert (forall y1, lt y1 y -> exists2 x1, lt x1 x &  le y1 x1).
-   intros.
-   destruct (EM (exists2 x1, lt x1 x & le y1 x1)); trivial.
-   elim H0.
+   elim H2.
    exists y1; trivial.
-   intros.
-   destruct (Hrec _ H4 y1); trivial.
-    apply isOrd_inv with y; trivial.
+   apply lt_is_le; trivial.
 
-    elim H3.
-    exists x1; trivial.
-    destruct H5; auto with *.
-    rewrite <- H5; apply le_refl.
-  right; left.
-  apply eq_intro; intros.
-   destruct H1 with (1:=H3).
-   apply le_lt_trans with x0; trivial.
+   destruct H4; trivial.
+   elim H2.
+   exists y1; trivial.
+   rewrite <- H4; apply le_refl.
+ assert (forall y1, lt y1 y -> exists2 x1, lt x1 x &  le y1 x1).
+  intros.
+  destruct (EM (exists2 x1, lt x1 x & le y1 x1)); trivial.
+  elim H0.
+  exists y1; trivial.
+  intros.
+  destruct (Hrec _ H4 y1); trivial.
+   apply isOrd_inv with y; trivial.
 
-   destruct H2 with (1:=H3).
-   apply le_lt_trans with x0; trivial.
+   elim H3.
+   exists x1; trivial.
+   destruct H5; auto with *.
+   rewrite <- H5; apply le_refl.
+ right; left.
+ apply eq_intro; intros.
+  destruct H1 with (1:=H3).
+  apply le_lt_trans with x0; trivial.
+
+  destruct H2 with (1:=H3).
+  apply le_lt_trans with x0; trivial.
 Qed.
 
 Lemma ord_total : forall x y,
@@ -489,23 +441,6 @@ Lemma least_ord1 : forall o (P:set->Prop),
   P (least_ord o P) /\ isOrd (least_ord o P) /\ le (least_ord o P) x /\
   forall y, lt y (least_ord o P) -> ~ P y.
 induction 2 using isOrd_ind; intros.
- rewrite <- H2 in H3.
- assert (least_ord y P == least_ord y' P).
-  apply least_ord_morph; intros; trivial.
-  split; intros; eauto.
-  symmetry in H6; eauto.
-  apply H with x'; trivial.
-  rewrite H6; trivial.
- destruct IHisOrd with x; trivial.
- destruct H7.
- split.
-  apply H with (2:=H5); trivial.
-
-  rewrite <- H5.
-  split; trivial.
-  destruct H8; split; intros; trivial.
-  rewrite <- H5 in H10; auto.
-
 Import ClassicOrdinal.
 elim (EM (exists2 z, lt z x & P z)); intro.
  destruct H5.
@@ -859,24 +794,21 @@ Qed.
 
   Lemma TR_rel_def : forall o, isOrd o -> exists y, TR_rel o y.
 induction 1 using isOrd_ind; intros.
- destruct IHisOrd.
- rewrite H1 in H2; exists x; trivial.
-
- assert (forall z, lt z y -> uchoice_pred (fun y => TR_rel z y)).
-  intros.
-  specialize H1 with (1:=H2).
-  destruct H1.
-  split; intros.
-   rewrite <- H3; trivial.
-  split; intros.
-   exists x; trivial.
-  apply TR_rel_fun with z; trivial.
- exists (F (fun z => uchoice (fun y => TR_rel z y)) y).
- apply TR_rel_intro; intros.
-  do 2 red; intros.
-  apply uchoice_morph; intros; auto.
-  rewrite H4; reflexivity.
- apply uchoice_def; auto.
+assert (forall z, lt z y -> uchoice_pred (fun y => TR_rel z y)).
+ intros.
+ specialize H1 with (1:=H2).
+ destruct H1.
+ split; intros.
+  rewrite <- H3; trivial.
+ split; intros.
+  exists x; trivial.
+ apply TR_rel_fun with z; trivial.
+exists (F (fun z => uchoice (fun y => TR_rel z y)) y).
+apply TR_rel_intro; intros.
+ do 2 red; intros.
+ apply uchoice_morph; intros; auto.
+ rewrite H4; reflexivity.
+apply uchoice_def; auto.
 Qed.
 
   Lemma TR_rel_choice_pred : forall o, isOrd o ->
@@ -927,11 +859,6 @@ Qed.
      P y (F TR y)) ->
     P o (TR o).
 induction 2 using isOrd_ind; intros.
- apply H with y (TR y); auto.
-  apply TR_morph; trivial.
-
-  apply IHisOrd; intros.
-  rewrite H2 in H5; auto.
 apply H with y (F TR y); auto with *.
  symmetry; apply TR_eqn; trivial.
 apply H3; trivial; intros.
@@ -1040,18 +967,13 @@ Qed.
      (forall x, lt x m -> G x \in X) -> sup m G \in X) ->
     TI n \in X.
 induction 2 using isOrd_ind; intros.
- rewrite <- (TI_morph y y'); auto.
- apply IHisOrd; intros.
- apply H3; auto; intros.
- rewrite <- H2; trivial.
-
- rewrite TI_eq; trivial.
- apply H3 with (G:=fun o => F (TI o)); intros; auto.
- apply H.
- apply H2; trivial; intros.
- apply H3; auto.
- apply lt_is_le.
- apply le_lt_trans with x; trivial.
+rewrite TI_eq; trivial.
+apply H3 with (G:=fun o => F (TI o)); intros; auto.
+apply H.
+apply H2; trivial; intros.
+apply H3; auto.
+apply lt_is_le.
+apply le_lt_trans with x; trivial.
 Qed.
 
 End TransfiniteIteration.

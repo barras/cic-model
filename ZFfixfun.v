@@ -141,8 +141,7 @@ Qed.
     TIF o' a \incl TIF o a.
 intros.
 apply TIF_mono; trivial; auto.
- apply isOrd_inv with o; trivial.
- red; intros; apply isOrd_trans with o'; trivial.
+apply isOrd_inv with o; trivial.
 Qed.
 
   Lemma TIF_mono_succ : forall o a,
