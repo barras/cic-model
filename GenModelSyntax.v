@@ -20,8 +20,8 @@ Fixpoint int_trm t :=
   | Abs T M => T.Abs (int_trm T) (int_trm M)
   | Prod T U => T.Prod (int_trm T) (int_trm U)
   end.
-Definition int_env := List.map int_trm.
 
+Definition int_env := List.map int_trm.
 
 Lemma int_lift_rec : forall n t k,
   eq_term (T.lift_rec n k (int_trm t)) (int_trm (Term.lift_rec n t k)).

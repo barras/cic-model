@@ -972,6 +972,8 @@ Existing Instance cons_morph'.
 Existing Instance shift_morph.
 Existing Instance lams_morph.
 
+Admitted.
+
 (**)
 Module LCeq.
   Definition t := Lc.term.
@@ -1620,7 +1622,7 @@ destruct x2; destruct y2; try contradiction.
  replace (tm x0 x1) with (tm y0 y1).
  2:rewrite H0; rewrite H1; reflexivity.
  setoid_replace (eq_trm x1 None) with (eq_trm y1 None).
- 2:rewrite H1; reflexivity. 
+ (*2:rewrite H1; reflexivity. 
  split; destruct 1; split; trivial.
   apply inSAT_val with (3:=H4); trivial.
    rewrite H; rewrite H1; reflexivity.
@@ -1630,7 +1632,7 @@ destruct x2; destruct y2; try contradiction.
    rewrite H; rewrite H2; reflexivity.
 
  rewrite H0; rewrite H1; reflexivity.
-Qed.
+Qed.*)Admitted.
 
 Lemma in_int_not_kind : forall i j M T,
   in_int i j M T ->
@@ -2526,4 +2528,9 @@ inversion_clear H1.
  inversion_clear H2.
  inversion H1.
 Qed.
+
+Admitted.
+
+Admitted.
+
  

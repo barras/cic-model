@@ -74,7 +74,6 @@ exists (fun _ => mkTY (singl empty) natSAT) (fun _ => Lc.K).
  red; reflexivity.
 Defined.
 
-
 Definition ZE := Lc.Abs (Lc.Abs (Lc.Ref 1)).
 
 Lemma ZE_inSAT : inSAT ZE natSAT.

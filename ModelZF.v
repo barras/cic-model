@@ -85,7 +85,7 @@ Require Import Term Env.
 Require Import TypeJudge.
 Load "template/Library.v".
 
-  Lemma cc_consistency : forall M M', ~ eq_typ nil M M' FALSE.
+Lemma cc_consistency : forall M M', ~ eq_typ nil M M' FALSE.
 Proof.
 unfold FALSE; red in |- *; intros.
 specialize BuildModel.int_sound with (1 := H); intro.

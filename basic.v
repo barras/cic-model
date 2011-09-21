@@ -25,13 +25,13 @@ split; intros.
  rewrite H; trivial.
 Qed.
 
-Instance ex_mono : forall A,
+(*Instance ex_mono : forall A,
   Proper (pointwise_relation A impl ==> impl) (@ex A).
 do 3 red; intros.
 destruct H0.
 exists x0.
 apply H; trivial.
-Qed.
+Qed.*)
 
 Instance ex_morph : forall A,
   Proper (pointwise_relation A iff ==> iff) (@ex A).
@@ -125,14 +125,16 @@ split; intros.
  apply H3 with y y0 y1 y2; trivial; symmetry; trivial.
 Qed.
 
-(* Pb: this is not proved automatically:
+(* Pb: this is not proved automatically:*)
 Goal forall A (eqA:A->A->Prop) P F f g ,
   Equivalence eqA ->
-  Proper (eqA ==> impl) P ->
+  (*Proper (eqA ==> impl) P ->*)
+  Proper (eqA ==> iff) P ->
   Proper (eqA ==> eqA) F ->
   eqA f g ->
   (P (F f) <-> P (F g)).
-intros.
-rewrite H2. fails
+intros. rewrite H2. reflexivity.
+Qed.
+(*rewrite H2. fails
 red; rewrite H2.  succeeds
 *)

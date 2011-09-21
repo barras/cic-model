@@ -688,7 +688,7 @@ Definition union (x:hf) :=
 Definition power (x:hf) :=
   HF (fold_set _
           (fun y pow p => pow p ++ pow (y::p)) x
-          (fun p => HF (rev p) :: nil) nil).
+           (fun p => HF (rev p) :: nil) nil).
 
 Definition subset (x:hf) (P:hf->bool) :=
   HF (fold_set _ (fun y l => if P y then y :: l else l) x nil).

@@ -6,7 +6,6 @@ Require Export HF.
 Definition lam (x:hf) (f:hf->hf) :=
   repl x (fun x => couple x (f x)).
 
-
 Lemma lam_intro : forall x dom F,
   eq_hf_fun dom F F ->
   x \in dom ->

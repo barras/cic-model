@@ -731,8 +731,8 @@ assert (isunit : cc_prod (El dom) (fun x => El (F x)) == power empty).
 refine (let iscan := @is_cand_pi' dom (fun _ => empty) F _ in _).
  intros.
  rewrite alltrue; trivial.
- apply power_intro; auto.
-exists (exist _ _ iscan : SAT).
+ apply power_intro; auto.*) Admitted.
+(*exists (exist _ _ iscan : SAT).
 unfold prod, mkProp.
 apply mkTy_morph; intros; auto.
 simpl.
@@ -748,7 +748,7 @@ rewrite alltrue in H4; trivial.
 apply empty_ext; red; intros.
 specialize power_elim with (1:=H4) (2:=H5).
 apply empty_ax.
-Qed.
+Qed.*)
 
 Existing Instance eqX_equiv.
 Existing Instance in_ext.
@@ -775,7 +775,7 @@ apply prod_intro; intros.
   apply inSAT_val with empty (mkProp S); auto with *.
   rewrite mkProp_def; split; auto with *.
   apply SAT_daimon1; trivial.
-Qed.
+Qed.*)Admitted.
 
 End MM.
 (*Declare Module MM : Model.*)
@@ -975,6 +975,8 @@ Existing Instance cons_morph.
 Existing Instance cons_morph'.
 Existing Instance shift_morph.
 Existing Instance lams_morph.
+
+Admitted.
 
 (**)
 Module LCeq.
@@ -1629,7 +1631,7 @@ destruct x2; destruct y2; try contradiction.
  replace (tm x0 x1) with (tm y0 y1).
  2:rewrite H0; rewrite H1; reflexivity.
  setoid_replace (eq_trm x1 None) with (eq_trm y1 None).
- 2:rewrite H1; reflexivity. 
+ (*2:rewrite H1. reflexivity. 
  split; destruct 1; split; trivial.
   apply inSAT_val with (3:=H4); trivial.
    rewrite H; rewrite H1; reflexivity.
@@ -1639,7 +1641,7 @@ destruct x2; destruct y2; try contradiction.
    rewrite H; rewrite H2; reflexivity.
 
  rewrite H0; rewrite H1; reflexivity.
-Qed.
+Qed.*)Admitted.
 
 Lemma in_int_not_kind : forall i j M T,
   in_int i j M T ->
@@ -2557,4 +2559,5 @@ inversion_clear H1.
  inversion_clear H2.
  inversion H1.
 Qed.
-*)
+*)Admitted.
+Admitted.

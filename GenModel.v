@@ -42,6 +42,7 @@ Import V.
 Existing Instance cons_morph.
 Existing Instance cons_morph'.
 
+
 (* Terms *)
 
 Module T.
@@ -103,7 +104,6 @@ Lemma in_int_el : forall i x T,
   x \in int T i -> el T i x.
 destruct T as [(T,Tm)|]; simpl; trivial.
 Qed.
-
 
 Definition cst (x:X) : term.
 left; exists (fun _ => x).
@@ -299,7 +299,7 @@ Import T.
 Definition env := list term.
 
 Definition val_ok (e:env) (i:val) :=
-  forall n T, nth_error e n = value T -> el (lift (S n) T) i (i n).
+  forall n T, nth_error e n = value T -> el (lift (S n) T) i (i n).lift
 
 Lemma vcons_add_var0 : forall e T i x,
   val_ok e i -> el T i x -> val_ok (T::e) (V.cons x i).
