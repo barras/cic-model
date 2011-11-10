@@ -20,12 +20,17 @@ all:: coq
 
 coq:: $(ALLVO)
 
-html::
+DOCV=$(shell sed -n -e "s|.*HREF=\"\([^\./\"]\+\)\.html\".*|\1.v|p" sets.html)
+DOCVO=$(DOCV:.v=.vo)
+
+.PHONY: html
+
+html:: $(DOCVO)
 	mkdir -p html
 	$(COQDOC) -html -d html -g $(ALLV) template/*.v
 	mv html/index.html html/coqindex.html
 	cp coqdoc.css html
-	cp ../sets.html html/index.html
+	cp sets.html html/index.html
 
 Ens0.v: Ens.v
 	cp Ens.v Ens0.v
@@ -43,7 +48,7 @@ Ens0.v: Ens.v
 	$(COQC) $<
 
 clean::
-	rm -f *~ *.vo *.glob *.cm* *.o Ens0.v coqdoc.css
+	rm -f *~ *.vo *.glob *.cm* *.o Ens0.v
 	rm -fr html
 
 depend:: Ens0.v
