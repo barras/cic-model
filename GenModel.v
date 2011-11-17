@@ -299,7 +299,7 @@ Import T.
 Definition env := list term.
 
 Definition val_ok (e:env) (i:val) :=
-  forall n T, nth_error e n = value T -> el (lift (S n) T) i (i n).lift
+  forall n T, nth_error e n = value T -> el (lift (S n) T) i (i n).
 
 Lemma vcons_add_var0 : forall e T i x,
   val_ok e i -> el T i x -> val_ok (T::e) (V.cons x i).
