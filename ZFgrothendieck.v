@@ -419,6 +419,40 @@ Qed.
 
 End Infinite.
 
+(*
+Section ZF_Universe.
+
+  Hypothesis coll_ax : forall A (R:set->set->Prop), 
+    (forall x x' y y', x \in A -> x == x' -> y == y' -> R x y -> R x' y') ->
+    (forall x, x \in A -> exists y, R x y) ->
+    exists B, forall x, x \in A -> exists2 y, y \in B & R x y.
+
+  (* Grothendieck universe is closed by collection *)
+  Hypothesis G_coll : forall A (R:set->set->Prop), 
+    A \in U ->
+    (forall x x' y y', x \in A -> x == x' -> y == y' -> R x y -> R x' y') ->
+    (forall x, x \in A -> exists2 y, y \in U & R x y) ->
+    exists2 B, B \in U & forall x, x \in A -> exists2 y, y \in B & R x y.
+
+
+  Lemma G_ttcoll : forall A (R:set->set->Prop),
+  (forall x x' y y', x \in A -> x == x' -> y == y' -> R x y -> R x' y') ->
+  (forall x, x \in A -> exists y, R x y) ->
+  A \incl U ->
+  exists2 X, morph1 X &
+  (forall x, x \in A -> X x \in U) /\
+  exists2 f, morph2 f &
+    forall x, x \in A -> exists2 i, i \in X x & R x (f x i).
+intros.
+
+
+intros.
+destruct (coll_ax A R) as (B,HB); trivial.
+
+
+End ZF_Universe.
+*)
+
 End GrothendieckUniverse.
 
 Lemma grot_inter : forall UU,

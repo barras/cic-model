@@ -7,8 +7,11 @@ Require Import Choice. (* Axiom *)
 
 Module IZF <: IZF_Ex_sig.
 
+(* The level of indexes *)
+Definition Ti := Type.
+
 Inductive set_ : Type :=
-  sup (X:Type) (f:X->set_).
+  sup (X:Ti) (f:X->set_).
 Definition set := set_.
 
 Definition idx (x:set) := let (X,_) := x in X.
@@ -622,6 +625,96 @@ Qed.
 
 (* Collection *)
 Section Collection.
+
+Section FromWChoice.
+
+Let T2:=Type.
+Let T1:T2:=Type.
+
+(* weaker forms of choice: *)
+Lemma ttcoll :
+  forall (A B:T2) R,
+  (forall x:A, exists y:B, R x y) ->
+  exists f : A -> {X:T1 & X->B},
+    forall x, exists i:projT1 (f x), R x (projT2 (f x) i).
+intros.
+destruct (choice_axiom A B R) as (f,Hf); trivial.
+exists (fun x => existT (fun X => X->B) unit (fun _:unit => f x)); simpl.
+exists tt; trivial.
+Qed.
+
+Lemma ttcoll2 :
+  forall (A B:T2) R,
+  exists f : {x:A|exists y:B,R x y} -> {X:T1 & X->B},
+    forall x, exists i:projT1 (f x), R (proj1_sig x) (projT2 (f x) i).
+intros.
+apply (ttcoll {x:A|exists y:B,R x y} B (fun x y => R (proj1_sig x) y)).
+destruct x; auto.
+Qed.
+
+Lemma ttcoll3 :
+  forall (A B:T2) R,
+  exists f : forall x:{x:A|exists y:B,R x y},
+             {X:T1 & {g:X->B|exists i, R (proj1_sig x) (g i)}}, True.
+intros.
+destruct ttcoll2 with A B R as (f,Hf).
+econstructor; trivial.
+intros.
+exists (projT1 (f x)).
+exists (projT2 (f x)).
+trivial.
+Qed.
+
+(* Showing ttcoll{1,2,3} are equivalent *)
+Lemma ttcoll1' : 
+  forall (A B:T2) R,
+  (forall x:A, exists y:B, R x y) ->
+  exists f : A -> {X:T1 & X->B},
+    forall x, exists i:projT1 (f x), R x (projT2 (f x) i).
+intros.
+destruct (ttcoll3 A B R) as (f,_).
+exists (fun x =>
+  existT (fun X => X -> B)  (projT1 (f (exist _ x (H x))))
+    (proj1_sig (projT2 (f (exist _ x (H x)))))); simpl.
+intro.
+apply proj2_sig.
+Qed.
+
+
+Lemma coll_ax_ttcoll : forall A (R:set->set->Prop), 
+    (forall x x' y y', in_set x A ->
+     eq_set x x' -> eq_set y y' -> R x y -> R x' y') ->
+    (forall x, in_set x A -> exists y, R x y) ->
+    exists B, forall x, in_set x A -> exists2 y, in_set y B & R x y.
+intros.
+destruct (ttcoll {x|x \in A} set (fun p y => R (proj1_sig p) y)) as (f,fcoll).
+ destruct x; auto.
+pose (f' := fun x => let (X,g) := f x in sup X g).
+exists (union (repl1 A f')).
+intros.
+destruct H1 as (i,inA).
+destruct (fcoll (elts' A i)) as (j,r).
+exists (projT2 (f (elts' A i)) j).
+ rewrite union_ax.
+ exists (f' (elts' A i)).
+  unfold f'.
+  destruct (f (elts' A i)) as (X,g) in *; simpl in *.
+  exists j; apply eq_set_refl.
+
+  unfold repl1.
+  exists i.
+  simpl.
+  apply eq_set_refl.
+
+ apply H with (4:=r); simpl.
+  exists i; apply eq_set_refl.
+
+  apply eq_set_sym; trivial.
+
+  apply eq_set_refl.
+Qed.
+
+End FromWChoice.
 
 Section FromChoice.
 
