@@ -7,6 +7,32 @@ Inductive foterm :=
   | Cst_S : foterm -> foterm
   | Df_Add : foterm -> foterm -> foterm.
 
+Fixpoint free_var_fotrm t : list nat:=
+ match t with
+ | Val n => n::nil
+ | Cst_0 => nil
+ | Cst_S N => free_var_fotrm N
+ | Df_Add M N => (free_var_fotrm M) ++ (free_var_fotrm N)
+ end.
+
+Inductive cst_clsd_trm : foterm -> Prop :=
+  | cct0 : cst_clsd_trm Cst_0
+  | cctS : forall y, cst_clsd_trm y -> cst_clsd_trm (Cst_S y).
+
+Parameter eq_fotrm : foterm -> foterm -> Prop.
+
+Axiom non_triviality : exists x y, 
+  cst_clsd_trm x /\ cst_clsd_trm y /\ ~ eq_fotrm x y.
+
+Axiom freeness : forall x y, 
+  cst_clsd_trm x -> 
+  cst_clsd_trm y -> 
+  eq_fotrm x y ->
+  x = y.
+
+Axiom completeness : forall x, free_var_fotrm x = nil ->
+  exists y, cst_clsd_trm y /\ eq_fotrm x y.
+
 Fixpoint lift_trm_rec t n k:=
   match t with
   | Val i => 
@@ -20,6 +46,24 @@ Fixpoint lift_trm_rec t n k:=
   end.
 
 Definition lift_trm t n := lift_trm_rec t n 0.
+
+Definition Cst_1 := Cst_S Cst_0.
+
+Section presberger.
+
+  Parameter eq_discr : ~ eq_fotrm Cst_0 (Df_Add Cst_1 Cst_0).
+
+  Parameter eq_inj : forall x y, eq_fotrm (Df_Add x Cst_1) (Df_Add y Cst_1).
+
+  Parameter eq_add0 : forall x, eq_fotrm x (Df_Add x Cst_0).
+
+  Parameter add_assoc : forall x y, 
+    eq_fotrm (Df_Add (Df_Add x y) Cst_1) (Df_Add x (Df_Add y Cst_1)).
+
+  Parameter ind_ax : forall P y, P Cst_0 ->
+    (forall x, P x -> P (Df_Add x Cst_1)) -> P y.
+
+End presberger.
 
 Inductive foformula :=
   | atom : (list foterm -> Prop) -> list foterm -> foformula
@@ -74,14 +118,6 @@ Fixpoint subst_fml f N n :=
   end.
 
 Definition subst_fml0 f N := subst_fml f N 0.
-
-Fixpoint free_var_fotrm t : list nat:=
- match t with
- | Val n => n::nil
- | Cst_0 => nil
- | Cst_S N => free_var_fotrm N
- | Df_Add M N => (free_var_fotrm M) ++ (free_var_fotrm N)
- end.
 
 Definition hyp_ok (hyp:list (option foformula)) t := 
  forall n, In n (free_var_fotrm t) -> nth_error hyp n = Some None.
