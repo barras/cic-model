@@ -1,5 +1,6 @@
 Require Export ZFrepl.
 Require Export ZFnats.
+Require Export ZFind_basic.
 Import IZF.
 
 
@@ -9,7 +10,8 @@ Definition NREC f g n y :=
   P zero f -> (forall m t, P m t -> P (succ m) (g m t)) -> P n y.
 
 Instance NREC_morph : 
-  Proper (eq_set ==> (eq_set ==> eq_set ==> eq_set) ==> eq_set ==> eq_set ==> iff) NREC.
+  Proper (eq_set ==> (eq_set ==> eq_set ==> eq_set) ==> 
+    eq_set ==> eq_set ==> iff) NREC.
 repeat red; split; intros.
  unfold NREC; intros. 
  rewrite <- H1; rewrite <- H2; apply H3; auto.
@@ -24,7 +26,8 @@ repeat red; split; intros.
  rewrite <- H; auto.
  
  repeat red in H0.
- intros m t; rewrite <- (H0 _ _ (reflexivity m) _ _ (reflexivity t)).
+ intros m t; 
+   rewrite <- (H0 _ _ (reflexivity m) _ _ (reflexivity t)).
  apply H6.
 Qed.
 
@@ -35,7 +38,8 @@ Lemma NREC_inv : forall f g n y,
   n \in N /\
   NREC f g n y /\
   (n == zero -> y == f) /\
-  (forall m, m \in N -> n == succ m -> exists2 z, NREC f g m z & y == g m z).
+  (forall m, m \in N -> n == succ m -> 
+    exists2 z, NREC f g m z & y == g m z).
 intros. pattern n, y. apply H1. 
  do 3 red; intros.
  apply and_iff_morphism.
@@ -138,7 +142,8 @@ Qed.
 Definition NATREC f g n := uchoice (NREC f g n).
 
 Instance NATREC_morph : 
-  Proper (eq_set ==> (eq_set ==> eq_set ==> eq_set) ==> eq_set ==> eq_set) NATREC.
+  Proper (eq_set ==> (eq_set ==> eq_set ==> eq_set) ==> 
+    eq_set ==> eq_set) NATREC.
 repeat red; intros. unfold NATREC, NREC; intros. 
 apply uchoice_morph_raw; repeat red; intros.
 apply fa_morph; intros. 
@@ -182,12 +187,86 @@ intros. elim H0 using N_ind; intros.
   revert P H3 H4 H5. change (NREC f g n0 (NATREC f g n0)).
   unfold NATREC; apply uchoice_def. apply NREC_choice; auto.
 Qed.
- 
- 
 
- 
+Lemma NATREC_typ : forall x y, x \in N -> y \in N ->
+  NATREC x (fun _ => succ) y \in N.
+intros. assert (morph2 (fun _ => succ)).
+ do 2 red; intros _ _ _ x1 x2 HEQ; rewrite HEQ; reflexivity.
+elim H0 using N_ind; intros.
+ rewrite <- (NATREC_morph _ _ (reflexivity x) _ _ H1 _ _ H3);
+   trivial.
+
+ rewrite NATREC_0; trivial.
+
+ rewrite NATREC_Succ; trivial.
+  apply succ_typ; trivial.
+Qed.
+
+Lemma EQ_discr : forall x, EQ N zero (succ x) == empty.
+intros; apply eq_set_ax; split; intros.
+ apply EQ_elim in H. destruct H as (_, (H, _)).
+ symmetry in H; apply discr in H; contradiction.
+
+ apply empty_ax in H; contradiction.
+Qed.
+
+Lemma EQ_succ_inj : forall x y x0, 
+  x \in N -> y \in N ->
+  x0 \in (EQ N (succ x) (succ y)) ->
+  empty \in (EQ N x y).
+intros x y x0 HxN HyN H. apply EQ_elim in H. 
+destruct H as (_, (H1, _)). 
+apply succ_inj in H1; trivial.
+rewrite H1. apply refl_typ; trivial.
+Qed.
+
+Lemma EQ_add_0 : forall x, x \in N ->
+  EQ N x (NATREC x (fun _ => succ) (zero)) == singl empty.
+intros x HxN. rewrite NATREC_0. apply eq_set_ax; split; intros.
+ apply EQ_elim in H. destruct H as (_, (_, H0)); 
+ rewrite H0; apply singl_intro.
+
+ apply singl_elim in H; rewrite H; apply refl_typ; trivial.
+Qed.
+
+Lemma EQ_add_succ : forall x y, x \in N -> y \in N ->
+  EQ N (NATREC (NATREC x (fun _ => succ) y) 
+         (fun _ => succ ) (succ zero))
+       (NATREC x (fun _ => succ) 
+         (NATREC y (fun _ => succ) (succ zero)))  == singl empty.
+intros x y HxN HyN. apply eq_set_ax; split; intros.
+ apply EQ_elim in H. destruct H as (_, (_, H1)); 
+ rewrite H1; apply singl_intro.
+
+ assert (morph2 (fun _ : set => succ)).
+  do 2 red; intros _ _ _ x1 x2 Heq; rewrite Heq; reflexivity.
+ unfold EQ; rewrite cond_set_ax. split; trivial. split.
+  apply NATREC_typ; trivial. 
+   apply NATREC_typ; trivial.
+
+   apply succ_typ; apply zero_typ.
+  
+ rewrite (NATREC_Succ (NATREC x (fun _ : set => succ) y)
+  (fun _ : set => succ) _ H0 zero_typ). rewrite NATREC_0.
+ rewrite (NATREC_morph _ _ (reflexivity x) _ _ H0 _ _ 
+   (NATREC_Succ _ _ _ H0 zero_typ)).
+ rewrite NATREC_0. rewrite (NATREC_Succ _ _ _ H0 HyN).
+ reflexivity.
+Qed.
 
 
+  
+
+   
+   
+
+
+
+
+
+  
+  
+   
       
 
 

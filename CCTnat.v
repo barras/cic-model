@@ -4,20 +4,22 @@ Require Import GenModel.
 Import IZF.
 
 Import BuildModel.
-Import T J.
+Import T J R.
 Import CCM.
+Import ZFind_basic.
+Import ZFnats.
 
 Fixpoint int_fotrm t:=
   match t with
   | Val i => Ref i
   | Cst_0 => Zero
-  | Cst_S u => Succ (int_fotrm u)
+  | Cst_1 => Succ Zero
   | Df_Add u v => Add (int_fotrm u) (int_fotrm v)
   end.
 
 Fixpoint int_fofml f:=
   match f with
-  | atom P l => predicate P l
+  | eq_fotrm x y => EQ_trm (int_fotrm x) (int_fotrm y)
   | TF => True_symb
   | BF => False_symb
   | neg f => Neg (int_fofml f)
@@ -56,7 +58,8 @@ destruct f; simpl; red; intros.
  elim H; trivial.
 Qed.
 
-Lemma nth_hyp_inthyp : forall hyp n, nth_error hyp n = value None ->
+Lemma nth_hyp_inthyp : forall hyp n, 
+  nth_error hyp n = value None ->
   nth_error (int_hyp hyp) n = value T.
 induction hyp; destruct n; simpl; intros; try discriminate.
  destruct a; [discriminate | trivial].
@@ -74,7 +77,7 @@ unfold hyp_ok; unfold val_ok; induction t; simpl in *; intros.
 
  apply zero_typ.
  
- apply succ_typ. apply IHt; trivial.
+ apply succ_typ. apply zero_typ.
 
  replace (fun k : nat => i k) with i; trivial.
  assert (int (int_fotrm t2) i \in N).
@@ -98,7 +101,8 @@ Qed.
 
    
 Lemma lift_int_lift_trm_rec : forall t n k, 
-  eq_term (lift_rec n k (int_fotrm t)) (int_fotrm (lift_trm_rec t n k)).
+  eq_term (lift_rec n k (int_fotrm t)) 
+          (int_fotrm (lift_trm_rec t n k)).
 induction t; simpl; intros.
  unfold V.lams. unfold V.shift.
  destruct (Compare_dec.le_gt_dec k n); simpl; intros.
@@ -109,8 +113,7 @@ induction t; simpl; intros.
 
  red; reflexivity.
 
- red; intros. apply succ_morph. rewrite <- IHt.
- rewrite int_lift_rec_eq. rewrite H; reflexivity.
+ red; intros. apply succ_morph. reflexivity.
 
  red; intros. apply NATREC_morph; try rewrite H.
   rewrite <- IHt1. rewrite int_lift_rec_eq. reflexivity.
@@ -127,29 +130,32 @@ Qed.
 
 
 Lemma lift_int_lift_fml_rec : forall f n k,
-  eq_term (lift_rec n k (int_fofml f)) (int_fofml (lift_fml_rec f n k)).
+  eq_term (lift_rec n k (int_fofml f)) 
+          (int_fofml (lift_fml_rec f n k)).
 induction f; red; simpl; red; intros; try reflexivity.
  apply subset_morph; try reflexivity.
-  red; intros. split; trivial; intro HP; destruct HP as (Hl, Hs);
-  unfold predicate_stable in Hs; destruct (Hs l n k Cst_0) as (Hlift, Hsubst); 
-  fold (predicate_stable P) in Hs; split;
-  [rewrite <- Hlift | trivial | rewrite Hlift | trivial]; trivial.
+  red; intros. do 2 rewrite <- lift_int_lift_trm_rec.
+  do 2 rewrite <- int_lift_rec_eq. rewrite H; reflexivity.
 
  apply prod_ext.
   rewrite <- IHf. symmetry. rewrite H. apply int_lift_rec_eq.
 
   red. reflexivity.
 
- apply subset_morph; try red; intros; rewrite <- IHf1; rewrite <- IHf2; rewrite H.
-  apply union_morph. apply pair_morph; symmetry; apply int_lift_rec_eq.
+ apply subset_morph; try red; intros; 
+   rewrite <- IHf1; rewrite <- IHf2; rewrite H.
+  apply union_morph. 
+  apply pair_morph; symmetry; apply int_lift_rec_eq.
 
   do 2 rewrite int_lift_rec_eq. reflexivity.
 
- apply union2_morph; rewrite H; [rewrite <- IHf1 | rewrite <- IHf2]; symmetry;
- apply int_lift_rec_eq.
+ apply union2_morph; rewrite H; 
+   [rewrite <- IHf1 | rewrite <- IHf2]; symmetry;
+     apply int_lift_rec_eq.
 
- apply prod_ext; try red; intros; [rewrite <- IHf1 | rewrite <- IHf2]; rewrite H;
- symmetry; apply int_lift_rec_eq.
+ apply prod_ext; try red; intros; 
+   [rewrite <- IHf1 | rewrite <- IHf2]; rewrite H;
+     symmetry; apply int_lift_rec_eq.
 
  apply prod_ext; try reflexivity.
   red; intros. rewrite <- IHf. rewrite V.cons_lams.
@@ -172,7 +178,8 @@ Qed.
 
 
 Lemma subst_int_subst_trm_rec : forall t N k, 
-  eq_term (subst_rec (int_fotrm N) k (int_fotrm t)) (int_fotrm (subst_trm t N k)).
+  eq_term (subst_rec (int_fotrm N) k (int_fotrm t)) 
+  (int_fotrm (subst_trm_rec t N k)).
 induction t; intros.
  
  do 2 red; simpl.
@@ -180,7 +187,8 @@ induction t; intros.
   unfold V.lams, V.shift; destruct (Compare_dec.le_gt_dec k n);
   try (apply False_ind; omega; fail).
   replace (n-k) with (S(Peano.pred n-k)) by omega; simpl.
-  replace (k+(Peano.pred n-k)) with (Peano.pred n) by omega; red; auto.
+  replace (k+(Peano.pred n-k)) with (Peano.pred n) by omega; 
+    red; auto.
 
   case_eq (int_fotrm (lift_trm N k)); intros.
    red; intros. subst k. unfold V.lams; simpl.
@@ -200,31 +208,33 @@ induction t; intros.
 
  do 2 red. simpl. do 2 red. reflexivity.
  
- do 2 red; simpl; intros. do 2 red. intros. apply succ_morph.
- rewrite <- IHt. rewrite H. rewrite int_subst_rec_eq; reflexivity.
+ do 2 red; simpl; intros. do 2 red. intros. 
+ apply succ_morph. reflexivity.
 
  do 2 red; simpl; intros. do 2 red; intros. apply NATREC_morph.
-  rewrite <- IHt1. rewrite H. rewrite int_subst_rec_eq; reflexivity.
+  rewrite <- IHt1. rewrite H. 
+  rewrite int_subst_rec_eq; reflexivity.
 
   do 2 red; intros. rewrite H1; reflexivity.
    
-  rewrite <- IHt2. rewrite H. rewrite int_subst_rec_eq; reflexivity.
+  rewrite <- IHt2. rewrite H. 
+  rewrite int_subst_rec_eq; reflexivity.
 Qed.
 
 Lemma subst_int_subst_trm : forall t N, 
-  eq_term (subst (int_fotrm N) (int_fotrm t)) (int_fotrm (subst_trm t N 0)).
+  eq_term (subst (int_fotrm N) (int_fotrm t)) 
+          (int_fotrm (subst_trm t N)).
 unfold subst. intros. apply subst_int_subst_trm_rec with (k:=0).
 Qed.
 
      
 Lemma subst_int_subst_fml_rec : forall f N k,
-  eq_term (subst_rec (int_fotrm N) k (int_fofml f)) (int_fofml (subst_fml f N k)).
+  eq_term (subst_rec (int_fotrm N) k (int_fofml f)) 
+          (int_fofml (subst_fml f N k)).
 induction f; do 2 red; simpl; intros.
  do 2 red; intros. apply subset_morph; try reflexivity.
-  red; intros. split; intro HP; destruct HP as (Hl, Hs);
-  unfold predicate_stable in Hs; destruct (Hs l 0 k N) as (Hlift, Hsubst); 
-  fold (predicate_stable P) in Hs; split;
-  [rewrite <- Hsubst | trivial | rewrite Hsubst | trivial]; trivial.
+  red; intros. do 2 rewrite <- subst_int_subst_trm_rec.
+  do 2 rewrite int_subst_rec_eq. rewrite H; reflexivity.
 
  do 2 red; reflexivity.
 
@@ -242,13 +252,16 @@ induction f; do 2 red; simpl; intros.
   red; intros. rewrite <- IHf1; rewrite <- IHf2.
   do 2 rewrite <- int_subst_rec_eq. rewrite H. reflexivity.
 
- do 2 red; intros. apply union2_morph; [rewrite <- IHf1 | rewrite <- IHf2];
-  rewrite int_subst_rec_eq; rewrite H; reflexivity.
-
+ do 2 red; intros. 
+ apply union2_morph; [rewrite <- IHf1 | rewrite <- IHf2];
+   rewrite int_subst_rec_eq; rewrite H; reflexivity.
+ 
  red; intros. apply prod_ext.
-  rewrite H. rewrite <- IHf1. rewrite int_subst_rec_eq; reflexivity.
+  rewrite H. rewrite <- IHf1. 
+  rewrite int_subst_rec_eq; reflexivity.
 
-  red; intros. rewrite <- IHf2. rewrite <- int_subst_rec_eq. rewrite H; reflexivity.
+  red; intros. rewrite <- IHf2. 
+  rewrite <- int_subst_rec_eq. rewrite H; reflexivity.
 
  red; intros. rewrite prod_ext; try reflexivity.
   red; intros. rewrite <- IHf. rewrite V.cons_lams.
@@ -257,16 +270,18 @@ induction f; do 2 red; simpl; intros.
 
    do 4 red; intros. rewrite H2; reflexivity.
 
- do 2 red; intros. apply union_morph. apply replf_morph; try reflexivity.
+ do 2 red; intros. apply union_morph. 
+ apply replf_morph; try reflexivity.
   red; intros. rewrite <- IHf. rewrite int_subst_rec_eq.
-   rewrite V.cons_lams. rewrite V.shift_split. rewrite V.shift_cons.
-   rewrite H1; rewrite H. reflexivity.
+   rewrite V.cons_lams. rewrite V.shift_split. 
+   rewrite V.shift_cons. rewrite H1; rewrite H. reflexivity.
 
    do 4 red; intros. rewrite H2; reflexivity.
 Qed.
 
 Lemma subst_int_subst_fml : forall f N,
-  eq_term (subst (int_fotrm N) (int_fofml f)) (int_fofml (subst_fml0 f N)).
+  eq_term (subst (int_fotrm N) (int_fofml f)) 
+          (int_fofml (subst_fml0 f N)).
 unfold subst; intros; apply subst_int_subst_fml_rec.
 Qed.
 
@@ -274,6 +289,7 @@ Lemma fofml_in_props : forall f e,
   typ e (int_fofml f) prop.
 induction f; do 2 red; simpl; intros; unfold props; 
 unfold ZFcoc.props; rewrite power_ax; intros; trivial.
+ unfold EQ in H0. unfold cond_set in H0.
  rewrite subset_ax in H0. destruct H0; trivial.
  
  apply empty_ax in H0; contradiction. 
@@ -292,19 +308,22 @@ unfold ZFcoc.props; rewrite power_ax; intros; trivial.
  
 
  apply union2_elim in H0. destruct H0; revert y H0; 
- rewrite <- power_ax; fold ZFcoc.props; fold props;
- [do 2 red in IHf1; simpl in IHf1; apply IHf1 with (e:=e) 
- | do 2 red in IHf1; simpl in IHf1; apply IHf2 with (e:=e)]; trivial.
+ rewrite <- power_ax; fold ZFcoc.props; fold props; 
+     [do 2 red in IHf1; simpl in IHf1; apply IHf1 with (e:=e) 
+       | do 2 red in IHf1; simpl in IHf1; apply IHf2 with (e:=e)]; 
+     trivial.
 
  revert y H0. rewrite <- power_ax. apply impredicative_prod.
   do 2 red; reflexivity.
 
-  intros. do 2 red in IHf2; simpl in IHf2; apply IHf2 with (e:=e); trivial.
+  intros. do 2 red in IHf2; simpl in IHf2; 
+  apply IHf2 with (e:=e); trivial.
 
  revert y H0. rewrite <- power_ax. apply impredicative_prod.
   do 2 red. intros y1 y2 Hy1N H0; rewrite H0; reflexivity.
 
-  intros. do 2 red in IHf; simpl in IHf; apply IHf with (e:=(T::e)).
+  intros. do 2 red in IHf; simpl in IHf; 
+  apply IHf with (e:=(T::e)).
   apply vcons_add_var; simpl; trivial.
 
  apply union_elim in H0. destruct H0. 
@@ -316,23 +335,82 @@ unfold ZFcoc.props; rewrite power_ax; intros; trivial.
   do 2 red. intros. rewrite H3; reflexivity.
 Qed.
 
+Lemma P_ax_intro5_ex : forall P, eq_term 
+  (Impl (int_fofml (subst_fml0 P Cst_0)) (Impl (Fall (Impl (int_fofml P)
+    (int_fofml (subst_fml0 (lift_fml_rec P 1 1) (Df_Add (Val 0) Cst_1)))))
+  (Fall (int_fofml P))))
+  (Impl (subst Zero (int_fofml P))
+    (Impl (Fall (Impl (int_fofml P)
+      (subst (Add (Ref 0) (Succ Zero)) (lift_rec 1 1 (int_fofml P)))))
+    (Fall (int_fofml P)))).
+red; simpl; red; intros.
+apply prod_ext.
+ rewrite <- subst_int_subst_fml; simpl. rewrite H; reflexivity.
+
+ red; intros. apply prod_ext.
+  apply prod_ext; try reflexivity.
+   red; intros. apply prod_ext.
+    apply int_morph; try reflexivity.
+     replace (fun k : nat => V.cons y0 (fun k0 : nat => x k0) k)
+       with (V.cons y0 x); trivial.
+     rewrite H3, H. reflexivity.
+
+     red; intros. rewrite <- subst_int_subst_fml. simpl.
+     do 2 rewrite int_subst_eq. rewrite <- lift_int_lift_fml_rec.
+     replace (fun k : nat => V.cons y0 (fun k0 : nat => x k0) k) with
+       (V.cons y0 x); trivial.
+     replace (fun k : nat => V.cons y3 (fun k0 : nat => y k0) k) with
+       (V.cons y3 y); trivial.
+     rewrite H. rewrite H3. reflexivity.
+   
+   red; intros. apply prod_ext; try reflexivity.
+    red; intros. rewrite H5.
+    replace (fun k : nat => x k) with x; trivial.
+    replace (fun k : nat => y k) with y; trivial.
+    rewrite H; reflexivity.
+Qed.
+
 Lemma int_correct : forall hyp P, deriv hyp P -> 
   exists p, typ ((int_hyp hyp)) p (int_fofml P).
 induction 1; simpl.
 (*weak*)
  exists (Ref 0). red; simpl; intros.
  unfold val_ok in H.
- assert (nth_error (int_fofml f :: int_hyp hyp) 0 = value (int_fofml f)); trivial.
+ assert (nth_error (int_fofml f :: int_hyp hyp) 0 = 
+   value (int_fofml f)); trivial.
  specialize H with (1:=H0). rewrite <- lift_int_lift_fml. trivial. 
 
-(*atom*)
- exists False_symb. apply predicate_intro; trivial.
+(*ax_intro*)
+destruct H. 
+ rewrite H; simpl. apply P_ax_intro1.
+ 
+ destruct H.
+  rewrite H; simpl. apply P_ax_intro2.
 
-(*neg*)
+  destruct H.
+   rewrite H; simpl. apply P_ax_intro3.
+   
+   destruct H.
+    rewrite H; simpl. apply P_ax_intro4.
+
+    destruct H; rewrite H. generalize P_ax_intro5; intros.
+     specialize H0 with (e:=(int_hyp hyp)) (1:=(fofml_Some x)).
+     destruct H0. exists x0. simpl. rewrite P_ax_intro5_ex; trivial.
+
+(*true_intro*)
+ apply True_symb_intro.
+ 
+(*false_elim*)
+ apply False_symb_elim. simpl in IHderiv. trivial.
+
+(*neg_intro*)
  destruct IHderiv as (p, IH). exists p.
  apply Neg_intro. trivial.
 
-(*conj*)
+(*neg_elim*)
+ destruct IHderiv. exists x. apply Neg_elim. trivial.
+
+(*conj_intro*)
  destruct IHderiv1 as (x, IH1). 
  destruct IHderiv2 as (x', IH2). 
  exists x.
@@ -347,27 +425,63 @@ induction 1; simpl.
    rewrite H3. do 2 red in IH2. rewrite H2 in IH2. 
    apply IH2; trivial.
 
-(*disj1*)
+(*conj_elim1*)
+destruct IHderiv. exists x. simpl in H0. apply Conj_elim in H0.
+ destruct H0; trivial.
+
+ apply fofml_Some.
+
+ apply fofml_Some.
+
+(*conj_elim2*)
+destruct IHderiv. exists x. simpl in H0. apply Conj_elim in H0.
+ destruct H0; trivial.
+
+ apply fofml_Some.
+
+ apply fofml_Some.
+
+(*disj_intro1*)
  destruct IHderiv. exists x. 
  apply Disj_intro; try apply fofml_Some.
  left; trivial.
  
-(*disj2*)
+(*disj_intro2*)
  destruct IHderiv. exists x. 
  apply Disj_intro; try apply fofml_Some.
  right; trivial.
 
-(*impl*)
+(*disj_elim*)
+ destruct IHderiv1, IHderiv2, IHderiv3.
+ exists prf_term. simpl in H2, H3, H4. 
+ apply Disj_elim with (t:=x) (t1:=x0) (t2:=x1) 
+   (A:=int_fofml f1) (B:=int_fofml f2); try rewrite lift_int_lift_fml; trivial.
+  apply fofml_Some.
+
+  apply fofml_in_props.
+
+(*impl_intro*)
  destruct IHderiv. simpl in H0.
  exists (Abs (int_fofml f1) x).
  apply Impl_intro; try apply fofml_Some.
  rewrite lift_int_lift_fml; trivial.
 
-(*fall*)
+(*impl_elim*)
+ destruct IHderiv1, IHderiv2. exists (App x x0).
+ apply Impl_elim with (A:=int_fofml f1); try apply fofml_Some; trivial.
+ 
+
+(*fall_intro*)
  destruct IHderiv. simpl in H0.
  exists ((Abs T x)). apply Fall_intro; try apply fofml_Some; trivial.
 
-(*exst*)
+(*fall_elim*)
+ destruct IHderiv. exists (App x (int_fotrm u)).
+ rewrite <- subst_int_subst_fml. 
+ apply Fall_elim; try apply fofml_Some; trivial.
+  do 2 red; simpl; intros. apply int_trm_N with (hyp:=hyp); trivial.
+
+(*exst_intro*)
  destruct IHderiv; simpl in H0.
  exists x. apply Exst_intro with (a:=(int_fotrm N)); try apply fofml_Some.
   do 2 red; simpl; intros. apply int_trm_N with (hyp:=hyp); trivial.
@@ -382,7 +496,18 @@ induction 1; simpl.
 
   elim subst_Some with (f:=(int_fofml f)) (t:=(int_fotrm N));
   [apply fofml_Some | apply fotrm_Some | trivial ].
+
+(*exst_elim*)
+destruct IHderiv1, IHderiv2. simpl in H1, H2.
+exists prf_term. apply Exst_elim with (t1:=x) (t2:=x0) (A:=int_fofml f); trivial.
+ apply fofml_Some.
+
+ apply fofml_in_props.
+
+ rewrite lift_int_lift_fml; trivial.
 Qed.
+
+Print Assumptions int_correct.
 
  
  
