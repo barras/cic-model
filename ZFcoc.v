@@ -433,9 +433,141 @@ apply eq_intro; intros.
   rewrite cond_set_ax in H2; destruct H2; trivial.
 Qed.
 
-(*
-Lemma cc_valid_choice : forall A B R,
-  (forall x x' y y', x \in A -> x == x' -> y \in B --> y == y' -> R x y -> R x' y') ->
-  (forall x, x \in A -> exists2 y, y \in B & R x y) ->
-  { f | f \in cc_prod A (fun _ => B) & (forall x, x \in A -> R x (f x)) }.
+
+Require Import ZFgrothendieck.
+
+Section Universe.
+
+  Hypothesis U : set. (* A grothendieck universe... *)
+  Hypothesis Ugrot : grot_univ U.
+
+  Lemma G_cc_prod A B :
+    ext_fun A B ->
+    A \in U ->
+    (forall x, x \in A -> B x \in U) ->
+    cc_prod A B \in U.
+intros.
+unfold cc_prod.
+apply G_replf; auto with *.
+ apply G_dep_func; intros; auto with *.
+
+ intros.
+ unfold cc_lam.
+ apply G_union; trivial.
+ apply G_replf; trivial.
+  apply cc_lam_fun2.
+  do 2 red; intros; apply app_morph; auto with *.
+
+  intros.
+  assert (app x x0 \in U).
+   unfold app.
+   apply G_union; trivial.
+   apply G_subset; trivial.
+   unfold rel_image.
+   apply G_subset; trivial.
+   apply G_union; trivial.
+   apply G_union; trivial.
+   apply G_trans with (2:=H2); trivial.
+   apply G_dep_func; intros; auto with *.
+  apply G_replf; intros; trivial.
+  apply G_couple; trivial.
+   apply G_trans with A; trivial.
+
+   apply G_trans with (app x x0); trivial.
+Qed.
+
+
+Section Equiv_ZF_CICchoice.
+
+(* We assume now that U is a *ZF* universe (not just IZF),
+   so it is closed by collection. *)
+
+  Hypothesis coll_axU : forall A (R:set->set->Prop), 
+    A \in U ->
+    (forall x x' y y', in_set x A ->
+     eq_set x x' -> eq_set y y' -> R x y -> R x' y') ->
+    exists2 B, B \in U & forall x, in_set x A -> (exists2 y, y \in U & R x y) ->
+       exists2 y, in_set y B & y \in U /\ R x y.
+
+  (* The inductive type of sets (cf Ens.set) and its elimination rule *)
+  Hypothesis cc_set : set.
+
+Section SetInU.
+  Hypothesis cc_set_ind :
+    forall P : set -> Prop,
+    (forall y X f, morph1 f ->
+     y == couple X (cc_lam X f) ->
+     X \in U ->
+     (forall x, x \in X -> f x \in cc_set) ->
+     (forall x, x \in X -> P (f x)) ->
+     P y) ->
+    forall x, x \in cc_set -> P x.
+
+(* sets formed by indexes in U belong to U: *)
+Lemma cc_set_incl_U : cc_set \incl U.
+red; intros.
+apply cc_set_ind with (2:=H); intros.
+rewrite H1; clear H1 y.
+apply G_couple; trivial.
+unfold cc_lam.
+apply G_union; trivial.
+apply G_replf; trivial.
+ do 2 red; intros.
+ apply replf_morph.
+  apply H0; trivial.
+  red; intros.
+  apply couple_morph; trivial.
+
+ intros.
+ apply G_replf; intros; auto.
+ apply G_couple; trivial.
+  apply G_trans with X; trivial.
+  apply G_trans with (f x); auto.
+Qed.
+
+End SetInU.
+
+  Hypothesis cc_set_incl_U : cc_set \incl U.
+
+(* We don't even need the introduction rule for sets:
+Hypothesis cc_set_eq : cc_set == sigma U (fun X => cc_arr X cc_set).
 *)
+
+(* specialize version of Ens.ttcoll with B:=cc_set *)
+Lemma cc_ttcoll A R :
+  Proper (eq_set ==> eq_set ==> iff) R ->
+  A \in U ->
+  (forall x, x \in A -> exists2 y, y \in cc_set & R x y) ->
+  exists2 X, X \in U & exists2 f, f \in cc_arr X cc_set &
+    forall x, x \in A -> exists2 i, i \in X & R x (cc_app f i).
+intros.
+destruct coll_axU with (A:=A) (R:=fun x y => y \in cc_set /\ R x y) as (B,HB);
+  trivial.
+ intros.
+ rewrite <- H3; rewrite <- H4; trivial.
+
+ pose (B':= inter2 B cc_set).
+ exists B'.
+  apply G_incl with B; trivial.
+  apply inter2_incl1.
+ exists (cc_lam B' (fun x => x)).
+  apply cc_arr_intro; intros.
+   do 2 red; intros; trivial.
+   revert H3; apply inter2_incl2.
+ intros.
+ destruct H2 with (1:=H3) as (y,yB,(yU,(ys,yR))).
+  destruct H1 with (1:=H3).
+  exists x0; auto.
+
+  exists y.
+   unfold B'; rewrite inter2_def; auto.
+
+   rewrite cc_beta_eq; trivial.
+    do 2 red; auto.
+
+    unfold B'; rewrite inter2_def; auto.
+Qed.
+
+End Equiv_ZF_CICchoice.
+
+End Universe.

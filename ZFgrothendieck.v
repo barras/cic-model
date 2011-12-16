@@ -1,6 +1,6 @@
 Require Import ZF.
 Require Import ZFpairs ZFrelations ZFrepl ZFwf ZFord ZFfix.
-Require Import ZFcoc.
+Require Import ZFstable.
 Require Import ZFlist.
 Import IZF.
 
@@ -203,41 +203,6 @@ apply G_prodcart; trivial.
 apply G_sup; trivial.
 Qed.
 
-  Lemma G_cc_prod A B :
-    ext_fun A B ->
-    A \in U ->
-    (forall x, x \in A -> B x \in U) ->
-    cc_prod A B \in U.
-intros.
-unfold cc_prod.
-apply G_replf; auto with *.
- apply G_dep_func; intros; auto with *.
-
- intros.
- unfold cc_lam.
- apply G_union; trivial.
- apply G_replf; trivial.
-  apply cc_lam_fun2.
-  do 2 red; intros; apply app_morph; auto with *.
-
-  intros.
-  assert (app x x0 \in U).
-   unfold app.
-   apply G_union; trivial.
-   apply G_subset; trivial.
-   unfold rel_image.
-   apply G_subset; trivial.
-   apply G_union; trivial.
-   apply G_union; trivial.
-   apply G_trans with (2:=H2); trivial.
-   apply G_dep_func; intros; auto with *.
-  apply G_replf; intros; trivial.
-  apply G_couple; trivial.
-   apply G_trans with A; trivial.
-
-   apply G_trans with (app x x0); trivial.
-Qed.
-
   Lemma G_TR F o :
     Proper ((eq_set==>eq_set)==>eq_set==>eq_set) F ->
     (forall o f f', isOrd o -> eq_fun o f f' -> F f o == F f' o) ->
@@ -353,6 +318,7 @@ apply G_TI; intros; trivial.
 
    intros.
    apply G_replf; intros; trivial.
+    do 2 red; intros; apply couple_morph; auto with *.
    apply G_couple; eauto using G_trans.
 Qed.
 
