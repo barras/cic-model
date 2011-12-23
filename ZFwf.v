@@ -51,6 +51,7 @@ apply H; intros; trivial.
 apply H1; trivial.
 Qed.
 
+(* The class of well-founded sets form a model od IZF (without foundation axiom) *)
 
 Lemma isWf_zero: isWf zero.
 apply isWf_intro; intros.
@@ -105,13 +106,6 @@ elim le_case with (1:=H0); clear H0; intros.
  apply isWf_inv with n; trivial.
 Qed.
 
-Lemma isWf_antirefl : forall x, isWf x -> ~ x \in x.
-intros.
-elim H using isWf_ind; clear x H; intros.
-red; intros.
-apply H0 with a; trivial.
-Qed.
-
 Require Import ZFrepl.
 
 Lemma isWf_repl : forall x R,
@@ -121,6 +115,14 @@ Lemma isWf_repl : forall x R,
 intros.
 apply isWf_intro; intros.
 elim repl_elim with (1:=H) (2:=H1); intros; eauto.
+Qed.
+
+(* A well-founded set does not belong to itself. *)
+Lemma isWf_antirefl : forall x, isWf x -> ~ x \in x.
+intros.
+elim H using isWf_ind; clear x H; intros.
+red; intros.
+apply H0 with a; trivial.
 Qed.
 
 (* Transitive closure *)

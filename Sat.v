@@ -162,7 +162,7 @@ Lemma interSAT_morph_subset :
   forall A (P Q:A->Prop) (F:sig P->SAT) (G:sig Q->SAT),
   (forall x, P x <-> Q x) ->
   (forall x Px Qx,
-   eqSAT (F (exist _ x Px)) (G (exist _ x Qx))) ->
+   eqSAT (F (exist P x Px)) (G (exist Q x Qx))) ->
   eqSAT (interSAT F) (interSAT G).
 intros.
 apply interSAT_morph; red; split; intros.

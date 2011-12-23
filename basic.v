@@ -1,5 +1,6 @@
 Require Export Coq.Program.Basics.
 Require Export Setoid Morphisms Morphisms_Prop.
+Import ProperNotations.
 
 Lemma impl_morph A A' B B' :
   (A <-> A') ->

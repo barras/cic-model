@@ -675,6 +675,25 @@ destruct (ttcoll (idx A) (fun i y => R (elts A i) y)) as (X,(f,Hf)).
    apply eq_set_refl.
 Qed.
 
+(* Proving collection requires the specialized version of ttcoll *)
+Lemma ttcoll'' : forall A (R:set->set->Prop),
+  (forall x x' y y', in_set x A ->
+   eq_set x x' -> eq_set y y' -> R x y -> R x' y') ->
+  (forall x, x \in A -> exists y:set, R x y) ->
+  exists f : {x|x\in A} -> {X:Ti & X->set},
+    forall x, exists i:projT1 (f x), R (proj1_sig x) (projT2 (f x) i).
+intros.
+destruct (coll_ax_ttcoll A R H H0) as (B,HB).
+exists (fun _ => let (X,f) := B in existT (fun X => X->set) X f).
+destruct B; simpl.
+destruct x; simpl; intros.
+destruct HB with x; trivial.
+destruct H1.
+exists x1.
+apply H with (4:=H2); auto with *.
+apply eq_set_refl.
+Qed.
+
 End FromWChoice.
 
 Section FromChoice.

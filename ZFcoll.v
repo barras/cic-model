@@ -325,9 +325,7 @@ Qed.
    class we can build a set containing an element of that
    class. *)
 
-
-Parameter set_induc :
-  forall P, (forall x, (forall y, y \in x -> P y) -> P x) -> forall x, P x.
+Section ReplImpliesCollFromExcludedMiddleAndWellFoundation.
 
 Parameter rk : set -> set.
 
@@ -340,7 +338,7 @@ Parameter rk_def : forall x z,
 Lemma rk_trans : forall x y z,
   z \in y -> y \in rk x -> z \in rk x.
 intros x.
-pattern x; apply set_induc; clear x; intros.
+pattern x; apply wf_ax; clear x; intros.
 rewrite rk_def in H1|-*.
 destruct H1.
 destruct H1.
@@ -352,7 +350,7 @@ Qed.
 Lemma rk_sub : forall x y y',
   y \in rk x -> y' \incl y -> y' \in rk x.
 intros x.
-pattern x; apply set_induc; clear x; intros.
+pattern x; apply wf_ax; clear x; intros.
 rewrite rk_def in H0|-*.
 destruct H0; destruct H0.
 exists x0; split; trivial.
@@ -370,7 +368,7 @@ Qed.
 
 Lemma rk_compl : forall x z, z \in rk x -> rk z \in rk x. 
 intros x.
-pattern x; apply set_induc; clear x; intros.
+pattern x; apply wf_ax; clear x; intros.
 rewrite rk_def in *.
 destruct H0; destruct H0.
 exists x0; split; trivial.
@@ -397,7 +395,7 @@ Qed.
 Lemma rk_intro :
   forall x, x \in power (rk x).
 intros.
-pattern x; apply set_induc; clear x; intros.
+pattern x; apply wf_ax; clear x; intros.
 rewrite power_ax; intros.
 rewrite rk_def.
 exists y; split; auto.
@@ -424,7 +422,7 @@ cut (forall y, rk y \incl rk x -> P y).
  intros.
  apply H0.
  red; trivial.
-pattern x; apply set_induc; clear x; intros.
+pattern x; apply wf_ax; clear x; intros.
 apply H; intros.
 apply H1 in H2.
 rewrite rk_def in H2; destruct H2; destruct H2.
@@ -438,12 +436,12 @@ apply rk_sub with (rk x1); trivial.
 apply rk_compl; trivial.
 Qed.
 
-Axiom EM : forall P, P \/ ~P.
+Hypothesis EM : forall P, P \/ ~P.
 
 Lemma rk_total : forall x y, rk x \in rk y \/ rk y \incl rk x.
 intros x y.
 revert x.
-pattern y; apply set_induc; clear y; intros y Hy x.
+pattern y; apply wf_ax; clear y; intros y Hy x.
 destruct (EM (exists y', y' \in rk y /\ rk x \incl y')).
  left.
  destruct H; destruct H.
@@ -620,6 +618,8 @@ destruct (@H A (fun x y => lst_rk (P x) y)); eauto using lst_fun, lst_ex.
   rewrite H2.
   exists x0; auto.
 Qed.
+
+End ReplImpliesCollFromExcludedMiddleAndWellFoundation.
 
 (* The usual statements found in the litterature. *)
 Definition replacement := forall A R, rep_bnd A R.

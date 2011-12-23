@@ -2172,6 +2172,8 @@ Section TIF_iso.
 
   Variable A : set.
   Variable F G : (set -> set) -> set -> set.
+  Hypothesis Fm : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) F.
+  Hypothesis Gm : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) G.
   Hypothesis Fmono : mono_fam A F.
   Hypothesis Gmono : mono_fam A G.
 
@@ -2181,8 +2183,8 @@ Lemma TIF_iso_cont : forall o f,
    iso_fun (TIF A F (osucc o') a) (TIF A G (osucc o') a) (f a)) ->
   forall a, a \in A -> iso_fun (TIF A F o a) (TIF A G o a) (f a).
 intros o f oo iso' a tya.
-assert (Fm := FFmono_ext _ _ Fmono).
-assert (Gm := FFmono_ext _ _ Gmono).
+(*assert (Fm := FFmono_ext _ _ Fmono).
+assert (Gm := FFmono_ext _ _ Gmono).*)
 constructor; intros.
  do 2 red; intros.
  apply TIF_elim in H; trivial.
@@ -2319,8 +2321,8 @@ Qed.
     iso_fun (TIF A F o a) (TIF A G o a) (TIF_iso g o a) /\
     (forall x, x \in TIF A F o a -> TIF_iso g o a x == g (TIF_iso g o) a x).
 intros g o gm gext isog oo a tya.
-assert (Fm := FFmono_ext _ _ Fmono).
-assert (Gm := FFmono_ext _ _ Gmono).
+(*assert (Fm := FFmono_ext _ _ Fmono).
+assert (Gm := FFmono_ext _ _ Gmono).*)
 unfold TIF_iso.
 destruct
  (let T:=fun o => sigma A (fun a' => TIF A F o a') in

@@ -4,216 +4,26 @@ Set Implicit Arguments.
 
 Require Import ZF ZFord ZFcoc ZFind_nat.
 Import IZF.
-(*Import ZFnats.*)
 
-Require Import basic Can Sat GenRealSN.
+Require Import basic Can Sat SATnat GenRealSN.
 Module Lc:=Lambda.
 Import MM.
 
-(* Nat *)
-
-Record num := mkNat { number :> set; is_num : number \in NAT }.
-
-Definition eqnum (x y:num) := x == y.
-
-Instance eqnum_eq : Equivalence eqnum.
-unfold eqnum; split.
- red; reflexivity.
-
- red; symmetry; trivial.
-
- red; intros.
- transitivity y; trivial.
-Qed.
-
-Definition ZEROt := mkNat ZERO_typ.
-Definition SUCCt n := mkNat (SUCC_typ _ (is_num n)).
-
-Record family := mkFam {
-  fam :> num -> SAT;
-  fam_mrph : Proper (eqnum ==> eqSAT) fam
-}.
-
-Existing Instance fam_mrph.
-
-Definition dflt_family : family.
-exists (fun _ => snSAT).
-do 2 red; reflexivity.
-Defined.
-
-Definition eqfam (A B:family) :=
-  forall x y, eqnum x y -> eqSAT (A x) (B y).
-
-Instance eqfam_eq : Equivalence eqfam.
-unfold eqfam; split.
- red; intros.
- rewrite H; reflexivity.
-
- red; intros.
- symmetry in H0|-*; auto.
-
- red; intros.
- transitivity (y x0); auto with *.
-Qed. 
-
-Definition fNAT (A:family) (k:num) :=
-  interSAT
-    (fun P:family =>
-      prodSAT (P ZEROt)
-     (prodSAT (interSAT (fun n => prodSAT (A n) (prodSAT (P n) (P (SUCCt n)))))
-              (P k))).
-
-Instance fNAT_morph : Proper (eqfam ==> eqnum ==> eqSAT) fNAT.
-do 3 red.
-intros A B H x y H0.
-unfold fNAT.
-apply interSAT_morph.
-split; intros.
- exists x0.
- apply prodSAT_morph.
-  reflexivity.
-
-  apply prodSAT_morph.
-   apply interSAT_morph.
-   split; intros.
-    exists x1.
-    apply prodSAT_morph.
-     apply H; red; reflexivity.
-
-     reflexivity.
-
-    exists y0.
-    apply prodSAT_morph.
-     apply H; red; reflexivity.
-
-     reflexivity.
-
-   apply (fam_mrph x0); trivial.
-
- exists y0.
- apply prodSAT_morph.
-  reflexivity.
-
-  apply prodSAT_morph.
-   apply interSAT_morph.
-   split; intros.
-    exists x0.
-    apply prodSAT_morph.
-     apply H; red; reflexivity.
-
-     reflexivity.
-
-    exists y1.
-    apply prodSAT_morph.
-     apply H; red; reflexivity.
-
-     reflexivity.
-
-   apply (fam_mrph y0); trivial.
-Qed.
-(*
-Lemma fNAT_morph : forall A B, eqfam A B ->
-  forall x y, eqnum x y -> eqSAT (fNAT A x) (fNAT B y).
-*)
-
-Definition fNATf (A:family) : family.
-exists (fNAT A).
-intros.
-apply fNAT_morph; trivial.
-exact (fam_mrph A).
-Defined.
-
-
-Lemma fNAT_def : forall t A k,
-  inSAT t (fNAT A k) <->
-  forall (P:family) f g,
-  inSAT f (P ZEROt) ->
-  (forall n m y, inSAT m (A n) -> inSAT y (P n) -> inSAT (Lc.App2 g m y) (P (SUCCt n))) ->
-  inSAT (Lc.App2 t f g) (P k).
-unfold fNAT.
-split; intros.
- apply interSAT_elim with (x:=P) in H.
- apply prodSAT_elim with (interSAT (fun n => prodSAT (A n) (prodSAT (P n) (P (SUCCt n))))).
-  apply prodSAT_elim with (2:=H0); trivial.
-
-  apply interSAT_intro; trivial; intros.
-  simpl.
-  do 2 red; intros.
-  apply H1; trivial.
-
- apply interSAT_intro; intros.
-  exact dflt_family.
- simpl.
- do 2 red; intros.
- apply H with (P:=x); intros; trivial.
- destruct H1.
- do 2 red in H4.
- apply H4; auto.
-Qed.
-
-
-Lemma fNAT_mono : forall (A B:family),
-  (forall k, inclSAT (A k) (B k)) -> forall k, inclSAT (fNAT A k) (fNAT B k).
-unfold inclSAT; intros.
-rewrite fNAT_def in H0 |- *; intros.
-apply H0; intros; auto.
-Qed.
-
-
-Definition ZE := Lc.Abs (Lc.Abs (Lc.Ref 1)).
-
-Lemma fNAT_ZE : forall A, inSAT ZE (fNAT A ZEROt).
-unfold fNAT, ZE; intros A.
-apply interSAT_intro; trivial.
-intro P.
-apply prodSAT_intro; intros.
-unfold Lc.subst; simpl Lc.subst_rec.
-apply prodSAT_intro; intros.
-unfold Lc.subst; rewrite Lc.simpl_subst; trivial; rewrite Lc.lift0; trivial.
-Qed.
-
-Definition SU := Lc.Abs (Lc.Abs (Lc.Abs
-    (Lc.App2 (Lc.Ref 0) (Lc.Ref 2) (Lc.App2 (Lc.Ref 2) (Lc.Ref 1) (Lc.Ref 0))))).
-
-Lemma fNAT_SU : forall (A:family) n t,
-  inSAT t (A n) ->
-  inSAT t (fNAT A n) ->
-  inSAT (Lc.App SU t) (fNAT A (SUCCt n)).
-intros.
-unfold fNAT, SU.
-apply interSAT_intro; trivial.
-intros P.
-apply prodSAT_elim with (A:=interSAT (fun b:bool => if b then A n else fNAT A n)).
-2:apply interSAT_intro; [left|intros [|]; trivial].
-apply prodSAT_intro; intros.
-unfold Lc.subst; simpl Lc.subst_rec.
-apply prodSAT_intro; intros.
-unfold Lc.subst; simpl Lc.subst_rec; rewrite Lc.simpl_subst; trivial.
-apply prodSAT_intro; intros.
-unfold Lc.subst; simpl Lc.subst_rec; repeat rewrite Lc.simpl_subst; trivial; repeat rewrite Lc.lift0.
-specialize interSAT_elim with (x:=n) (1:=H3); intro.
-specialize interSAT_elim with (x:=true) (1:=H1); intro.
-specialize interSAT_elim with (x:=false) (1:=H1); intro.
-specialize interSAT_elim with (x:=P) (1:=H6); intro.
-clear H1.
-apply prodSAT_elim with (A:=P n).
- apply prodSAT_elim with (A:=A n); trivial.
-
- apply prodSAT_elim with (2:=H2) in H7.
- apply prodSAT_elim with (1:=H7); trivial.
-Qed.
 
 (* Constructor iteration *)
 
 Definition posti P :=
   Proper (eq_set ==> eqfam) P /\
-  forall o o', o \in toOrd o' ->
-  forall k, inclSAT (fNAT (P (toOrd o)) k) (P (toOrd o') k).
+  (forall k o o', o \incl o' -> inclSAT (P o k) (P o' k)) /\
+  forall o o', o \in o' ->
+  forall k, inclSAT (fNAT (P o) k) (P o' k).
 
 Lemma posti_dflt : {P|posti P}.
 exists (fun _ => dflt_family).
-split.
- do 2 red; reflexivity.
+split;[|split].
+ do 3 red; reflexivity.
+
+ red; trivial.
 
  red; red; intros.
  apply sat_sn in H0; trivial.
@@ -223,82 +33,100 @@ Hint Resolve posti_dflt.
 Lemma fNAT_posti : forall (P:set->family),
   posti P -> posti (fun o => fNATf (P o)).
 unfold posti; simpl; intros.
-destruct H; split; intros.
+destruct H as (?,(?,?)); split; [|split]; intros.
  do 2 red; intros.
  red; simpl; intros.
  apply fNAT_morph; auto with *.
 
- apply fNAT_mono; simpl; apply H0; trivial.
+ apply fNAT_mono; auto.
+
+ apply fNAT_mono; simpl; apply H1; trivial.
 Qed.
 
 
 Definition cNATi (o:set) : family.
 exists (fun n => 
-  interSAT (fun P:{P:set->family|posti P}=> proj1_sig P (toOrd o) n)).
+  interSAT (fun P:{P:set->family|posti P}=> proj1_sig P o n)).
 do 2 red; intros.
 apply interSAT_morph.
 split; intros.
  exists x0.
- apply (fam_mrph (proj1_sig x0 (toOrd o))); trivial.
+ apply (fam_mrph (proj1_sig x0 o)); trivial.
 
  exists y0.
- apply (fam_mrph (proj1_sig y0 (toOrd o))); trivial.
+ apply (fam_mrph (proj1_sig y0 o)); trivial.
 Defined.
+
+
+Lemma cNATi_ax  t o k :
+  inSAT t (cNATi o k) <->
+  forall P, posti P -> inSAT t (P o k).
+split; intros.
+ apply interSAT_elim with (1:=H) (x:=exist _ _ H0).
+
+ simpl.
+ apply interSAT_intro; trivial.
+ destruct x; simpl; auto.
+Qed.
+
 
 Instance cNATi_morph : Proper (eq_set ==> eqfam) cNATi.
 unfold cNATi; do 3 red; simpl; intros.
 apply interSAT_morph; red; intros.
 split; intros.
  exists x1; simpl.
- transitivity (proj1_sig x1 (toOrd x) y0).
-  apply (fam_mrph (proj1_sig x1 (toOrd x))); trivial.
+ transitivity (proj1_sig x1 x y0).
+  apply (fam_mrph (proj1_sig x1 x)); trivial.
   apply (proj2_sig x1); auto with *.
-  rewrite H; reflexivity.
+  red; reflexivity.
 
  exists y1; simpl.
- transitivity (proj1_sig y1 (toOrd x) y0).
-  apply (fam_mrph (proj1_sig y1 (toOrd x))); trivial.
+ transitivity (proj1_sig y1 x y0).
+  apply (fam_mrph (proj1_sig y1 x)); trivial.
   apply (proj2_sig y1); auto with *.
-  rewrite H; reflexivity.
+  red; reflexivity.
 Qed.
 
-
-Lemma cNATi_incr : forall o o', isOrd o' -> o \in o' -> forall k,
+Lemma cNATi_incr : forall o o', o \in o' -> forall k,
   inclSAT (cNATi o k) (cNATi o' k).
 red; intros.
-unfold cNATi.
-apply interSAT_intro; trivial.
-destruct x as (P,Pincl); simpl in Pincl|-*.
-apply (proj2 Pincl o).
- rewrite toOrd_ord; auto.
+rewrite cNATi_ax; intros.
+apply (proj2 (proj2 H1)) with (o:=o); trivial.
+apply interSAT_elim with (1:=H0) (x:=exist _ _ (fNAT_posti H1)).
+Qed.
 
- apply interSAT_elim with (1:=H1) (x:=exist _ _ (fNAT_posti Pincl)).
+Lemma cNATi_mono : forall o o', o \incl o' -> forall k,
+  inclSAT (cNATi o k) (cNATi o' k).
+red; intros.
+rewrite cNATi_ax; intros.
+apply (proj1 (proj2 H1)) with (o:=o); trivial.
+rewrite cNATi_ax in H0; auto.
 Qed.
 
 Lemma cNATi_posti : posti cNATi.
-split; intros; auto with *.
-red; red; intros.
-unfold cNATi; apply interSAT_intro; auto.
-destruct x as (P,Pincl); simpl proj1_sig in Pincl|-*.
-apply Pincl with o.
- rewrite toOrd_ord; auto.
- apply toOrd_isOrd.
+split; [|split]; intros.
+ apply cNATi_morph.
 
- revert t H0; apply fNAT_mono.
+ apply cNATi_mono; trivial.
+
  red; intros.
- specialize interSAT_elim with (1:=H0)(x:=exist (fun P=>posti P) P Pincl); intro.
- simpl in H1.
- revert H1.
- apply (proj1 Pincl); auto with *.
- rewrite (toOrd_ord (toOrd o)); auto with *.
- apply toOrd_isOrd.
+ rewrite cNATi_ax; intros.
+ apply (proj2 (proj2 H1)) with (o:=o); trivial.
+ revert k t H0; apply fNAT_mono.
+ red; intros.
+ rewrite cNATi_ax in H0; auto.
 Qed.
 
+(*
 Lemma cNATi_def : forall t o k,
   inSAT t (cNATi o k) <->
   exists2 o', o' \in o & inSAT t (fNAT (cNATi o') k).
+intros.
+rewrite cNATi_ax.
+split; intros.
+def.
 Admitted.
-(*
+
 Lemma cNATi_elim : forall t o k,
   inSAT t (cNATi o k) ->
   exists2 o', o' \in o & inSAT t (fNAT (cNATi o') k).
@@ -318,9 +146,15 @@ generalize (fun P h => interSAT_elim H2 (exist _ P h)); simpl proj1_sig; intros.
 simpl in H.
 *)
 
+(*
 Lemma cNATi_succ : forall o, isOrd o ->
   forall k , eqSAT (cNATi (osucc o) k) (fNAT (cNATi o) k).
 split; intros.
+ rewrite cNATi_ax in H0.
+ apply (proj2 (proj2 (fNAT_posti cNATi_posti))) with (o:=o).
+
+ apply H0 with (1:=fNAT_posti cNATi_posti).
+
  rewrite cNATi_def in H0.
  destruct H0.
  revert H1; apply fNAT_mono.
@@ -328,31 +162,34 @@ split; intros.
  rewrite cNATi_def in H1 |- *.
  destruct H1.
  exists x0; trivial.
- apply olts_le in H0.
- apply H0 in H1; trivial.
+ apply olts_le in H0; auto.
 
  rewrite cNATi_def.
  exists o; trivial.
  apply lt_osucc; trivial.
 Qed.
-
+*)
 
 Lemma cNATi_ZE : forall o, isOrd o -> inSAT ZE (cNATi (osucc o) ZEROt).
 intros.
-rewrite cNATi_succ; trivial.
-apply fNAT_ZE.
+rewrite cNATi_ax; intros.
+destruct H0 as (_,(_,?)).
+apply H0 with (o:=o).
+ apply lt_osucc; trivial.
+
+ apply fNAT_ZE.
 Qed.
 
 Lemma cNATi_SU : forall o n t,
-  isOrd o ->inSAT t (cNATi o n) -> inSAT (Lc.App SU t) (cNATi (osucc o) (SUCCt n)). 
+  isOrd o -> inSAT t (cNATi o n) -> inSAT (Lc.App SU t) (cNATi (osucc o) (SUCCt n)). 
 intros.
-rewrite cNATi_succ; trivial.
-apply fNAT_SU; trivial.
-rewrite <- cNATi_succ; trivial.
-revert H0; apply cNATi_incr; auto.
-apply lt_osucc; trivial.
-Qed.
+rewrite cNATi_ax in H0|-*; intros.
+apply (proj2 (proj2 H1)) with (o:=o).
+ apply lt_osucc; trivial.
 
+ apply fNAT_SU; auto.
+ apply H0 with (1:=fNAT_posti H1).
+Qed.
 
 Definition realNati o (n:X) (t:Lc.term) :=
   exists H:n \in NAT, inSAT t (cNATi o (mkNat H)).
@@ -420,154 +257,20 @@ rewrite mkTy_def0; intros.
 Qed.
 
 
-Module NatFixpoint.
-
-(* Fixpoint *)
-
-Definition post P := forall k, inclSAT (fNAT P k) (P k).
-
-Lemma post_dflt : {P|post P}.
-exists dflt_family.
-red; red; intros.
-apply sat_sn in H; trivial.
-Qed.
-Hint Resolve post_dflt.
-
-Lemma fNAT_post :
- forall P, post P -> post (fNATf P).
-unfold post; simpl; intros.
-apply fNAT_mono; apply H.
-Qed.
-
-
-Definition cNAT : family.
-exists (fun n =>
-  interSAT (fun P:{P|post P} => proj1_sig P n)).
-do 2 red; intros.
-apply interSAT_morph.
-split; intros.
- exists x0.
- apply (fam_mrph (proj1_sig x0)); trivial.
-
- exists y0.
- apply (fam_mrph (proj1_sig y0)); trivial.
-Defined.
-
-Lemma cNAT_post : post cNAT.
-red; red; intros.
-unfold cNAT.
-apply interSAT_intro; intros; trivial.
-apply (proj2_sig x).
-revert t H.
-apply fNAT_mono.
-red; intros.
-apply interSAT_elim with (1:=H) (x:=x).
-Qed.
-
-Lemma cNAT_pre : forall k, inclSAT (cNAT k) (fNAT cNAT k).
-red; intros.
-apply interSAT_elim with (1:=H) (x:=exist _ _ (fNAT_post cNAT_post)).
-Qed.
-
-Lemma cNAT_eq : forall k, eqSAT (cNAT k) (fNAT cNAT k).
-split.
- apply cNAT_pre.
- apply cNAT_post.
-Qed.
-
-(*
-Definition incr (P:set->SAT) :=
-  forall o o', o \in toOrd o' -> inclSAT (P o) (P o').
-
-Definition unionSAT (P:set->SAT) (h:incr P) (o:set) : SAT.
-intros P h o.
-exists (fun t => exists2 o', o' \in toOrd o & inSAT t (P o')).
-split; intros.
- destruct H.
- apply sat_sn in H0; trivial.
-
- destruct H.
- exists x; trivial.
- apply (clos_red _ (proj2_sig (P x))) with t; trivial.
-
- red in h.
-*)
-
 Lemma cNATi_incl_cNAT :
-  forall o k, isOrd o -> inclSAT (cNATi o k) (cNAT k).
-intros o k H; revert k; induction H using isOrd_ind.
+  forall o k, inclSAT (cNATi o k) (cNAT k).
 red; intros.
-rewrite cNATi_def in H2.
-destruct H2.
-rewrite cNAT_eq.
-revert H3; apply fNAT_mono.
-auto.
-Qed.
-
-
-Definition realNat (n:X) (t:Lc.term) :=
-  exists H:n \in NAT, inSAT t (cNAT (mkNat H)).
-
-Instance realNat_morph : Proper (eq_set ==> eq ==> iff) realNat.
-apply morph_impl_iff2; auto with *.
-do 4 red; intros.
-subst y0.
-destruct H1.
-assert (y \in NAT).
- rewrite <- H; trivial.
-exists H1.
-revert x0 H0.
-apply (fam_mrph cNAT).
-red; simpl; auto with *.
-Qed.
-
-Lemma realNat_cand : forall n,
-  n \in NAT -> is_cand (fun t => realNat n t).
-intros.
-cut (is_cand (fun t => inSAT t (cNAT (mkNat H)))).
- apply is_cand_morph; red; intros.
- assert (forall (p : n \in NAT), eqSAT (cNAT (mkNat p)) (cNAT (mkNat H))).
-  intros.
-  apply fam_mrph; red; reflexivity.
- split; intros.
-  destruct H1.
-  rewrite H0 in H1; trivial.
-
-  exists H; trivial.
-
- exact (proj2_sig (cNAT (mkNat H))).
-Qed.
-
-Lemma realNat_def : forall n t,
-  (n,t) \real mkTy NAT realNat <-> realNat n t.
-intros.
-rewrite mkTy_def0; intros.
- split; intros.
-  destruct H; trivial.
-
-  split; trivial.
-  destruct H; trivial.
-
+rewrite cNATi_ax in H.
+apply H with (P:=fun _ => cNAT).
+split; [|split]; intros.
  do 3 red; intros.
- subst y0.
- assert (forall (Hx:x \in NAT) (Hy:y \in NAT),
-         eqSAT (cNAT (mkNat Hx)) (cNAT (mkNat Hy))).
-  intros.
-  apply fam_mrph.
-  red; trivial.
- split; destruct 1.
-  generalize x1; rewrite H; intro.
-  exists H2.
-  rewrite <- (H0 x1 H2); trivial.
+ apply fam_mrph; trivial.
 
-  generalize x1; rewrite <- H; intro.
-  exists H2.
-  rewrite (H0 H2 x1); trivial.
+ red; intros; trivial.
 
- apply realNat_cand; trivial.
+ red; intros.
+ rewrite cNAT_eq; trivial.
 Qed.
-
-End NatFixpoint.
 
 (* copy from GenRealSN *)
 Definition cst (x:X) (t:Lc.term)
@@ -766,33 +469,118 @@ split.
     apply int_morph; auto with *.
     red; red; intros.
     unfold V.shift, V.cons; simpl; reflexivity.
-   rewrite (cNATi_morph H2 (reflexivity _)); clear H2.
+   cut (inSAT (Lc.App SU u) (cNATi (int i (OSucc o)) (mkNat (SUCC_typ _ x0)))).
+    apply inSAT_morph; trivial.
+    apply cNATi_morph; trivial.
+    red; reflexivity.
    assert (oo : isOrd (int i o)) by eauto.
    assert (forall k, inclSAT (fNAT (cNATi (int i o)) k) (cNATi (int i (OSucc o)) k)).
     intro; apply osucc_inv.
-   apply H2.
+   apply H3.
    change (mkNat (SUCC_typ x x0)) with (SUCCt (mkNat x0)).
    apply fNAT_SU; trivial.
-   rewrite <- cNATi_succ; trivial.
-   revert H1; apply cNATi_incr; auto.
-   apply lt_osucc; trivial.
-(*
-   destruct Ord_inv with (1:=H)(2:=H0) as (H2,[H3|H3]).
-    rewrite H3.
-    apply cNATi_SU in H1; trivial.
-    revert H1.
-    apply cNATi_incl_cNAT; auto.
-
-    rewrite (cNATi_morph H3 (reflexivity _)).
-    apply cNATi_SU in H1; auto.*)
+   rewrite cNATi_ax in H1.
+   apply H1 with (1:=fNAT_posti cNATi_posti).
 Qed.
 
+Lemma inSAT_exp_sat2 : forall S m u u1 u2,
+  Lc.sn u ->
+  inSAT (Lc.App (Lc.App (Lc.subst u m) u1) u2) S ->
+  inSAT (Lc.App (Lc.App (Lc.App (Lc.Abs m) u) u1) u2) S.
+intros (S,(S_sn,S_red,S_exp)) m u u1 u2 snu inS; simpl in *.
+revert m u1 u2 inS.
+induction snu; intros.
+clear H; rename x into u.
+assert (snm: Lc.sn m).
+ apply Lc.sn_subst with u.
+ apply S_sn in inS.
+ apply Lc.subterm_sn with (Lc.App (Lc.subst u m) u1); auto with coc.
+ apply Lc.subterm_sn with (1:=inS); auto with coc.
+revert u1 u2 inS.
+induction snm; intros.
+clear H; rename x into m.
+assert (snu1: Lc.sn u1).
+ apply S_sn in inS.
+ apply Lc.subterm_sn with (Lc.App (Lc.subst u m) u1); auto with coc.
+ apply Lc.subterm_sn with (1:=inS); auto with coc.
+revert u2 inS.
+induction snu1; intros.
+clear H; rename x into u1.
+assert (snu2: Lc.sn u2).
+ apply S_sn in inS.
+ apply Lc.subterm_sn with (1:=inS); auto with coc.
+revert inS.
+induction snu2; intros.
+clear H; rename x into u2.
+unfold transp in *.
+apply S_exp; intros.
+ exact I.
+inversion_clear H.
+ inversion_clear H4.
+  inversion_clear H; auto.
+   inversion_clear H4.
+   apply H1; trivial.
+   apply S_red with (1:=inS); trivial.
+   unfold Lc.subst; auto with coc.
+
+   apply H0; trivial.
+   apply S_red with (1:=inS); trivial.
+   unfold Lc.subst; auto with coc.
+
+  apply H2; trivial.
+  apply S_red with (1:=inS); auto with coc.
+
+ apply H3; trivial.
+ apply S_red with (1:=inS); auto with coc.
+Qed.
+
+Lemma inSAT_exp_sat1 : forall S m u u1,
+  Lc.sn u ->
+  inSAT (Lc.App (Lc.subst u m) u1) S ->
+  inSAT (Lc.App (Lc.App (Lc.Abs m) u) u1) S.
+Admitted.
+
+Lemma inSAT_exp_sat : forall S m u,
+  Lc.sn u ->
+  inSAT (Lc.subst u m) S ->
+  inSAT (Lc.App (Lc.Abs m) u) S.
+Admitted.
+
+Definition NMATCH f g n :=
+  Lc.App2 n f (Lc.App (Lc.Abs (Lc.Abs (Lc.Abs (Lc.App (Lc.Ref 2) (Lc.Ref 1))))) g).
+
+Lemma inSat_NMATCH f g n x S (P:family) :
+  inSAT n (fNAT S x) ->
+  inSAT f (P ZEROt) ->
+  (forall k x', inSAT k (S x') -> inSAT (Lc.App g k) (P (SUCCt x'))) ->
+  inSAT (NMATCH f g n) (P x).
+intros.
+unfold NMATCH.
+apply fNAT_def with (1:=H); intros; trivial.
+apply inSAT_exp_sat2.
+ apply H1 in H2.
+ apply (incl_sn _ (proj2_sig (P (SUCCt n0)))) in H2.
+ apply Lc.subterm_sn with (1:=H2); auto with coc.
+
+ unfold Lc.subst; simpl.
+ apply inSAT_exp_sat1.
+  apply (incl_sn _ (proj2_sig (S n0))) in H2; trivial.
+
+  unfold Lc.subst; simpl.
+  rewrite Lc.simpl_subst; auto.
+  apply inSAT_exp_sat.
+   apply (incl_sn _ (proj2_sig (P n0))) in H3; trivial.
+
+   unfold Lc.subst; simpl.
+  rewrite Lc.simpl_subst; auto.
+  rewrite Lc.simpl_subst; auto.
+  do 2 rewrite Lc.lift0.
+  auto.
+Qed.
 
 Definition NatCase (f g n:trm) : trm.
 left; exists (fun i => NATCASE (int i f) (fun n => app (int i g) n) (int i n))
-             (fun j => Lc.App2 (tm j n) (tm j f)
-                (Lc.App (Lc.Abs (Lc.Abs (Lc.Abs (Lc.App (Lc.Ref 2) (Lc.Ref 1)))))
-                        (tm j g))).
+             (fun j => NMATCH (tm j f) (tm j g) (tm j n)).
  do 2 red; intros.
  apply NATCASE_morph.
   rewrite H; reflexivity.
@@ -811,6 +599,7 @@ left; exists (fun i => NATCASE (int i f) (fun n => app (int i g) n) (int i n))
  red; intros; simpl.
  repeat rewrite tm_substitutive; trivial.
 Defined.
+
 
 
 Lemma typ_Ncase : forall e o n f g P,
@@ -840,26 +629,23 @@ assert (fsm : morph1 fS').
  unfold fS'; rewrite H4; reflexivity.
 rewrite realNati_def in H0.
 destruct H0.
-rewrite cNATi_def in H0.
-destruct H0 as (o',H0).
-rewrite fNAT_def in H4.
 assert (forall x tx,
  (x,tx) \real mkTy NAT (realNati (int i o))  ->
  (app fS x, Lc.App bS tx) \real app (int i P) (SUCC x)).
  intros.
- refine (let H' := prod_elim _ H2 H5 in _).
+ refine (let H' := prod_elim _ H2 H4 in _).
   red; intros.
   apply ZFcoc.cc_app_morph.
-   rewrite H7; reflexivity.
+   rewrite H6; reflexivity.
 
    apply ZFcoc.cc_app_morph; auto with *.
    apply ZFcoc.cc_lam_ext.
     apply El_morph.
     apply mkTy_morph; auto with *; intros.
-    rewrite H7; reflexivity.
+    rewrite H6; reflexivity.
 
     red; intros.
-    rewrite H9; reflexivity.
+    rewrite H8; reflexivity.
  clear H2.
  apply inSAT_val with (3:=H'); try reflexivity.
  apply ZFcoc.cc_app_morph.
@@ -870,31 +656,26 @@ assert (forall x tx,
 
   apply beta_eq with tx; trivial.
    red; intros.
-   rewrite H6; reflexivity.
+   rewrite H5; reflexivity.
 
-   rewrite realNati_def in H5|-*.
-   destruct H5.
+   rewrite realNati_def in H4|-*.
+   destruct H4.
    exists x1.
-   rewrite cNATi_def in H2|-*.
-   destruct H2.
-   exists x2; trivial.
-   unfold lift; rewrite int_lift_rec_eq.
-   apply eq_elim with (2:=H2).
-   apply int_morph; auto with *.
-   red; red ;simpl.
-   unfold V.lams, V.shift; simpl.
-   destruct a; simpl; reflexivity.
+   revert H2; apply inSAT_morph; trivial.
+   apply cNATi_morph.
+   2:red; reflexivity.
+   apply int_cons_lift_eq.
 assert (forall x:num, is_cand (fun t => (NATCASE f0 fS' x, t) \real app (int i P) x)).
  destruct x0 as (x0,xnat); simpl; intros.
  intros.
  elim xnat using NAT_ind; intros.
-  revert H8; apply is_cand_morph.
+  revert H7; apply is_cand_morph.
   red; intros.
   apply in_ext.
    split; simpl; trivial.
    apply NATCASE_morph; auto with *.
 
-   rewrite H7; reflexivity.
+   rewrite H6; reflexivity.
 
   apply inSAT_CR with b0.
   apply inSAT_val with (3:=H1); try reflexivity.
@@ -904,10 +685,10 @@ assert (forall x:num, is_cand (fun t => (NATCASE f0 fS' x, t) \real app (int i P
   apply inSAT_val with (fS' n) (app (int i P) (SUCC n)); try reflexivity.
    rewrite NATCASE_SUCC; auto with *.
 
-   apply H5; trivial.
-    rewrite realNati_def.
-    exists H6; apply varSAT.
-pose (F:=fun x => exist _ _ (H6 x) :SAT).
+   apply H4; trivial.
+   rewrite realNati_def.
+   exists H5; apply varSAT.
+pose (F:=fun x => exist _ _ (H5 x) :SAT).
 assert (Fm : forall x y, eqnum x y -> eqSAT (F x) (F y)).
  intros.
  unfold F.
@@ -916,8 +697,49 @@ assert (Fm : forall x y, eqnum x y -> eqSAT (F x) (F y)).
   split; simpl; trivial.
   apply NATCASE_morph; auto with *.
 
-  red in H7; rewrite H7; reflexivity.
-apply H4 with (P:=mkFam Fm) (f:=b0)
+  red in H6; rewrite H6; reflexivity.
+change (inSAT (NMATCH b0 bS tc) ((mkFam F Fm ) (mkNat x))).
+apply inSat_NMATCH with (S:=cNATi (int i o)); trivial.
+ rewrite cNATi_ax in H0.
+
+ admit.
+
+ simpl.
+ apply inSAT_val with (3:= H1); auto with *.
+ symmetry; apply NATCASE_ZERO.
+
+ intros; simpl.
+ apply inSAT_val with (fS' x') (app (int i P) (SUCC x')); auto with *.
+  symmetry; apply NATCASE_SUCC.
+  intros.
+  rewrite H7; reflexivity.
+
+  apply H4.
+  rewrite realNati_def.
+  red.
+  exists (is_num x').
+  destruct x'; trivial.
+
+
+  rewrite (cNATi_def k o' x') in H7.
+
+     assert (o' \incl int i o).
+      apply olts_le.
+      revert H0; apply osucc_inv2 with (1:=H)(2:=H3).
+     rewrite (cNATi_def m o' n) in H7.
+     rewrite (cNATi_def m (int i o) (mkNat (is_num n))).
+     destruct H7.
+     exists x0; auto.
+     destruct n; trivial.
+Qed.
+
+
+  apply H5.
+ simpl inSAT; intros.
+ (P:=mkFam F Fm) (x:=mkNat x).
+
+rewrite fNAT_def in H4.
+apply H4 with (P:=mkFam _ Fm) (f:=b0)
      (g:=Lc.App (Lc.Abs (Lc.Abs (Lc.Abs (Lc.App (Lc.Ref 2) (Lc.Ref 1))))) bS).
  simpl.
  apply inSAT_val with (3:=H1); try reflexivity.
@@ -961,13 +783,18 @@ Qed.
 
 
 
-
 (* Old style *)
 
 Parameter FX : Lc.term.
 
 Parameter FX_red : forall m u,
   Lc.red1 (Lc.App2 FX m (Lc.Abs u)) (Lc.App2 m (Lc.App FX m) (Lc.Abs u)).
+
+(*
+Parameter FX_sat :
+  inSAT (Lc.App2 m (Lc.App FX m) (Lc.Abs u)) S ->
+  inSAT (Lc.
+*)
 
 Definition NatFix (O M:trm) : trm.
 left.
@@ -988,7 +815,7 @@ Lemma typ_Fix : forall e O M U,
     (Prod (Nati (OSucc (Ref 0))) (App (App (lift 3 U) (OSucc (Ref 2))) (Ref 0))) ->
   typ e (NatFix O M) (Prod (Nati O) (App (lift 1 (App U O)) (Ref 0))).
 red; red; simpl; intros e O M U tyO tyM i j v_ok.
-destruct Ord_inv with (1:=tyO) (2:=v_ok) as (Oo,Os).
+specialize typ_ord_inv with (1:=tyO) (2:=v_ok); intro oo.
 split.
  discriminate.
 rewrite prod_def.
@@ -998,17 +825,15 @@ split.
  red; intros.
  red; simpl.
  split.
-  admit.
+  admit. (* FX M is sn (because nf) *)
  red; intros.
  set (g := fun o' f :set => int (V.cons f (V.cons o' i)) M) in |-*.
  apply inSAT_val with
    (MM.app (g (int i O) (NATREC g (int i O))) x)
    (MM.app (MM.app (int i U) (int i O)) x).
   symmetry.
-  apply NATREC_expand with (osucc (int i O))
-   (fun o x => El (MM.app (MM.app (int i U) o) x)).
-   admit.
-   admit.
+  apply NATREC_expand with (fun o x => El (MM.app (MM.app (int i U) o) x)); trivial.
+   admit. (* g morph *)
    admit. (* U mono *)
 
    intros.
@@ -1038,7 +863,7 @@ split.
         destruct H3.
         rewrite realNati_def in H3.
         destruct H3.
-        admit.
+        admit. (* z \in NAT & inSAT x0 (cNATi o) -> z \in NATi o ? *)
 
        red; intros.
        apply El_morph.
@@ -1058,7 +883,9 @@ split.
       rewrite int_cons_lift_eq.
       rewrite int_cons_lift_eq.
       apply cc_prod_elim with (1:=H2).
-      admit.
+      rewrite El_def in H3.
+      destruct H3.
+      admit. (*again *)
 
       discriminate.
 
@@ -1079,22 +906,11 @@ split.
 
   admit.
 
-  admit.
+  admit. (* again *)
 
   admit.
-
-  apply cc_app_morph; auto with *.
-  rewrite V.lams0.
-  unfold V.shift; simpl.
-  apply cc_app_morph; auto with *.
-   apply int_morph; auto with *.
-   red; red; simpl; reflexivity.
-
-   apply int_morph; auto with *.
-   red; red; simpl; reflexivity.
 
 Lemma inSAT_exp_fx : forall x A m u,
-  Lc.sn u ->
   (x,Lc.App2 m (Lc.App FX m) (Lc.Abs u)) \real A ->
   (x,Lc.App2 FX m (Lc.Abs u)) \real A. 
 Admitted.

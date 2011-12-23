@@ -7,6 +7,9 @@ Require Import ZFstrictpos.
    The strategy is to first remove dependencies, reuse the fixpoint
    construction for inductive types, and then checking dependencies
    a posteriori.
+   This does not work as is for non-uniform parameters, because types in
+   the constructor can refer to the parameter without including it in the
+   data-structure. See ZFind_wnup for an encoding of non-uniform parameters.
  *)
 
 Section InductiveFamily.

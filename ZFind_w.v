@@ -876,6 +876,204 @@ apply eq_intro; intros.
  revert H; apply Wi_W; auto.
 Qed.
 
+(* Recursor on W2 *)
+
+Require Import ZFfunext ZFfixrec.
+
+Section Recursor.
+
+  Hint Resolve W_F_mono.
+
+  Lemma Wi_fix :
+    forall (P:set->Prop) o,
+    isOrd o ->
+    (forall i, isOrd i -> i \incl o ->
+     (forall i' m, lt i' i -> m \in TI W_F i' -> P m) ->
+     forall n, n \in TI W_F i -> P n) ->
+    forall n, n \in TI W_F o -> P n.
+intros P o is_ord Prec.
+induction is_ord using isOrd_ind; intros; eauto.
+Qed.
+
+  Variable ord : set.
+  Hypothesis oord : isOrd ord.
+
+  Variable F : set -> set -> set.
+  Hypothesis Fm : morph2 F.
+
+  Variable U : set -> set -> set.
+  Hypothesis Umono : forall o o' x x',
+    isOrd o' -> o' \incl ord -> isOrd o -> o \incl o' ->
+    x \in TI W_F o -> x == x' ->
+    U o x \incl U o' x'.
+
+  Let Ty o := cc_prod (TI W_F o) (U o).
+  Hypothesis Ftyp : forall o f, isOrd o -> o \incl ord ->
+    f \in Ty o -> F o f \in Ty (osucc o).
+
+  Let Q o f := forall x, x \in TI W_F o -> cc_app f x \in U o x.
+
+  Definition Wi_ord_irrel :=
+    forall o o' f g,
+    isOrd o' -> o' \incl ord -> isOrd o -> o \incl o' ->
+    f \in Ty o -> g \in Ty o' ->
+    fcompat (TI W_F o) f g ->
+    fcompat (TI W_F (osucc o)) (F o f) (F o' g).
+
+  Hypothesis Firrel : Wi_ord_irrel.
+
+  Definition WREC := REC F.
+
+Lemma Umorph : forall o o', isOrd o' -> o' \incl ord -> o == o' ->
+    forall x x', x \in TI W_F o -> x == x' -> U o x == U o' x'. 
+intros.
+apply incl_eq.
+ apply Umono; auto.
+  rewrite H1; trivial.
+  rewrite H1; reflexivity.
+
+ apply Umono; auto.
+  rewrite H1; trivial.
+  rewrite H1; trivial.
+  rewrite H1; reflexivity.
+  rewrite <- H3; rewrite <- H1; trivial.
+  symmetry; trivial.
+Qed.
+
+Lemma Uext : forall o, isOrd o -> o \incl ord -> ext_fun (TI W_F o) (U o).
+red; red; intros.
+apply Umorph; auto with *.
+Qed.
+
+
+  Lemma WREC_typing : forall o f, isOrd o -> o \incl ord -> 
+    is_cc_fun (TI W_F o) f -> Q o f -> f \in Ty o.
+intros.
+rewrite cc_eta_eq' with (1:=H1).
+apply cc_prod_intro; intros; auto.
+ do 2 red; intros.
+ rewrite H4; reflexivity.
+
+ apply Uext; trivial.
+Qed.
+
+
+Lemma Wi_cont : forall o,
+   isOrd o -> TI W_F o == sup o (fun o' => TI W_F (osucc o')).
+intros.
+rewrite TI_eq; auto.
+apply sup_morph; auto with *.
+red; intros.
+rewrite <- TI_mono_succ; eauto using isOrd_inv.
+apply TI_morph; apply osucc_morph; trivial.
+Qed.
+
+Let Qm :
+   forall o o',
+   isOrd o ->
+   o \incl ord ->
+   o == o' -> forall f f', fcompat (TI W_F o) f f' -> Q o f -> Q o' f'.
+intros.
+unfold Q in H3|-*; intros.
+rewrite <- H1 in H4.
+specialize H3 with (1:=H4).
+red in H2; rewrite <- H2; trivial.
+revert H3; apply Umono; auto with *.
+ rewrite <- H1; trivial.
+ rewrite <- H1; trivial.
+ rewrite <- H1; reflexivity.
+Qed.
+
+Let Qcont : forall o f : set,
+ isOrd o ->
+ o \incl ord ->
+ is_cc_fun (TI W_F o) f ->
+ (forall o' : set, o' \in o -> Q (osucc o') f) -> Q o f.
+intros.
+red; intros.
+apply TI_elim in H3; auto.
+destruct H3.
+rewrite <- TI_mono_succ in H4; eauto using isOrd_inv.
+generalize (H2 _ H3 _ H4).
+apply Umono; eauto using isOrd_inv with *.
+red; intros.
+apply isOrd_plump with x0; eauto using isOrd_inv.
+apply olts_le in H5; trivial.
+Qed.
+
+Let Qtyp : forall o f,
+ isOrd o ->
+ o \incl ord ->
+ is_cc_fun (TI W_F o) f ->
+ Q o f -> is_cc_fun (TI W_F (osucc o)) (F o f) /\ Q (osucc o) (F o f).
+intros.
+assert (F o f \in Ty (osucc o)).
+ apply Ftyp; trivial.
+ apply WREC_typing; trivial.
+split.
+ apply cc_prod_is_cc_fun in H3; trivial.
+
+ red; intros.
+ apply cc_prod_elim with (1:=H3); trivial.
+Qed.
+
+  Lemma Firrel_W : stage_irrelevance ord (TI W_F) Q F.
+red; red; intros.
+destruct H1 as (oo,(ofun,oty)); destruct H2 as (o'o,(o'fun,o'ty)).
+apply Firrel; trivial.
+ apply WREC_typing; trivial. 
+ transitivity o'; trivial.
+
+ apply WREC_typing; trivial. 
+Qed.
+Hint Resolve Firrel_W.
+
+  (* Main properties of WREC: typing and equation *)
+  Lemma WREC_wt : WREC ord \in Ty ord.
+intros.
+refine ((fun h => WREC_typing
+          ord (WREC ord) oord (reflexivity _) (proj1 h) (proj2 h)) _).
+apply REC_wt with (T:=TI W_F) (Q:=Q); auto.
+ apply TI_morph.
+
+ apply Wi_cont.
+Qed.
+
+  Lemma WREC_ind : forall P x,
+    Proper (eq_set==>eq_set==>eq_set==>iff) P ->
+    (forall o x, isOrd o -> lt o ord ->
+     x \in W_F (TI W_F o) ->
+     (forall y, y \in TI W_F o -> P o y (cc_app (WREC ord) y)) ->
+     forall w, isOrd w -> w \incl ord -> lt o w ->
+     P w x (cc_app (F ord (WREC ord)) x)) ->
+    x \in TI W_F ord ->
+    P ord x (cc_app (WREC ord) x).
+intros.
+unfold WREC.
+apply REC_ind with (T:=TI W_F) (Q:=Q); auto.
+ apply TI_morph.
+
+ apply Wi_cont.
+
+ intros.
+ apply TI_elim in H4; auto.
+ destruct H4 as (o',?,?).
+ apply H0 with o'; eauto using isOrd_inv.
+ red; auto.
+Qed.
+
+  Lemma WREC_expand : forall n,
+    n \in TI W_F ord -> cc_app (WREC ord) n == cc_app (F ord (WREC ord)) n.
+intros.
+apply REC_expand with (T:=TI W_F) (Q:=Q); auto.
+ apply TI_morph.
+
+ apply Wi_cont.
+Qed.
+
+End Recursor.
+
+
 
 Section W_Univ.
 

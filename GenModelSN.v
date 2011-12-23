@@ -44,11 +44,6 @@ Module V := VarMap.Make(Xeq).
 
 Notation val := V.map.
 Notation eq_val := V.eq_map.
-unfold eq_val. split;repeat red. 
-reflexivity.
-intros. red in H. rewrite H. reflexivity.
-intros. red in H, H0. rewrite H. rewrite H0. reflexivity.
-Qed.
 
 Definition vnil : val := V.nil props.
 
@@ -69,11 +64,6 @@ Module I := VarMap.Make(LCeq).
 
 Notation intt := I.map.
 Notation eq_intt := I.eq_map.
-unfold eq_intt. split;repeat red;intros.
-reflexivity.
-rewrite H. reflexivity.
-rewrite H. rewrite H0. reflexivity.
-Qed.
 
 Import I.
 Existing Instance cons_morph.

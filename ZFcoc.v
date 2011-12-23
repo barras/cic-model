@@ -362,6 +362,52 @@ specialize power_elim with (1 := H) (2 := H2); intro.
 apply singl_elim; trivial.
 Qed.
 
+(* Classical propositions: we also have a model for classical logic *)
+
+Definition cl_props := subset props (fun P => cc_arr (cc_arr P empty) empty \incl P).
+
+Lemma cc_cl_impredicative_prod : forall dom F,
+  ext_fun dom F ->
+  (forall x, x \in dom -> F x \in cl_props) ->
+  cc_prod dom F \in cl_props.
+Proof.
+intros dom F eF H.
+unfold cl_props in H|- *; intros.
+apply subset_intro.
+ apply cc_impredicative_prod; intros.
+ apply H in H0.
+ apply subset_elim1 in H0; trivial.
+
+ red; intros.
+ assert (z == empty).
+  specialize cc_eta_eq with (1:=H0); intro.
+  rewrite H1.
+  apply cc_impredicative_lam; intros.
+   do 2 red; intros; apply cc_app_morph; auto with *.
+
+   destruct (empty_ax (cc_app z x)).
+   apply cc_arr_elim with (1:=H0); trivial.
+ rewrite H1.
+ rewrite <- (cc_impredicative_lam dom (fun x => empty)); auto with *.
+ apply cc_prod_intro; intros; auto with *.
+ specialize H with (1:=H2).
+ rewrite subset_ax in H; destruct H.
+ destruct H3.
+ rewrite <- H3 in H4; clear x0 H3.
+ apply H4.
+ apply in_reg with (cc_lam (cc_arr (F x) empty) (fun _ => empty)).
+  apply cc_impredicative_lam; auto with *.
+ apply cc_arr_intro; intros; auto with *.
+ destruct (empty_ax (cc_app z (cc_lam (cc_prod dom F) (fun f => cc_app f x)))).
+ apply cc_prod_elim with (1:=H0).
+ apply cc_arr_intro; intros.
+  do 2 red; intros; apply cc_app_morph; auto with *.
+
+  destruct (empty_ax (cc_app x0 (cc_app x1 x))).
+  apply cc_arr_elim with (1:=H3).
+  apply cc_prod_elim with (1:=H5); trivial.
+Qed.
+
 (* mapping (meta-level) propositions to props *)
 
 Definition P2p (P:Prop) := cond_set P (singl prf_trm).
@@ -493,6 +539,7 @@ Section Equiv_ZF_CICchoice.
   Hypothesis cc_set : set.
 
 Section SetInU.
+  (* Here we assume the elimination rule of the ens inductive type *)
   Hypothesis cc_set_ind :
     forall P : set -> Prop,
     (forall y X f, morph1 f ->
@@ -527,6 +574,8 @@ Qed.
 
 End SetInU.
 
+  (* All we need to know about cc_set is that it's included in U, so the ttcoll
+     axiom is really an instance of collection for universe U. *)
   Hypothesis cc_set_incl_U : cc_set \incl U.
 
 (* We don't even need the introduction rule for sets:

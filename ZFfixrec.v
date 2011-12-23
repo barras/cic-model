@@ -426,6 +426,45 @@ split.
   apply H0; trivial.
 Qed.
 
+Lemma REC_step' : forall o o',
+  isOrd o ->
+  isOrd o' ->
+  o \incl o' ->
+  o' \incl ord ->
+  fcompat (T o) (REC F o) (F o' (REC F o')).
+intros.
+destruct REC_inv with o'; trivial.
+rewrite REC_eq with (o:=o) at 1; trivial.
+rewrite Tcont; trivial.
+(*assert (o \incl osucc o').
+ admit.*)
+(* red; intros; apply isOrd_trans with o; auto.*)
+apply prd_sup_lub; intros; auto.
+ red; red; intros; apply Tm.
+ rewrite H6; reflexivity.
+
+ apply Ftyp'; auto.
+ apply REC_inv; eauto using isOrd_inv.
+
+ red; intros; apply H4.
+  apply isOrd_trans with o; auto.
+  apply ole_lts; auto.
+  apply isOrd_trans with o; auto.
+  apply ole_lts; auto.
+
+ red; intros.
+ apply H4.
+  apply isOrd_trans with o; auto.
+  apply ole_lts; auto.
+
+  apply lt_osucc; trivial.
+
+  rewrite inter2_def; split; trivial.
+  revert H6; apply Tmono; auto.
+  apply isOrd_trans with o; auto.
+  apply ole_lts; auto.
+Qed.
+
 Lemma REC_step : forall o,
   isOrd o ->
   o \incl ord ->
@@ -464,6 +503,35 @@ Qed.
   Lemma REC_typing : Q ord (REC F ord).
 apply REC_wt.
 Qed.
+
+  Lemma REC_ind : forall P x,
+    Proper (eq_set==>eq_set==>eq_set==>iff) P ->
+    (forall o x, isOrd o -> o \incl ord ->
+     x \in T o ->
+     (forall o' y, lt o' o -> y \in T o' -> P o' y (cc_app (REC F ord) y)) ->
+     P o x (cc_app (F ord (REC F ord)) x)) ->
+    x \in T ord ->
+    P ord x (cc_app (REC F ord) x).
+intros.
+revert x H1; apply isOrd_ind with (2:=oord); intros.
+rewrite (REC_step' y ord H1 oord H2 (fun _ x => x) x); trivial.
+apply H0; trivial.
+intros.
+assert (fcompat (T o') (REC F o') (REC F ord)).
+ apply finc_ext; auto with *.
+  eauto using isOrd_inv.
+
+  intros.
+  apply REC_inv; eauto using isOrd_inv.
+
+  do 2 red; intros.
+  apply (REC_inv ord); auto with *.
+   apply isOrd_trans with ord; auto.
+   apply isOrd_trans with ord; auto.
+rewrite <- (H7 y0); trivial.
+auto.
+Qed.
+
 
   Lemma REC_expand : forall x,
     x \in T ord -> cc_app (REC F ord) x == cc_app (F ord (REC F ord)) x.
