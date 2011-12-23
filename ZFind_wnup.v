@@ -151,6 +151,9 @@ constructor; intros.
   rewrite H3; rewrite H2; reflexivity.
 Qed.
 
+(* We show there is an iso between the intended type (W_Fd)
+   and the encoding (W0.W2 A' B')
+ *)
 Definition trad :=
   W0.WREC (fun o F => cc_lam (TI (W0.W_F A' B') (osucc o))
     (fun w => couple (snd (fst w)) (cc_lam (B' (fst w)) (fun i => cc_app F (cc_app (snd w) i))))).
