@@ -1,5 +1,6 @@
 Require Import TheoryInTerm.
 Require Import GenModel.
+Require Import FOTheory.
 
 Import IZF.
 
@@ -11,7 +12,7 @@ Import ZFnats.
 
 Fixpoint int_fotrm t:=
   match t with
-  | Val i => Ref i
+  | Var i => Ref i
   | Cst_0 => Zero
   | Cst_1 => Succ Zero
   | Df_Add u v => Add (int_fotrm u) (int_fotrm v)
@@ -50,15 +51,15 @@ Lemma fofml_Some : forall f, int_fofml f <> None.
 destruct f; simpl; red; intros; discriminate.
 Qed.
 
-Lemma subst_Some : forall f t, f <> None -> t <> None -> 
-  subst t f <> None.
-destruct f; simpl; red; intros. 
- destruct s; discriminate.
+Lemma int_hyp_nth_fml : forall hyp f n, nth_error hyp n = Some (Some f) ->
+  nth_error (int_hyp hyp) n = Some (int_fofml f).
+induction hyp; destruct n; simpl; intros; [discriminate | discriminate | 
+ injection H; intro Hinj; rewrite Hinj |]; trivial.
 
- elim H; trivial.
+ destruct a; simpl; apply IHhyp; trivial.
 Qed.
 
-Lemma nth_hyp_inthyp : forall hyp n, 
+Lemma int_hyp_nth_trm : forall hyp n, 
   nth_error hyp n = value None ->
   nth_error (int_hyp hyp) n = value T.
 induction hyp; destruct n; simpl; intros; try discriminate.
@@ -72,7 +73,7 @@ Lemma int_trm_N : forall hyp t i, hyp_ok hyp t ->
 unfold hyp_ok; unfold val_ok; induction t; simpl in *; intros.
  assert (n=n\/False). left; trivial.
  specialize H with (n0:=n) (1:=H1).
- generalize (nth_hyp_inthyp _ _ H); intros.
+ generalize (int_hyp_nth_trm _ _ H); intros.
  specialize H0 with (1:=H2). simpl in H0; trivial.
 
  apply zero_typ.
@@ -337,7 +338,7 @@ Qed.
 
 Lemma P_ax_intro5_ex : forall P, eq_term 
   (Impl (int_fofml (subst_fml0 P Cst_0)) (Impl (Fall (Impl (int_fofml P)
-    (int_fofml (subst_fml0 (lift_fml_rec P 1 1) (Df_Add (Val 0) Cst_1)))))
+    (int_fofml (subst_fml0 (lift_fml_rec P 1 1) (Df_Add (Var 0) Cst_1)))))
   (Fall (int_fofml P))))
   (Impl (subst Zero (int_fofml P))
     (Impl (Fall (Impl (int_fofml P)
@@ -373,12 +374,9 @@ Qed.
 Lemma int_correct : forall hyp P, deriv hyp P -> 
   exists p, typ ((int_hyp hyp)) p (int_fofml P).
 induction 1; simpl.
-(*weak*)
- exists (Ref 0). red; simpl; intros.
- unfold val_ok in H.
- assert (nth_error (int_fofml f :: int_hyp hyp) 0 = 
-   value (int_fofml f)); trivial.
- specialize H with (1:=H0). rewrite <- lift_int_lift_fml. trivial. 
+(*hyp*)
+ exists (Ref n); red; simpl; intros. unfold val_ok in H0.
+ rewrite <- lift_int_lift_fml. apply H0. apply int_hyp_nth_fml; trivial.
 
 (*ax_intro*)
 destruct H. 
@@ -494,8 +492,10 @@ destruct IHderiv. exists x. simpl in H0. apply Conj_elim in H0.
 
     elim fofml_Some with (f:=(subst_fml0 f N)); trivial.
 
-  elim subst_Some with (f:=(int_fofml f)) (t:=(int_fotrm N));
-  [apply fofml_Some | apply fotrm_Some | trivial ].
+ Check subst_Some.
+
+  elim subst_Some with (t:=(int_fofml f)) (a:=(int_fotrm N));
+  [apply fofml_Some |  trivial ].
 
 (*exst_elim*)
 destruct IHderiv1, IHderiv2. simpl in H1, H2.

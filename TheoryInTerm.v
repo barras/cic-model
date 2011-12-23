@@ -3,7 +3,6 @@ Require Export GenModel.
 Require Export ZFcoc.
 Require Export ModelZF.
 Require Export List.
-Require Export FOTheory.
 Import IZF.
 
 Module BuildModel := GenModel.MakeModel(CCM).
@@ -245,11 +244,6 @@ red; intros. destruct t.
  rewrite H; reflexivity.
 
  simpl; trivial.
-Qed.
-
-Lemma nth_error_cons : forall A (a:A) l,
-  nth_error (a::l) 0 = Some a.
-trivial.
 Qed.
 
 Definition EQ_trm : term -> term -> term.
@@ -650,7 +644,7 @@ apply Fall_intro.
     symmetry. apply V.cons_ext; try reflexivity.
    case_eq (lift 1 P2); intros.
     rewrite <- H4. unfold val_ok in H1.
-    generalize (nth_error_cons _ P1 (T::T::e)); intros.
+    assert (nth_error (P1::T::T::e) 0 = Some P1); trivial.
     assert (nth_error (P1::T::T::e) 1 = Some T) as H1T; trivial.
     assert (nth_error (P1::T::T::e) 2 = Some T) as H2T; trivial.
     generalize (H1 _ _ H5); intro H0P.
@@ -883,29 +877,5 @@ apply Impl_intro.
       do 3 red; intros. apply app_ext; trivial.
        apply app_ext; try reflexivity; trivial.
 Qed.
-
-   
-
-  
-  
-
- 
-
-
-      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

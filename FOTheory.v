@@ -3,14 +3,14 @@ Require Export Omega.
 Require Export List.
 
 Inductive foterm :=
-| Val : nat -> foterm
+| Var : nat -> foterm
 | Cst_0 : foterm
 | Cst_1 : foterm
 | Df_Add : foterm -> foterm -> foterm.
 
 Fixpoint free_var_fotrm t k : list nat :=
   match t with
-    | Val n => 
+    | Var n => 
       match le_gt_dec k n with
         | left _ => n::nil
         | right _ => nil
@@ -22,10 +22,10 @@ Fixpoint free_var_fotrm t k : list nat :=
 
 Fixpoint lift_trm_rec t n k:=
   match t with
-    | Val i => 
+    | Var i => 
       match le_gt_dec k i with
-        | left _ => Val (i+n)
-        | right _ => Val i
+        | left _ => Var (i+n)
+        | right _ => Var i
       end
     | Cst_0 => Cst_0
     | Cst_1 => Cst_1
@@ -36,11 +36,11 @@ Definition lift_trm t n := lift_trm_rec t n 0.
 
 Fixpoint subst_trm_rec M N n:= 
   match M with
-    | Val i =>
+    | Var i =>
       match lt_eq_lt_dec n i with
-        | inleft (left _) => Val (pred i)
+        | inleft (left _) => Var (pred i)
         | inleft (right _) => lift_trm N n
-        | inright _ => Val i
+        | inright _ => Var i
       end
     | Cst_0 => Cst_0
     | Cst_1 => Cst_1
@@ -50,7 +50,7 @@ Fixpoint subst_trm_rec M N n:=
 Definition subst_trm M N := subst_trm_rec M N 0.
 
 Lemma subst_bound_trm : forall t m, 
-  subst_trm_rec (lift_trm_rec t 1 (S m)) (Val 0) m = t.
+  subst_trm_rec (lift_trm_rec t 1 (S m)) (Var 0) m = t.
 induction t; intros; trivial.
  unfold lift_trm_rec. destruct (Compare_dec.le_gt_dec (S m) n).
   simpl. destruct (Compare_dec.lt_eq_lt_dec m (n + 1)).
@@ -120,7 +120,7 @@ Fixpoint subst_fml f N n :=
 Definition subst_fml0 f N := subst_fml f N 0.
 
 Lemma subst_bound_fml : forall P m,
-  P = subst_fml (lift_fml_rec P 1 (S m)) (Val 0) m.
+  P = subst_fml (lift_fml_rec P 1 (S m)) (Var 0) m.
 induction P; simpl; intros; trivial.
  do 2 rewrite subst_bound_trm; trivial.
  
@@ -138,15 +138,15 @@ induction P; simpl; intros; trivial.
 Qed.
 
 Definition P_ax f :=
-  f = (fall (neg (eq_fotrm Cst_0 (Df_Add (Val 0) Cst_1))))      \/
-  f = (fall (fall (implf (eq_fotrm (Df_Add (Val 0) Cst_1) 
-    (Df_Add (Val 1) Cst_1)) (eq_fotrm (Val 0) (Val 1)))))       \/
-  f = (fall (eq_fotrm (Val 0) (Df_Add (Val 0) Cst_0)))          \/
-  f = (fall(fall (eq_fotrm (Df_Add (Df_Add (Val 0) (Val 1)) Cst_1) 
-                   (Df_Add (Val 0) (Df_Add (Val 1) (Cst_1)))))) \/
+  f = (fall (neg (eq_fotrm Cst_0 (Df_Add (Var 0) Cst_1))))      \/
+  f = (fall (fall (implf (eq_fotrm (Df_Add (Var 0) Cst_1) 
+    (Df_Add (Var 1) Cst_1)) (eq_fotrm (Var 0) (Var 1)))))       \/
+  f = (fall (eq_fotrm (Var 0) (Df_Add (Var 0) Cst_0)))          \/
+  f = (fall(fall (eq_fotrm (Df_Add (Df_Add (Var 0) (Var 1)) Cst_1) 
+                   (Df_Add (Var 0) (Df_Add (Var 1) (Cst_1)))))) \/
   exists g, f = (implf (subst_fml0 g Cst_0) 
     (implf (fall (implf g 
-      (subst_fml0 (lift_fml_rec g 1 1) (Df_Add (Val 0) Cst_1)))) 
+      (subst_fml0 (lift_fml_rec g 1 1) (Df_Add (Var 0) Cst_1)))) 
     (fall g))).
 
 
@@ -154,7 +154,8 @@ Definition hyp_ok (hyp:list (option foformula)) t :=
   forall n, In n (free_var_fotrm t 0) -> nth_error hyp n = Some None.
 
 Inductive deriv : list (option foformula) -> foformula -> Prop :=
-| weak : forall f hyp, deriv ((Some f)::hyp) (lift_fml f 1)
+| hyp_judge : forall f hyp n, nth_error hyp n = Some (Some f) ->
+  deriv hyp (lift_fml f (S n))
 | ax_intro : forall f hyp, P_ax f -> deriv hyp f
 | true_intro : forall hyp, deriv hyp TF
 | false_elim : forall hyp f, deriv hyp BF -> deriv hyp f
