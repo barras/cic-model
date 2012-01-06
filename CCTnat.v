@@ -1,6 +1,6 @@
-Require Import TheoryInTerm.
-Require Import GenModel.
+Require Import Explicit_sub.
 Require Import FOTheory.
+Require Import basic1.
 
 Import IZF.
 
@@ -507,26 +507,67 @@ exists prf_term. apply Exst_elim with (t1:=x) (t2:=x0) (A:=int_fofml f); trivial
  rewrite lift_int_lift_fml; trivial.
 Qed.
 
-Print Assumptions int_correct.
-
- 
- 
 
 
-      
+Fixpoint const_env n := 
+  match n with
+    | 0 => T :: nil
+    | S m => T :: (const_env m)
+  end.
 
+Lemma const_env_spec : forall m n t, 
+  nth_error (const_env n) m = value t ->
+  m <= n /\ t = T.
+induction m; destruct n; simpl; intros.
+ injection H; intros; split; [|subst t]; trivial.
 
+ injection H; intros; split; [omega |subst t]; trivial.
 
+ destruct m; simpl in H; discriminate.
 
+ specialize IHm with (1:=H). destruct IHm.
+ split; [omega | trivial].
+Qed.
 
+Lemma eq_ext : forall e t1 t2 s s',
+  eq_typ (const_env (Peano.max (max_var t1) (max_var t2)))
+  (int_fotrm t1) (int_fotrm t2) ->
+  eq_fosub (S (Peano.max (max_var t1) (max_var t2))) e s s' ->
+  eq_typ e (app_esub s (int_fotrm t1)) (app_esub s' (int_fotrm t2)).
+do 2 red; simpl; intros.
+do 2 red in H; simpl.
+unfold eq_fosub in H0.
+assert (val_ok (const_env (Peano.max (max_var t1) (max_var t2))) (esub_conv s i)).
+ unfold val_ok. do 2 red; intros. apply const_env_spec in H2.
+ destruct H2; subst T; simpl.
+ assert (n < S (Peano.max (max_var t1) (max_var t2))) by omega.
+ specialize H0 with (1:=H3); destruct H0 as (Heqtyp, (Htyps, Htyps')).
+ do 2 red in Htyps; simpl in Htyps; specialize Htyps with (1:=H1). apply Htyps.
 
+specialize H with (1:=H2). rewrite H.
+replace (fun k : nat => i k) with i; trivial. clear H H2.
 
+induction t2; simpl; try reflexivity.
+ specialize H0 with (n0:=n). destruct H0.
+  rewrite succ_max_distr. apply max_split2. unfold max_var; simpl; omega.
+  do 2 red in H; simpl in H; apply H; trivial.
 
+ apply NATREC_morph.
+  apply IHt2_1. intros. apply H0.
+  rewrite succ_max_distr. rewrite succ_max_distr in H. 
+  apply max_comb in H. destruct H.
+   apply max_split1; trivial.
 
+   apply max_split2. unfold max_var; simpl.
+   rewrite succ_max_distr. apply max_split1. trivial.
 
+  do 2 red; intros. rewrite H2; reflexivity.
 
+  apply IHt2_2. intros. apply H0.
+  rewrite succ_max_distr. rewrite succ_max_distr in H. 
+  apply max_comb in H. destruct H.
+   apply max_split1; trivial.
 
-
-
-
-
+   apply max_split2. unfold max_var; simpl.
+   rewrite succ_max_distr. apply max_split2. trivial.
+Qed.

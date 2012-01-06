@@ -78,6 +78,16 @@ induction t; intros; trivial.
  simpl. rewrite IHt1, IHt2; trivial.
 Qed.
 
+Fixpoint max_var_rec (t:foterm) max_v :=
+  match t with
+    | Var n => max max_v n
+    | Cst_0 => max_v
+    | Cst_1 => max_v
+    | Df_Add m n => max (max_var_rec m max_v) (max_var_rec n max_v) 
+  end.
+
+Definition max_var t := max_var_rec t 0.
+
 Inductive foformula :=
 | eq_fotrm : foterm -> foterm -> foformula
 | TF   : foformula
