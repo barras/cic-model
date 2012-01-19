@@ -972,8 +972,6 @@ Existing Instance cons_morph'.
 Existing Instance shift_morph.
 Existing Instance lams_morph.
 
-Admitted.
-
 (**)
 Module LCeq.
   Definition t := Lc.term.
@@ -2528,9 +2526,3 @@ inversion_clear H1.
  inversion_clear H2.
  inversion H1.
 Qed.
-
-Admitted.
-
-Admitted.
-
- 
