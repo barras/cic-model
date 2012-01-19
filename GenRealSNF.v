@@ -731,8 +731,8 @@ assert (isunit : cc_prod (El dom) (fun x => El (F x)) == power empty).
 refine (let iscan := @is_cand_pi' dom (fun _ => empty) F _ in _).
  intros.
  rewrite alltrue; trivial.
- apply power_intro; auto.*) Admitted.
-(*exists (exist _ _ iscan : SAT).
+ apply power_intro; auto. 
+exists (exist _ _ iscan : SAT).
 unfold prod, mkProp.
 apply mkTy_morph; intros; auto.
 simpl.
@@ -748,7 +748,7 @@ rewrite alltrue in H4; trivial.
 apply empty_ext; red; intros.
 specialize power_elim with (1:=H4) (2:=H5).
 apply empty_ax.
-Qed.*)
+Qed.
 
 Existing Instance eqX_equiv.
 Existing Instance in_ext.
@@ -775,7 +775,7 @@ apply prod_intro; intros.
   apply inSAT_val with empty (mkProp S); auto with *.
   rewrite mkProp_def; split; auto with *.
   apply SAT_daimon1; trivial.
-Qed.*)Admitted.
+Qed.
 
 End MM.
 (*Declare Module MM : Model.*)
@@ -975,8 +975,6 @@ Existing Instance cons_morph.
 Existing Instance cons_morph'.
 Existing Instance shift_morph.
 Existing Instance lams_morph.
-
-Admitted.
 
 (**)
 Module LCeq.
@@ -2376,7 +2374,7 @@ destruct (red1_dec x).
 
  exists x; auto with coc.
 Qed.
-(*
+
 Definition Neu : CR := fun t =>
   Lc.sn t /\ exists2 u, Lc.red t u & nf u /\ neutral u.
 
@@ -2412,7 +2410,7 @@ split; intros.
   exists t; auto with *.
 Qed.
 
-Lemma nf_neutral_open : forall t,
+(*Lemma nf_neutral_open : forall t,
   nf t ->
   neutral t ->
   exists k, Lc.occur k t.
@@ -2558,6 +2556,4 @@ inversion_clear H1.
 
  inversion_clear H2.
  inversion H1.
-Qed.
-*)Admitted.
-Admitted.
+Qed.*)
