@@ -88,7 +88,8 @@ Qed.
   Definition snSAT : SAT := exist _ sn cand_sn.
 
   Lemma snSAT_intro : forall t, sn t -> inSAT t snSAT.
-Proof (fun _ h => h).
+do 3 red; trivial.
+Qed.
 
   Definition prodSAT (X Y:SAT) : SAT.
 exists (Arr (proj1_sig X) (proj1_sig Y)).
