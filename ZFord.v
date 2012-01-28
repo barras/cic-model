@@ -617,7 +617,6 @@ elim lt_antirefl with o; trivial.
 Qed.
 
 
-
 Lemma isOrd_inter2 : forall x y,
   isOrd x -> isOrd y -> isOrd (inter2 x y).
 intros.
@@ -1575,6 +1574,17 @@ apply isOrd_plump with x0; trivial.
  apply isOrd_osup2; eauto using isOrd_inv.
 
  apply osup2_lub; eauto using isOrd_inv.
+Qed.
+
+Lemma isDir_succ : forall o,
+  isOrd o -> isDir (osucc o).
+red; intros.
+exists (osup2 x y).
+ apply osup2_lt; auto.
+
+ split.
+  apply osup2_incl1; eauto using isOrd_inv.
+  apply osup2_incl2; eauto using isOrd_inv.
 Qed.
 
 (**)

@@ -516,6 +516,28 @@ apply prd_sup_lub; intros; auto.
   revert H5; apply Tmono; auto.
 Qed.
 
+Lemma REC_step0 : forall o o',
+  isOrd o ->
+  isOrd o' ->
+  o \in o' ->
+  o' \incl ord ->
+  fcompat (T (osucc o)) (REC F o') (F o (REC F o)).
+red; intros.
+destruct REC_inv with o'; trivial.
+do 2 red in H5.
+transitivity (cc_app (F o' (REC F o')) x).
+ apply REC_step; auto.
+ apply Tmono with (o':=o); auto.
+
+ apply H5.
+  apply lt_osucc; trivial.
+  apply isOrd_trans with o'; auto.
+  rewrite inter2_def; split; trivial.
+  apply Tmono with (o':=o); auto.
+  apply isOrd_trans with o'; auto.
+Qed.
+
+
 Section REC_Eqn.
 
   Lemma REC_wt : is_cc_fun (T ord) (REC F ord) /\ Q ord (REC F ord).
@@ -554,6 +576,54 @@ rewrite <- (H7 y0); trivial.
 auto.
 Qed.
 
+  Lemma REC_ext G :
+    is_cc_fun (T ord) G ->
+    (forall o', o' \in ord ->
+     fcompat (T (osucc o')) G (F o' (cc_lam (T o') (cc_app G)))) ->
+    REC F ord == G.
+intros.
+rewrite (cc_eta_eq' _ _ H).
+apply fcompat_typ_eq with (T ord); auto.
+ apply REC_inv; auto with *.
+
+ apply is_cc_fun_lam.
+ admit.
+cut ((forall z, z \in ord -> Ty z (cc_lam (T z) (cc_app G))) /\
+     fcompat (T ord) (cc_lam (T ord) (cc_app G)) (REC F ord)).
+ destruct 1; red; intros.
+ symmetry; auto.
+apply isOrd_ind with (2:=oord); intros.
+assert (QG: forall z, z \in y -> Ty z (cc_lam (T z) (cc_app G))).
+ intros.
+ split;[|split].
+  apply isOrd_inv with y; trivial.
+
+  apply is_cc_fun_lam.
+  do 2 red; intros; apply cc_app_morph; auto with *.
+
+  apply Qm with z (REC F z); eauto using isOrd_inv with *.
+   red; intros; symmetry.
+   apply H3; trivial.
+ 
+   apply REC_inv; eauto using isOrd_inv.
+split; trivial.
+red; intros.
+rewrite cc_beta_eq; trivial.
+ 2:admit.
+rewrite Tcont in H4; trivial.
+rewrite sup_ax in H4.
+ 2:do 2 red; intros; apply Tm; apply osucc_morph; trivial.
+destruct H4.
+rewrite (H0 _ (H2 _ H4) x); trivial.
+rewrite (fun h => REC_step0 x0 y h H1 H4 H2 x); trivial.
+2:eauto using isOrd_inv.
+apply Firrel; auto.
+ red; auto.
+
+ apply REC_inv; eauto using isOrd_inv.
+
+ apply H3; trivial.
+Qed.
 
   Lemma REC_expand : forall x,
     x \in T ord -> cc_app (REC F ord) x == cc_app (F ord (REC F ord)) x.

@@ -270,6 +270,28 @@ apply eq_intro; intros.
   exists n; reflexivity.
 Qed.
 
+Lemma NATCASE_mt :
+  NATCASE empty == empty.
+unfold NATCASE.
+apply empty_ext; red; intros.
+apply union_elim in H; destruct H.
+apply union2_elim in H0; destruct H0.
+ apply subset_elim2 in H0; destruct H0.
+ (* ~ empty == ZERO *)
+ unfold ZERO, inl, ZFpairs.couple in H1.
+ apply empty_ax with (singl zero).
+ rewrite H1.
+ auto.
+
+ apply subset_elim2 in H0; destruct H0.
+ destruct H1.
+ (* ~ empty == SUCC _ *)
+ unfold SUCC, inr, ZFpairs.couple in H1.
+ apply empty_ax with (singl (succ zero)).
+ rewrite H1.
+ auto.
+Qed.
+
 Lemma NATCASE_typ :
   forall (P:set->set) o,
   morph1 P ->
@@ -511,6 +533,17 @@ apply REC_wt with (T:=NATi) (Q:=Q); auto.
  apply NATi_cont.
 Qed.
 
+  Lemma NATREC_ext G :
+    is_cc_fun (NATi ord) G ->
+    (forall o', o' \in ord ->
+     fcompat (NATi (osucc o')) G (F o' (ZFcoc.cc_lam (NATi o') (ZFcoc.cc_app G)))) ->
+    NATREC ord == G.
+intros.
+apply REC_ext with (T:=NATi) (Q:=Q); auto.
+ apply TI_morph.
+
+ apply NATi_cont; trivial.
+Qed.
 
   Lemma NATREC_expand : forall n,
     n \in NATi ord -> ZFcoc.cc_app (NATREC ord) n == ZFcoc.cc_app (F ord (NATREC ord)) n.
@@ -521,8 +554,123 @@ apply REC_expand with (T:=NATi) (Q:=Q); auto.
  apply NATi_cont.
 Qed.
 
+  Lemma NATREC_eqn :
+    NATREC ord == ZFcoc.cc_lam (NATi ord) (ZFcoc.cc_app (F ord (NATREC ord))).
+apply REC_eqn with (Q:=Q); auto with *.
+apply NATi_cont.
+Qed.
+
 End Recursor.
 
+(*
+Lemma NATREC_morph_dom :
+  forall f1 f2 o1 o2 U, isOrd o1 ->
+  o1 == o2 ->
+  (forall x, isOrd x -> x \incl o1 ->
+   (forall y y', lt y x -> y == y' ->
+    forall f f', f \in ZFcoc.cc_prod (NATi y) (U y) -> f == f' ->
+    f1 y f == f2 y' f')) ->
+  NATREC f1 o1 == NATREC f2 o2.
+intros.
+rewrite <- H0.
+clear o2 H0.
+apply isOrd_ind with (2:=H); intros.
+unfold NATREC.
+ rewrite TIO_eq; trivial.
+ rewrite TIO_eq; trivial.
+ assert (forall o, lt o y -> f1 o (NATREC f1 o) == f2 o (NATREC f2 o)).
+  intros.
+
+
+
+  admit.
+ apply eq_intro; intros.
+  rewrite sup_ax in H5.
+  2:admit.
+  rewrite sup_ax.
+  2:admit.
+  destruct H5.
+  exists x; trivial.
+  unfold NATREC in H4.
+  rewrite <- H4; auto.
+
+  rewrite sup_ax in H5.
+  2:admit.
+  rewrite sup_ax.
+  2:admit.
+  destruct H5.
+  exists x; trivial.
+  unfold NATREC in H4.
+  rewrite H4; auto.
+admit.
+admit.
+
+  apply sup_elim in H5.
+
+ apply sup_morph_raw; auto with *.
+ red; intros.
+
+
+ rewrite NATREC_eqn.
+ symmetry.
+ rewrite NATREC_eqn.
+ symmetry.
+ apply ZFcoc.cc_lam_ext; intros; auto with *.
+ red; intros.
+
+
+*)
+
+(*
+Lemma NATREC_morph :
+  forall f1 f2,
+  (eq_set ==> eq_set ==> eq_set)%signature f1 f2 ->
+  forall o1 o2, isOrd o1 ->
+  o1 == o2 ->
+  NATREC f1 o1 == NATREC f2 o2.
+intros.
+unfold NATREC.
+unfold REC.
+unfold TR.
+apply ZFrepl.uchoice_morph.
+ apply TR_rel_choice_pred; auto.
+  admit.
+ intros.
+ apply sup_morph; auto with *.
+ red; intros.
+ assert (morph2 f1).
+  do 3 red; intros.
+  transitivity (f2 y y0).
+   apply H; trivial.
+
+   symmetry; apply H; reflexivity.
+ apply H7; trivial.
+ apply H4; trivial.
+ rewrite H1; reflexivity.
+
+ intros.
+ unfold TR_rel.
+ split; intros.
+  rewrite <- H1.
+  apply H2 with (P:=P); intros; auto.
+  apply H4 in H6; auto.
+  revert H6; apply iff_impl.
+  apply H3; auto with *.
+  apply sup_morph; auto with *.
+  red; intros.
+  symmetry; apply H; symmetry; trivial.
+  apply H5; trivial.
+
+  rewrite H1.
+  apply H2 with (P:=P); intros; auto.
+  apply H4 in H6; auto.
+  revert H6; apply iff_impl.
+  apply H3; auto with *.
+  apply sup_morph; auto with *.
+  red; intros.
+  apply H; trivial.
+  apply H5; trivial.
+*)
 
 Instance NATREC_morph :
   Proper ((eq_set==>eq_set==>eq_set)==>eq_set==>eq_set) NATREC.

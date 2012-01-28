@@ -1082,5 +1082,340 @@ apply in_int_intro; trivial.
  rewrite <- H0; trivial.
 Qed.
 
+(* "Untyped" Reduction *)
+Require Import Relations.
+
+Lemma lc_red_trans_app_l M M' N :
+  clos_trans _ Lc.red1 M M' ->
+  clos_trans _ Lc.red1 (Lc.App M N) (Lc.App M' N).
+induction 1; eauto using t_trans.
+apply t_step.
+apply Lc.app_red_l; trivial.
+Qed.
+
+Lemma lc_red_trans_app_r M N N' :
+  clos_trans _ Lc.red1 N N' ->
+  clos_trans _ Lc.red1 (Lc.App M N) (Lc.App M N').
+induction 1; eauto using t_trans.
+apply t_step.
+apply Lc.app_red_r; trivial.
+Qed.
+
+Lemma lc_red_trans_abs M M' :
+  clos_trans _ Lc.red1 M M' ->
+  clos_trans _ Lc.red1 (Lc.Abs M) (Lc.Abs M').
+induction 1; eauto using t_trans.
+apply t_step.
+apply Lc.abs_red; trivial.
+Qed.
+
+Lemma lc_red_K2 M N :
+  clos_trans _ Lc.red1 (Lc.App2 Lc.K M N) M.
+apply t_trans with (Lc.App (Lc.Abs (Lc.lift 1 M)) N).
+ apply t_step.
+ apply Lc.app_red_l.
+ apply Lc.red1_beta.
+ reflexivity.
+
+ apply t_step.
+ apply Lc.red1_beta.
+ unfold Lc.subst; rewrite Lc.simpl_subst; auto.
+ rewrite Lc.lift0; trivial.
+Qed.
+
+
+Definition red_term M N :=
+  forall j, clos_trans _ Lc.red1 (tm j M) (tm j N).
+
+Instance red_term_morph : Proper (eq_trm ==> eq_trm ==> iff) red_term.
+apply morph_impl_iff2; auto with *.
+do 4 red; intros.
+red; intros.
+rewrite <- H; rewrite <- H0; auto.
+Qed.
+
+Lemma red_term_trans M1 M2 M3 :
+  red_term M1 M2 -> red_term M2 M3 -> red_term M1 M3.
+unfold red_term; intros.
+specialize H with j.
+specialize H0 with j.
+apply t_trans with (tm j M2); trivial.
+Qed.
+
+Lemma red_term_app_l M M' N :
+  red_term M M' ->
+  red_term (App M N) (App M' N).
+unfold red_term; intros.
+specialize H with j.
+apply lc_red_trans_app_l; trivial.
+Qed.
+
+
+Lemma red_term_app_r M N N' :
+  red_term N N' ->
+  red_term (App M N) (App M N').
+unfold red_term; intros.
+specialize H with j.
+apply lc_red_trans_app_r; trivial.
+Qed.
+
+Lemma red_term_abs_l M M' N :
+  red_term M M' ->
+  red_term (Abs M N) (Abs M' N).
+unfold red_term; intros.
+specialize H with j.
+simpl.
+apply lc_red_trans_app_r; trivial.
+Qed.
+
+Lemma red_term_abs_r M N N' :
+  red_term N N' ->
+  red_term (Abs M N) (Abs M N').
+unfold red_term; intros.
+specialize H with (ilift j).
+simpl.
+apply lc_red_trans_app_l; trivial.
+apply lc_red_trans_app_r; trivial.
+apply lc_red_trans_abs; trivial.
+Qed.
+
+
+Lemma red_term_prod_l M M' N :
+  red_term M M' ->
+  red_term (Prod M N) (Prod M' N).
+unfold red_term; intros.
+specialize H with j.
+simpl.
+apply lc_red_trans_app_l; trivial.
+apply lc_red_trans_app_r; trivial.
+Qed.
+
+Lemma red_term_prod_r M N N' :
+  red_term N N' ->
+  red_term (Prod M N) (Prod M N').
+unfold red_term; intros.
+specialize H with (ilift j).
+simpl.
+apply lc_red_trans_app_r; trivial.
+apply lc_red_trans_abs; trivial.
+Qed.
+
+Lemma red1_beta T M N :
+  red_term (App (Abs T M) N) (subst N M).
+red; simpl; intros.
+eapply t_trans.
+ eapply lc_red_trans_app_l.
+ eapply lc_red_K2.
+
+ apply t_step.
+ apply Lc.red1_beta.
+ unfold Lc.subst; rewrite <- tm_substitutive.
+ destruct M; simpl; trivial.
+ rewrite I.lams0.
+ unfold I.shift; simpl.
+ apply itm_morph.
+ do 2 red; intros.
+ destruct a; simpl.
+  rewrite Lc.lift0; trivial.
+
+  rewrite Lc.simpl_subst; auto.
+  rewrite Lc.lift0; trivial.
+Qed.
+
+Lemma red_sigma_app N A B k :
+  eq_trm (subst_rec N k (App A B)) (App (subst_rec N k A) (subst_rec N k B)).
+red; simpl; intros.
+split.
+ red; intros.
+ apply app_ext.
+  rewrite int_subst_rec_eq.
+  rewrite H; reflexivity.
+
+  rewrite int_subst_rec_eq.
+  rewrite H; reflexivity.
+
+ red; intros.
+ do 2 rewrite tm_subst_rec_eq.
+ rewrite H; trivial.
+Qed.
+
+Lemma cross_binder k x y i :
+  Lc.lift 1 x = y ->
+  eq_intt (ilift (I.lams k (I.cons x) i)) (I.lams (S k) (I.cons y) (ilift i)).
+do 2 red; intros.
+destruct a; simpl.
+ reflexivity.
+
+ unfold I.lams; simpl.
+ destruct (le_gt_dec k a); simpl; trivial.
+ destruct (a - k); simpl; trivial.
+Qed.
+ 
+
+
+Lemma red_sigma_abs N A B k :
+  eq_trm (subst_rec N k (Abs A B)) (Abs (subst_rec N k A) (subst_rec N (S k) B)).
+red; simpl; intros.
+split.
+ red; intros.
+ apply lam_ext.
+  rewrite int_subst_rec_eq.
+  rewrite H; reflexivity.
+
+  red; intros.
+  rewrite int_subst_rec_eq.
+  rewrite <- V.cons_lams.
+   rewrite H1.
+   rewrite H.
+   reflexivity.
+
+   do 2 red; intros.
+   rewrite H2; reflexivity.
+
+ red; intros.
+ apply f_equal2.
+  apply f_equal.
+  rewrite tm_subst_rec_eq.
+  apply tm_morph; auto with *.
+  rewrite H.
+  apply cross_binder.
+  unfold I.shift, ilift; simpl.
+  unfold Lc.lift; rewrite <- tm_liftable; trivial.
+
+  rewrite tm_subst_rec_eq.
+  rewrite H; auto.
+Qed.
+
+Lemma red_sigma_prod N A B k :
+  eq_trm (subst_rec N k (Prod A B)) (Prod (subst_rec N k A) (subst_rec N (S k) B)).
+red; simpl; intros.
+split.
+ red; intros.
+ apply prod_ext.
+  rewrite int_subst_rec_eq.
+  rewrite H; reflexivity.
+
+  red; intros.
+  rewrite int_subst_rec_eq.
+  rewrite <- V.cons_lams.
+   rewrite H1.
+   rewrite H.
+   reflexivity.
+
+   do 2 red; intros.
+   rewrite H2; reflexivity.
+
+ red; intros.
+ apply f_equal2.
+  rewrite tm_subst_rec_eq.
+  rewrite H; auto.
+
+  apply f_equal.
+  rewrite tm_subst_rec_eq.
+  apply tm_morph; auto with *.
+  rewrite H.
+  apply cross_binder.
+  unfold I.shift, ilift; simpl.
+  unfold Lc.lift; rewrite <- tm_liftable; trivial.
+Qed.
+
+Lemma red_sigma_var_eq N k :
+  N <> kind ->
+  eq_trm (subst_rec N k (Ref k)) (lift k N).
+unfold subst_rec; simpl.
+destruct N; simpl.
+2:destruct 1; trivial.
+intros _.
+split; red; intros.
+ unfold V.lams, V.shift; simpl.
+ destruct (le_gt_dec k k).
+ 2:omega.
+ replace (k-k) with 0; auto with *.
+ simpl V.cons.
+ apply iint_morph.
+ do 2 red; intros.
+ replace (a-0) with a; auto with *.
+
+ unfold I.lams; simpl.
+ destruct (le_gt_dec k k).
+ 2:omega.
+ replace (k-k) with 0; auto with *.
+ simpl I.cons.
+ apply itm_morph.
+ do 2 red; intros.
+ unfold I.shift; simpl.
+ replace (a-0) with a; auto with *.
+Qed.
+
+Lemma red_sigma_var_lt N k n :
+  n < k ->
+  eq_trm (subst_rec N k (Ref n)) (Ref n).
+unfold subst_rec; simpl; intros.
+split; red; intros.
+ unfold V.lams, V.shift; simpl.
+ destruct (le_gt_dec k n); auto.
+ omega.
+
+ unfold I.lams, I.shift; simpl.
+ destruct (le_gt_dec k n); auto.
+ omega.
+Qed.
+
+Lemma red_sigma_var_gt N k n :
+  k <= n ->
+  eq_trm (subst_rec N k (Ref (S n))) (Ref n).
+unfold subst_rec; simpl; intros.
+split; red; intros.
+ unfold V.lams; simpl.
+ destruct (le_gt_dec k (S n)); simpl.
+  unfold V.cons, V.shift; simpl.
+  destruct k; simpl; auto.
+  replace (n-k) with (S (n-S k)).
+   replace (S (k+(n- S k))) with n; auto.
+   omega.
+  omega.
+ omega.
+
+ unfold I.lams, I.shift, I.cons; simpl.
+ destruct (le_gt_dec k (S n)); simpl.
+  destruct k; simpl; auto.
+  replace (n-k) with (S (n-S k)).
+   replace (S (k+(n- S k))) with n; auto.
+   omega.
+  omega.
+ omega.
+Qed.
+
+
+Lemma simul M :
+  Lc.sn M ->
+  forall j M', M = tm j M' ->
+  Acc (transp _ red_term) M'.
+intros snM.
+Require Import Transitive_Closure.
+elim (Acc_clos_trans _ _ _ snM); clear snM; intros.
+constructor; intros.
+red in H2.
+assert (redM' := H2 j).
+assert (clos_trans _ (transp _ Lc.red1) (tm j y) x).
+ rewrite H1.
+ clear H1 H2.
+ elim redM'; intros.
+  apply t_step; trivial.
+
+  apply t_trans with y0; trivial.
+apply H0 with (tm j y) j; trivial.
+Qed.
+
+Lemma model_strong_normalization e M T :
+  wf e ->
+  typ e M T ->
+  Acc (transp _ red_term) M.
+intros.
+destruct typ_sn with (1:=H) (2:=H0) as (j,?).
+apply simul with (1:=H1) (2:=eq_refl).
+Qed.
+
+
 End MakeModel.
 

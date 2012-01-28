@@ -704,6 +704,8 @@ apply sn_tm in sn_j; trivial.
 Qed.
 
 (* Print the assumptions made to derive strong normalization of CC:
-   the axioms of ZF.
+   the axioms of ZF. (In fact we don't need full replacement, only the
+   functional version, so we should be able to have the SN theorem without
+   assumption.)
  *)
 Print Assumptions strong_normalization.

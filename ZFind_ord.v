@@ -143,7 +143,6 @@ End IterationOrd.
 
 Hint Resolve ORDfun_ext.
 
-
 Require Import ZFind_w.
 Definition ORDf_clos :=
   let A := NATf (NATf empty) in
@@ -179,10 +178,232 @@ apply func_cont_gen; auto. (* uses boundo *)
 
 Section OrdConvergence.
 
+(*
+  Let o := hartog_succ NAT.
+
+Lemma boundo :
+    forall F,
+    ext_fun NAT F -> 
+    (forall n, n \in NAT -> lt (F n) o) ->
+    lt (sup NAT F) o.
+intros.
+apply hartog_bound; trivial.
+Qed.
+
+Lemma zer_h : zero \in o.
+unfold o, hartog_succ.
+rewrite sup_ax.
+2:admit.
+exists empty.
+ apply subset_intro.
+  unfold rel; apply power_intro; intros.
+  elim empty_ax with z; trivial.
+
+  constructor; intros.
+  red in H.
+  elim empty_ax with (1:=H).
+
+ unfold order_type.
+ rewrite sup_ax.
+ 2:apply ot_ext; reflexivity.
+ exists ZERO.
+  apply ZERO_typ.
+
+  unfold osucc; apply subset_intro; auto.
+  apply power_intro; intros.
+  elim empty_ax with z; trivial.
+Qed.
+
+Lemma limo : limitOrd o.
+split.
+ apply isOrd_hartog.
+intros.
+unfold o, hartog_succ in *.
+rewrite sup_ax in H|-*.
+2:admit.
+2:admit.
+destruct H as (R,woR,otR).
+Require Import ZFpairs.
+pose (R' :=
+   union2
+    (replf R (fun p => couple (SUCC (fst p)) (SUCC (snd p)))) (* shift R *)
+    (replf NAT (fun n => couple (SUCC n) ZERO))). (* put 0 above all elements of R *)
+assert (Rax: forall y z, rel_app R' y z <->
+  exists2 y', y == SUCC y' /\ y' \in NAT &
+  (exists2 z', z==SUCC z' & rel_app R y' z') \/ z == ZERO).
+ split; intros.
+  apply union2_elim in H; destruct H.
+   rewrite replf_ax in H.
+   2:admit.
+   destruct H.
+   apply couple_injection in H0; destruct H0.
+   exists (fst x0).
+    split; trivial.
+    apply fst_typ with NAT.
+    apply power_elim with R; trivial.
+    apply subset_elim1 in woR; trivial.
+   left.
+   exists (snd x0); trivial.
+   red; rewrite <- (@surj_pair x0 NAT NAT); trivial.
+   apply power_elim with R; trivial.
+   apply subset_elim1 in woR; trivial.
+
+   rewrite replf_ax in H.
+   2:admit.
+   destruct H.
+   apply couple_injection in H0; destruct H0.
+   exists x0; auto.
+
+  destruct H as (y',(?,?),[(z',?,?)|?]).
+   apply union2_intro1.
+   apply replf_intro with (couple y' z'); auto.
+    admit.
+    rewrite fst_def; rewrite snd_def.
+    rewrite H; rewrite H1; reflexivity.
+
+   apply union2_intro2.
+   apply replf_intro with y'; auto.
+    admit.
+    rewrite H; rewrite H1; reflexivity.
+assert (R' \in wo NAT).
+ apply subset_intro.
+Lemma union2_rel : forall A B r1 r2,
+  r1 \in rel A B -> r2 \in rel A B -> union2 r1 r2 \in rel A B.
+intros.
+apply power_intro; intros.
+apply union2_elim in H1; destruct H1.
+ apply power_elim with r1; trivial.
+ apply power_elim with r2; trivial.
+Qed.
+  (* REL *)
+  apply union2_rel.
+   apply power_intro; intros.
+   rewrite replf_ax in H.
+   2:admit.
+   destruct H.
+   rewrite H0.
+   apply couple_intro.
+    apply SUCC_typ.
+    apply fst_typ with NAT.
+    apply power_elim with R; trivial.
+    apply subset_elim1 in woR; trivial.
+
+    apply SUCC_typ.
+    apply snd_typ with NAT.
+    apply power_elim with R; trivial.
+    apply subset_elim1 in woR; trivial.
+
+   apply power_intro; intros.
+   rewrite replf_ax in H.
+   2:admit.
+   destruct H.
+   rewrite H0.
+   apply couple_intro.
+    apply SUCC_typ; trivial.
+    apply ZERO_typ.
+
+ (* WO *)
+ red; intros.
+ assert (forall n y, y == SUCC n -> Acc (rel_app R') y). 
+  intro n.
+  induction (wo_def2 _ _ woR n).
+  constructor; intros.
+  rewrite Rax in H2; destruct H2 as (y',(?,?),[(z',?,?)|?]).
+   apply H0 with y'; trivial.
+   rewrite H1 in H4; apply SUCC_inj in H4; rewrite H4; trivial.
+
+   rewrite H4 in H1; apply NATf_discr in H1; contradiction.
+ constructor; intros.
+ rewrite Rax in H0; destruct H0 as (y',(?,?),_).
+ apply H with y'; trivial.
+
+exists R'; trivial.
+ apply wo_def2 in H.
+ (* OT *)
+ unfold order_type in otR|-*.
+ rewrite sup_ax in otR|-*.
+ 2:admit.
+ 2:admit.
+ exists ZERO; [apply ZERO_typ|].
+ apply lt_osucc_compat.
+  apply order_type_assign_ord with NAT R' ZERO.
+  apply uchoice_def.
+  apply order_type_assign_uchoice; trivial.
+
+  rewrite order_type_assign_rel_inv'; trivial.
+  rewrite sup_ax.
+  2:admit.
+  destruct otR.
+  exists (SUCC x0).
+   apply subset_intro.
+    apply SUCC_typ; trivial.
+
+    rewrite Rax.
+    exists x0; auto with *.
+
+   assert (forall n, n \in NAT -> forall x,
+     order_type_assign_rel NAT R n x -> order_type_assign_rel NAT R' (SUCC n) x).
+    intros.
+    apply H3; intros.
+     admit.
+
+     red; intros.
+     setoid_replace (sup x' (fun y => osucc (f y))) with
+       (sup (subset NAT (fun y => rel_app R' y (SUCC x2)))
+         (fun y => osucc (f (pred y)))).
+admit.
+admit.
+   generalize (uchoice_def _ (order_type_assign_uchoice NAT _ x0 (wo_def2 _ _ woR))); intro.
+   apply H2 in H3; trivial. 
+   rewrite <- (uchoice_ext _ (uchoice (order_type_assign_rel NAT R x0))
+       (order_type_assign_uchoice NAT _ (SUCC x0) H)); trivial.
+Qed.
+
+  Lemma nato : lt omega o.
+pose (NtoO := fun n m => exists2 n', n == nat2NAT n' &
+      m == (fix F n := match n with 0 => zero | S k => osucc (F k) end) n').
+assert (forall n, n \in NAT -> uchoice_pred (NtoO n)).
+ admit.
+setoid_replace omega with (sup NAT (fun n => uchoice (NtoO n))).
+ apply boundo.
+  admit.
+
+  intros.
+  apply nat2NAT_reflect in H0.
+  destruct H0.
+  revert n H0.
+  induction x; simpl; intros.
+   admit.
+   admit.
+
+apply sup_ext.
+ admit.
+
+ intros.
+ admit.
+
+ intros.
+ unfold omega in H0.
+ unfold ord_sup in H0.
+ apply union_elim in H0; destruct H0.
+ apply repl_elim in H1.
+ 2:admit.
+ destruct H1.
+ destruct H2.
+ exists (nat2NAT x1).
+  elim x1; simpl.
+   apply ZERO_typ.
+   intros.
+   apply SUCC_typ; trivial.
+
+  admit.
+Qed.
+*)
 
   Variable o : set.
+Hypothesis zer_o : zero \in o.
   Hypothesis limo : limitOrd o.
-  Hypothesis nato : lt omega o.
+(*  Hypothesis nato : lt omega o.*)
   Hypothesis boundo :
     forall F,
     ext_fun NAT F -> 
@@ -260,7 +481,6 @@ Hint Resolve diro.
   Let zer : zero \in VN o.
 intros.
 apply VN_intro; auto.
-apply isOrd_trans with omega; trivial.
 Qed.
 
   Let suc : forall x, x \in VN o -> succ x \in VN o.
@@ -273,6 +493,7 @@ Qed.
 
   Let NATo : NAT \in VN o.
 apply NAT_typ; trivial.
+admit. (* this is the real hyp. *)
 Qed.
 
   Lemma ORDf_size_gen :
@@ -481,7 +702,8 @@ Qed.
 unfold ORDf.
 intros.
 rewrite <- sum_cont; auto.
-rewrite <- cst_cont; eauto.
+rewrite <- cst_cont.
+2:exists zero; trivial.
 apply sum_mono; auto with *.
 apply func_cont_gen; auto. (* uses boundo *)
 Qed.
@@ -589,6 +811,7 @@ Qed.
 
   Lemma ORD_eq : ORD == ORDf ORD.
 apply ORDo_fix; trivial.
+ apply isOrd_trans with omega; trivial.
 intros.
 apply VN_reg_ord; trivial.
 apply NAT_in_mu.
@@ -596,6 +819,7 @@ Qed.
 
   Lemma ORD_weak_typ : ORD \incl VN mu.
 apply ORDi_incl_o; trivial.
+ apply isOrd_trans with omega; trivial.
 intros.
 apply VN_reg_ord; trivial.
 apply NAT_in_mu.
@@ -666,6 +890,8 @@ Qed.
 
   Definition nat_bound :=
     inter (subset (osucc mu) (bound_ord_mu NAT)).
+
+  Lemma nb_bound : bound_ord_mu
 
 (*
 Lemma L :
@@ -888,7 +1114,7 @@ apply subset_intro.
  apply clos_ord_step.
 Qed.
 *)
-(*
+
   Lemma nmu : ~ mu \incl clos_ord.
 red; intros.
 assert (forall o, lt o mu -> 
@@ -937,7 +1163,7 @@ exists (app x).
 
 
 specialize co_inclapply 
-*)
+
 (*
   Definition clos_ord_exp o :=
     exists2 F,
@@ -1096,7 +1322,6 @@ Qed.
   (* We look for a fixpoint of this: *)
   Definition ORDb o := (* == NATfb o + w *)
     TI (fun x => union2 (osucc x) (NATfb o)) omega.
-
 (*
   Instance ORDb_morph : morph1 ORDb.
 unfold ORDb.
@@ -1211,6 +1436,7 @@ apply oles_lt.
   apply app_typ with NAT; trivial.
 change (ORDb x \incl x).
 Qed.
+*)
 
  Lemma bound : forall o,
    lt o mu ->
@@ -1275,7 +1501,7 @@ unfold VN, Ffun.
 rewrite TI_mono_succ; auto.
  rewrite power_ax; intros.
  
-*)
+
 
 (* ORD : the least fixpoint *)
 (*

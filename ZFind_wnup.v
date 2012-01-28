@@ -1561,3 +1561,5 @@ apply G_W; intros; auto with *.
 Qed.
 
 End UniverseFacts.
+
+End BigParameter.
