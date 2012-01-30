@@ -147,7 +147,7 @@ Qed.
 
 
 Require Import ZFrepl ZFfix.
- 
+
   Definition Lamn n := TI LAMf (nat2ordset n).
 
   Lemma Lamn_incl_succ : forall k, Lamn k \incl Lamn (S k).
