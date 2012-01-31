@@ -4,13 +4,27 @@ Hint Unfold iff: core.
 
 (* Girard's reducibility candidates: up to system F *)
 
-  Definition neutral t :=
-    match t with
-    | Abs _ => False
-    | _ => True
-    end.
-
   Definition CR := term -> Prop.
+
+  (* Weak candidates *)
+  Record weak_cand (X : CR) : Prop := 
+    {wk_sn  : forall t, X t -> sn t;
+     wk_red : forall t u, X t -> red t u -> X u;
+     wk_wit : exists w, X w}.
+
+  Definition weak_chain t : CR := fun u => red t u.
+
+Lemma weakest_cands :
+  forall t, sn t -> weak_cand (weak_chain t).
+unfold weak_chain.
+split; intros.
+ eauto using sn_red_sn.
+
+ transitivity t0; trivial.
+
+ eauto using refl_red.
+Qed.
+
 
   (* The exact definition of is_cand is not used outside this module. *)
   Record is_cand (X : CR) : Prop := 
@@ -57,6 +71,12 @@ apply (clos_exp X); auto with coc.
  inversion H0.
 Qed.
 
+  Lemma weaker_cand : forall X, is_cand X -> weak_cand X.
+intros.
+case H; split; trivial.
+exists (Ref 0).
+apply (var_in_cand _ X); trivial.
+Qed.
 
   Lemma sat1_in_cand : forall n X u,
     is_cand X -> sn u -> X (App (Ref n) u).
@@ -297,6 +317,43 @@ Qed.
   Lemma is_cand_neutral : is_cand Neutral.
 Admitted.
 
+
+(* Explicit definition of the CR of neutral terms *)
+  Definition Neu : CR := fun t =>
+    sn t /\ exists2 u, red t u & nf u /\ neutral u.
+
+Lemma neutral_is_cand : is_cand Neu.
+split; intros.
+ destruct H; trivial.
+
+ destruct H.
+ destruct H1.
+ split.
+  apply sn_red_sn with t; auto with coc.
+
+  exists x; trivial.
+  destruct H2.
+  elim confluence with (1:=H1) (2:=H0); intros.
+  replace x with x0; trivial.
+  revert H2; elim H4; trivial; intros.
+  rewrite H6 in H7; trivial.
+  elim nf_norm with (2:=H7); trivial.
+
+ assert (sn t).
+  constructor; intros.
+  destruct (H0 y); auto.
+ split; trivial.
+ destruct (red1_dec t).
+  destruct s.
+  specialize H0 with (1:=r).
+  destruct H0.
+  destruct H2.
+  exists x0; trivial.
+  transitivity x; auto with coc.
+
+  exists t; auto with *.
+Qed.
+
 (* Interpreting non dependent products *)
 
   Definition Arr (X Y:CR) : CR :=
@@ -310,56 +367,16 @@ unfold eq_cand, Arr; split; intros.
  rewrite H0; rewrite H in H2; auto.
 Qed.
 
-  Definition Arr' (X Y:CR) : CR :=
-    fun t => sn t /\ forall u, X u -> Y (App t u).
-
-  Lemma is_cand_Arr' :
-   forall (X Y:CR), (forall t, X t -> sn t) ->
-   is_cand Y -> is_cand (Arr' X Y).
-unfold Arr' in |- *; intros X Y Hne Y_cand.
-split; intros.
- apply H.
-
- destruct H.
- split.
-  apply sn_red_sn with t; auto.
-
-  intros.
-  apply H1 in H2.
-  apply clos_red with (2:=H2); auto with coc.
-
- split.
-  constructor; intros.
-  apply H0; trivial.
-
-  intros.
-  assert (snu : sn u) by auto.
- assert (forall t', red1 t t' -> Y (App t' u)).
-  intros.
-  apply H0; trivial.
- clear H0; revert t H H2.
- elim snu; intros.
- unfold transp in *.
- apply (clos_exp Y); trivial.
-  exact I.
-
-  intros.
-  revert H2; inversion_clear H4; intro; auto.
-   destruct H2.
-
-   apply H0; intros; auto.
-   apply (clos_red Y) with (App t' x); auto with coc.
-Qed.
-
-  Lemma is_cand_Arr :
-   forall X Y, is_cand X -> is_cand Y -> is_cand (Arr X Y).
-unfold Arr in |- *; intros X Y X_can Y_can.
+  Lemma weak_cand_Arr : forall (X Y:CR),
+    weak_cand X ->
+    is_cand Y ->
+    is_cand (Arr X Y).
+unfold Arr in |- *; intros X Y Hne Y_cand.
 constructor.
  intros t app_in_can.
- apply subterm_sn with (App t (Ref 0)); auto with coc.
+ destruct (wk_wit _ Hne) as (w,?).
+ apply subterm_sn with (App t w); auto with coc.
  apply (incl_sn Y); auto with coc.
- apply app_in_can; auto with coc.
- apply var_in_cand with (X:=X); auto with coc.
 
  intros.
  apply (clos_red Y) with (App t u0); auto with coc.
@@ -370,7 +387,7 @@ constructor.
 
   generalize u_in_X.
   assert (u_sn: sn u).
-   apply (incl_sn X); auto with coc.
+   apply (wk_sn X); auto with coc.
   clear u_in_X.
   elim u_sn.
   intros v _ v_Hrec v_in_X w red_w.
@@ -382,7 +399,29 @@ constructor.
     exact I.
 
     apply v_Hrec with N2; auto with coc.
-    apply (clos_red X) with v; auto with coc.
+    apply (wk_red X) with v; auto with coc.
+Qed.
+
+  Lemma weak_Abs_sound_Arr :
+   forall (X Y:CR) m,
+   (forall t, X t -> sn t) ->
+   is_cand Y ->
+   (forall n, X n -> Y (subst n m)) ->
+   Arr X Y (Abs m).
+unfold Arr in |- *; intros.
+apply (clos_exp Y); intros; auto with coc.
+ exact I.
+
+ apply clos_red with (App (Abs m) u); auto with coc.
+ apply (cand_sat Y); auto with coc.
+Qed.
+
+
+  Lemma is_cand_Arr :
+   forall X Y, is_cand X -> is_cand Y -> is_cand (Arr X Y).
+intros.
+apply weak_cand_Arr; trivial.
+apply weaker_cand; trivial.
 Qed.
 
   Lemma Abs_sound_Arr :
@@ -501,38 +540,26 @@ apply H2; auto.
 apply (incl_sn Y); trivial.
 Qed.
 
-(* tools *)
 
-  Inductive hred1 : term -> term -> Prop :=
-  | Hrefl : forall t, hred1 t t
-  | Hbeta : forall m u h,
-     sn u ->
-     hred1 (subst u m) h ->
-     hred1 (App (Abs m) u) h
-  | Happ : forall u h h',
-     hred1 h h' ->
-     hred1 (App h u) (App h' u).
+(******************************************************************************)
 
-  Lemma cand_hred1 : forall A,
-    is_cand A ->
-    forall t t',
-    hred1 t t' ->
-    A t' ->
-    A t.
-Admitted.
+  Lemma cand_context : forall u u' v,
+    (forall X, is_cand X -> X u -> X u') ->
+    forall X, is_cand X -> X (App u v) -> X (App u' v).
+intros.
+assert (sn v).
+ apply subterm_sn with (App u v); auto.
+ apply (incl_sn X); trivial.
+assert (Arr (weak_chain v) X u').
+ apply H.
+  apply weak_cand_Arr; trivial.
+  apply weakest_cands; trivial.
 
-
-Ltac prove_hred1 :=
-  (apply Hbeta;[eauto|unfold subst; simpl;
-     repeat rewrite simpl_subst; auto with arith; repeat rewrite lift0;
-     prove_hred1]) ||
-  (apply Happ;prove_hred1) ||
-  (apply Hrefl) ||
-  fail "W:prove_hred1 could not solve goal".
-
-Ltac cand_hred1 H :=
-  eapply (cand_hred1 _ H);[prove_hred1|idtac].
-
+  red; intros. 
+  apply (clos_red X) with (App u v); auto with *.
+red in H3.
+apply H3; auto with *.
+Qed.
 
   Lemma cand_sat1 :
    forall X, is_cand X ->
@@ -540,8 +567,8 @@ Ltac cand_hred1 H :=
    forall m, X (App (subst u m) v) ->
    X (App2 (Abs m) u v).
 intros.
-cand_hred1 H.
-trivial.
+apply cand_context with (X:=X) (u:=subst u m); intros; auto.
+apply cand_sat with (X:=X0); trivial.
 Qed.
 
   Lemma cand_sat2 :
@@ -550,8 +577,8 @@ Qed.
    forall m, X (App2 (subst u m) v w) ->
    X (App (App2 (Abs m) u v) w).
 intros.
-cand_hred1 H.
-trivial.
+apply cand_context with (X:=X) (u:=App (subst u m) v); intros; auto.
+apply cand_sat1 with (X:=X0); trivial.
 Qed.
 
   Lemma cand_sat3 :
@@ -560,6 +587,6 @@ Qed.
    forall m, X (App2 (App (subst u m) v) w x) ->
    X (App2 (App2 (Abs m) u v) w x).
 intros.
-cand_hred1 H.
-trivial.
+apply cand_context with (X:=X) (u:=App2 (subst u m) v w); intros; auto.
+apply cand_sat2 with (X:=X0); trivial.
 Qed.

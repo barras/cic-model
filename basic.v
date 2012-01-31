@@ -1,5 +1,7 @@
+Set Implicit Arguments.
 Require Export Coq.Program.Basics.
 Require Export Setoid Morphisms Morphisms_Prop.
+Require Export Relation_Operators.
 Export ProperNotations.
 
 Lemma impl_morph A A' B B' :
@@ -139,3 +141,7 @@ Qed.
 (*rewrite H2. fails
 red; rewrite H2.  succeeds
 *)
+
+
+Definition prod_eq A B R1 R2 (p1 p2:A*B) :=
+  R1 (fst p1) (fst p2) /\ R2 (snd p1) (snd p2).

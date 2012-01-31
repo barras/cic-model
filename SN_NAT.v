@@ -5,9 +5,10 @@ Set Implicit Arguments.
 Require Import ZF ZFcoc ZFind_nat.
 Import IZF.
 
-Require Import basic Can Sat SATnat GenRealSN.
+Require Import basic Can Sat SATnat SN_CC_Real.
 Module Lc:=Lambda.
-Import MM.
+Import CCSN SN.
+
 
 Definition Zero : trm.
 left; exists (fun _ => ZERO) (fun _ => ZE).
@@ -20,9 +21,8 @@ left; exists (fun _ => ZERO) (fun _ => ZE).
  red; reflexivity.
 Defined.
 
-
 Definition Succ : trm.
-left; exists (fun _ => lam (mkTy NAT realNat) SUCC) (fun _ => SU).
+left; exists (fun _ => lam (mkTY NAT cNAT) SUCC) (fun _ => SU).
  do 2 red; reflexivity.
 
  do 2 red; reflexivity.
@@ -33,7 +33,7 @@ left; exists (fun _ => lam (mkTy NAT realNat) SUCC) (fun _ => SU).
 Defined.
 
 Definition Nat : trm.
-left; exists (fun _ => mkTy NAT realNat) (fun _ => Lc.K).
+left; exists (fun _ => mkTY NAT cNAT) (fun _ => Lc.K).
  do 2 red; reflexivity.
 
  do 2 red; reflexivity.
@@ -43,99 +43,97 @@ left; exists (fun _ => mkTy NAT realNat) (fun _ => Lc.K).
  red; reflexivity.
 Defined.
 
-
-Lemma realNat_def : forall n t,
-  (n,t) \real mkTy NAT realNat <-> realNat n t.
-intros.
-rewrite mkTy_def0; intros.
- split; intros.
-  destruct H; trivial.
-
-  split; trivial.
-  destruct H; trivial.
-
- do 3 red; intros.
- subst y0.
- assert (forall (Hx:x \in NAT) (Hy:y \in NAT),
-         eqSAT (cNAT (mkNat Hx)) (cNAT (mkNat Hy))).
-  intros.
-  apply fam_mrph.
-  red; trivial.
- split; destruct 1.
-  generalize x1; rewrite H; intro.
-  exists H2.
-  rewrite <- (H0 x1 H2); trivial.
-
-  generalize x1; rewrite <- H; intro.
-  exists H2.
-  rewrite (H0 H2 x1); trivial.
-
- apply realNat_cand; trivial.
+Lemma ElNat_eq i : El (int i Nat) == NAT.
+simpl; apply El_def.
 Qed.
 
+Lemma RedNat_eq i n :
+  n \in NAT ->
+  eqSAT (Red (int i Nat) n) (cNAT n).
+intros.
+simpl int.
+rewrite Red_def; intros; trivial.
+ reflexivity.
+
+ apply interSAT_morph_subset; simpl; intros; auto with *.
+ intros; apply fam_mrph; trivial.
+Qed.
+
+  Notation "[ x , t ] \real A" := (x \in El A  /\ inSAT t (Red A x)) (at level 60).
+
+Lemma realNat_def : forall i n t,
+  [n,t] \real int i Nat <-> n \in NAT /\ inSAT t (cNAT n).
+intros.
+rewrite ElNat_eq.
+split; destruct 1; split; trivial.
+ rewrite RedNat_eq in H0; trivial.
+ rewrite RedNat_eq; trivial.
+Qed.
 
 Lemma typ_0 : forall e, typ e Zero Nat.
-red; red; simpl; intros.
-split.
- discriminate.
+intros.
+apply typ_common;[exact I|intros].
+apply realNat_def; split.
+ apply ZERO_typ.
 
- rewrite realNat_def.
- exists ZERO_typ.
  apply cNAT_ZE.
 Qed.
 
+Lemma sn_SU : Lc.sn SU.
+unfold SU.
+constructor; intros ? h.
+apply nf_norm in h;[contradiction|repeat constructor].
+Qed.
+
+
 Lemma typ_S : forall e, typ e Succ (Prod Nat (lift 1 Nat)).
-red; red; simpl; intros.
-split.
- discriminate.
+intros.
+apply typ_common;[exact I|intros i j isval].
+rewrite intProd_eq.
+change (int i Succ) with (lam (int i Nat) SUCC).
+apply prod_intro_sn.
+ red; intros.
+ rewrite H0; reflexivity.
 
- apply prod_intro.
-  red; intros.
-  rewrite H1; reflexivity.
+ red; intros.
+ rewrite H0; reflexivity.
 
-  red; intros; reflexivity.
+ apply sn_SU.
 
-  red; red; intros.
-  split; intros.
-   unfold SU.
-   constructor; intros.
-   inversion_clear H0.
-   inversion_clear H1.
-   inversion_clear H0.
-   inversion_clear H1.
-    inversion_clear H0.
-     inversion H1.
-     inversion H1.
-    inversion_clear H0.
-     inversion_clear H1.
-      inversion H0.
-      inversion H0.
-     inversion H1.
+ destruct 1; split; unfold inX in *.
+  rewrite int_cons_lift_eq.
+  rewrite ElNat_eq in H|-*.
+  apply SUCC_typ; trivial.
 
-   red; intros.
-   rewrite realNat_def in H0|-*.
-   destruct H0.
-   apply cNAT_SU in H0.
-   exists (SUCC_typ _ x0).
-   trivial.
+  rewrite int_cons_lift_eq.
+  rewrite ElNat_eq in H.
+  rewrite RedNat_eq in H0|-*; auto. 
+   apply cNAT_SU; trivial.
+
+   apply SUCC_typ; trivial.
 Qed.
 
 Lemma typ_N : forall e, typ e Nat kind.
 red; red; simpl; intros.
+split;[discriminate|].
 split.
- discriminate.
+ red.
+ exists List.nil.
+ exists Nat.
+  reflexivity.
 
- split.
-  red.
-  exists List.nil.
-  exists Nat.
-   reflexivity.
+  exists ZERO; exists ZE.
+  split.
+   simpl; unfold inX; rewrite El_def.
+   apply ZERO_typ.
 
-   exists (ZERO, ZE).
-   simpl; intros _.
-   apply (typ_0 H).
+   apply realNat_def.
+   split.
+    apply ZERO_typ.
 
-  exact Lc.sn_K.
+    apply cNAT_ZE.
+
+ exact Lc.sn_K.
 Qed.
 
 Require Import ZFord.
@@ -328,6 +326,22 @@ elim H0 using NAT_ind; intros.
 Qed.
 
 
+Lemma NATREC_typ P f g n :
+  morph1 P ->
+  morph2 g ->
+  n \in NAT ->
+  f \in P ZERO ->
+  (forall k h, k \in NAT -> h \in P k -> g k h \in P (SUCC k)) ->
+  NATREC f g n \in P n.
+intros.
+elim H1 using NAT_ind; intros.
+ rewrite <- H5; trivial.
+
+ rewrite NATREC_0; trivial.
+
+ rewrite NATREC_S; auto.
+Qed.
+
 Definition NatRec (f g n:trm) : trm.
 left; exists (fun i => NATREC (int i f) (fun n y => app (app (int i g) n) y) (int i n))
              (fun j => Lc.App2 (tm j n) (tm j f) (tm j g)).
@@ -357,163 +371,132 @@ Lemma typ_Nrect : forall e n f g P,
   typ e g (Prod Nat (Prod (App (lift 1 P) (Ref 0))
               (App (lift 2 P) (App Succ (Ref 1))))) ->
   typ e (NatRec f g n) (App P n).
-red; intros.
+intros.
+apply typ_common; [exact I|intros].
 red in H; specialize H with (1:=H2).
 red in H0; specialize H0 with (1:=H2).
 red in H1; specialize H1 with (1:=H2).
-unfold in_int in *; simpl.
-destruct H as (_,H).
-destruct H0 as (_,H0).
-destruct H1 as (_,H1).
-unfold Nat in H; simpl in H.
-unfold App in H0; simpl in H0.
-unfold Prod in H1; simpl in H1.
-split.
- discriminate.
-set (c := int i n) in *; clearbody c.
-set (tc := tm j n) in *; clearbody tc; clear n.
-set (f0 := int i f) in *; clearbody f0.
-set (b0 := tm j f) in *; clearbody b0; clear f.
-set (fS := int i g) in *; clearbody fS.
-set (bS := tm j g) in *; clearbody bS; clear g.
-set (fS' := fun n y :set => app (app fS n) y) in |-*.
-assert (fsm : morph2 fS').
- do 3 red; intros.
- unfold fS'; rewrite H3; rewrite H4; reflexivity.
-rewrite realNat_def in H.
-destruct H as (H,H3).
-assert (forall x tx y ty,
- (x,tx) \real mkTy NAT realNat ->
- (y,ty) \real app (int i P) x ->
- (app (app fS x) y, Lc.App2 bS tx ty) \real app (int i P) (SUCC x)).
+apply in_int_not_kind in H;[|discriminate].
+apply in_int_not_kind in H0;[|discriminate].
+apply in_int_not_kind in H1;[|discriminate].
+rewrite intProd_eq in H1.
+pose (gg := fun n y => app (app (int i g) n) y).
+assert (ggm : morph2 gg).
+ unfold gg; do 3 red; intros.
+ rewrite H3;rewrite H4; reflexivity.
+assert (NRtyp : forall n, n \in NAT ->
+  NATREC (int i f) gg n \in El (app (int i P) n)).
+ destruct H0 as (H0,_).
+ destruct H1 as (H1,_); unfold inX, prod in H1; rewrite El_def in H1.
  intros.
- refine (let H6 := prod_elim _ H1 H4 in _).
-  red; intros.
-  apply prod_ext.
+ apply NATREC_typ with (P:=fun x => El (app (int i P) x)); trivial.
+  do 2 red; intros.
+  rewrite <- H4; reflexivity.
+
+  intros.
+  rewrite <- ElNat_eq in H4.
+  apply cc_prod_elim with (2:=H4) in H1.
+  rewrite intProd_eq in H1.
+  unfold prod in H1; rewrite El_def in H1.
+  apply cc_app_typ with (1:=H1); simpl.
+   rewrite split_lift; do 2 rewrite int_cons_lift_eq.
+   rewrite beta_eq; auto with *.
+   red; intros.
    rewrite H7; reflexivity.
 
-   red; intros.
-   rewrite H9; rewrite H7; reflexivity.
+   rewrite int_cons_lift_eq; trivial.
+split.
+ simpl.
+ destruct H as (H,_); unfold inX in H; rewrite ElNat_eq in H.
+ apply NRtyp; trivial.
 
-  clear H1.
-  assert ((y,ty) \real app (int (V.cons x i) (lift 1 P)) x).
-   apply inSAT_val with (3:=H5); try reflexivity.
-   rewrite int_cons_lift_eq; reflexivity.
-  refine (let H7 := prod_elim _ H6 H1 in _).
-   red; intros.
-   rewrite H8; reflexivity.
+ simpl tm.
+ destruct H as (H,rn).
+ unfold inX in H; rewrite ElNat_eq in H.
+ rewrite RedNat_eq in rn; trivial.
+ rewrite cNAT_eq in rn.
+ rewrite fNAT_def in rn.
+ destruct H0 as (_,rf).
+ destruct H1 as (ty,rg).
+ unfold inX,prod in ty; rewrite El_def in ty.
+ assert (rn' := fun F Fm => rn (mkFam F Fm)).
+ clear rn; simpl (fam (mkFam _ _)) in rn'.
+ simpl Red.
+ apply rn' with (F:=fun x => Red (app (int i P) x) (NATREC (int i f) gg x)); intros.
+  apply Red_morph.
+   rewrite H1; reflexivity.
 
-   apply inSAT_val with (3:=H7); try reflexivity.
-    apply ZFcoc.cc_app_morph.
-     unfold lift; rewrite int_lift_rec_eq.
-     apply int_morph; try reflexivity.
-     red; red; intros.
-     destruct a as [|[|a]]; simpl; reflexivity.
-
-     apply beta_eq with tx; trivial.
-     red; intros.
-     rewrite H9; reflexivity.
-clear H1; rename H4 into H1.
-revert H0 H1; generalize (int i P).
-clear H2 i j e P.
-intros P H0 H1.
-assert (forall x:num, is_cand (fun t => (NATREC f0 fS' x, t) \real app P x)).
- destruct x as (x,xnat); simpl; intros.
- intros.
- elim xnat using NAT_ind; intros.
-  revert H5; apply is_cand_morph.
-  red; intros.
-  apply in_ext.
-   split; simpl; trivial.
    apply NATREC_morph; auto with *.
 
-   rewrite H4; reflexivity.
+  rewrite NATREC_0; trivial.
 
-  apply inSAT_CR with b0.
-  apply inSAT_val with (3:=H0); try reflexivity.
-  rewrite NATREC_0; reflexivity.
-
-  apply inSAT_CR with (Lc.App2 bS daimon daimon).
-  apply inSAT_val with (fS' n (NATREC f0 fS' n)) (app P (SUCC n)); try reflexivity.
-   rewrite NATREC_S; trivial; reflexivity.
-
-   apply H1; trivial.
-    rewrite realNat_def.
-    exists H2; apply varSAT.
-
-    apply var_in_cand with (1:=H4).
-
-rewrite cNAT_eq in H3.
-rewrite fNAT_def in H3.
-pose (F:=fun x => exist _ _ (H2 x) :SAT).
-assert (Fm : forall x y, eqnum x y -> eqSAT (F x) (F y)).
- intros.
- unfold F.
- red; simpl; intros.
- apply in_ext.
-  split; simpl; trivial.
-  apply NATREC_morph; auto with *.
-
-  red in H4; rewrite H4; reflexivity.
-apply H3 with (f:=b0) (g:=bS) (P:=mkFam F Fm); intros; simpl.
- apply inSAT_val with (3:=H0); try reflexivity.
- rewrite NATREC_0; reflexivity.
-
- apply inSAT_val with (fS' n (NATREC f0 fS' n)) (app P (SUCC n)); try reflexivity.
   rewrite NATREC_S; trivial.
-   reflexivity.
+  rewrite Red_prod in rg.
+  apply piSAT_elim with (x:=n0)(u:=m) in rg.
+  2:unfold inX;rewrite ElNat_eq; trivial.
+  2:rewrite RedNat_eq; trivial.
+   rewrite intProd_eq in rg.
+   rewrite Red_prod in rg.
+   apply piSAT_elim with (x:=NATREC (int i f) gg n0)(u:=y) in rg.
+    simpl int in rg.
+    rewrite split_lift in rg.
+    do 2 rewrite int_cons_lift_eq in rg.
+    rewrite beta_eq in rg; auto with *.
+     red; intros.
+     rewrite H5; reflexivity.
 
-   apply is_num.
+     rewrite El_def; trivial.
 
-  apply H1; trivial.
-  rewrite realNat_def.
-  exists (is_num n).
-  destruct n; exact H4.
+    unfold inX; auto.
+    simpl int.
+    rewrite int_cons_lift_eq; auto.
+
+    simpl int.
+    rewrite int_cons_lift_eq; auto.
+
+red; intros.
+rewrite <- H5; reflexivity.
+
+apply cc_prod_elim with (1:=ty).
+rewrite ElNat_eq; trivial.
+
+red; intros.
+rewrite <- H5; reflexivity.
+
+revert ty; apply eq_elim.
+unfold prod; rewrite El_def.
+reflexivity.
 Qed.
 
-Lemma red_iota_simulated_0 : forall f g j,
-  clos_trans _ Lc.red1 (tm j (NatRec f g Zero)) (tm j f).
-simpl; intros.
+Lemma red_iota_simulated_0 : forall f g,
+  red_term (NatRec f g Zero) f.
+red; simpl; intros.
 unfold ZE.
-apply t_trans with (Lc.App (Lc.Abs (Lc.lift 1 (tm j f))) (tm j g)).
- apply t_step.
- apply Lc.app_red_l.
- apply Lc.beta.
-
- apply t_step.
- rewrite <- (Lc.lift0 (tm j f)) at 2.
- unfold Lc.lift at 2.
- rewrite <- (Lc.simpl_subst_rec (tm j g) (tm j f) 0 0 0); auto with arith.
- apply Lc.beta.
+eapply t_trans;[apply Lc.redp_app_l;apply t_step;apply Lc.red1_beta; reflexivity|].
+unfold Lc.subst; simpl.
+apply t_step.
+apply Lc.red1_beta.
+unfold Lc.subst; rewrite Lc.simpl_subst; trivial.
+rewrite Lc.lift0; trivial.
 Qed.
 
-Lemma red_iota_simulated_S : forall f g n j,
-  clos_trans _ Lc.red1
-    (tm j (NatRec f g (App Succ n)))
-    (tm j (App (App g n) (NatRec f g n))).
-simpl; intros.
+Lemma red_iota_simulated_S : forall f g n,
+  red_term (NatRec f g (App Succ n)) (App (App g n) (NatRec f g n)).
+red; simpl; intros.
 unfold SU.
-apply t_trans with 
- (Lc.App2 (Lc.Abs (Lc.Abs (Lc.App2 (Lc.Ref 0) (Lc.lift 2 (tm j n))
-    (Lc.App2 (Lc.lift 2 (tm j n)) (Lc.Ref 1) (Lc.Ref 0)))))
-    (tm j f) (tm j g)).
- apply t_step; do 2 constructor.
- apply Lc.beta.
-
- apply t_trans with
-  (let nn := Lc.subst_rec (tm j f) (Lc.lift 2 (tm j n)) 1 in
-   let ff := Lc.lift 1 (tm j f) in
-   (Lc.App (Lc.Abs (Lc.App2 (Lc.Ref 0) nn (Lc.App2 nn ff (Lc.Ref 0)))) (tm j g))).
-  apply t_step; repeat constructor.
-
-  rewrite Lc.simpl_subst; auto with arith.
-  replace (Lc.App (Lc.App (tm j g) (tm j n)) (Lc.App2 (tm j n) (tm j f) (tm j g)))
-   with (let nn := Lc.subst_rec (tm j g) (Lc.lift 1 (tm j n)) 0 in
-         let ff := Lc.subst_rec (tm j g) (Lc.lift 1 (tm j f)) 0 in
-         let gg := Lc.lift 0 (tm j g) in
-         Lc.App2 gg nn (Lc.App2 nn ff gg)).
-   apply t_step; simpl; repeat constructor.
-
-   repeat rewrite Lc.simpl_subst; auto with arith; repeat rewrite Lc.lift0.
-   reflexivity.
+eapply t_trans.
+ do 2 apply Lc.redp_app_l.
+ apply t_step; apply Lc.red1_beta; reflexivity.
+unfold Lc.subst; simpl.
+eapply  t_trans.
+ apply Lc.redp_app_l.
+ apply t_step; apply Lc.red1_beta; reflexivity.
+unfold Lc.subst; simpl.
+rewrite Lc.simpl_subst; auto.
+apply t_step; apply Lc.red1_beta.
+unfold Lc.subst; simpl.
+rewrite Lc.simpl_subst; auto.
+rewrite Lc.simpl_subst; auto.
+do 3 rewrite Lc.lift0.
+reflexivity.
 Qed.

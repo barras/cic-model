@@ -826,6 +826,498 @@ apply NAT_in_mu.
 Qed.
 End FirstAttempt.
 
+
+(*****)
+(* Building a bound to the cardinal of NAT, following ZFind_w *)
+Require Import ZFlist.
+
+Definition Ndom := subset (power (List NAT)) (fun X => Nil \in X).
+
+Require Import ZFcoc.
+
+Definition Nsup x :=
+  union2 (singl Nil)
+   (sup (fst x) (fun y =>
+      replf (cc_app (snd x) y) (fun p => Cons y p))).
+
+Definition N_F X := sigma (power NAT) (fun Y => cc_arr Y X).
+
+Lemma Nsup_morph : forall X, ext_fun (N_F X) Nsup.
+Admitted.
+(*
+do 2 red; intros.
+unfold Wsup.
+apply union2_morph.
+ rewrite H0; reflexivity.
+
+ apply sup_morph.
+  apply Bext.
+   apply fst_typ_sigma in H; trivial.
+   apply fst_morph; trivial.
+
+  red; intros.
+  apply replf_morph_raw; auto.
+   rewrite H0; rewrite H2; reflexivity.
+
+   red; intros.
+   rewrite H2; rewrite H3; reflexivity.
+Qed.
+*)
+Lemma wext1 : forall i y,
+  ext_fun y (fun p => Cons i p).
+Admitted.
+
+Lemma wext2 : forall X g,
+  ext_fun X (fun y => replf (cc_app g y) (fun p => Cons y p)).
+Admitted.
+(*
+do 2 red; intros.
+apply replf_morph_raw; auto.
+ rewrite H0; reflexivity.
+
+ red; intros.
+ rewrite H0; rewrite H1; reflexivity.
+Qed.*)
+Hint Resolve wext1 wext2.
+
+Lemma Nsup_def :
+  forall x p,
+  (p \in Nsup x <->
+   p == Nil \/
+   exists2 i, i \in fst x &
+   exists2 q, q \in cc_app (snd x) i & p == Cons i q).
+intros x p; intros.
+unfold Nsup.
+split; intros.
+ apply union2_elim in H; destruct H;[left|right].
+  apply singl_elim in H; trivial.
+
+  rewrite sup_ax in H; auto.
+  destruct H as (i,?,?); exists i; trivial.
+  rewrite replf_ax in H0; trivial.
+
+ destruct H as [eqp|(i,?,(q,?,eqp))]; rewrite eqp; clear eqp.  
+  apply union2_intro1.
+  apply singl_intro.
+
+  apply union2_intro2.
+  rewrite sup_ax; auto.
+  exists i; trivial.
+  rewrite replf_ax; trivial.
+  exists q; auto with *.
+Qed.
+
+Lemma Nsup_hd_prop : forall x, Nil \in Nsup x.
+intros.
+unfold Nsup.
+apply union2_intro1.
+apply singl_intro.
+Qed.
+
+Lemma Nsup_tl_prop : forall X i l x,
+  x \in N_F X ->
+  X \incl Ndom ->
+  (Cons i l \in Nsup x <-> i \in fst x /\ l \in cc_app (snd x) i).
+intros X i l x H inclX.
+assert (tyx : fst x \in power NAT).
+ apply fst_typ_sigma in H; trivial.
+split; intros.
+ apply union2_elim in H0; destruct H0.
+  apply singl_elim in H0.
+  symmetry in H0.
+  apply discr_mt_pair in H0; contradiction.
+
+  rewrite sup_ax in H0; auto.
+  destruct H0.
+  rewrite replf_ax in H1; trivial.
+  destruct H1.
+  apply couple_injection in H2; destruct H2.
+  rewrite H2.
+  split; trivial.
+  rewrite H3; trivial.
+
+ destruct H0.
+ unfold Wsup.
+ apply union2_intro2.
+ rewrite sup_ax; auto.
+ exists i; trivial.
+ rewrite replf_ax; trivial.
+ exists l; auto with *.
+Qed.
+
+Lemma Nsup_inj : forall X Y x x',
+  X \incl Ndom ->
+  Y \incl Ndom ->
+  x \in N_F X ->
+  x' \in N_F Y ->
+  Nsup x == Nsup x' -> x == x'.
+Admitted.
+(*intros X Y x x' tyf tyf' H H0 H1.
+assert (fst x == fst x').
+  assert (forall i l, i \in fst x /\ l \in cc_app (snd x) i <->
+                      i \in fst x' /\ l \in cc_app (snd x') i).
+   intros.
+   rewrite <- Nsup_tl_prop with (1:=H); trivial.
+   rewrite H1.
+   apply Nsup_tl_prop with (1:=H0); trivial.
+ generalize (Nsup_tl_prop x); intro.
+ generalize (Nsup_hd_prop x'); intro.
+ apply H3.
+ rewrite <- H1.
+ apply H2.
+ reflexivity.
+assert (snd x == snd x').
+ specialize cc_eta_eq with (1:=tys _ _ H); intros.
+ specialize cc_eta_eq with (1:=tys _ _ H0); intros.
+ rewrite H3; rewrite H4.
+ apply cc_lam_ext.
+  apply Bext; trivial.
+  apply fst_typ_sigma in H; trivial.
+
+  red; intros.
+  assert (x'0 \in B (fst x')).
+   revert H5; apply in_set_morph; auto with *.
+   apply Bext; auto with *.
+   apply fst_typ_sigma in H0; trivial.
+  assert (cc_app (snd x) x0 \incl prodcart (List (sup A B)) A).
+   red; intros.
+   apply power_elim with (2:=H8).
+   apply tyf.
+   apply cc_prod_elim with (1:=tys _ _ H); trivial.
+  assert (cc_app (snd x') x'0 \incl prodcart (List (sup A B)) A).
+   red; intros.
+   apply power_elim with (2:=H9); trivial.
+   apply tyf'.
+   apply cc_prod_elim with (1:=tys _ _ H0); trivial.
+  generalize (fun z l => Wsup_tl_prop _ x0 l z _ H tyf); intros.
+  generalize (fun z l => Wsup_tl_prop _ x'0 l z _ H0 tyf'); intros.
+  apply eq_intro; intros.
+   generalize (surj_pair _ _ _ (H8 _ H12)); intro.
+   rewrite H13.
+   apply H11.
+   rewrite <- H6; rewrite <- H1.
+   apply <- H10.
+   rewrite <- H13; auto.
+
+   generalize (surj_pair _ _ _ (H9 _ H12)); intro.
+   rewrite H13.
+   apply H10.
+   rewrite H1; rewrite H6.
+   apply <- H11.
+   rewrite <- H13; auto.
+apply subset_elim1 in H.
+apply subset_elim1 in H0.
+rewrite (surj_pair _ _ _ H).
+rewrite (surj_pair _ _ _ H0).
+rewrite H2; rewrite H3; reflexivity.
+Qed.
+*)
+
+Lemma nextarr1 : forall X, ext_fun (power NAT) (fun Y => cc_arr Y X).
+do 2 red; intros; apply cc_arr_morph; auto with *.
+Qed.
+Hint Resolve nextarr1.
+
+Lemma Nsup_typ_gen : forall X x,
+  X \incl Ndom ->
+  x \in N_F X ->
+  Nsup x \in Ndom.
+intros.
+apply subset_intro.
+2:apply Nsup_hd_prop.
+apply power_intro; intros.
+rewrite Nsup_def in H1; trivial.
+destruct H1 as [eqz|(i,?,(q,?,eqz))]; rewrite eqz; clear z eqz.
+ apply Nil_typ.
+
+ apply Cons_typ.
+  apply power_elim with (2:=H1).
+  apply fst_typ_sigma in H0; trivial.
+
+  apply power_elim with (2:=H2).
+  apply snd_typ_sigma with (y:=fst x) in H0; auto with *.
+  apply cc_arr_elim with (2:=H1) in H0.
+  apply H in H0.
+  apply subset_elim1 in H0; trivial.
+Qed.
+
+(* The type operator on the construction domain *)
+Definition Nf X := replf (N_F X) Nsup.
+
+Hint Resolve Nsup_morph.
+
+Lemma Nf_intro : forall x X,
+  x \in N_F X ->
+  Nsup x \in Nf X.
+intros.
+unfold Nf.
+rewrite replf_ax; trivial.
+exists x; auto with *.
+Qed.
+
+Lemma Nf_elim : forall a X,
+  a \in Nf X ->
+  exists2 x, x \in N_F X &
+  a == Nsup x.
+intros.
+unfold Nf in H.
+rewrite replf_ax in H; trivial.
+Qed.
+
+Lemma Nf_mono : Proper (incl_set ==> incl_set) Nf.
+do 3 red; intros.
+apply Nf_elim in H0; destruct H0 as (f,?,?).
+rewrite H1; apply Nf_intro; trivial.
+clear H1; revert f H0.
+admit.
+(*apply N_F_mono; trivial.*)
+Qed.
+Hint Resolve Nf_mono Fmono_morph.
+
+Lemma Nf_typ : forall X,
+  X \incl Ndom -> Nf X \incl Ndom.
+red; intros.
+apply Nf_elim in H0; destruct H0 as (x,?,?).
+rewrite H1.
+apply Nsup_typ_gen with X; auto with *.
+Qed.
+Hint Resolve Nf_typ.
+
+(*
+Lemma Wf_stable : forall X,
+  X \incl power Wdom ->
+  inter (replf X Wf) \incl Wf (inter X).
+red; intros X Xty z H.
+unfold Wf.
+assert (forall a, a \in X -> z \in Wf a).
+ intros.
+ apply inter_elim with (1:=H).
+ rewrite replf_ax.
+ 2:red;red;intros;apply Fmono_morph; trivial.
+ exists a; auto with *.
+rewrite replf_ax; auto.
+destruct inter_wit with (2:=H).
+ apply Fmono_morph; trivial.
+assert (z \in Wf x); auto.
+apply Wf_elim in H2.
+destruct H2.
+exists x0; auto.
+apply W_F_stable.
+apply inter_intro.
+ intros.
+ rewrite replf_ax in H4.
+ 2:red;red;intros;apply Fmono_morph; auto.
+ 2:apply W_F_mono.
+ destruct H4.
+ rewrite H5; clear y H5.
+ specialize H0 with (1:=H4).
+ apply Wf_elim in H0; destruct H0.
+ rewrite H3 in H5; apply Wsup_inj with (X:=x) (Y:=x1)in H5; trivial.
+  rewrite H5; trivial.
+
+  red; intros; apply power_elim with (1:=Xty _ H1); trivial.
+
+  red; intros; apply power_elim with (1:=Xty _ H4); trivial.
+
+ exists (W_F x).
+ rewrite replf_ax.
+ 2:red;red;intros;apply Fmono_morph;auto.
+ 2:apply W_F_mono.
+ exists x; auto with *.
+Qed.
+*)
+(*Hint Resolve Wf_stable.*)
+
+(* The fixpoint *)
+
+Definition NF := Ffix Nf Ndom.
+
+Lemma NFtyp : NF \incl Ndom.
+apply Ffix_inA.
+Qed.
+
+Lemma Ni_NF : forall o, isOrd o -> TI Nf o \incl NF.
+apply TI_Ffix; auto.
+Qed.
+
+Lemma TI_Nf_elim : forall a o,
+  isOrd o ->
+  a \in TI Nf o ->
+  exists2 o', lt o' o &
+  exists2 x, x \in N_F (TI Nf o') &
+  a == Nsup x.
+intros.
+apply TI_elim in H0; trivial.
+2:apply Fmono_morph; trivial.
+destruct H0.
+apply Nf_elim in H1.
+eauto.
+Qed.
+
+Lemma Nsup_typ : forall o x,
+  isOrd o ->
+  x \in N_F (TI Nf o) ->
+  Nsup x \in TI Nf (osucc o).
+intros.
+rewrite TI_mono_succ; auto.
+apply Nf_intro; trivial.
+Qed.
+
+Lemma NF_ind : forall (P:set->Prop),
+  Proper (eq_set ==> iff) P ->
+  (forall o' x, isOrd o' -> x \in N_F (TI Nf o') ->
+   (forall i, i \in fst x -> P (cc_app (snd x) i)) ->
+   P (Nsup x)) ->
+  forall a, a \in NF -> P a.
+intros.
+unfold NF in H1; rewrite Ffix_def in H1; auto.
+destruct H1.
+revert a H2.
+apply isOrd_ind with (2:=H1); intros.
+apply TI_Nf_elim in H5; trivial.
+destruct H5 as (o',?,(x',?,?)).
+rewrite H7; clear a H7.
+apply H0 with o'; trivial.
+ apply isOrd_inv with y; trivial.
+
+ intros.
+ apply H4 with o'; trivial.
+ apply snd_typ_sigma with (y:=fst x') in H6; auto with *.
+ apply cc_prod_elim with (1:=H6); trivial.
+Qed.
+
+(* Inverse of Nsup *)
+Definition Nfst x :=
+  replf (subset x (fun l => exists i, exists l', l == Cons i l')) fst.
+
+Definition Nsnd x :=
+  cc_lam (Nfst x) (fun i => replf (subset x (fun l => exists l', l == Cons i l')) snd).
+
+Definition Nsupi x := couple (Nfst x) (Nsnd x).
+
+Lemma Nfst_inv X x:
+  X \incl Ndom ->
+  x \in N_F X ->
+  Nfst (Nsup x) == fst x.
+intros.
+unfold Nfst.
+apply eq_intro; intros.
+ rewrite replf_ax in H1; auto.
+ 2:admit.
+ destruct H1 as (y,?,?).
+ rewrite subset_ax in H1; destruct H1.
+ destruct H3 as (y',?,(i,(l',?))).
+ rewrite H4 in H3; rewrite H3 in H1,H2; rewrite H2; clear H4 H3 H2.
+ unfold Cons; rewrite fst_def.
+ apply Nsup_tl_prop with (1:=H0) in H1; auto.
+ destruct H1; trivial.
+
+ rewrite replf_ax.
+ 2:admit.
+ exists (Cons z Nil). 
+ 2:unfold Cons; rewrite fst_def; reflexivity.
+ apply subset_intro.
+  rewrite Nsup_tl_prop with (X:=X); trivial.
+  split; trivial.
+  apply snd_typ_sigma with (y:=fst x) in H0; auto with *.
+  apply cc_arr_elim with (2:=H1) in H0.
+  apply H in H0.
+  apply subset_elim2 in H0.
+  destruct H0.
+  rewrite H0; trivial.
+
+  exists z; exists Nil; reflexivity.
+Qed.
+
+Lemma Nsnd_inv X x:
+  X \incl Ndom ->
+  x \in N_F X ->
+  Nsnd (Nsup x) == snd x.
+intros.
+unfold Nsnd.
+assert (fx_ty := H0); apply fst_typ_sigma in fx_ty.
+assert (sx_ty :=H0); apply snd_typ_sigma with (y:=fst x) in sx_ty; auto with *.
+rewrite cc_eta_eq with (1:=sx_ty).
+symmetry; apply cc_lam_ext.
+ symmetry; apply Nfst_inv with (2:=H0); trivial.
+red; intros.
+apply eq_intro; intros.
+ rewrite replf_ax.
+ 2:admit.
+ exists (Cons x0 z).
+ 2:unfold Cons; rewrite snd_def; reflexivity.
+ apply subset_intro.
+ 2:exists z; rewrite H2; reflexivity.
+ rewrite Nsup_tl_prop with (1:=H0); auto.
+
+ rewrite replf_ax in H3.
+ 2:admit.
+ destruct H3.
+ rewrite H4.
+ rewrite subset_ax in H3; destruct H3.
+ destruct H5.
+ destruct H6.
+ rewrite H6 in H5; rewrite H5 in H3|-*; clear H4 H5 H6.
+ unfold Cons; rewrite snd_def.
+ rewrite Nsup_tl_prop with (1:=H0) in H3; trivial.
+ rewrite H2; destruct H3; trivial.
+Qed.
+
+Lemma Nsup_inv X x:
+  X \incl Ndom ->
+  x \in N_F X ->
+  Nsupi (Nsup x) == x.
+intros.
+unfold Nsupi.
+rewrite Nfst_inv with (2:=H0); trivial.
+rewrite Nsnd_inv with (2:=H0); trivial.
+symmetry; apply surj_pair with (1:=subset_elim1 _ _ _ H0).
+Qed.
+
+Lemma Nsupi_ty X x :
+  X \incl Ndom ->
+  x \in Nf X ->
+  Nsupi x \in N_F X.
+intros.
+destruct Nf_elim with (1:=H0); trivial.
+Admitted.
+
+(* The closure ordinal of W *)
+  Definition N_ord := Ffix_ord Nf Ndom.
+
+  Lemma N_ord_bound : bound_ord NAT N_ord.
+red; intros.
+unfold N_ord.
+unfold Ffix_ord.
+pose (G:= fun n => subset NF (fun x => Fix_rec Nf Ndom (F_a Nf Ndom) x == F n)).
+pose (G' := replf (cc_prod NAT G) (fun f => Nsup (couple NAT f))).
+
+
+  Lemma W_o_o : isOrd W_ord.
+apply Ffix_o_o; auto.
+Qed.
+Hint Resolve W_o_o.
+
+  Lemma W_post : forall a,
+   a \in W ->
+   a \in TI Wf W_ord.
+apply Ffix_post; eauto.
+apply Wf_stable.
+Qed.
+
+  Lemma W_eqn : W == Wf W.
+apply Ffix_eqn; eauto.
+apply Wf_stable.
+Qed.
+
+
+
+
+
+
+
+(*************************************************************)
+(* Sketchy attempts... *)
 (*
 Lemma no_nat_cof :
   forall F,

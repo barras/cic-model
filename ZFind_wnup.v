@@ -1499,6 +1499,10 @@ rewrite W_eqn; auto with *.
      rewrite H3; reflexivity.
      rewrite <- H1; trivial.
 
+    unfold W_ord.
+    unfold W0.W_ord.
+
+unfold A', B'.
     admit. (* TODO: W_ord does not depend on a... *)
 
  intros.

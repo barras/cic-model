@@ -2,7 +2,7 @@
 Require Export basic.
 Require Export Setoid Morphisms.
 
-Module Type CC_Model.
+Module Type CC_Terms.
 
 Parameter X : Type.
 Parameter inX : X -> X -> Prop.
@@ -35,6 +35,23 @@ Parameter prod_ext :
   eq_fun x1 f1 f2 ->
   prod x1 f1 == prod x2 f2.
 
+Parameter beta_eq:
+  forall dom F x,
+  eq_fun dom F F ->
+  x \in dom ->
+  app (lam dom F) x == F x.
+
+Existing Instance eqX_equiv.
+Existing Instance in_ext.
+Existing Instance app_ext.
+
+
+End CC_Terms.
+
+Module Type CC_Model.
+
+Include CC_Terms.
+
 Parameter prod_intro : forall dom f F,
   eq_fun dom f f ->
   eq_fun dom F F ->
@@ -51,16 +68,6 @@ Parameter impredicative_prod : forall dom F,
   eq_fun dom F F ->
   (forall x, x \in dom -> F x \in props) ->
   prod dom F \in props.
-
-Parameter beta_eq:
-  forall dom F x,
-  eq_fun dom F F ->
-  x \in dom ->
-  app (lam dom F) x == F x.
-
-Existing Instance eqX_equiv.
-Existing Instance in_ext.
-Existing Instance app_ext.
 
 End CC_Model.
 

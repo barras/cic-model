@@ -53,86 +53,18 @@ Existing Instance cons_morph'.
 Existing Instance shift_morph.
 Existing Instance lams_morph.
 
-(**)
-Module LCeq.
-  Definition t := Lc.term.
-  Definition eq := @Logic.eq Lc.term.
-  Definition eq_equiv : Equivalence eq := eq_equivalence.
-  Existing Instance eq_equiv.
-End LCeq.
-Module I := VarMap.Make(LCeq).
-
-Notation intt := I.map.
-Notation eq_intt := I.eq_map.
-
-Import I.
-Existing Instance cons_morph.
-Existing Instance cons_morph'.
-Existing Instance shift_morph.
-Existing Instance lams_morph.
-
-Definition ilift (j:intt) : intt :=
-  fun k => match k with
-  | 0 => Lc.Ref 0
-  | S n => Lc.lift 1 (j n)
-  end.
-
-Instance ilift_morph : Proper (eq_intt ==> eq_intt) ilift.
-do 4 red; intros.
-unfold ilift.
-destruct a; simpl; auto.
-rewrite H; trivial.
-Qed.
-
-Lemma ilift_lams : forall k f j,
-  (forall j j', (forall a, Lc.lift 1 (j a) = j' a) ->
-   forall a, Lc.lift 1 (f j a) = f j' a) ->
-  eq_intt (ilift (I.lams k f j)) (I.lams (S k) f (ilift j)).
-intros.
-do 2 red; intros.
-destruct a; simpl.
- reflexivity.
-
- unfold I.lams; simpl.
- destruct (le_gt_dec k a); simpl; trivial.
- apply H.
- unfold I.shift, ilift; simpl; intros; trivial.
-Qed.
-
-Lemma ilift_binder : forall u j k,
-  eq_intt
-    (ilift (fun n => Lc.subst_rec u (j n) k))
-    (fun n => Lc.subst_rec u (ilift j n) (S k)).
-red; red; intros.
-destruct a; simpl; trivial.
-rewrite Lc.commut_lift_subst; trivial.
-Qed.
-
-Lemma ilift_binder_lift : forall j k,
-  eq_intt
-    (ilift (fun n => Lc.lift_rec 1 (j n) k))
-    (fun n => Lc.lift_rec 1 (ilift j n) (S k)).
-red; red; intros.
-destruct a; simpl; trivial.
-rewrite Lc.permute_lift; trivial.
-Qed.
+(* Term valuations *)
+Module I := Lambda.I.
 
 (* Terms *)
-
-Definition substitutive (t:intt->Lc.term) :=
-  forall u j k,
-  t (fun n => Lc.subst_rec u (j n) k) = Lc.subst_rec u (t j) k.
-Definition liftable (t:intt->Lc.term) :=
-  forall j k,
-  t (fun n => Lc.lift_rec 1 (j n) k) = Lc.lift_rec 1 (t j) k.
 
 Record inftrm := {
   iint : val -> X;
   iint_morph : Proper (eq_val ==> eqX) iint;
-  itm : intt -> Lc.term;
-  itm_morph : Proper (eq_intt ==> @eq Lc.term) itm;
-  itm_lift : liftable itm;
-  itm_subst : substitutive itm
+  itm : Lc.intt -> Lc.term;
+  itm_morph : Proper (Lc.eq_intt ==> eq) itm;
+  itm_lift : Lc.liftable itm;
+  itm_subst : Lc.substitutive itm
 }.
 Existing Instance iint_morph.
 Existing Instance itm_morph.
@@ -143,7 +75,7 @@ Definition eq_trm (x y:trm) :=
   match x, y with
   | Some f, Some g =>
      (eq_val ==> eqX)%signature (iint f) (iint g) /\
-     (eq_intt ==> @eq Lc.term)%signature (itm f) (itm g)
+     (Lc.eq_intt ==> eq)%signature (itm f) (itm g)
   | None, None => True
   | _, _ => False
   end.
@@ -175,7 +107,7 @@ Lemma eq_kind : forall (M:trm), M = None <-> eq_trm M None.
 destruct M; simpl; split; contradiction||discriminate||trivial.
 Qed.
 
-Definition tm (j:intt) (M:trm) :=
+Definition tm (j:Lc.intt) (M:trm) :=
   match M with
   | Some f => itm f j
   | None => Lc.K (* kind is interpreted by any SN term *)
@@ -198,7 +130,7 @@ split; red; intros.
  rewrite H2; auto.
 Qed.
 
-Instance tm_morph : Proper (eq_intt ==> eq_trm ==> @eq Lc.term) tm.
+Instance tm_morph : Proper (Lc.eq_intt ==> eq_trm ==> eq) tm.
 unfold tm; do 3 red; intros.
 destruct x0; destruct y0; simpl in *; (contradiction||reflexivity||auto).
 destruct H0; simpl in *.
@@ -219,7 +151,7 @@ apply itm_lift.
 Qed.
 
 Lemma tm_subst_cons : forall x j t,
-  tm (I.cons x j) t = Lc.subst x (tm (ilift j) t).
+  tm (I.cons x j) t = Lc.subst x (tm (Lc.ilift j) t).
 unfold Lc.subst; intros.
 rewrite <- tm_substitutive.
 apply tm_morph; [red; intros|reflexivity].
@@ -272,7 +204,7 @@ Defined.
 
 Definition Abs (A M:trm) : trm.
 left; exists (fun i => lam (int i A) (fun x => int (V.cons x i) M))
-             (fun j => Lc.App2 Lc.K (Lc.Abs (tm (ilift j) M)) (tm j A)).
+             (fun j => Lc.App2 Lc.K (Lc.Abs (tm (Lc.ilift j) M)) (tm j A)).
  do 2 red; simpl; intros.
  apply lam_ext.
   rewrite H; reflexivity.
@@ -284,18 +216,18 @@ left; exists (fun i => lam (int i A) (fun x => int (V.cons x i) M))
  rewrite H; trivial.
 
  red; simpl; intros.
- rewrite ilift_binder_lift; trivial.
+ rewrite Lc.ilift_binder_lift; trivial.
  do 2 rewrite <- tm_liftable; trivial.
 
  red; simpl; intros.
- rewrite ilift_binder; trivial.
+ rewrite Lc.ilift_binder; trivial.
  do 2 rewrite <- tm_substitutive; trivial.
 Defined.
 
 Definition Prod (A B:trm) : trm.
 left;
   exists (fun i => prod (int i A) (fun x => int (V.cons x i) B))
-         (fun j => Lc.App2 Lc.K (tm j A) (Lc.Abs (tm (ilift j) B))).
+         (fun j => Lc.App2 Lc.K (tm j A) (Lc.Abs (tm (Lc.ilift j) B))).
 do 2 red; simpl; intros.
  apply prod_ext.
   rewrite H; reflexivity.
@@ -308,11 +240,11 @@ do 2 red; simpl; intros.
 
  red; simpl; intros.
  do 2 rewrite <- tm_liftable; trivial.
- rewrite ilift_binder_lift; trivial.
+ rewrite Lc.ilift_binder_lift; trivial.
 
  red; simpl; intros.
  do 2 rewrite <- tm_substitutive; trivial.
- rewrite ilift_binder; trivial.
+ rewrite Lc.ilift_binder; trivial.
 Defined.
 
 Definition lift_rec (n m:nat) (t:trm) : trm.
@@ -391,11 +323,11 @@ split; red; intros.
  rewrite H; reflexivity.
 
  do 2 rewrite I.lams0.
- change (shift n (fun k => lams 0 (shift 1) y k)) with
-   (shift n (lams 0 (shift 1) y)).
+ change (I.shift n (fun k => I.lams 0 (I.shift 1) y k)) with
+   (I.shift n (I.lams 0 (I.shift 1) y)).
  rewrite I.lams0.
  rewrite I.shift_split.
- change (eq_intt (fun k => x k) (fun k => y k)) in H.
+ change (Lc.eq_intt (fun k => x k) (fun k => y k)) in H.
  rewrite H; reflexivity.
 Qed.
 
@@ -450,7 +382,7 @@ intros; destruct T; simpl; reflexivity.
 Qed.
 
 Lemma tm_subst_eq : forall u v j,
-  tm j (subst u v) = Lc.subst (tm j u) (tm (ilift j) v).
+  tm j (subst u v) = Lc.subst (tm j u) (tm (Lc.ilift j) v).
 intros.
 unfold Lc.subst; rewrite <- tm_substitutive.
 destruct v as [v|]; simpl; trivial.
@@ -599,7 +531,7 @@ simpl; split; red; intros.
  reflexivity.
 
  revert n.
- change (eq_intt (I.lams 0 (I.shift 1) x) (I.shift 1 y)).
+ change (Lc.eq_intt (I.lams 0 (I.shift 1) x) (I.shift 1 y)).
  rewrite I.lams0; rewrite <- H.
  reflexivity.
 Qed.
@@ -624,7 +556,7 @@ destruct e; simpl prod_list in eq_U.
 Qed.
 
 
-Definition in_int (i:val) (j:intt) (M T:trm) :=
+Definition in_int (i:val) (j:Lc.intt) (M T:trm) :=
   M <> None /\
   match T with
   | None => non_empty M
@@ -714,7 +646,7 @@ Qed.
 (* Environments *)
 Definition env := list trm.
 
-Definition val_ok (e:env) (i:val) (j:intt) :=
+Definition val_ok (e:env) (i:val) (j:Lc.intt) :=
   forall n T, nth_error e n = value T ->
   in_int i j (Ref n) (lift (S n) T).
 
@@ -1085,45 +1017,6 @@ Qed.
 (* "Untyped" Reduction *)
 Require Import Relations.
 
-Lemma lc_red_trans_app_l M M' N :
-  clos_trans _ Lc.red1 M M' ->
-  clos_trans _ Lc.red1 (Lc.App M N) (Lc.App M' N).
-induction 1; eauto using t_trans.
-apply t_step.
-apply Lc.app_red_l; trivial.
-Qed.
-
-Lemma lc_red_trans_app_r M N N' :
-  clos_trans _ Lc.red1 N N' ->
-  clos_trans _ Lc.red1 (Lc.App M N) (Lc.App M N').
-induction 1; eauto using t_trans.
-apply t_step.
-apply Lc.app_red_r; trivial.
-Qed.
-
-Lemma lc_red_trans_abs M M' :
-  clos_trans _ Lc.red1 M M' ->
-  clos_trans _ Lc.red1 (Lc.Abs M) (Lc.Abs M').
-induction 1; eauto using t_trans.
-apply t_step.
-apply Lc.abs_red; trivial.
-Qed.
-
-Lemma lc_red_K2 M N :
-  clos_trans _ Lc.red1 (Lc.App2 Lc.K M N) M.
-apply t_trans with (Lc.App (Lc.Abs (Lc.lift 1 M)) N).
- apply t_step.
- apply Lc.app_red_l.
- apply Lc.red1_beta.
- reflexivity.
-
- apply t_step.
- apply Lc.red1_beta.
- unfold Lc.subst; rewrite Lc.simpl_subst; auto.
- rewrite Lc.lift0; trivial.
-Qed.
-
-
 Definition red_term M N :=
   forall j, clos_trans _ Lc.red1 (tm j M) (tm j N).
 
@@ -1172,7 +1065,7 @@ Lemma red_term_abs_r M N N' :
   red_term N N' ->
   red_term (Abs M N) (Abs M N').
 unfold red_term; intros.
-specialize H with (ilift j).
+specialize H with (Lc.ilift j).
 simpl.
 apply lc_red_trans_app_l; trivial.
 apply lc_red_trans_app_r; trivial.
@@ -1194,7 +1087,7 @@ Lemma red_term_prod_r M N N' :
   red_term N N' ->
   red_term (Prod M N) (Prod M N').
 unfold red_term; intros.
-specialize H with (ilift j).
+specialize H with (Lc.ilift j).
 simpl.
 apply lc_red_trans_app_r; trivial.
 apply lc_red_trans_abs; trivial.
@@ -1239,20 +1132,6 @@ split.
  rewrite H; trivial.
 Qed.
 
-Lemma cross_binder k x y i :
-  Lc.lift 1 x = y ->
-  eq_intt (ilift (I.lams k (I.cons x) i)) (I.lams (S k) (I.cons y) (ilift i)).
-do 2 red; intros.
-destruct a; simpl.
- reflexivity.
-
- unfold I.lams; simpl.
- destruct (le_gt_dec k a); simpl; trivial.
- destruct (a - k); simpl; trivial.
-Qed.
- 
-
-
 Lemma red_sigma_abs N A B k :
   eq_trm (subst_rec N k (Abs A B)) (Abs (subst_rec N k A) (subst_rec N (S k) B)).
 red; simpl; intros.
@@ -1278,8 +1157,8 @@ split.
   rewrite tm_subst_rec_eq.
   apply tm_morph; auto with *.
   rewrite H.
-  apply cross_binder.
-  unfold I.shift, ilift; simpl.
+  apply Lc.cross_binder.
+  unfold I.shift, Lc.ilift; simpl.
   unfold Lc.lift; rewrite <- tm_liftable; trivial.
 
   rewrite tm_subst_rec_eq.
@@ -1314,8 +1193,8 @@ split.
   rewrite tm_subst_rec_eq.
   apply tm_morph; auto with *.
   rewrite H.
-  apply cross_binder.
-  unfold I.shift, ilift; simpl.
+  apply Lc.cross_binder.
+  unfold I.shift, Lc.ilift; simpl.
   unfold Lc.lift; rewrite <- tm_liftable; trivial.
 Qed.
 

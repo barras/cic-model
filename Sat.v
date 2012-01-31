@@ -6,6 +6,12 @@ Definition indexed_relation A A' B (R:B->B->Prop) (f:A->B) (g:A'->B) :=
   (forall x, exists y, R (f x) (g y)) /\
   (forall y, exists x, R (f x) (g y)).
 
+Lemma indexed_relation_id : forall A B (R:B->B->Prop) (F F':A->B),
+  (forall x, R (F x) (F' x)) ->
+  indexed_relation R F F'.
+split; intros; eauto.
+Qed.
+
 (* Theory of saturated sets *)
 
 Module Type SAT.
@@ -22,9 +28,20 @@ Module Type SAT.
   Parameter daimon : term.
   Parameter varSAT : forall S, inSAT daimon S.
 
+  Parameter inSAT_exp : forall S u m,
+    sn u ->
+    inSAT (subst u m) S ->
+    inSAT (App (Abs m) u) S.
+
+  Parameter inSAT_context : forall u u' v,
+    (forall S, inSAT u S -> inSAT u' S) ->
+    forall S, inSAT (App u v) S -> inSAT (App u' v) S.
+
+  (* sn *)
   Parameter snSAT : SAT.
   Parameter snSAT_intro : forall t, sn t -> inSAT t snSAT.
 
+  (* arrow *)
   Parameter prodSAT : SAT -> SAT -> SAT.
   Parameter prodSAT_morph : Proper (eqSAT ==> eqSAT ==> eqSAT) prodSAT.
   Parameter prodSAT_intro : forall A B m,
@@ -35,6 +52,7 @@ Module Type SAT.
     inSAT v A ->
     inSAT (App u v) B.
 
+  (* intersection *)
   Parameter interSAT : forall A:Type, (A -> SAT) -> SAT.
   Parameter interSAT_morph : forall A A' (F:A->SAT) (G:A'->SAT),
     indexed_relation eqSAT F G ->
@@ -84,6 +102,24 @@ Qed.
 destruct S; simpl; intros.
 apply var_in_cand with (1:=i).
 Qed.
+
+  Lemma inSAT_exp : forall S u m,
+    sn u ->
+    inSAT (subst u m) S ->
+    inSAT (App (Abs m) u) S.
+destruct S; simpl; intros.
+apply cand_sat with (X:=x); trivial.
+Qed.
+
+  Lemma inSAT_context : forall u u' v,
+    (forall S, inSAT u S -> inSAT u' S) ->
+    forall S, inSAT (App u v) S -> inSAT (App u' v) S.
+destruct S; simpl; intros.
+apply cand_context with (X:=x) (u:=u); trivial; intros.
+apply (H (exist _ X H1)); trivial.
+Qed.
+
+
 
   Definition snSAT : SAT := exist _ sn cand_sn.
 
@@ -140,6 +176,15 @@ split; intros; trivial.
 apply (incl_sn _ (proj2_sig (F X))); trivial.
 Qed.
 
+Lemma interSAT_intro' : forall A (P:A->Prop) F t,
+  sn t ->
+  (forall x, P x -> inSAT t (F x)) ->
+  inSAT t (interSAT (fun p:sig P => F (proj1_sig p))).
+split; trivial.
+destruct x; simpl.
+apply H0; trivial.
+Qed.
+
   Lemma interSAT_elim : forall A F u,
     inSAT u (interSAT F) ->
     forall x:A, inSAT u (F x).
@@ -194,4 +239,30 @@ Qed.
     inSAT (App daimon u) S.
 destruct S; simpl; intros.
 apply (sat1_in_cand 0 x); trivial.
+Qed.
+
+(* Dependent product *)
+(* The realizability relation of a dependent product.
+   It is the intersection of all reducibility candidates {x}_F -> {f(x)}_G(x)
+   when x ranges A. *)
+Definition piSAT0 A B (F:A->SAT) (G:A->B->SAT) (f:A->B) :=
+  interSAT (fun x => prodSAT (F x) (G x (f x))).
+
+Lemma piSAT0_intro : forall A B F G (f:A->B) t,
+  sn t -> (* if A is empty *)
+  (forall x u, inSAT u (F x) -> inSAT (App t u) (G x (f x))) ->
+  inSAT t (piSAT0 F G f).
+unfold piSAT0; intros.
+split; intros; trivial.
+intros ? ?.
+apply H0; trivial.
+Qed.
+
+Lemma piSAT0_elim : forall A B F G (f:A->B) x t u,
+  inSAT t (piSAT0 F G f) ->
+  inSAT u (F x) ->
+  inSAT (App t u) (G x (f x)).
+intros.
+apply interSAT_elim with (x:=x) in H.
+apply H; trivial.
 Qed.

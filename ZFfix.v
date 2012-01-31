@@ -87,16 +87,6 @@ Section BoundedOperator.
 Variable A : set.
 Hypothesis Ftyp : forall X, X \incl A -> F X \incl A.
 
-Definition fsub a := subset A (fun b => forall X, X \incl A -> a \in F X -> b \in X).
-
-Instance fsub_morph : morph1 fsub.
-unfold fsub; do 2 red; intros.
-apply subset_morph; auto with *.
-red; intros.
-apply fa_morph; intro X.
-rewrite H; reflexivity.
-Qed.
-
 Definition Ffix := subset A (fun a => exists2 o, isOrd o & a \in TI F o).
 
 Lemma Ffix_inA : Ffix \incl A.
@@ -141,6 +131,17 @@ split; intros.
   exists x; trivial.
 Qed.
 
+Definition fsub a :=
+  subset Ffix (fun b => forall X, X \incl Ffix -> a \in F X -> b \in X).
+
+Instance fsub_morph : morph1 fsub.
+unfold fsub; do 2 red; intros.
+apply subset_morph; auto with *.
+red; intros.
+apply fa_morph; intro X.
+rewrite H; reflexivity.
+Qed.
+
 Lemma fsub_elim : forall x y o,
   isOrd o ->
   y \in TI F o ->
@@ -153,7 +154,7 @@ apply TI_elim in H0; trivial.
 destruct H0.
 exists x0; trivial.
 rewrite H2; apply H3; trivial.
-transitivity Ffix;[apply TI_Ffix|apply Ffix_inA].
+apply TI_Ffix.
 apply isOrd_inv with o; trivial.
 Qed.
 
@@ -277,7 +278,7 @@ assert (forall z, z \in fsub a -> uchoice_pred (fun o => Ffix_rel z o)).
  destruct H1 with x z; auto.
   apply subset_elim2 in H3; destruct H3.
   rewrite H3; apply H4; trivial.
-  transitivity Ffix; [apply TI_Ffix; trivial|apply Ffix_inA].
+  apply TI_Ffix; trivial.
 
   split; intros.
    rewrite <- H5; trivial.
@@ -418,14 +419,15 @@ assert (inter (replf (subset (power A) (fun X => a \in F X)) (fun X => X))
   apply inter_elim with (1:=H3).
   rewrite replf_ax.
   2:red;red;auto.
-  exists A; auto with *.
+  exists Ffix; auto with *.
   apply subset_intro; auto with *.
-   apply power_intro; auto.
+   apply power_intro; intros.
+   apply Ffix_inA; trivial.
 
    apply TI_elim in H0; auto.
    destruct H0.
    revert H4; apply Fmono.
-   transitivity Ffix; [apply TI_Ffix; trivial|apply Ffix_inA].
+   apply TI_Ffix; trivial.
    apply isOrd_inv with w; trivial.
 
   intros.
@@ -434,7 +436,7 @@ assert (inter (replf (subset (power A) (fun X => a \in F X)) (fun X => X))
   2:red;red;auto.
   exists X; auto with *.
   apply subset_intro; trivial.
-  apply power_intro; auto.
+  apply power_intro; intros; apply Ffix_inA; auto.
 apply (Fmono _ _ H3).
 apply Fstab.
  red; intros.
@@ -536,6 +538,65 @@ Qed.
 
 End BoundedOperator.
 
+Section BoundIndep.
+
+Variable A : set.
+Hypothesis Ftyp : forall X, X \incl A -> F X \incl A.
+Variable A' : set.
+Hypothesis Ftyp' : forall X, X \incl A' -> F X \incl A'.
+
+Lemma Ffix_indep : Ffix A == Ffix A'.
+apply eq_intro; intros.
+ rewrite Ffix_def in H|-*; trivial.
+ rewrite Ffix_def in H|-*; trivial.
+Qed.
+
+Lemma Ffix_ord_indep :
+  Ffix_ord A == Ffix_ord A'.
+unfold Ffix_ord.
+apply osup_morph.
+ apply Ffix_indep.
+
+ red; intros.
+ apply osucc_morph.
+ unfold Fix_rec.
+ apply uchoice_morph_raw; red; intros.
+ unfold Ffix_rel.
+ apply fa_morph; intro R.
+ apply fa_morph; intro.
+ apply impl_morph; intros.
+  apply fa_morph; intro x2.
+  apply fa_morph; intro g.
+assert (fsub A x2 ==  fsub A' x2).
+ unfold fsub.
+ apply subset_morph.
+  apply Ffix_indep.
+
+  red; intros.
+  apply fa_morph; intro X.
+  rewrite Ffix_indep; reflexivity.
+apply impl_morph.
+ unfold ext_fun, eq_fun.
+ apply fa_morph; intro x3.
+ apply fa_morph; intro x4.
+ rewrite H2; reflexivity.
+
+ intros.
+ apply impl_morph; intros.
+  apply fa_morph; intro y0.
+  rewrite H2; reflexivity.
+
+  apply x1; auto with *.
+  unfold F_a.
+  apply osup_morph; auto.
+  red; intros.
+  apply osucc_morph.
+  apply H3; trivial.
+
+ apply x1; trivial.
+Qed.
+
+End BoundIndep.
 
 End IterMonotone.
 

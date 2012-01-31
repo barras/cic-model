@@ -418,6 +418,61 @@ replace k with (0 + k); auto with arith.
 apply distr_subst_rec.
 Qed.
 
+
+  Lemma occur_subst : forall k t,
+   occur k t <->
+   lift_rec 1 (subst_rec (Abs (Ref 0)) t k) k <> t.
+split; intros.
+ induction H; simpl; intros.
+  destruct (lt_eq_lt_dec n n) as [[?|_]|?].
+   elim (Lt.lt_irrefl n); trivial.
+
+   discriminate.
+
+   elim (Lt.lt_irrefl n); trivial.
+
+  red; intros.
+  injection H0; clear H0; intros; auto.
+
+  red; intros. 
+  injection H0; clear H0; intros; auto.
+
+  red; intros.
+  injection H0; clear H0; intros; auto.
+
+ revert k H; induction t; simpl; intros.
+  destruct (lt_eq_lt_dec k n) as [[?|?]|?]; simpl in H.
+   destruct (le_gt_dec k (Peano.pred n)); simpl in *.
+    elim H.
+    destruct n; simpl; trivial.
+    inversion l.
+
+    apply NPeano.Nat.lt_pred_le in g.
+    elim (Lt.lt_irrefl n).
+    apply Lt.le_lt_trans with k; trivial.
+
+   subst k; auto.
+
+   destruct (le_gt_dec k n).
+    elim (Lt.lt_irrefl n).
+    apply Lt.lt_le_trans with k; trivial.
+
+    elim H; trivial.
+
+  constructor; apply IHt.
+  red; intros; apply H.
+  rewrite H0; trivial.
+
+  destruct (eqterm (lift_rec 1 (subst_rec (Abs (Ref 0)) t1 k) k) t1).
+   apply occ_app_r.
+   apply IHt2.
+   red; intros; apply H.
+   rewrite e; rewrite H0; trivial.
+
+   apply occ_app_l; auto.
+Qed.
+
+
 (***********************************************************************)
 (* One step reduction *)
 
@@ -787,6 +842,171 @@ Qed.
 
 Hint Resolve sn_abs sn_var sn_lift.
 
+(* Normalization function *)
+
+Definition neutral t :=
+  match t with
+  | Abs _ => False
+  | _ => True
+  end.
+
+Inductive nf : term -> Prop :=
+| Nf_var : forall n, nf (Ref n)
+| Nf_app : forall u v, neutral u -> nf u -> nf v -> nf (App u v)
+| Nf_abs : forall t, nf t -> nf (Abs t).
+
+Hint Constructors nf.
+
+Lemma nf_norm : forall t, nf t -> forall u, ~ red1 t u.
+red; intros.
+revert H.
+induction H0; simpl; intros; auto.
+ inversion_clear H.
+ elim H0.
+
+ inversion_clear H; auto.
+
+ inversion_clear H; auto.
+
+ inversion_clear H; auto.
+Qed.
+
+Lemma nf_neutral_open : forall t,
+  nf t ->
+  neutral t ->
+  exists k, occur k t.
+induction 1; intros.
+ exists n; auto with coc.
+
+ destruct (IHnf1 H).
+ exists x; apply occ_app_l; trivial.
+
+ destruct H0.
+Qed.
+
+Lemma lift_closed : forall m M n k,
+  k <= n ->
+  occur n (lift_rec m M k) ->
+  m+k <= n /\ occur (n-m) M.
+induction M; simpl; intros.
+ destruct (le_gt_dec k n).
+  inversion_clear H0.
+  split; auto with arith.
+  replace (m+n-m) with n; auto with arith.
+
+  inversion H0; subst n0.
+  elim (Lt.lt_irrefl n); apply Lt.lt_le_trans with k; trivial.
+
+ inversion_clear H0.
+ apply IHM in H1; auto with arith.
+ destruct H1.
+ rewrite <- plus_n_Sm in H0.
+ split; auto with arith.
+ constructor.
+ rewrite <- NPeano.Nat.sub_succ_l; trivial.
+ apply Le.le_trans with (m+k); auto with arith.
+
+ inversion_clear H0.
+  apply IHM1 in H1; destruct H1; auto with *.
+  apply IHM2 in H1; destruct H1; auto with *.
+Qed.
+
+Lemma subst_closed : forall N M n k,
+  k <= n ->
+  occur n (subst_rec N M k) ->
+  occur (n-k) N \/ occur (S n) M.
+induction M; simpl; intros.
+ destruct (lt_eq_lt_dec k n) as [[?|?]|?].
+  inversion H0; subst n0.
+  right.
+  destruct n; simpl; auto with *.
+  inversion l.
+
+  left.
+  apply lift_closed with (k:=0); auto with arith.
+
+  inversion H0; subst n0.
+  elim (Lt.lt_irrefl n); apply Lt.lt_le_trans with k; trivial.
+
+ inversion_clear H0.
+ apply IHM in H1.
+ destruct H1; auto with *.
+ apply Le.le_n_S; trivial.
+
+ inversion_clear H0.
+  apply IHM1 in H1; trivial.
+  destruct H1; auto.
+
+  apply IHM2 in H1; trivial.
+  destruct H1; auto.
+Qed.
+
+
+Lemma red_closed : forall t t',
+  red t t' ->
+  forall k,
+  occur k t' ->
+  occur k t.
+induction 1; intros; auto.
+apply IHred.
+revert k H1; clear H IHred t.
+induction H0.
+ intros.
+ destruct subst_closed with (2:=H1); auto with arith.
+ replace (k-0) with k in H; auto with *.
+
+ intros.
+ inversion_clear H1; apply occ_abs; auto.
+
+ intros.
+ inversion_clear H1.
+  apply occ_app_l; auto.
+  apply occ_app_r; trivial.
+
+ intros.
+ inversion_clear H1.
+  apply occ_app_l; trivial.
+  apply occ_app_r; auto.
+Qed.
+
+
+Lemma red1_dec : forall t, {u|red1 t u}+{nf t}.
+induction t; intros.
+ right; simpl; trivial.
+
+ destruct IHt.
+  destruct s.
+  left; exists (Abs x); auto with coc.
+
+  right; simpl; auto.
+
+ destruct IHt1.
+  destruct s.
+  left; exists (App x t2); auto with coc.
+
+  destruct IHt2.
+   destruct s.
+   left; exists (App t1 x); auto with coc.
+
+   destruct t1;[right;simpl;auto|left|right;simpl;auto].
+repeat constructor; trivial.
+   exists (subst t2 t1); auto with coc.
+constructor; trivial.
+simpl; trivial.
+Qed.
+
+Lemma norm : forall t, sn t -> { u | red t u /\ nf u}.
+induction 1; intros.
+destruct (red1_dec x).
+ destruct s.
+ destruct (H0 x0); trivial.
+ destruct a.
+ exists x1; split; trivial.
+ transitivity x0; auto with coc.
+
+ exists x; auto with coc.
+Qed.
+
 (* Confluence *)
 
   Theorem church_rosser :
@@ -799,3 +1019,99 @@ intros.
 apply church_rosser.
 transitivity m; auto with coc.
 Qed.
+
+(* Term-interpretation *)
+Require VarMap.
+
+Module LCeq.
+  Definition t := term.
+  Definition eq := @Logic.eq term.
+  Definition eq_equiv : Equivalence eq := eq_equivalence.
+End LCeq.
+Module I := VarMap.Make(LCeq).
+
+Notation intt := I.map.
+Notation eq_intt := I.eq_map.
+
+Import I.
+Existing Instance cons_morph.
+Existing Instance cons_morph'.
+Existing Instance shift_morph.
+Existing Instance lams_morph.
+
+Definition ilift (j:intt) : intt :=
+  fun k => match k with
+  | 0 => Ref 0
+  | S n => lift 1 (j n)
+  end.
+
+Instance ilift_morph : Proper (eq_intt ==> eq_intt) ilift.
+do 4 red; intros.
+unfold ilift.
+destruct a; simpl; auto.
+rewrite H; trivial.
+Qed.
+
+Lemma ilift_lams : forall k f j,
+  (forall j j', (forall a, lift 1 (j a) = j' a) ->
+   forall a, lift 1 (f j a) = f j' a) ->
+  eq_intt (ilift (I.lams k f j)) (I.lams (S k) f (ilift j)).
+intros.
+do 2 red; intros.
+destruct a; simpl.
+ reflexivity.
+
+ unfold I.lams; simpl.
+ destruct (le_gt_dec k a); simpl; trivial.
+ apply H.
+ unfold I.shift, ilift; simpl; intros; trivial.
+Qed.
+
+Lemma ilift_binder : forall u j k,
+  eq_intt
+    (ilift (fun n => subst_rec u (j n) k))
+    (fun n => subst_rec u (ilift j n) (S k)).
+red; red; intros.
+destruct a; simpl; trivial.
+rewrite commut_lift_subst; trivial.
+Qed.
+
+Lemma ilift_binder_lift : forall j k,
+  eq_intt
+    (ilift (fun n => lift_rec 1 (j n) k))
+    (fun n => lift_rec 1 (ilift j n) (S k)).
+red; red; intros.
+destruct a; simpl; trivial.
+rewrite permute_lift; trivial.
+Qed.
+
+Lemma cross_binder_cons k x y i :
+  lift 1 x = y ->
+  eq_intt (ilift (I.lams k (I.cons x) i)) (I.lams (S k) (I.cons y) (ilift i)).
+do 2 red; intros.
+destruct a; simpl.
+ reflexivity.
+
+ unfold I.lams; simpl.
+ destruct (le_gt_dec k a); simpl; trivial.
+ destruct (a - k); simpl; trivial.
+Qed.
+
+Lemma cross_binder_shift n k i :
+  eq_intt (ilift (I.lams k (I.shift n) i)) (I.lams (S k) (I.shift n) (ilift i)).
+do 2 red; intros.
+destruct a; simpl.
+ reflexivity.
+
+ unfold I.lams; simpl.
+ destruct (le_gt_dec k a); simpl; trivial.
+Qed.
+
+(* Substitutivity property *)
+
+Definition substitutive (t:intt->term) :=
+  forall u j k,
+  t (fun n => subst_rec u (j n) k) = subst_rec u (t j) k.
+Definition liftable (t:intt->term) :=
+  forall j k,
+  t (fun n => lift_rec 1 (j n) k) = lift_rec 1 (t j) k.

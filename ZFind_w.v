@@ -578,7 +578,7 @@ Qed.
 
 (***************************************)
 
-  Definition Wsupi x := union (subset (W_F Wdom) (fun y => Wsup y == x)).
+  Definition Wsupi x := union (subset (W_F W) (fun y => Wsup y == x)).
 
   Instance Wsupi_morph : morph1 Wsupi.
 do 2 red; intros.
@@ -590,7 +590,7 @@ Qed.
 
   Lemma Wsupi_def : forall X x,
     x \in W_F X ->
-    X \incl Wdom ->
+    X \incl W ->
     Wsupi (Wsup x) == x.
 unfold Wsupi; intros.
 apply union_subset_singl with (y':=x); auto with *.
@@ -598,7 +598,9 @@ apply union_subset_singl with (y':=x); auto with *.
 
  intros.
  rewrite <- H4 in H3.
- apply Wsup_inj with (X:=Wdom) (Y:=Wdom) in H3; auto with *.
+ apply Wsup_inj with (X:=W) (Y:=W) in H3; auto with *.
+ apply Ffix_inA.
+ apply Ffix_inA.
 Qed.
 
 (* translation Wf X --> W_F Y given translation g:X-->Y *)
@@ -607,7 +609,7 @@ Qed.
   Lemma trF_decomp : forall X g x y,
     ext_fun X g ->
     x \in W_F X ->
-    X \incl Wdom ->
+    X \incl W ->
     y == Wsup x ->
     trF g y == WFmap g x.
 intros.
@@ -621,7 +623,7 @@ Qed.
 
 Lemma Wfsub_intro : forall X x i,
   x \in W_F X ->
-  X \incl Wdom ->
+  X \incl W ->
   i \in B (fst x) ->
   cc_app (snd x) i \in fsub Wf Wdom (Wsup x).
 intros.
@@ -633,8 +635,11 @@ apply subset_intro.
  apply Wf_elim in H3.
  destruct H3.
  apply Wsup_inj with (X:=X)(Y:=X0) in H4; auto.
- rewrite <- H4 in H3.
- apply cc_prod_elim with (1:=tys _ _ H3); trivial.
+  rewrite <- H4 in H3.
+  apply cc_prod_elim with (1:=tys _ _ H3); trivial.
+
+  transitivity W;[trivial|apply Ffix_inA].
+  transitivity W;[trivial|apply Ffix_inA].
 Qed. 
 
 Let Gm_prf : forall (x x' : set) (g g' : set -> set),
@@ -649,9 +654,8 @@ apply WFmap_ext.
  apply Wf_elim in H.
  destruct H.
  rewrite H2.
- rewrite Wsupi_def with W; trivial.
-  apply fst_typ_sigma in H; trivial.
-  apply Wtyp.
+ rewrite Wsupi_def with W; auto with *.
+ apply fst_typ_sigma in H; trivial.
 
  rewrite H1; reflexivity.
 
@@ -663,12 +667,12 @@ apply WFmap_ext.
  destruct H5.
  assert (Wsupi x == x2).
   rewrite H6; rewrite Wsupi_def with (TI Wf x1); auto with *.
-  transitivity W; [apply Wi_W; eauto using isOrd_inv|apply Wtyp].
+  apply Wi_W; eauto using isOrd_inv.
  assert (cc_app (snd (Wsupi x)) i \in fsub Wf Wdom (Wsup (Wsupi x))).
   apply Wfsub_intro with (TI Wf x1); auto with *.
    rewrite H7; trivial.
 
-   transitivity W; [apply Wi_W; eauto using isOrd_inv|apply Wtyp].
+   apply Wi_W; eauto using isOrd_inv.
  rewrite (fsub_morph Wf Wdom (Wsup (Wsupi x)) x) in H8.
   apply H0; trivial.
   rewrite H1; rewrite H3; reflexivity.
@@ -681,7 +685,7 @@ Hint Resolve Gm_prf.
 
 Lemma trF_typ : forall X Y x g,
   ext_fun X g ->
-  X \incl Wdom ->
+  X \incl W ->
   (forall x, x \in X -> g x \in Y) ->
   x \in Wf X ->
   trF g x \in W_F Y.
@@ -692,7 +696,7 @@ apply WFmap_typ with X; trivial.
 Qed.
 
   Lemma trF_inj : forall X Y g g' x x',
-    X \incl Wdom -> Y \incl Wdom ->
+    X \incl W -> Y \incl W ->
     x \in Wf X -> x' \in Wf Y ->
     ext_fun X g -> ext_fun Y g' ->
     (forall a a', a \in X -> a' \in Y -> g a == g' a' -> a == a') ->
@@ -736,7 +740,7 @@ apply TI_intro with o'; auto.
  apply Fmono_morph; apply W_F_mono.
 
  apply trF_typ with (TI Wf o'); auto with *.
-  transitivity W; [apply Wi_W|apply Wtyp]; trivial.
+  apply Wi_W; trivial.
 
   rewrite H4.
   rewrite <- TI_mono_succ; auto.
@@ -761,8 +765,8 @@ destruct xty as (o1', ?, (c1,?,?)).
 apply TI_Wf_elim in yty; trivial.
 destruct yty as (o2', ?, (c2,?,?)).
 apply trF_inj with (TI Wf o1') (TI Wf o2') trad trad; auto with *.
- transitivity W; [apply Wi_W|apply Wtyp];eauto using isOrd_inv.
- transitivity W; [apply Wi_W|apply Wtyp];eauto using isOrd_inv.
+ apply Wi_W;eauto using isOrd_inv.
+ apply Wi_W;eauto using isOrd_inv.
 
  rewrite <- TI_mono_succ; eauto using isOrd_inv.
  rewrite H1; apply Wsup_typ; eauto using isOrd_inv.
@@ -821,14 +825,14 @@ assert (trad (Wsup (WFmap trad1 y)) == y).
     intros.
     apply H1; trivial.
 
-   transitivity W; [apply Wi_W; eauto using isOrd_inv|apply Wtyp].
+   apply Wi_W; eauto using isOrd_inv.
 
    apply Wsupi_def with (TI Wf x).
     apply WFmap_typ with (TI W_F x); auto with *.
     intros.
     apply H1; trivial.
 
-    transitivity W; [apply Wi_W; eauto using isOrd_inv|apply Wtyp].
+    apply Wi_W; eauto using isOrd_inv.
 
   generalize (WF_eta _ _ H3); intro.
   apply @transitivity with (3:=symmetry H4); auto with *.
@@ -1144,7 +1148,7 @@ apply G_osup; intros; trivial.
 
     unfold fsub.
     apply G_subset; trivial.
-    apply G_Wdom; trivial.
+    apply G_W; trivial.
 
     intros.
     unfold osucc.

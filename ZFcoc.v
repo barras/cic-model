@@ -232,6 +232,15 @@ rewrite cc_beta_eq; auto.
  rewrite H2; reflexivity.
 Qed.
 
+Lemma cc_app_typ f v A B B' :
+  f \in cc_prod A B ->
+  B' == B v ->
+  v \in A ->
+  cc_app f v \in B'.
+intros.
+rewrite H0; apply cc_prod_elim with (1:=H); trivial.
+Qed.
+
 Lemma cc_arr_intro : forall A B F,
   ext_fun A F ->
   (forall x, x \in A -> F x \in B) ->

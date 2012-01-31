@@ -5,949 +5,223 @@ Require Import Sat.
 Require Import Models.
 Import Can.
 
-Import Relation_Operators.
-
-Definition prod_eq A B R1 R2 (p1 p2:A*B) :=
-  R1 (fst p1) (fst p2) /\ R2 (snd p1) (snd p2).
-
 Module Lc := Lambda.
 
 (* The abstract normalization model. *)
 
-Module Type Model.
+Module Type RealSN_addon (M : CC_Model).
+  Import M.
 
-Parameter X : Type.
-Parameter inX : X * Lc.term -> X -> Prop.
-Parameter eqX : X -> X -> Prop.
-Parameter eqX_equiv : Equivalence eqX.
-Notation "x \real y" := (inX x y) (at level 60).
-Notation "x == y" := (eqX x y) (at level 70).
+  Parameter Red : X -> X -> SAT.
+  Parameter Red_morph: Proper (eqX ==> eqX ==> eqSAT) Red.
 
-Definition Pi dom F f :=
-  Inter _ (fun x:X =>
-    Arr (fun u => (x,u) \real dom) (fun u => (f x, u) \real F x)).
+  Parameter Red_sort : forall P, P \in props -> eqSAT (Red props P) snSAT.
 
-Parameter in_ext: Proper (prod_eq eqX (@eq _) ==> eqX ==> iff) inX.
+  Definition piSAT A F f :=
+    interSAT (fun p:{x|x \in A} =>
+      prodSAT (Red A (proj1_sig p)) (Red (F (proj1_sig p)) (f (proj1_sig p)))).
 
-Parameter props : X.
-Parameter app : X -> X -> X.
-Parameter lam : X -> (X -> X) -> X.
-Parameter prod : X -> (X -> X) -> X.
+  Parameter Red_prod : forall dom f F,
+    eq_fun dom F F ->
+    f \in prod dom F ->
+    eqSAT (Red (prod dom F) f) (piSAT dom F (app f)).
 
-Definition eq_fun (x:X) (f1 f2:X->X) :=
-  forall y1 y2 t, (y1,t) \real x -> y1 == y2 -> f1 y1 == f2 y2.
-
-Parameter lam_ext :
-  forall x1 x2 f1 f2,
-  x1 == x2 ->
-  eq_fun x1 f1 f2 ->
-  lam x1 f1 == lam x2 f2.
-
-Parameter app_ext: Proper (eqX ==> eqX ==> eqX) app.
-
-Parameter prod_ext :
-  forall x1 x2 f1 f2,
-  x1 == x2 ->
-  eq_fun x1 f1 f2 ->
-  prod x1 f1 == prod x2 f2.
-
-Parameter prod_intro : forall dom f F t,
-  eq_fun dom f f ->
-  eq_fun dom F F ->
-  Pi dom F f t ->
-  (lam dom f, t) \real prod dom F.
-
-Parameter prod_elim : forall dom f x F t u,
-  eq_fun dom F F ->
-  (f,t) \real prod dom F ->
-  (x,u) \real dom ->
-  (app f x, Lc.App t u) \real F x.
-
-Parameter impredicative_prod : forall dom F T U,
-  eq_fun dom F F ->
-  Lc.sn T ->
-  Pi dom (fun _ => props) F U ->
-  (prod dom F, Lc.App2 Lc.K T U) \real props.
-
-Parameter beta_eq:
-  forall dom F x u,
-  eq_fun dom F F ->
-  (x,u) \real dom ->
-  app (lam dom F) x == F x.
-
-Existing Instance eqX_equiv.
-Existing Instance in_ext.
-Existing Instance app_ext.
+  Existing Instance Red_morph.
 
 (* No empty types (False is inhabited) *)
 
-  Parameter daemon : X.
-  Parameter daemont : Lc.term.
-  Parameter daemon_false : (daemon,daemont) \real prod props (fun P => P).
+  Parameter daimon : X.
+  Parameter daimon_false : daimon \in prod props (fun P => P).
 
-(* Equiping the model with saturated sets *)
+End RealSN_addon.
 
-Parameter inSAT_CR : forall x t A,
-  (x,t) \real A -> is_cand (fun u => (x,u) \real A).
+(******************************************************************************)
+(* The generic model construction: *)
 
-End Model.
+Module MakeModel (M : CC_Model) (MM : RealSN_addon(M)).
+Import M.
+Import MM.
 
-(* We can instantiate the abstract model in ZF: *)
+(* Derived properties of the abstract SN model *)
 
-Module MM <: Model.
+  Notation "[ x , t ] \real A" := (x \in A  /\ inSAT t (Red A x)) (at level 60).
 
-Require Import ZF ZFpairs ZFcoc ZFlambda.
-Import IZF. 
-
-Definition X : Type := set.
-
-Definition eqX : X -> X -> Prop := eq_set.
-Lemma eqX_equiv : Equivalence eqX.
-auto with *.
+Lemma piSAT_intro : forall A B f t,
+  Lc.sn t -> (* if A is empty *)
+  (forall x u, x \in A -> inSAT u (Red A x) -> inSAT (Lc.App t u) (Red (B x) (f x))) ->
+  inSAT t (piSAT A B f).
+unfold piSAT; intros.
+apply interSAT_intro' with (P:=fun x=>x \in A)
+   (F:=fun x => prodSAT (Red A x) (Red (B x) (f x))); trivial; intros.
+intros ? ?.
+apply H0; trivial.
 Qed.
 
-Notation "x == y" := (eqX x y) (at level 70).
-
-
-Definition inTyp (p:X*Lc.term) (x:X) :=
-  couple (Datatypes.fst p) (iLAM (Datatypes.snd p)) \in x.
-
-Definition inX (p:X*Lc.term) (x:X) :=
-  inTyp p x /\ is_cand (fun t => inTyp (Datatypes.fst p, t) x).
-
-Notation "x \real y" := (inX x y) (at level 60).
-
-Lemma in_ext: Proper (prod_eq eqX (@eq _) ==> eqX ==> iff) inX.
-do 3 red; intros.
-destruct x; destruct y; destruct H; simpl in H,H1.
-unfold inX; simpl.
-apply and_iff_morphism.
- unfold inTyp; simpl.
- rewrite H; rewrite H1; rewrite H0; reflexivity.
-
- unfold inTyp; simpl.
- subst t0.
- apply is_cand_morph; red; intros.
- rewrite H; rewrite H0; reflexivity.
-Qed.
-
-Definition Pi dom F f :=
-  Inter _ (fun x:X =>
-    Arr (fun u => (x,u) \real dom) (fun u => (f x, u) \real F x)).
-
-
-Lemma inSAT_CR0 : forall x t A,
-  (x,t) \real A -> is_cand (fun u => inTyp (x,u) A).
-destruct 1; trivial.
-Qed.
-
-Lemma inSAT_CR : forall x t A,
-  (x,t) \real A -> is_cand (fun u => (x,u) \real A).
-intros.
-specialize inSAT_CR0 with (1:=H); intro isCR; generalize isCR.
-apply iff_impl.
-apply is_cand_morph.
-red; intros.
-split; intros.
- split; trivial.
-
- destruct H0; trivial.
-Qed.
-
-Lemma inSAT_red : forall x A t u,
-  (x,t) \real A -> Lc.red t u -> (x,u) \real A.
-intros.
-destruct (inSAT_CR H); eauto.
-Qed.
-
-Lemma inSAT_sn : forall x A t, (x,t) \real A -> Lc.sn t.
-intros.
-destruct (inSAT_CR H); eauto.
-Qed.
-
-Lemma inSAT_exp : forall x A t u,
-  (x,t) \real A ->
-  neutral u ->
-  (forall v, Lc.red1 u v -> (x,v) \real A) ->
-  (x,u) \real A. 
-intros.
-destruct (inSAT_CR H); eauto.
-Qed.
-
-Lemma inSAT_val : forall x x' A A' t,
-  x == x' -> A == A' -> (x,t) \real A -> (x',t) \real A'.
-intros.
-revert H1; apply iff_impl.
-apply in_ext; auto.
-red; auto.
-Qed.
-
-Definition El (T:set) : set :=
-  repl T
-   (fun p x => (exists t, p == couple x (iLAM t)) /\
-               is_cand (fun t => inTyp(x, t) T)).
-
-Lemma repl1 : forall T,
-  ZFrepl.repl_rel T
-   (fun p x => (exists t, p == couple x (iLAM t)) /\
-               is_cand (fun t => inTyp(x, t) T)).
-split; intros.
- destruct H2 as ((t,eqx),iscan); split.
-  exists t.
-  rewrite <- H0; rewrite <- H1; trivial.
-
-  revert iscan; apply iff_impl.
-  apply is_cand_morph; red; intros.
-  unfold inTyp; simpl.
-  rewrite H1; reflexivity.
-
- destruct H0 as ((t1,eq1),_); destruct H1 as ((t2,eq2),_).
- rewrite eq1 in eq2.
- apply couple_injection in eq2; destruct eq2; trivial.
-Qed.
-Hint Resolve repl1.
-
-Instance El_morph : morph1 El.
-do 2 red; intros.
-unfold El.
-apply ZFrepl.repl_morph_raw; trivial.
-do 2 red; intros.
-apply and_iff_morphism.
- apply ex_morph; red; intros t.
- rewrite H0; rewrite H1; reflexivity.
-
- apply is_cand_morph; red; intros.
- unfold inTyp; simpl.
- rewrite H; rewrite H1; reflexivity.
-Qed.
-
-Lemma El_def : forall x T,
-  x \in El T <-> (exists t, (x,t) \real T).
-split; intros.
- unfold El in H.
- apply ZFrepl.repl_elim in H; auto.
- destruct H.
- destruct H0.
- destruct H0.
- rewrite H0 in H.
- exists x1.
- split; trivial.
-
- destruct H.
- destruct H.
- unfold El.
- apply ZFrepl.repl_intro with (couple x (iLAM x0)); trivial.
- split; trivial.
- exists x0; reflexivity.
-Qed.
-
-
-Definition mkTy (A:set) (R: set -> Lc.term -> Prop) : set :=
-  subset (prodcart A CCLam) (fun p =>
-    exists2 t, snd p == iLAM t & R (fst p) t).
-
-Lemma mkTy_morph : forall A A' R R',
-  A == A' ->
-  (forall x t, x \in A -> (R x t <-> R' x t)) ->
-  mkTy A R == mkTy A' R'.
-intros.
-unfold mkTy.
-apply subset_morph.
- rewrite H; reflexivity.
-
- red; intros.
- apply ex2_morph.
-  reflexivity.
-
-  red; intros.
-  apply H0.
-  apply fst_typ in H1; trivial.
-Qed.
-
-
-Lemma mkTy_def : forall x t A R,
-  Proper (eq_set ==> eq ==> iff) R ->
-  (couple x (iLAM t) \in mkTy A R <-> x \in A /\ R x t).
-intros.
-unfold mkTy.
-split; intros.
- split.
-  apply subset_elim1 in H0.
-  apply fst_typ in H0.
-  rewrite fst_def in H0; trivial.
-
-  apply subset_elim2 in H0.
-  destruct H0.
-  destruct H1.
-  rewrite <- H0 in H1,H2; clear x0 H0.
-  rewrite fst_def in H2; rewrite snd_def in H1.
-  apply iLAM_inj in H1; subst; trivial.
-
- apply subset_intro.
-  destruct H0.
-  apply couple_intro; trivial.
-  apply iLAM_typ.
-
-  destruct H0.
-  exists t.
-   apply snd_def.
-
-   rewrite fst_def; trivial.
-Qed.
-
-Lemma mkTy_def0 : forall x t A R,
-  Proper (eq_set ==> eq ==> iff) R ->
-  (x \in A -> R x t -> is_cand (fun t => R x t)) ->
-  ((x,t) \real mkTy A R <-> x \in A /\ R x t).
-intros.
-unfold inX, inTyp; rewrite mkTy_def; trivial; simpl.
-split; intros.
- destruct H1 as (H1,_); trivial.
-
- split; trivial.
- destruct H1.
- generalize (H0 H1 H2); apply is_cand_morph; red; intros; simpl.
- rewrite mkTy_def; trivial.
- split; intros; auto.
- destruct H3; trivial.
-Qed.
-
-Lemma mkTy_def' : forall x t A R,
-  Proper (eq_set ==> eq ==> iff) R ->
+Lemma piSAT_elim : forall A B f x t u,
+  inSAT t (piSAT A B f) ->
   x \in A ->
-  is_cand (fun t => R x t) ->
-  ((x,t) \real mkTy A R <-> R x t).
+  inSAT u (Red A x) ->
+  inSAT (Lc.App t u) (Red (B x) (f x)).
 intros.
-unfold inX, inTyp; rewrite mkTy_def; trivial; simpl.
+apply interSAT_elim with (x:=exist (fun x => x \in A) x H0) in H; simpl proj1_sig in H.
+apply H; trivial.
+Qed.
+
+Lemma prod_intro_sn : forall dom f F m,
+  eq_fun dom f f ->
+  eq_fun dom F F ->
+  Lc.sn m ->
+  (forall x u, [x,u] \real dom ->
+   [f x, Lc.App m u] \real F x) ->
+  [lam dom f, m] \real prod dom F.
+intros.
+assert (lam dom f \in prod dom F).
+ apply prod_intro; intros; trivial.
+ apply H2 with SatSet.daimon.
+ split; trivial.
+ apply varSAT.
+split; trivial.
+rewrite Red_prod; trivial.
+apply piSAT_intro; intros; trivial.
+rewrite beta_eq; trivial.
+apply H2; auto.
+Qed.
+(*
+Lemma realProd_intro : forall i t A B f,
+  Lc.sn t -> (*  If A is empty *)
+  f \in prod (int i A) (fun x => int (V.cons x i) B) ->
+  (forall x u,
+   x \in int i A ->
+   cc_app f x \in int (V.cons x i) B ->
+   inSAT u (Red (int i A) x) ->
+   inSAT (Lc.App t u) (Red (int (V.cons x i) B) (cc_app f x))) ->
+  [f,t]\real int i (Prod A B).
+intros.
+rewrite intProd_eq.
 split; intros.
- destruct H2 as ((_,H2),_); trivial.
+ unfold prod; rewrite El_def; trivial.
 
- split; auto.
- revert H1; apply is_cand_morph; red; intros; simpl.
- rewrite mkTy_def; trivial.
- split; intros; auto.
- destruct H1; trivial.
-Qed.
-
-Definition mkProp S :=
-  mkTy (power empty) (fun x t => inSAT t S).
-
-Lemma prop3 : forall S, Proper (eq_set ==> eq ==> iff) (fun _ t => inSAT t S).
-do 3 red; intros.
-subst y0; reflexivity.
-Qed.
-
-Lemma mkProp_def : forall x t S,
-  (x,t) \real mkProp S <-> x == empty /\ inSAT t S.
-intros.
-unfold mkProp.
-rewrite mkTy_def0.
-2:apply prop3.
- setoid_replace (x \in power empty) with (x == empty);
-   auto with *.
- rewrite power_ax.
- split; intros.
-  apply empty_ext; red; intros.
-  generalize (H _ H0); apply empty_ax.
-
-  rewrite <- H; trivial.
-
- intros _ _.
- generalize (proj2_sig S); apply iff_impl.
- apply is_cand_morph; red; intros.
- reflexivity.
-Qed.
-
-Lemma El_mkProp : forall S, El (mkProp S) == power empty.
-intros.
-apply power_ext; intros.
- rewrite El_def.
- exists (Lc.Ref 0).
- rewrite mkProp_def; split.
-  apply empty_ext; red; intros.
-  apply H in H0; elim empty_ax with x0; trivial.
-
-  apply varSAT.
-
- rewrite El_def in H.
- destruct H.
- rewrite mkProp_def in H; destruct H.
- rewrite H in H0; trivial.
-Qed.
-
-
-Definition props :=
-  mkTy (power (prodcart (power empty) CCLam))
-    (fun P t => Lc.sn t /\ exists S, P == mkProp S).
-
-Lemma prop2 :
-  Proper (eq_set ==> eq ==> iff)
-    (fun P t => Lc.sn t /\ (exists S : SAT, P == mkProp S)).
-do 3 red; intros.
-subst y0.
-apply and_iff_morphism; auto with *.
-apply ex_morph; red; intros.
-rewrite H; reflexivity.
-Qed.
-
-Lemma props_def : forall x t,
-  (x,t) \real props <-> (exists S, x == mkProp S) /\ Lc.sn t.
-intros.
-unfold props.
-rewrite mkTy_def0.
-2:apply prop2.
- split; intros.
-  destruct H as (_,(snt,isprop)); auto.
-
-  destruct H as (isprop,snt); split; auto.
-  destruct isprop as (S,isprop); rewrite isprop.
-  apply power_intro; intros.
-  apply subset_elim1 in H; trivial.
-
- intros _ (_,?).
- generalize cand_sn; apply is_cand_morph; red; intros.
- split; intros; auto.
- destruct H0; trivial.
-Qed.
-
-(***)
-
-Definition app : X -> X -> X := cc_app.
-Definition lam (dom : X) (f: X -> X) : X :=
-  cc_lam (El dom) f.
-
-Definition prod (A : X) (B : X -> X) : X :=
-  mkTy (cc_prod (El A) (fun x => El (B x))) (fun f t => Pi A B (fun x => app f x) t).
-
-Lemma prop1 : forall dom F,
-  Proper (eq_set ==> eq ==> iff) (fun f t => Pi dom F (fun x => app f x) t).
-do 3 red; intros.
-subst y0.
-apply and_iff_morphism; auto with *.
-apply fa_morph; intro x1.
-apply fa_morph; intro u.
-apply fa_morph; intros _.
-apply in_ext;[split|]; simpl; auto with *.
-rewrite H; reflexivity.
-Qed.
-
-Definition eq_fun (x:X) (f1 f2:X->X) :=
-  forall y1 y2 t, (y1,t) \real x -> y1 == y2 -> f1 y1 == f2 y2.
-
-Lemma eq_fun_ext : forall dom f g,
-  eq_fun dom f g -> ZF.eq_fun (El dom) f g.
-red; intros.
-rewrite El_def in H0; destruct H0.
-apply H with x0; auto.
-Qed.
-Hint Resolve eq_fun_ext.
-Hint Unfold ext_fun.
-
-Lemma lam_ext :
-  forall x1 x2 f1 f2,
-  x1 == x2 ->
-  eq_fun x1 f1 f2 ->
-  lam x1 f1 == lam x2 f2.
-intros.
-unfold lam; apply cc_lam_ext; auto.
-rewrite H; reflexivity.
-Qed.
-
-Lemma app_ext: Proper (eqX ==> eqX ==> eqX) app.
-Proof cc_app_morph.
-
-Lemma prod_ext :
-  forall x1 x2 f1 f2,
-  x1 == x2 ->
-  eq_fun x1 f1 f2 ->
-  prod x1 f1 == prod x2 f2.
-intros.
-unfold prod.
-apply mkTy_morph.
- apply cc_prod_ext.
-  apply El_morph; trivial.
+ rewrite Red_prod.
+  apply piSAT_intro; intros; trivial.
+  apply H1; trivial.
+  apply cc_prod_elim with (1:=H0); trivial.
 
   red; intros.
-  apply El_morph.
-  rewrite El_def in H1; destruct H1.
-  apply H0 with x0; trivial.
+  rewrite H3; reflexivity.
 
- intros.
- apply and_iff_morphism; auto with *.
- apply fa_morph; intros x0.
- apply fa_morph; intros u.
- assert ((x0,u) \real x1 <-> (x0,u) \real x2).
-  split; intros.
-   apply inSAT_val with x0 x1; auto with *.
-   apply inSAT_val with x0 x2; auto with *.
- assert ((x0,u) \real x1 -> f1 x0 == f2 x0).
-  intros.
-  apply H0 with u; auto with *.
- split; intros.
-  rewrite <- H2 in H5.
-  apply inSAT_val with (3:=H4 H5); auto with *.
-
-  rewrite <- H2 in H4.
-  apply inSAT_val with (3:=H4 H5); auto with *.
-  symmetry; auto.
+  unfold prod; rewrite El_def; trivial.
 Qed.
 
-Lemma beta_eq : forall dom F x u,
-  eq_fun dom F F ->
-  (x,u) \real dom ->
-  app (lam dom F) x == F x.
+Lemma realProd_intro' : forall i t A B f,
+  Lc.sn t -> (*  If A is empty *)
+  ext_fun (El (int i A)) f ->
+  (forall x, x \in El (int i A) -> f x \in El (int (V.cons x i) B)) ->
+  (forall x u,
+   x \in El (int i A) ->
+   f x \in El (int (V.cons x i) B) ->
+   inSAT u (Red (int i A) x) ->
+   inSAT (Lc.App t u) (Red (int (V.cons x i) B) (f x))) ->
+  [lam (int i A) f,t]\real int i (Prod A B).
 intros.
-unfold app, lam.
-apply cc_beta_eq; auto.
-rewrite El_def; exists u; trivial.
-Qed.
+apply realProd_intro; trivial; intros.
+ apply cc_prod_intro; trivial.
+ do 2 red; intros.
+ rewrite H4; reflexivity.
 
-
-Lemma is_cand_pi : forall dom f F,
-  (exists t, Pi dom F f t) -> is_cand (Pi dom F f).
-unfold Pi, Inter, Arr; intros.
-split; intros.
- apply H0.
-
- destruct H0 as (snt,pi).
- split; intros.
-  apply Lc.sn_red_sn with t; auto with coc.
-
-  apply pi in H0.
-  apply inSAT_red with (1:=H0); auto with coc.
-
- split; intros.
-  constructor; intros.
-  apply H1 in H2; apply H2.
-
-  assert (snu : Lc.sn u).
-   apply inSAT_sn in H2; trivial.
-  assert (forall t', Lc.red1 t t' -> (f x, Lc.App t' u) \real F x).
-   intros.
-   apply H1; trivial.
-  destruct H as (t0,(_,pi_t0)).
-  specialize pi_t0 with (1:=H2).
-  clear H1 H2.
-  revert t H0 H3. 
-  elim snu; intros.
-  unfold transp in *.
-  apply inSAT_exp with (1:=pi_t0).
-   exact I.
-
-   intros.
-   revert H1; inversion_clear H2; intro; auto.
-    destruct H1.
-
-    apply H0; intros; auto.
-    apply inSAT_red with (Lc.App t' x0); auto with coc.
-Qed.
-
-
-Lemma is_cand_pi0 : forall dom f F,
-  (exists t, forall x u, (x, u) \real dom -> (f x, Lc.App t u) \real F x) ->
-  is_cand
-    (fun t => Lc.sn t /\ forall x u, (x, u) \real dom -> (f x, Lc.App t u) \real F x).
-intros.
-split; intros.
- apply H0.
-
- destruct H0 as (snt,pi).
- split; intros.
-  apply Lc.sn_red_sn with t; auto with coc.
-
-  apply pi in H0.
-  apply inSAT_red with (1:=H0); auto with coc.
-
- split; intros.
-  constructor; intros.
-  apply H1 in H2; apply H2.
-
-  assert (snu : Lc.sn u).
-   apply inSAT_sn in H2; trivial.
-  assert (forall t', Lc.red1 t t' -> (f x, Lc.App t' u) \real F x).
-   intros.
-   apply H1; trivial.
-  destruct H as (t0,pi_t0).
-  specialize pi_t0 with (1:=H2).
-  clear H1 H2.
-  revert t H0 H3. 
-  elim snu; intros.
-  unfold transp in *.
-  apply inSAT_exp with (1:=pi_t0).
-   exact I.
-
-   intros.
-   revert H1; inversion_clear H2; intro; auto.
-    destruct H1.
-
-    apply H0; intros; auto.
-    apply inSAT_red with (Lc.App t' x0); auto with coc.
-Qed.
-
-Lemma prod_def : forall f t dom F,
-  (f,t) \real prod dom F <->
-  f \in cc_prod (El dom) (fun x => El (F x)) /\
-  Pi dom F (fun x => app f x) t.
-intros.
-unfold prod.
-rewrite mkTy_def0.
-2:apply prop1.
- reflexivity.
-
- intros.
- apply is_cand_pi.
- exists t; trivial.
-Qed.
-
-(*
-Lemma prod_def : forall f t dom F,
-  (f,t) \real prod dom F <->
-  f \in cc_prod (El dom) (fun x => El (F x)) /\
-  Lc.sn t /\
-  forall x u, (x,u) \real dom -> (app f x, Lc.App t u) \real F x.
-intros.
-unfold inX at 1, inTyp, prod; rewrite mkTy_def; simpl.
-2:apply prop1.
-split; intros.
- decompose [and] H; auto.
-
- decompose [and] H; clear H.
- split; [split|]; repeat red; auto.
- refine (let iscan := @is_cand_pi dom (fun x => app f x) F _ in _).
-  exists t; split; trivial.
- revert iscan; apply iff_impl.
- apply is_cand_morph; red; intros.
- rewrite mkTy_def.
- 2:apply prop1.
- split; intros.
-  decompose [and] H; auto.
-  decompose [and] H; auto.
+ unfold lam; rewrite cc_beta_eq; trivial.
+ apply H2; auto.
 Qed.
 *)
 
-Lemma is_cand_pi' : forall dom f F,
-  (forall x, x \in El dom -> f x \in El (F x)) ->
-  is_cand (Pi dom F f).
-intros.
-apply is_cand_pi.
-exists (Lc.Ref 0).
-split.
- apply Lc.sn_var.
-red; intros.
-assert (x \in El dom).
- rewrite El_def; exists u; trivial.
-apply H in H1.
-rewrite El_def in H1; destruct H1.
-apply (@SAT_daimon1 (exist _ _ (inSAT_CR H1) : SAT)).
-apply inSAT_sn in H0; trivial.
-Qed.
-
-Lemma prod_intro : forall dom f F t,
+(* Works even when dom is empty: *)
+Lemma prod_intro_lam : forall dom f F m,
   eq_fun dom f f ->
   eq_fun dom F F ->
-  Pi dom F f t ->
-  (lam dom f, t) \real prod dom F.
-intros dom f F t H H0 H1.
-assert (exF : ext_fun (El dom) (fun x => El (F x))).
- apply eq_fun_ext.
- red; intros.
- apply El_morph.
- eapply H0; eauto.
-rewrite prod_def.
-destruct H1.
-red in H2.
-split; [|split]; trivial.
- apply cc_prod_intro; intros; auto.
- rewrite El_def in *.
- destruct H3.
- exists (Lc.App t x0); auto.
+  Lc.sn m ->
+  (forall x u, [x,u] \real dom ->
+   [f x, Lc.subst u m] \real F x) ->
+  [lam dom f, Lc.Abs m] \real prod dom F.
+intros.
+apply prod_intro_sn; intros; trivial.
+ apply Lc.sn_abs; trivial.
 
- red; intros.
- apply inSAT_val with (f x) (F x); auto with *.
- unfold app,lam; rewrite cc_beta_eq; auto with *.
- rewrite El_def; exists u; trivial.
+ destruct H2 with (1:=H3).
+ split; trivial.
+ destruct H3.
+ apply prodSAT_elim with (Red dom x); trivial.
+ apply prodSAT_intro; intros.
+ apply H2; auto.
 Qed.
 
 Lemma prod_elim : forall dom f x F t u,
   eq_fun dom F F ->
-  (f,t) \real prod dom F ->
-  (x,u) \real dom ->
-  (app f x, Lc.App t u) \real F x.
-intros.
-rewrite prod_def in H0; destruct H0 as (_,(_,pi)); auto.
-apply pi; trivial.
+  [f,t] \real prod dom F ->
+  [x,u] \real dom ->
+  [app f x, Lc.App t u] \real F x.
+destruct 2; destruct 1.
+split.
+ apply prod_elim with (2:=H0); trivial.
+
+ rewrite Red_prod in H1; trivial.
+ apply interSAT_elim with (x:=exist (fun x => x \in dom) x H2) in H1; simpl proj1_sig in H1.
+ apply prodSAT_elim with (1:=H1); trivial.
 Qed.
 
-Lemma impredicative_prod : forall dom F T U,
-  eq_fun dom F F ->
-  Lc.sn T ->
-  Pi dom (fun _ => props) F U ->
-  (prod dom F, Lc.App2 Lc.K T U) \real props.
-intros.
-rewrite props_def.
-split; [|destruct H1; apply Lc.sn_K2; trivial].
-assert (alltrue : forall x, x \in El dom -> El (F x) == power empty).
- intros.
- rewrite El_def in H2; destruct H2.
- apply H1 in H2.
- rewrite props_def in H2; destruct H2 as ((S,isprop),_).
- rewrite isprop; apply El_mkProp.
-assert (isunit : cc_prod (El dom) (fun x => El (F x)) == power empty).
- assert (ZFcoc.cc_lam (El dom) (fun _ => empty) == empty).
-  apply ZFcoc.cc_impredicative_lam; auto with *.
- apply power_ext; intros.
-  setoid_replace x with empty.
-   rewrite <- H2.
-   apply ZFcoc.cc_prod_intro; auto.
-    do 2 red; intros.
-    apply El_morph.
-    rewrite El_def in H4; destruct H4.
-    apply H with x1; trivial.
-
-    intros.
-    rewrite alltrue; trivial.
-    apply power_intro; auto.
-
-   apply empty_ext.
-   red; intros.
-   apply H3 in H4.
-   elim empty_ax with x0; trivial.
-
-  assert (x == empty).
-   specialize cc_eta_eq with (1:=H3); intro.
-   rewrite <- H2; trivial; rewrite H5.
-   apply cc_lam_ext; auto with *.
-   red; intros.
-   apply empty_ext; red; intros.
-   specialize cc_prod_elim with (1:=H3) (2:=H6); intro.
-   rewrite alltrue in H9; trivial.
-   specialize power_elim with (1:=H9) (2:=H8).
-   apply empty_ax.
-  rewrite H5 in H4; trivial.
-refine (let iscan := @is_cand_pi' dom (fun _ => empty) F _ in _).
- intros.
- rewrite alltrue; trivial.
- apply power_intro; auto.
-exists (exist _ _ iscan : SAT).
-unfold prod, mkProp.
-apply mkTy_morph; intros; auto.
-simpl.
-apply and_iff_morphism; try reflexivity.
-apply fa_morph; intro x0.
-apply fa_morph; intro u.
-apply fa_morph; intro.
-apply in_ext; [split|]; simpl; auto with *.
-assert (x0 \in El dom).
- rewrite El_def; exists u; trivial.
-specialize cc_prod_elim with (1:=H2) (2:=H3); intro.
-rewrite alltrue in H4; trivial.
-apply empty_ext; red; intros.
-specialize power_elim with (1:=H4) (2:=H5).
-apply empty_ax.
-Qed.
-
-Existing Instance eqX_equiv.
-Existing Instance in_ext.
-Existing Instance app_ext.
-
-(* No empty types (False is inhabited) *)
-
-  Definition daemon := empty.
-  Definition daemont := Lc.Ref 0.
-
-  Lemma daemon_false : (daemon,daemont) \real prod props (fun P => P).
-apply inSAT_val with (lam props (fun _ => empty)) (prod props (fun P => P)); auto with *.
- apply cc_impredicative_lam; auto with *.
-apply prod_intro; intros.
- red; red; reflexivity.
-
- red; red; auto.
-
- constructor; intros.
-  apply Lc.sn_var.
-
-  red; intros.
-  rewrite props_def in H; destruct H as ((S,isprop),snu).
-  apply inSAT_val with empty (mkProp S); auto with *.
-  rewrite mkProp_def; split; auto with *.
-  apply SAT_daimon1; trivial.
-Qed.
-
-End MM.
-(*Declare Module MM : Model.*)
-Import MM.
-
-Lemma inSAT_val : forall x x' A A' t,
-  x == x' -> A == A' -> (x,t) \real A -> (x',t) \real A'.
-intros.
-revert H1; apply iff_impl.
-apply in_ext; auto.
-red; auto.
-Qed.
-
+(*
 Lemma inSAT_red : forall x A t u,
-  (x,t) \real A -> Lc.red t u -> (x,u) \real A.
-intros.
-destruct (inSAT_CR H); eauto.
+  [x,t] \real A -> Lc.red t u -> [x,u] \real A.
+destruct 1; split; trivial.
+apply (clos_red _ (proj2_sig (Red A x))) with t; trivial.
+Qed.
+*)
+
+Lemma inSAT_sn : forall x A t, [x,t] \real A -> Lc.sn t.
+destruct 1 as (_,?).
+apply (incl_sn _ (proj2_sig (Red A x))); trivial.
 Qed.
 
-Lemma inSAT_sn : forall x A t, (x,t) \real A -> Lc.sn t.
-intros.
-destruct (inSAT_CR H); eauto.
+Lemma inSAT_exp_K : forall x A u v,
+  Lc.sn v ->
+  [x,u] \real A ->
+  [x,Lc.App2 K u v] \real A. 
+destruct 2; split; trivial.
+apply KSAT_intro; trivial.
 Qed.
 
+(*
 Lemma inSAT_exp : forall x A t u,
-  (x,t) \real A ->
+  [x,t] \real A ->
   neutral u ->
-  (forall v, Lc.red1 u v -> (x,v) \real A) ->
-  (x,u) \real A. 
+  (forall v, Lc.red1 u v -> [x,v] \real A) ->
+  [x,u] \real A. 
 intros.
-destruct (inSAT_CR H); eauto.
+destruct H; split; trivial.
+apply (clos_exp _ (proj2_sig (Red A x))); intros; trivial.
+apply H1; trivial.
 Qed.
 
 Lemma inSAT_exp_sat : forall x A m u,
   Lc.sn u ->
-  (x,Lc.subst u m) \real A ->
-  (x,Lc.App (Lc.Abs m) u) \real A. 
-intros.
-assert (Lc.sn m).
- apply Lc.sn_subst with u.
- apply inSAT_sn in H0; trivial.
-revert m H1 H0.
-induction H.
-rename x0 into u.
-unfold transp in *.
-assert (snu : Lc.sn u).
- apply Acc_intro; trivial.
-clear H.
-induction 1.
-rename x0 into m.
-unfold transp in *.
-assert (snm : Lc.sn m).
- apply Acc_intro; trivial.
-clear H.
-intros.
-apply inSAT_exp with (1:=H2); intros.
- exact I.
-inversion_clear H; trivial.
- inversion_clear H3.
- apply H1; auto.
- apply inSAT_red with (1:=H2).
- unfold Lc.subst; auto with coc.
-
- apply H0; auto.
- apply inSAT_red with (1:=H2).
- unfold Lc.subst; auto with coc.
+  [x,Lc.subst u m] \real A ->
+  [x,Lc.App (Lc.Abs m) u] \real A.
+destruct 2; split; trivial.
+apply inSAT_exp; trivial.
 Qed.
 
 Lemma inSAT_exp_sat1 : forall x A m u u1,
   Lc.sn u ->
-  (x,Lc.App (Lc.subst u m) u1) \real A ->
-  (x,Lc.App (Lc.App (Lc.Abs m) u) u1) \real A. 
-intros x A m u u1 snu inA.
-revert m u1 inA.
-induction snu; intros.
-clear H; rename x0 into u.
-assert (snm: Lc.sn m).
- apply Lc.sn_subst with u.
- apply inSAT_sn in inA; trivial.
- apply Lc.subterm_sn with (1:=inA); auto with coc.
-revert u1 inA.
-induction snm; intros.
-clear H; rename x0 into m.
-assert (snu1: Lc.sn u1).
- apply inSAT_sn in inA; trivial.
- apply Lc.subterm_sn with (1:=inA); auto with coc.
-revert inA.
-induction snu1.
-clear H; rename x0 into u1.
-intros.
-unfold transp in *.
-apply inSAT_exp with (1:=inA); intros.
- exact I.
-inversion_clear H.
- inversion_clear H3; auto.
-  inversion_clear H.
-  apply H1; trivial.
-  apply inSAT_red with (1:=inA); trivial.
-  unfold Lc.subst; auto with coc.
-
-  apply H0; trivial.
-  apply inSAT_red with (1:=inA); trivial.
-  unfold Lc.subst; auto with coc.
-
- apply H2; trivial.
- apply inSAT_red with (1:=inA); auto with coc.
+  [x,Lc.App (Lc.subst u m) u1] \real A ->
+  [x,Lc.App (Lc.App (Lc.Abs m) u) u1] \real A. 
+destruct 2; split; trivial.
+apply inSAT_context with (S:=Red A x) (u:=Lc.subst u m); intros; trivial.
+apply inSAT_exp; trivial.
 Qed.
-
 
 Lemma inSAT_exp_sat2 : forall x A m u u1 u2,
   Lc.sn u ->
-  (x,Lc.App (Lc.App (Lc.subst u m) u1) u2) \real A ->
-  (x,Lc.App (Lc.App (Lc.App (Lc.Abs m) u) u1) u2) \real A. 
-intros x A m u u1 u2 snu inA.
-revert m u1 u2 inA.
-induction snu; intros.
-clear H; rename x0 into u.
-assert (snm: Lc.sn m).
- apply Lc.sn_subst with u.
- apply inSAT_sn in inA; trivial.
- apply Lc.subterm_sn with (Lc.App (Lc.subst u m) u1); auto with coc.
- apply Lc.subterm_sn with (1:=inA); auto with coc.
-revert u1 u2 inA.
-induction snm; intros.
-clear H; rename x0 into m.
-assert (snu1: Lc.sn u1).
- apply inSAT_sn in inA; trivial.
- apply Lc.subterm_sn with (Lc.App (Lc.subst u m) u1); auto with coc.
- apply Lc.subterm_sn with (1:=inA); auto with coc.
-revert u2 inA.
-induction snu1; intros.
-clear H; rename x0 into u1.
-assert (snu2: Lc.sn u2).
- apply inSAT_sn in inA; trivial.
- apply Lc.subterm_sn with (1:=inA); auto with coc.
-revert inA.
-induction snu2; intros.
-clear H; rename x0 into u2.
-unfold transp in *.
-apply inSAT_exp with (1:=inA); intros.
- exact I.
-inversion_clear H.
- inversion_clear H4.
-  inversion_clear H; auto.
-   inversion_clear H4.
-   apply H1; trivial.
-   apply inSAT_red with (1:=inA); trivial.
-   unfold Lc.subst; auto with coc.
-
-   apply H0; trivial.
-   apply inSAT_red with (1:=inA); trivial.
-   unfold Lc.subst; auto with coc.
-
-  apply H2; trivial.
-  apply inSAT_red with (1:=inA); auto with coc.
-
- apply H3; trivial.
- apply inSAT_red with (1:=inA); auto with coc.
-Qed.
-
-Lemma prod_intro' : forall dom f F m,
-  eq_fun dom f f ->
-  eq_fun dom F F ->
-  Lc.sn m ->
-  (forall x u, (x,u) \real dom ->
-   (f x, Lc.subst u m) \real F x) ->
-  (lam dom f, Lc.Abs m) \real prod dom F.
-intros.
-apply prod_intro; trivial; intros.
-split; intros.
- apply Lc.sn_abs; trivial.
-
- red; intros.
- apply inSAT_exp_sat; auto.
- apply inSAT_sn in H3; trivial.
-Qed.
+  [x,Lc.App (Lc.App (Lc.subst u m) u1) u2] \real A ->
+  [x,Lc.App (Lc.App (Lc.App (Lc.Abs m) u) u1) u2] \real A. 
+*)
 
 (* Now the abstract strong normalization proof. *)
 
@@ -972,84 +246,16 @@ Existing Instance cons_morph'.
 Existing Instance shift_morph.
 Existing Instance lams_morph.
 
-(**)
-Module LCeq.
-  Definition t := Lc.term.
-  Definition eq := @Logic.eq Lc.term.
-  Definition eq_equiv : Equivalence eq := eq_equivalence.
-  Existing Instance eq_equiv.
-End LCeq.
-Module I := VarMap.Make(LCeq).
-
-Notation intt := I.map.
-Notation eq_intt := I.eq_map.
-
-Import I.
-Existing Instance cons_morph.
-Existing Instance cons_morph'.
-Existing Instance shift_morph.
-Existing Instance lams_morph.
-
-Definition ilift (j:intt) : intt :=
-  fun k => match k with
-  | 0 => Lc.Ref 0
-  | S n => Lc.lift 1 (j n)
-  end.
-
-Instance ilift_morph : Proper (eq_intt ==> eq_intt) ilift.
-do 4 red; intros.
-unfold ilift.
-destruct a; simpl; auto.
-rewrite H; trivial.
-Qed.
-
-Lemma ilift_lams : forall k f j,
-  (forall j j', (forall a, Lc.lift 1 (j a) = j' a) ->
-   forall a, Lc.lift 1 (f j a) = f j' a) ->
-  eq_intt (ilift (I.lams k f j)) (I.lams (S k) f (ilift j)).
-intros.
-do 2 red; intros.
-destruct a; simpl.
- reflexivity.
-
- unfold I.lams; simpl.
- destruct (le_gt_dec k a); simpl; trivial.
- apply H.
- unfold I.shift, ilift; simpl; intros; trivial.
-Qed.
-
-Lemma ilift_binder : forall u j k,
-  eq_intt
-    (ilift (fun n => Lc.subst_rec u (j n) k))
-    (fun n => Lc.subst_rec u (ilift j n) (S k)).
-red; red; intros.
-destruct a; simpl; trivial.
-rewrite Lc.commut_lift_subst; trivial.
-Qed.
-
-Lemma ilift_binder_lift : forall j k,
-  eq_intt
-    (ilift (fun n => Lc.lift_rec 1 (j n) k))
-    (fun n => Lc.lift_rec 1 (ilift j n) (S k)).
-red; red; intros.
-destruct a; simpl; trivial.
-rewrite Lc.permute_lift; trivial.
-Qed.
+(* Term valuations *)
+Module I := Lambda.I.
 
 (* Terms *)
-
-Definition substitutive (t:intt->Lc.term) :=
-  forall u j k,
-  t (fun n => Lc.subst_rec u (j n) k) = Lc.subst_rec u (t j) k.
-Definition liftable (t:intt->Lc.term) :=
-  forall j k,
-  t (fun n => Lc.lift_rec 1 (j n) k) = Lc.lift_rec 1 (t j) k.
 
 Record inftrm := {
   iint : val -> X;
   iint_morph : Proper (eq_val ==> eqX) iint;
   itm : intt -> Lc.term;
-  itm_morph : Proper (eq_intt ==> @eq Lc.term) itm;
+  itm_morph : Proper (eq_intt ==> eq) itm;
   itm_lift : liftable itm;
   itm_subst : substitutive itm
 }.
@@ -1062,7 +268,7 @@ Definition eq_trm (x y:trm) :=
   match x, y with
   | Some f, Some g =>
      (eq_val ==> eqX)%signature (iint f) (iint g) /\
-     (eq_intt ==> @eq Lc.term)%signature (itm f) (itm g)
+     (eq_intt ==> eq)%signature (itm f) (itm g)
   | None, None => True
   | _, _ => False
   end.
@@ -1255,6 +461,11 @@ do 2 red; simpl; intros.
  rewrite ilift_binder; trivial.
 Defined.
 
+Lemma intProd_eq i A B :
+  int i (Prod A B) = prod (int i A) (fun x => int (V.cons x i) B).
+reflexivity.
+Qed.
+
 Definition lift_rec (n m:nat) (t:trm) : trm.
 destruct t as [t|]; [left|exact kind].
 exists (fun i => iint t (V.lams m (V.shift n) i))
@@ -1331,8 +542,8 @@ split; red; intros.
  rewrite H; reflexivity.
 
  do 2 rewrite I.lams0.
- change (shift n (fun k => lams 0 (shift 1) y k)) with
-   (shift n (lams 0 (shift 1) y)).
+ change (I.shift n (fun k => I.lams 0 (I.shift 1) y k)) with
+   (I.shift n (I.lams 0 (I.shift 1) y)).
  rewrite I.lams0.
  rewrite I.shift_split.
  change (eq_intt (fun k => x k) (fun k => y k)) in H.
@@ -1480,11 +691,11 @@ apply Lc.sn_lift; auto.
 Qed.
 
 Lemma wit_prod : forall x U t,
-  (forall i, (x,t) \real int i U) ->
+  (forall i, [x,t] \real int i U) ->
   forall e i,
-  (cst_fun i e x, cst_trm e t) \real int i (prod_list e U).
+  [cst_fun i e x, cst_trm e t] \real int i (prod_list e U).
 induction e; simpl; intros; auto.
-apply prod_intro'; intros; auto.
+apply prod_intro_lam; intros; auto.
  red; intros.
  rewrite H1; reflexivity.
 
@@ -1506,7 +717,7 @@ Qed.
    This would allow kind variables. *)
 Definition non_empty T :=
   exists e, exists2 U, eq_trm T (prod_list e U) &
-    exists x, forall i, x \real int i U.
+    exists x t, forall i, [x,t] \real int i U.
 
 Instance non_empty_morph : Proper (eq_trm ==> iff) non_empty.
 unfold non_empty; do 2 red; intros.
@@ -1520,20 +731,13 @@ Lemma prop_non_empty : non_empty prop.
 exists List.nil; exists prop; simpl prod_list.
  reflexivity.
 
- exists (prod props (fun P => P), Lc.App2 Lc.K Lc.K (Lc.Abs (Lc.Ref 0))); intros.
- apply impredicative_prod; intros; auto.
+ exists (prod props (fun P => P)); exists Lc.K; intro i.
+ assert (prod props (fun P => P) \in props).
+  apply impredicative_prod; intros; auto.
   red; auto.
-
-  apply Lc.sn_K.
-
-  split.
-   apply Lc.sn_abs; apply Lc.sn_var. 
-
-   red; intros.
-   apply inSAT_exp_sat.
-    apply inSAT_sn in H; trivial.
-
-    unfold Lc.subst; simpl; rewrite Lc.lift0; trivial.
+ split; trivial.
+ simpl; rewrite Red_sort; trivial.
+ apply Lc.sn_K.
 Qed.
 
 Lemma prod_non_empty : forall T U,
@@ -1547,14 +751,12 @@ Qed.
 
 Lemma non_empty_witness : forall i T,
   non_empty T ->
-  exists x, exists u, (x,u) \real int i T.
+  exists x, exists u, [x,u] \real int i T.
 intros.
-destruct H as (e,(U,eq_U,(wit,in_U))).
-exists (cst_fun i e (fst wit)); exists (cst_trm e (snd wit)).
-apply inSAT_val with (cst_fun i e (fst wit)) (int i (prod_list e U)); auto with *.
- rewrite eq_U; reflexivity.
-
- apply wit_prod; destruct wit; trivial.
+destruct H as (e,(U,eq_U,(wit1,(wit2,in_U)))).
+exists (cst_fun i e wit1); exists (cst_trm e wit2).
+rewrite eq_U.
+apply wit_prod; trivial.
 Qed.
 
 Lemma discr_ref_prod : forall n A B,
@@ -1583,20 +785,15 @@ Qed.
 
 Lemma non_empty_var_lift : forall n,
   non_empty (Ref n) -> non_empty (Ref (S n)).
-intros n (e,(U,eq_U,((x,t),in_U))).
+intros n (e,(U,eq_U,(x,(t,in_U)))).
 destruct e; simpl prod_list in eq_U.
  exists List.nil; exists (lift 1 U).
   simpl prod_list.
   rewrite <- lift1var.
   apply lift_morph; trivial.
 
-  exists (x,t); intros.
-  apply inSAT_val with x (int (V.shift 1 i) U); auto with *.
-  setoid_replace i with (V.cons (i 0) (V.shift 1 i)).
-   rewrite int_lift_eq; reflexivity.
-
-   red; red; intros.
-   destruct a; reflexivity.
+  exists x; exists t; intros.
+  rewrite int_lift_eq; auto.
 
  elim (discr_ref_prod eq_U).
 Qed.
@@ -1608,41 +805,30 @@ Definition in_int (i:val) (j:intt) (M T:trm) :=
   (* M has type kind *)
   | None => non_empty M /\ Lc.sn (tm j M)
   (* T is a regular type *)
-  | _ => (int i M, tm j M) \real int i T
+  | _ => [int i M, tm j M] \real int i T
   end.
 
 Instance in_int_morph : Proper
-  (eq_val ==> pointwise_relation nat (@eq Lc.term) ==> eq_trm ==> eq_trm ==> iff)
+  (eq_val ==> pointwise_relation nat eq ==> eq_trm ==> eq_trm ==> iff)
   in_int.
 unfold in_int; do 5 red; intros.
 repeat rewrite eq_kind.
 destruct x2; destruct y2; try contradiction.
- replace (tm x0 x1) with (tm y0 y1).
- 2:rewrite H0; rewrite H1; reflexivity.
- setoid_replace (eq_trm x1 None) with (eq_trm y1 None).
- 2:rewrite H1; reflexivity. 
- split; destruct 1; split; trivial.
-  apply inSAT_val with (3:=H4); trivial.
-   rewrite H; rewrite H1; reflexivity.
-   rewrite H; rewrite H2; reflexivity.
-  apply inSAT_val with (3:=H4); trivial.
-   rewrite H; rewrite H1; reflexivity.
-   rewrite H; rewrite H2; reflexivity.
-
+ rewrite H; rewrite H0; rewrite H1; rewrite H2; reflexivity.
  rewrite H0; rewrite H1; reflexivity.
 Qed.
 
 Lemma in_int_not_kind : forall i j M T,
   in_int i j M T ->
   T <> kind ->
-  (int i M, tm j M) \real int i T.
+  [int i M, tm j M] \real int i T.
 destruct 1 as (_,mem); intros.
 destruct T; auto.
 elim H; trivial.
 Qed.
 
 Lemma in_int_intro : forall i j M T,
-  (int i M, tm j M) \real int i T ->
+  [int i M, tm j M] \real int i T ->
   M <> kind ->
   T <> kind ->
   in_int i j M T.
@@ -1653,7 +839,7 @@ Qed.
 
 
 Lemma in_int_var0 : forall i j x t T,
-  (x,t) \real int i T ->
+  [x,t] \real int i T ->
   T <> kind ->
   in_int (V.cons x i) (I.cons t j) (Ref 0) (lift 1 T).
 intros.
@@ -1661,8 +847,7 @@ red; simpl.
 split; try discriminate.
  revert H0; pattern T at 1 2.
  case T; simpl; intros.
-  apply inSAT_val with x (int i T); auto with *.
-  symmetry; apply int_cons_lift_eq; trivial.
+  rewrite int_cons_lift_eq; trivial.
 
   elim H0; trivial.
 Qed.
@@ -1674,11 +859,10 @@ intros.
 destruct H as (_,mem); simpl in *.
 red; simpl.
 split; try discriminate.
- revert mem; pattern T at 1 3.
+ revert mem; pattern T at 1 4.
  case T; [intros T0|]; simpl; intros; trivial.
-  apply inSAT_val with (i n) (int i (lift (S n) T)); auto with *.
-  symmetry; rewrite split_lift.
-  apply int_cons_lift_eq.
+  rewrite split_lift.
+  rewrite int_cons_lift_eq; trivial.
 
   destruct mem; split; trivial.
   apply non_empty_var_lift; trivial.
@@ -1702,7 +886,7 @@ Definition val_ok (e:env) (i:val) (j:intt) :=
 
 Lemma vcons_add_var : forall e T i j x t,
   val_ok e i j ->
-  (x,t) \real int i T ->
+  [x,t] \real int i T ->
   T <> kind ->
   val_ok (T::e) (V.cons x i) (I.cons t j).
 unfold val_ok; simpl; intros.
@@ -1714,12 +898,15 @@ destruct n; simpl in *.
 Qed.
 
 Lemma add_var_eq_fun : forall T U U' i,
-  (forall x t, (x,t) \real int i T -> int (V.cons x i) U == int (V.cons x i) U') -> 
+  (forall x t, [x,t] \real int i T -> int (V.cons x i) U == int (V.cons x i) U') -> 
   eq_fun (int i T)
     (fun x => int (V.cons x i) U)
     (fun x => int (V.cons x i) U').
 red; intros.
-rewrite <- H1; eauto.
+rewrite <- H1.
+apply H with (t:=SatSet.daimon).
+split; trivial.
+apply varSAT.
 Qed.
 
 
@@ -1728,12 +915,16 @@ Definition wf (e:env) :=
   exists i, exists j, val_ok e i j.
 Definition typ (e:env) (M T:trm) :=
   forall i j, val_ok e i j -> in_int i j M T.
+(* Alternative equality: not intensional
+Definition eq_typ (e:env) (M M':trm) :=
+  forall i j, val_ok e i j -> int i M == int i M'.
+*)
 Definition eq_typ (e:env) (M M':trm) :=
   (forall i j, val_ok e i j -> int i M == int i M') /\
   (forall j, conv (tm j M) (tm j M')).
 Definition sub_typ (e:env) (M M':trm) :=
   forall i j, val_ok e i j ->
-  (forall x t, (x,t) \real int i M -> (x,t) \real int i M').
+  (forall x t, [x,t] \real int i M -> [x,t] \real int i M').
 
 Instance typ_morph : forall e, Proper (eq_trm ==> eq_trm ==> iff) (typ e).
 unfold typ; split; simpl; intros.
@@ -1754,17 +945,24 @@ Qed.
 
 Instance sub_typ_morph : forall e, Proper (eq_trm ==> eq_trm ==> iff) (sub_typ e).
 unfold sub_typ; split; simpl; intros.
- apply inSAT_val with x1 (int i x0); auto with *.
-  rewrite H0; reflexivity.
- apply H1 with (1:=H2).
- apply inSAT_val with x1 (int i y); auto with *.
- rewrite H; reflexivity.
+ rewrite <- H in H3.
+ rewrite <- H0; eauto.
 
- apply inSAT_val with x1 (int i y0); auto with *.
-  rewrite H0; reflexivity.
- apply H1 with (1:=H2).
- apply inSAT_val with x1 (int i x); auto with *.
- rewrite H; reflexivity.
+ rewrite H in H3.
+ rewrite H0; eauto.
+Qed.
+
+
+(* Auxiliary lemmas: *)
+Lemma typ_common e M T :
+  match M,T with Some _,Some _=> True |_,_ => False end ->
+  (forall i j, val_ok e i j -> [int i M, tm j M]\real int i T) ->
+  typ e M T.
+red; red; intros.
+destruct M; try contradiction.
+split;[discriminate|].
+destruct T; try contradiction.
+apply H0; trivial.
 Qed.
 
 
@@ -1776,10 +974,11 @@ intros e T (i,(j,is_val)) [ty|ty]; apply ty in is_val;
   destruct is_val; assumption.
 Qed.
 
+(* Uses that all types are inhabited *)
 Lemma typs_non_empty : forall e T i j,
   typs e T ->
   val_ok e i j ->
-  exists x, exists u, (x,u) \real int i T.
+  exists x, exists u, [x,u] \real int i T.
 intros.
 destruct H.
  apply H in H0.
@@ -1787,9 +986,11 @@ destruct H.
 
  apply H in H0.
  destruct H0 as (_,mem); simpl in *.
- exists (app daemon (int i T)); exists (Lc.App daemont (tm j T)).
- apply prod_elim with (2:=daemon_false); trivial.
- red; intros; trivial.
+ exists (app daimon (int i T)); exists (Lc.App SatSet.daimon (tm j T)).
+ apply prod_elim with (dom:=props) (F:=fun P => P); trivial.
+  red; intros; trivial.
+
+  split; [apply daimon_false|apply varSAT].
 Qed.
 
 
@@ -1814,7 +1015,7 @@ Qed.
 
 Lemma wf_nil : wf List.nil.
 red.
-exists vnil; exists (fun _ => daimon).
+exists vnil; exists (fun _ => SatSet.daimon).
 red; intros.
 destruct n; discriminate.
 Qed.
@@ -1878,8 +1079,9 @@ unfold eq_typ; destruct 1; destruct 1; split; simpl; intros.
  apply lam_ext; eauto.
  red; intros.
  rewrite <- H6.
- apply H1 with (j:=I.cons t j).
+ apply H1 with (j:=I.cons SatSet.daimon j).
  apply vcons_add_var; auto.
+ split; trivial; apply varSAT.
 
  unfold CAbs, Lc.App2.
  apply conv_conv_app; auto.
@@ -1898,8 +1100,9 @@ split; intros.
   eapply H; eauto.
  red; intros.
  rewrite <- H4.
- apply H0 with (j:=I.cons t j).
+ apply H0 with (j:=I.cons SatSet.daimon j).
  apply vcons_add_var; auto.
+ split; trivial; apply varSAT.
 
  unfold CProd, Lc.App2.
  apply conv_conv_app.
@@ -1922,15 +1125,17 @@ split; intros.
  assert (eq_fun (int i T)
    (fun x => int (V.cons x i) M) (fun x => int (V.cons x i) M)).
   apply add_var_eq_fun with (T:=T); intros; trivial; reflexivity.
- assert ((int i N, tm j N) \real int i T).
+ assert ([int i N, tm j N] \real int i T).
   apply H1 in H3.
   apply in_int_not_kind in H3; trivial.
- rewrite (beta_eq (u:=tm j N) H4); auto.
- rewrite <- int_subst_eq.
- destruct H0.
- rewrite <- H0; eauto.
- apply H with (j:=I.cons (tm j N) j).
- apply vcons_add_var; auto.
+ rewrite beta_eq; auto.
+  rewrite <- int_subst_eq.
+  destruct H0 as (H0,_); destruct H as (H,_).
+  rewrite <- H0 with (1:=H3).
+  apply H with (j:=I.cons (tm j N) j).
+  apply vcons_add_var; auto.
+
+  apply H5.
 
  apply trans_conv_conv with (Lc.App (CAbs (tm j T) (tm (ilift j) M')) (tm j N)).
   apply conv_conv_app; auto with *.
@@ -1955,6 +1160,8 @@ split; intros.
  rewrite tm_subst_eq. 
  apply Lc.red_conv; apply Lc.one_step_red; apply beta.
 Qed.
+
+(* Typing rules *)
 
 Lemma typ_prop : forall e, typ e prop kind.
 red; simpl; intros.
@@ -1986,8 +1193,7 @@ apply in_int_not_kind in ty_u; try discriminate.
 simpl in *.
 apply prod_elim with (x:=int i v) (u:=tm j v) in ty_u; trivial.
  apply in_int_intro; simpl; trivial; try discriminate.
-  apply inSAT_val with (3:=ty_u); auto with *.
-  apply int_subst_eq.
+  rewrite <- int_subst_eq; trivial.
 
   destruct Ur as [Ur|]; simpl; try discriminate; trivial.
 
@@ -1995,32 +1201,16 @@ apply prod_elim with (x:=int i v) (u:=tm j v) in ty_u; trivial.
  rewrite H0; reflexivity.
 Qed.
 
-Lemma red_abs_sat : forall x A t m,
-  Lc.sn t ->
-  (x, Lc.Abs m) \real A ->
-  (x, CAbs t m) \real A.
-intros.
-unfold CAbs, Lc.App2, Lc.K.
-apply inSAT_exp_sat1; trivial.
- apply inSAT_sn in H0; trivial.
-
- unfold Lc.subst, Lc.lift; simpl.
- apply inSAT_exp_sat; trivial.
- unfold Lc.subst; rewrite Lc.simpl_subst; auto with arith.
- rewrite Lc.lift0.
- trivial.
-Qed.
-
 Lemma prod_intro2 : forall dom f F t m,
   eq_fun dom f f ->
   eq_fun dom F F ->
   Lc.sn t ->
-  (exists x, exists u, (x,u) \real dom) ->
-  (forall x u, (x, u) \real dom -> (f x, Lc.subst u m) \real F x) ->
-  (lam dom f, CAbs t m) \real prod dom F.
+  (exists x, exists u, [x,u] \real dom) ->
+  (forall x u, [x, u] \real dom -> [f x, Lc.subst u m] \real F x) ->
+  [lam dom f, CAbs t m] \real prod dom F.
 intros.
-apply prod_intro' in H3; trivial.
-apply red_abs_sat; trivial.
+apply prod_intro_lam in H3; trivial.
+unfold CAbs; apply inSAT_exp_K; trivial.
 (* *)
 destruct H2.
 destruct H2.
@@ -2093,6 +1283,7 @@ assert (snU : Lc.sn (tm (ilift j) U)).
   destruct in_U as (_,mem); simpl in mem.
   apply inSAT_sn in mem; trivial.
 destruct is_srt; subst s2; simpl in *.
+ (* s2=kind *)
  split.
   apply prod_non_empty.
   destruct in_U as (_,(mem,_)); trivial.
@@ -2102,27 +1293,23 @@ destruct is_srt; subst s2; simpl in *.
 
    apply Lc.sn_abs; trivial.
 
- apply impredicative_prod; intros.   
+ (* s2=prop *)
+ unfold CProd.
+ apply inSAT_exp_K.
+  apply Lc.sn_abs; trivial.
+ assert (prod (int i T) (fun x => int (cons x i) U) \in props).
+  apply impredicative_prod; intros.   
    red; intros.
    rewrite H1; reflexivity.
-
-   apply typs_sn with (1:=ty_T) (2:=is_val).
-
-   split.
-    apply Lc.sn_abs; trivial.
-
-    red; intros.
-    clear in_U.
-    specialize vcons_add_var with (1:=is_val) (2:=H0) (3:=T_not_tops);
-      intros in_U.
-    apply ty_U in in_U.
-    apply in_int_not_kind in in_U.
-    2:discriminate.
-    apply inSAT_exp_sat.
-     apply inSAT_sn in H0; trivial.
-
-     rewrite <- tm_subst_cons.
-     trivial.
+   assert (val_ok (T::e) (V.cons x i) (I.cons SatSet.daimon j)).
+    apply vcons_add_var; trivial.
+    split; trivial.
+    apply varSAT.
+   apply ty_U in H1.
+   destruct H1 as (_,(?,_)); trivial.
+ split; simpl; trivial.
+ rewrite Red_sort; trivial.
+ apply typs_sn with (1:=ty_T) (2:=is_val).
 Qed.
 
 Lemma typ_conv : forall e M T T',
@@ -2139,7 +1326,7 @@ specialize H0 with (1:=H3).
 generalize (proj1 H); intro.
 apply in_int_not_kind in H; trivial.
 apply in_int_intro; trivial.
-apply inSAT_val with (3:=H); auto with *.
+rewrite <- H0; trivial.
 Qed.
 
 (* Weakening *)
@@ -2171,7 +1358,7 @@ Lemma sub_refl : forall e M M',
 red; intros.
 apply H in H0.
 clear H.
-apply inSAT_val with x (int i M); auto with *.
+rewrite <- H0; trivial.
 Qed.
 
 Lemma sub_trans : forall e M1 M2 M3,
@@ -2197,332 +1384,359 @@ destruct T' as [(T',T'm)|]; simpl in *; trivial; auto.
  elim H2; trivial.
 Qed.
 
+(* "Untyped" reduction: tools for proving simulation and strong normalization *)
 
-(* Consistency out of the strong normalization model *)
+Require Import Relations.
 
-Lemma occur_subst : forall k t,
-  Lc.occur k t <->
-  Lc.lift_rec 1 (Lc.subst_rec (Lc.Abs (Lc.Ref 0)) t k) k <> t.
-split; intros.
- induction H; simpl; intros.
-  destruct (lt_eq_lt_dec n n) as [[?|_]|?].
-   elim (Lt.lt_irrefl n); trivial.
+Definition red_term M N :=
+  forall j, Lc.redp (tm j M) (tm j N).
 
-   discriminate.
+Instance red_term_morph : Proper (eq_trm ==> eq_trm ==> iff) red_term.
+apply morph_impl_iff2; auto with *.
+do 4 red; intros.
+red; intros.
+rewrite <- H; rewrite <- H0; auto.
+Qed.
 
-   elim (Lt.lt_irrefl n); trivial.
+Lemma red_term_trans M1 M2 M3 :
+  red_term M1 M2 -> red_term M2 M3 -> red_term M1 M3.
+unfold red_term; intros.
+specialize H with j.
+specialize H0 with j.
+apply t_trans with (tm j M2); trivial.
+Qed.
+
+Lemma red_term_app_l M M' N :
+  red_term M M' ->
+  red_term (App M N) (App M' N).
+unfold red_term; intros.
+specialize H with j.
+apply Lc.redp_app_l; trivial.
+Qed.
+
+Lemma red_term_app_r M N N' :
+  red_term N N' ->
+  red_term (App M N) (App M N').
+unfold red_term; intros.
+specialize H with j.
+apply Lc.redp_app_r; trivial.
+Qed.
+
+Lemma red_term_abs_l M M' N :
+  red_term M M' ->
+  red_term (Abs M N) (Abs M' N).
+unfold red_term; intros.
+specialize H with j.
+simpl.
+apply Lc.redp_app_r; trivial.
+Qed.
+
+Lemma red_term_abs_r M N N' :
+  red_term N N' ->
+  red_term (Abs M N) (Abs M N').
+unfold red_term; intros.
+specialize H with (Lc.ilift j).
+simpl.
+apply Lc.redp_app_l; trivial.
+apply Lc.redp_app_r; trivial.
+apply Lc.redp_abs; trivial.
+Qed.
+
+Lemma red_term_prod_l M M' N :
+  red_term M M' ->
+  red_term (Prod M N) (Prod M' N).
+unfold red_term; intros.
+specialize H with j.
+simpl.
+apply Lc.redp_app_l; trivial.
+apply Lc.redp_app_r; trivial.
+Qed.
+
+Lemma red_term_prod_r M N N' :
+  red_term N N' ->
+  red_term (Prod M N) (Prod M N').
+unfold red_term; intros.
+specialize H with (Lc.ilift j).
+simpl.
+apply Lc.redp_app_r; trivial.
+apply Lc.redp_abs; trivial.
+Qed.
+
+Lemma red_term_beta T M N :
+  red_term (App (Abs T M) N) (subst N M).
+red; simpl; intros.
+eapply t_trans.
+ eapply Lc.redp_app_l.
+ eapply Lc.redp_K.
+
+ apply t_step.
+ apply Lc.red1_beta.
+ unfold Lc.subst; rewrite <- tm_substitutive.
+ destruct M; simpl; trivial.
+ rewrite I.lams0.
+ unfold I.shift; simpl.
+ apply itm_morph.
+ do 2 red; intros.
+ destruct a; simpl.
+  rewrite Lc.lift0; trivial.
+
+  rewrite Lc.simpl_subst; auto.
+  rewrite Lc.lift0; trivial.
+Qed.
+
+Lemma red_lift_app n A B k :
+  eq_trm (lift_rec n k (App A B)) (App (lift_rec n k A) (lift_rec n k B)).
+red; simpl; intros.
+split.
+ red; intros.
+ apply app_ext.
+  rewrite int_lift_rec_eq.
+  rewrite H; reflexivity.
+
+  rewrite int_lift_rec_eq.
+  rewrite H; reflexivity.
+
+ red; intros.
+ do 2 rewrite tm_lift_rec_eq.
+ rewrite H; trivial.
+Qed.
+
+Lemma red_lift_abs n A B k :
+  eq_trm (lift_rec n k (Abs A B)) (Abs (lift_rec n k A) (lift_rec n (S k) B)).
+red; simpl; intros.
+split.
+ red; intros.
+ apply lam_ext.
+  rewrite int_lift_rec_eq.
+  rewrite H; reflexivity.
 
   red; intros.
-  injection H0; clear H0; intros; auto.
+  rewrite int_lift_rec_eq.
+  rewrite <- V.cons_lams.
+   rewrite H1.
+   rewrite H.
+   reflexivity.
 
-  red; intros. 
-  injection H0; clear H0; intros; auto.
+   do 2 red; intros.
+   rewrite H2; reflexivity.
+
+ red; intros.
+ apply f_equal2.
+  rewrite tm_lift_rec_eq.
+  rewrite H; auto.
+
+  rewrite tm_lift_rec_eq.
+  apply tm_morph; auto with *.
+  rewrite H.
+  apply Lc.cross_binder_shift.
+Qed.
+
+Lemma red_lift_prod n A B k :
+  eq_trm (lift_rec n k (Prod A B)) (Prod (lift_rec n k A) (lift_rec n (S k) B)).
+red; simpl; intros.
+split.
+ red; intros.
+ apply prod_ext.
+  rewrite int_lift_rec_eq.
+  rewrite H; reflexivity.
 
   red; intros.
-  injection H0; clear H0; intros; auto.
+  rewrite int_lift_rec_eq.
+  rewrite <- V.cons_lams.
+   rewrite H1.
+   rewrite H.
+   reflexivity.
 
- revert k H; induction t; simpl; intros.
-  destruct (lt_eq_lt_dec k n) as [[?|?]|?]; simpl in H.
-   destruct (le_gt_dec k (Peano.pred n)); simpl in *.
-    elim H.
-    destruct n; simpl; trivial.
-    inversion l.
+   do 2 red; intros.
+   rewrite H2; reflexivity.
 
-    apply NPeano.Nat.lt_pred_le in g.
-    elim (Lt.lt_irrefl n).
-    apply Lt.le_lt_trans with k; trivial.
+ red; intros.
+ apply f_equal2.
+  rewrite tm_lift_rec_eq.
+  rewrite H; auto.
 
-   subst k; auto.
-
-   destruct (le_gt_dec k n).
-    elim (Lt.lt_irrefl n).
-    apply Lt.lt_le_trans with k; trivial.
-
-    elim H; trivial.
-
-  constructor; apply IHt.
-  red; intros; apply H.
-  rewrite H0; trivial.
-
-  destruct (eqterm (Lc.lift_rec 1 (Lc.subst_rec (Lc.Abs (Lc.Ref 0)) t1 k) k) t1).
-   apply Lc.occ_app_r.
-   apply IHt2.
-   red; intros; apply H.
-   rewrite e; rewrite H0; trivial.
-
-   apply Lc.occ_app_l; auto.
+  rewrite tm_lift_rec_eq.
+  apply tm_morph; auto with *.
+  rewrite H.
+  apply Lc.cross_binder_shift.
 Qed.
 
-Lemma tm_closed : forall k j M,
-  Lc.occur k (tm j M) -> ~ forall n, ~ Lc.occur k (j n).
-red; intros.
-rewrite occur_subst in H.
-rewrite <- tm_substitutive in H.
-rewrite <- tm_liftable in H.
-apply H; clear H.
-apply tm_morph; auto with *.
-red; red; intros.
-generalize (H0 a).
-rewrite occur_subst; intro.
-destruct (eqterm (Lc.lift_rec 1 (Lc.subst_rec (Lc.Abs (Lc.Ref 0)) (j a) k) k) (j a)); auto.
-elim H; trivial.
+Lemma red_sigma_app N A B k :
+  eq_trm (subst_rec N k (App A B)) (App (subst_rec N k A) (subst_rec N k B)).
+red; simpl; intros.
+split.
+ red; intros.
+ apply app_ext.
+  rewrite int_subst_rec_eq.
+  rewrite H; reflexivity.
+
+  rewrite int_subst_rec_eq.
+  rewrite H; reflexivity.
+
+ red; intros.
+ do 2 rewrite tm_subst_rec_eq.
+ rewrite H; trivial.
 Qed.
 
-(*
-Fixpoint nf t :=
-  match t with
-  | Lc.App u v => neutral u /\ nf u /\ nf v
-  | Lc.Abs t => nf t
-  | _ => True
-  end.
-*)
-Inductive nf : term -> Prop :=
-| Nf_var : forall n, nf (Lc.Ref n)
-| Nf_app : forall u v, neutral u -> nf u -> nf v -> nf (Lc.App u v)
-| Nf_abs : forall t, nf t -> nf (Lc.Abs t).
+Lemma red_sigma_abs N A B k :
+  eq_trm (subst_rec N k (Abs A B)) (Abs (subst_rec N k A) (subst_rec N (S k) B)).
+red; simpl; intros.
+split.
+ red; intros.
+ apply lam_ext.
+  rewrite int_subst_rec_eq.
+  rewrite H; reflexivity.
 
-Hint Constructors nf.
+  red; intros.
+  rewrite int_subst_rec_eq.
+  rewrite <- V.cons_lams.
+   rewrite H1.
+   rewrite H.
+   reflexivity.
 
-Lemma nf_norm : forall t, nf t -> forall u, ~ red1 t u.
-(*
-red; intros.
-revert H.
-induction H0; simpl; auto.
- destruct 1; auto.
+   do 2 red; intros.
+   rewrite H2; reflexivity.
 
- destruct 1 as (_,(?,_)); auto.
+ red; intros.
+ apply f_equal2.
+  rewrite tm_subst_rec_eq.
+  rewrite H; auto.
 
- destruct 1 as (_,(_,?)); auto.
-*)
-red; intros.
-revert H.
-induction H0; simpl; intros; auto.
- inversion_clear H.
- elim H0.
-
- inversion_clear H; auto.
-
- inversion_clear H; auto.
-
- inversion_clear H; auto.
+  rewrite tm_subst_rec_eq.
+  apply tm_morph; auto with *.
+  rewrite H.
+  apply Lc.cross_binder_cons.
+  unfold I.shift, Lc.ilift; simpl.
+  unfold Lc.lift; rewrite <- tm_liftable; trivial.
 Qed.
 
-Lemma red1_dec : forall t, {u|red1 t u}+{nf t}.
-induction t; intros.
- right; simpl; trivial.
+Lemma red_sigma_prod N A B k :
+  eq_trm (subst_rec N k (Prod A B)) (Prod (subst_rec N k A) (subst_rec N (S k) B)).
+red; simpl; intros.
+split.
+ red; intros.
+ apply prod_ext.
+  rewrite int_subst_rec_eq.
+  rewrite H; reflexivity.
 
- destruct IHt.
-  destruct s.
-  left; exists (Lc.Abs x); auto with coc.
+  red; intros.
+  rewrite int_subst_rec_eq.
+  rewrite <- V.cons_lams.
+   rewrite H1.
+   rewrite H.
+   reflexivity.
 
-  right; simpl; auto.
+   do 2 red; intros.
+   rewrite H2; reflexivity.
 
- destruct IHt1.
-  destruct s.
-  left; exists (Lc.App x t2); auto with coc.
+ red; intros.
+ apply f_equal2.
+  rewrite tm_subst_rec_eq.
+  rewrite H; auto.
 
-  destruct IHt2.
-   destruct s.
-   left; exists (Lc.App t1 x); auto with coc.
-
-   destruct t1;[right;simpl;auto|left|right;simpl;auto].
-repeat constructor; trivial.
-   exists (Lc.subst t2 t1); auto with coc.
-constructor; trivial.
-simpl; trivial.
+  rewrite tm_subst_rec_eq.
+  apply tm_morph; auto with *.
+  rewrite H.
+  apply Lc.cross_binder_cons.
+  unfold I.shift, Lc.ilift; simpl.
+  unfold Lc.lift; rewrite <- tm_liftable; trivial.
 Qed.
 
-Lemma norm : forall t, sn t -> { u | red t u /\ nf u}.
-induction 1; intros.
-destruct (red1_dec x).
- destruct s.
- destruct (H0 x0); trivial.
- destruct a.
- exists x1; split; trivial.
- transitivity x0; auto with coc.
+Lemma red_sigma_var_eq N k :
+  N <> kind ->
+  eq_trm (subst_rec N k (Ref k)) (lift k N).
+unfold subst_rec; simpl.
+destruct N; simpl.
+2:destruct 1; trivial.
+intros _.
+split; red; intros.
+ unfold V.lams, V.shift; simpl.
+ destruct (le_gt_dec k k).
+ 2:omega.
+ replace (k-k) with 0; auto with *.
+ simpl V.cons.
+ apply iint_morph.
+ do 2 red; intros.
+ replace (a-0) with a; auto with *.
 
- exists x; auto with coc.
+ unfold I.lams; simpl.
+ destruct (le_gt_dec k k).
+ 2:omega.
+ replace (k-k) with 0; auto with *.
+ simpl I.cons.
+ apply itm_morph.
+ do 2 red; intros.
+ unfold I.shift; simpl.
+ replace (a-0) with a; auto with *.
 Qed.
 
-Definition Neu : CR := fun t =>
-  Lc.sn t /\ exists2 u, Lc.red t u & nf u /\ neutral u.
+Lemma red_sigma_var_lt N k n :
+  n < k ->
+  eq_trm (subst_rec N k (Ref n)) (Ref n).
+unfold subst_rec; simpl; intros.
+split; red; intros.
+ unfold V.lams, V.shift; simpl.
+ destruct (le_gt_dec k n); auto.
+ omega.
 
-Lemma neutral_is_cand : is_cand Neu.
-split; intros.
- destruct H; trivial.
-
- destruct H.
- destruct H1.
- split.
-  apply Lc.sn_red_sn with t; auto with coc.
-
-  exists x; trivial.
-  destruct H2.
-  elim confluence with (1:=H1) (2:=H0); intros.
-  replace x with x0; trivial.
-  revert H2; elim H4; trivial; intros.
-  rewrite H6 in H7; trivial.
-  elim nf_norm with (2:=H7); trivial.
-
- assert (Lc.sn t).
-  constructor; intros.
-  destruct (H0 y); auto.
- split; trivial.
- destruct (red1_dec t).
-  destruct s.
-  specialize H0 with (1:=r).
-  destruct H0.
-  destruct H2.
-  exists x0; trivial.
-  transitivity x; auto with coc.
-
-  exists t; auto with *.
+ unfold I.lams, I.shift; simpl.
+ destruct (le_gt_dec k n); auto.
+ omega.
 Qed.
 
-Lemma nf_neutral_open : forall t,
-  nf t ->
-  neutral t ->
-  exists k, Lc.occur k t.
-induction 1; intros.
- exists n; auto with coc.
-
- destruct (IHnf1 H).
- exists x; apply Lc.occ_app_l; trivial.
-
- destruct H0.
-Qed.
-
-
-Lemma lift_closed : forall m M n k,
+Lemma red_sigma_var_gt N k n :
   k <= n ->
-  Lc.occur n (Lc.lift_rec m M k) ->
-  m+k <= n /\ Lc.occur (n-m) M.
-induction M; simpl; intros.
- destruct (le_gt_dec k n).
-  inversion_clear H0.
-  split; auto with arith.
-  replace (m+n-m) with n; auto with arith.
+  eq_trm (subst_rec N k (Ref (S n))) (Ref n).
+unfold subst_rec; simpl; intros.
+split; red; intros.
+ unfold V.lams; simpl.
+ destruct (le_gt_dec k (S n)); simpl.
+  unfold V.cons, V.shift; simpl.
+  destruct k; simpl; auto.
+  replace (n-k) with (S (n-S k)).
+   replace (S (k+(n- S k))) with n; auto.
+   omega.
+  omega.
+ omega.
 
-  inversion H0; subst n0.
-  elim (Lt.lt_irrefl n); apply Lt.lt_le_trans with k; trivial.
-
- inversion_clear H0.
- apply IHM in H1; auto with arith.
- destruct H1.
- rewrite <- plus_n_Sm in H0.
- split; auto with arith.
- constructor.
- rewrite <- NPeano.Nat.sub_succ_l; trivial.
- apply Le.le_trans with (m+k); auto with arith.
-
- inversion_clear H0.
-  apply IHM1 in H1; destruct H1; auto with *.
-  apply IHM2 in H1; destruct H1; auto with *.
+ unfold I.lams, I.shift, I.cons; simpl.
+ destruct (le_gt_dec k (S n)); simpl.
+  destruct k; simpl; auto.
+  replace (n-k) with (S (n-S k)).
+   replace (S (k+(n- S k))) with n; auto.
+   omega.
+  omega.
+ omega.
 Qed.
 
-Lemma subst_closed : forall N M n k,
-  k <= n ->
-  Lc.occur n (Lc.subst_rec N M k) ->
-  Lc.occur (n-k) N \/ Lc.occur (S n) M.
-induction M; simpl; intros.
- destruct (lt_eq_lt_dec k n) as [[?|?]|?].
-  inversion H0; subst n0.
-  right.
-  destruct n; simpl; auto with *.
-  inversion l.
+Require Import Transitive_Closure.
 
-  left.
-  apply lift_closed with (k:=0); auto with arith.
+Lemma simul M :
+  Lc.sn M ->
+  forall j M', M = tm j M' ->
+  Acc (transp _ red_term) M'.
+intros snM.
+elim (Acc_clos_trans _ _ _ snM); clear snM; intros.
+constructor; intros.
+red in H2.
+assert (redM' := H2 j).
+assert (clos_trans _ (transp _ Lc.red1) (tm j y) x).
+ rewrite H1.
+ clear H1 H2.
+ elim redM'; intros.
+  apply t_step; trivial.
 
-  inversion H0; subst n0.
-  elim (Lt.lt_irrefl n); apply Lt.lt_le_trans with k; trivial.
-
- inversion_clear H0.
- apply IHM in H1.
- destruct H1; auto with *.
- apply Le.le_n_S; trivial.
-
- inversion_clear H0.
-  apply IHM1 in H1; trivial.
-  destruct H1; auto.
-
-  apply IHM2 in H1; trivial.
-  destruct H1; auto.
+  apply t_trans with y0; trivial.
+apply H0 with (tm j y) j; trivial.
 Qed.
 
-
-Lemma red_closed : forall t t',
-  Lc.red t t' ->
-  forall k,
-  Lc.occur k t' ->
-  Lc.occur k t.
-induction 1; intros; auto.
-apply IHred.
-revert k H1; clear H IHred t.
-induction H0.
- intros.
- destruct subst_closed with (2:=H1); auto with arith.
- replace (k-0) with k in H; auto with *.
-
- intros.
- inversion_clear H1; apply Lc.occ_abs; auto.
-
- intros.
- inversion_clear H1.
-  apply Lc.occ_app_l; auto.
-  apply Lc.occ_app_r; trivial.
-
- intros.
- inversion_clear H1.
-  apply Lc.occ_app_l; trivial.
-  apply Lc.occ_app_r; auto.
-Qed.
-
-
-Lemma neutral_not_closed :
-  forall t, (forall S, inSAT t S) -> exists k, Lc.occur k t.
+Lemma model_strong_normalization e M T :
+  wf e ->
+  typ e M T ->
+  Acc (transp _ red_term) M.
 intros.
-assert (neu := H (exist _ _ neutral_is_cand : SAT)).
-simpl in neu.
-destruct neu.
-destruct H1.
-destruct H2.
-destruct nf_neutral_open with (1:=H2) (2:=H3).
-exists x0.
-apply red_closed with x; auto.
+destruct typ_sn with (1:=H) (2:=H0) as (j,?).
+apply simul with (1:=H1) (2:=eq_refl).
 Qed.
 
-
-Lemma consistency : forall M, ~ typ List.nil M (Prod prop (Ref 0)).
-red; intros.
-red in H.
-assert (val_ok List.nil (V.nil props) (I.nil (Lc.Abs (Lc.Ref 0)))).
- red; intros.
- destruct n; discriminate H0.
-apply H in H0.
-clear H.
-red in H0; simpl in H0.
-destruct H0 as (_,H0).
-set (prf := tm (I.nil (Lc.Abs (Lc.Ref 0))) M) in H0.
-assert (forall S, inSAT (Lc.App prf (Lc.Abs (Lc.Ref 0))) S).
- intros.
- assert ((mkProp S, Lc.Abs (Lc.Ref 0)) \real props). 
-  rewrite props_def.
-  split; auto with coc.
-  exists S; reflexivity.
- specialize prod_elim with (2:=H0)(3:=H); intros.
- rewrite mkProp_def in H1.
- destruct H1; trivial.
- red; intros; trivial.
-destruct (neutral_not_closed _ H).
-inversion_clear H1.
- apply tm_closed in H2.
- apply H2.
- red; intros.
- unfold I.nil in H1; simpl in H1.
- inversion_clear H1.
- inversion H3.
-
- inversion_clear H2.
- inversion H1.
-Qed.
+End MakeModel.
