@@ -3,7 +3,6 @@ Require Import List Compare_dec.
 Require Import basic.
 Require Import Sat.
 Require Import Models.
-Import Can.
 
 Module Lc := Lambda.
 
@@ -67,6 +66,7 @@ apply interSAT_elim with (x:=exist (fun x => x \in A) x H0) in H; simpl proj1_si
 apply H; trivial.
 Qed.
 
+(* Works even when dom is empty: *)
 Lemma prod_intro_sn : forall dom f F m,
   eq_fun dom f f ->
   eq_fun dom F F ->
@@ -86,54 +86,7 @@ apply piSAT_intro; intros; trivial.
 rewrite beta_eq; trivial.
 apply H2; auto.
 Qed.
-(*
-Lemma realProd_intro : forall i t A B f,
-  Lc.sn t -> (*  If A is empty *)
-  f \in prod (int i A) (fun x => int (V.cons x i) B) ->
-  (forall x u,
-   x \in int i A ->
-   cc_app f x \in int (V.cons x i) B ->
-   inSAT u (Red (int i A) x) ->
-   inSAT (Lc.App t u) (Red (int (V.cons x i) B) (cc_app f x))) ->
-  [f,t]\real int i (Prod A B).
-intros.
-rewrite intProd_eq.
-split; intros.
- unfold prod; rewrite El_def; trivial.
 
- rewrite Red_prod.
-  apply piSAT_intro; intros; trivial.
-  apply H1; trivial.
-  apply cc_prod_elim with (1:=H0); trivial.
-
-  red; intros.
-  rewrite H3; reflexivity.
-
-  unfold prod; rewrite El_def; trivial.
-Qed.
-
-Lemma realProd_intro' : forall i t A B f,
-  Lc.sn t -> (*  If A is empty *)
-  ext_fun (El (int i A)) f ->
-  (forall x, x \in El (int i A) -> f x \in El (int (V.cons x i) B)) ->
-  (forall x u,
-   x \in El (int i A) ->
-   f x \in El (int (V.cons x i) B) ->
-   inSAT u (Red (int i A) x) ->
-   inSAT (Lc.App t u) (Red (int (V.cons x i) B) (f x))) ->
-  [lam (int i A) f,t]\real int i (Prod A B).
-intros.
-apply realProd_intro; trivial; intros.
- apply cc_prod_intro; trivial.
- do 2 red; intros.
- rewrite H4; reflexivity.
-
- unfold lam; rewrite cc_beta_eq; trivial.
- apply H2; auto.
-Qed.
-*)
-
-(* Works even when dom is empty: *)
 Lemma prod_intro_lam : forall dom f F m,
   eq_fun dom f f ->
   eq_fun dom F F ->
@@ -167,61 +120,20 @@ split.
  apply prodSAT_elim with (1:=H1); trivial.
 Qed.
 
-(*
-Lemma inSAT_red : forall x A t u,
-  [x,t] \real A -> Lc.red t u -> [x,u] \real A.
-destruct 1; split; trivial.
-apply (clos_red _ (proj2_sig (Red A x))) with t; trivial.
-Qed.
-*)
 
-Lemma inSAT_sn : forall x A t, [x,t] \real A -> Lc.sn t.
+Lemma real_sn : forall x A t, [x,t] \real A -> Lc.sn t.
 destruct 1 as (_,?).
-apply (incl_sn _ (proj2_sig (Red A x))); trivial.
+apply sat_sn in H; trivial.
 Qed.
 
-Lemma inSAT_exp_K : forall x A u v,
+Lemma real_exp_K : forall x A u v,
   Lc.sn v ->
   [x,u] \real A ->
-  [x,Lc.App2 K u v] \real A. 
+  [x,Lc.App2 Lc.K u v] \real A. 
 destruct 2; split; trivial.
 apply KSAT_intro; trivial.
 Qed.
 
-(*
-Lemma inSAT_exp : forall x A t u,
-  [x,t] \real A ->
-  neutral u ->
-  (forall v, Lc.red1 u v -> [x,v] \real A) ->
-  [x,u] \real A. 
-intros.
-destruct H; split; trivial.
-apply (clos_exp _ (proj2_sig (Red A x))); intros; trivial.
-apply H1; trivial.
-Qed.
-
-Lemma inSAT_exp_sat : forall x A m u,
-  Lc.sn u ->
-  [x,Lc.subst u m] \real A ->
-  [x,Lc.App (Lc.Abs m) u] \real A.
-destruct 2; split; trivial.
-apply inSAT_exp; trivial.
-Qed.
-
-Lemma inSAT_exp_sat1 : forall x A m u u1,
-  Lc.sn u ->
-  [x,Lc.App (Lc.subst u m) u1] \real A ->
-  [x,Lc.App (Lc.App (Lc.Abs m) u) u1] \real A. 
-destruct 2; split; trivial.
-apply inSAT_context with (S:=Red A x) (u:=Lc.subst u m); intros; trivial.
-apply inSAT_exp; trivial.
-Qed.
-
-Lemma inSAT_exp_sat2 : forall x A m u u1 u2,
-  Lc.sn u ->
-  [x,Lc.App (Lc.App (Lc.subst u m) u1) u2] \real A ->
-  [x,Lc.App (Lc.App (Lc.App (Lc.Abs m) u) u1) u2] \real A. 
-*)
 
 (* Now the abstract strong normalization proof. *)
 
@@ -254,10 +166,10 @@ Module I := Lambda.I.
 Record inftrm := {
   iint : val -> X;
   iint_morph : Proper (eq_val ==> eqX) iint;
-  itm : intt -> Lc.term;
-  itm_morph : Proper (eq_intt ==> eq) itm;
-  itm_lift : liftable itm;
-  itm_subst : substitutive itm
+  itm : Lc.intt -> Lc.term;
+  itm_morph : Proper (Lc.eq_intt ==> eq) itm;
+  itm_lift : Lc.liftable itm;
+  itm_subst : Lc.substitutive itm
 }.
 Existing Instance iint_morph.
 Existing Instance itm_morph.
@@ -268,7 +180,7 @@ Definition eq_trm (x y:trm) :=
   match x, y with
   | Some f, Some g =>
      (eq_val ==> eqX)%signature (iint f) (iint g) /\
-     (eq_intt ==> eq)%signature (itm f) (itm g)
+     (Lc.eq_intt ==> eq)%signature (itm f) (itm g)
   | None, None => True
   | _, _ => False
   end.
@@ -309,7 +221,7 @@ exact Lc.K.
 Defined.
 (* The only fact needed is that dummy_trm is a closed term *)
 
-Definition tm (j:intt) (M:trm) :=
+Definition tm (j:Lc.intt) (M:trm) :=
   match M with
   | Some f => itm f j
   | None => dummy_trm
@@ -335,7 +247,7 @@ split; red; intros.
  rewrite H2; auto.
 Qed.
 
-Instance tm_morph : Proper (eq_intt ==> eq_trm ==> @eq Lc.term) tm.
+Instance tm_morph : Proper (Lc.eq_intt ==> eq_trm ==> @eq Lc.term) tm.
 unfold tm; do 3 red; intros.
 destruct x0; destruct y0; simpl in *; (contradiction||reflexivity||auto).
 destruct H0; simpl in *.
@@ -356,7 +268,7 @@ apply itm_lift.
 Qed.
 
 Lemma tm_subst_cons : forall x j t,
-  tm (I.cons x j) t = Lc.subst x (tm (ilift j) t).
+  tm (I.cons x j) t = Lc.subst x (tm (Lc.ilift j) t).
 unfold Lc.subst; intros.
 rewrite <- tm_substitutive.
 apply tm_morph; [red; intros|reflexivity].
@@ -374,7 +286,7 @@ apply H0; trivial.
 Qed.
 
 Definition cst (x:X) (t:Lc.term)
-  (H0 : liftable (fun _ => t)) (H1 : substitutive (fun _ => t)) : trm.
+  (H0 : Lc.liftable (fun _ => t)) (H1 : Lc.substitutive (fun _ => t)) : trm.
 left; exists (fun _ => x) (fun _ => t); trivial.
  do 2 red; reflexivity.
  do 2 red; reflexivity.
@@ -414,7 +326,7 @@ Definition CAbs t m :=
 
 Definition Abs (A M:trm) : trm.
 left; exists (fun i => lam (int i A) (fun x => int (V.cons x i) M))
-             (fun j => CAbs (tm j A) (tm (ilift j) M)).
+             (fun j => CAbs (tm j A) (tm (Lc.ilift j) M)).
  do 2 red; simpl; intros.
  apply lam_ext.
   rewrite H; reflexivity.
@@ -426,11 +338,11 @@ left; exists (fun i => lam (int i A) (fun x => int (V.cons x i) M))
  rewrite H; trivial.
 
  red; simpl; intros.
- rewrite ilift_binder_lift; trivial.
+ rewrite Lc.ilift_binder_lift; trivial.
  do 2 rewrite <- tm_liftable; trivial.
 
  red; simpl; intros.
- rewrite ilift_binder; trivial.
+ rewrite Lc.ilift_binder; trivial.
  do 2 rewrite <- tm_substitutive; trivial.
 Defined.
 
@@ -441,7 +353,7 @@ Definition CProd a b :=
 Definition Prod (A B:trm) : trm.
 left;
   exists (fun i => prod (int i A) (fun x => int (V.cons x i) B))
-         (fun j => CProd (tm j A) (tm (ilift j) B)).
+         (fun j => CProd (tm j A) (tm (Lc.ilift j) B)).
 do 2 red; simpl; intros.
  apply prod_ext.
   rewrite H; reflexivity.
@@ -454,11 +366,11 @@ do 2 red; simpl; intros.
 
  red; simpl; intros.
  do 2 rewrite <- tm_liftable; trivial.
- rewrite ilift_binder_lift; trivial.
+ rewrite Lc.ilift_binder_lift; trivial.
 
  red; simpl; intros.
  do 2 rewrite <- tm_substitutive; trivial.
- rewrite ilift_binder; trivial.
+ rewrite Lc.ilift_binder; trivial.
 Defined.
 
 Lemma intProd_eq i A B :
@@ -546,7 +458,7 @@ split; red; intros.
    (I.shift n (I.lams 0 (I.shift 1) y)).
  rewrite I.lams0.
  rewrite I.shift_split.
- change (eq_intt (fun k => x k) (fun k => y k)) in H.
+ change (Lc.eq_intt (fun k => x k) (fun k => y k)) in H.
  rewrite H; reflexivity.
 Qed.
 
@@ -601,7 +513,7 @@ intros; destruct T; simpl; reflexivity.
 Qed.
 
 Lemma tm_subst_eq : forall u v j,
-  tm j (subst u v) = Lc.subst (tm j u) (tm (ilift j) v).
+  tm j (subst u v) = Lc.subst (tm j u) (tm (Lc.ilift j) v).
 intros.
 unfold Lc.subst; rewrite <- tm_substitutive.
 destruct v as [v|]; simpl; trivial.
@@ -702,9 +614,9 @@ apply prod_intro_lam; intros; auto.
  red; intros.
  rewrite H1; reflexivity.
 
- apply sn_lift.
+ apply Lc.sn_lift.
  apply cst_trm_sn.
- apply inSAT_sn with x (int i U); auto.
+ apply real_sn with x (int i U); auto.
 
  unfold Lc.subst; rewrite Lc.simpl_subst; auto with arith.
  rewrite Lc.lift0.
@@ -778,7 +690,7 @@ simpl; split; red; intros.
  reflexivity.
 
  revert n.
- change (eq_intt (I.lams 0 (I.shift 1) x) (I.shift 1 y)).
+ change (Lc.eq_intt (I.lams 0 (I.shift 1) x) (I.shift 1 y)).
  rewrite I.lams0; rewrite <- H.
  reflexivity.
 Qed.
@@ -799,7 +711,7 @@ destruct e; simpl prod_list in eq_U.
 Qed.
 
 
-Definition in_int (i:val) (j:intt) (M T:trm) :=
+Definition in_int (i:val) (j:Lc.intt) (M T:trm) :=
   M <> None /\
   match T with
   (* M has type kind *)
@@ -872,7 +784,7 @@ Lemma in_int_sn : forall i j M T,
   in_int i j M T -> Lc.sn (tm j M).
 destruct 1 as (_,mem).
 destruct T; simpl in mem.
- apply inSAT_sn in mem; trivial.
+ apply real_sn in mem; trivial.
 
  destruct mem; trivial.
 Qed.
@@ -880,7 +792,7 @@ Qed.
 (* Environments *)
 Definition env := list trm.
 
-Definition val_ok (e:env) (i:val) (j:intt) :=
+Definition val_ok (e:env) (i:val) (j:Lc.intt) :=
   forall n T, nth_error e n = value T ->
   in_int i j (Ref n) (lift (S n) T).
 
@@ -921,7 +833,7 @@ Definition eq_typ (e:env) (M M':trm) :=
 *)
 Definition eq_typ (e:env) (M M':trm) :=
   (forall i j, val_ok e i j -> int i M == int i M') /\
-  (forall j, conv (tm j M) (tm j M')).
+  (forall j, Lc.conv (tm j M) (tm j M')).
 Definition sub_typ (e:env) (M M':trm) :=
   forall i j, val_ok e i j ->
   (forall x t, [x,t] \real int i M -> [x,t] \real int i M').
@@ -1000,7 +912,7 @@ Lemma typs_sn : forall e T i j, typs e T -> val_ok e i j -> Lc.sn (tm j T).
 destruct 1 as [ty_T|ty_T]; intro is_val; apply ty_T in is_val;
  red in is_val; simpl in is_val.
  destruct is_val as (_,(_,sn)); trivial.
- destruct is_val as (_,mem); apply inSAT_sn in mem; trivial.
+ destruct is_val as (_,mem); apply real_sn in mem; trivial.
 Qed.
 
 Lemma typ_sn : forall e M T,
@@ -1065,7 +977,7 @@ Lemma eq_typ_app : forall e M M' N N',
 unfold eq_typ; destruct 1; destruct 1; split; simpl; intros.
  apply app_ext; eauto.
 
- apply conv_conv_app; auto.
+ apply Lc.conv_conv_app; auto.
 Qed.
 
 
@@ -1084,9 +996,9 @@ unfold eq_typ; destruct 1; destruct 1; split; simpl; intros.
  split; trivial; apply varSAT.
 
  unfold CAbs, Lc.App2.
- apply conv_conv_app; auto.
- apply conv_conv_app; auto with *.
- apply conv_conv_abs; auto.
+ apply Lc.conv_conv_app; auto.
+ apply Lc.conv_conv_app; auto with *.
+ apply Lc.conv_conv_abs; auto.
 Qed.
 
 Lemma eq_typ_prod : forall e T T' U U',
@@ -1105,11 +1017,11 @@ split; intros.
  split; trivial; apply varSAT.
 
  unfold CProd, Lc.App2.
- apply conv_conv_app.
-  apply conv_conv_app; auto with *.
+ apply Lc.conv_conv_app.
+  apply Lc.conv_conv_app; auto with *.
   apply H.
 
-  apply conv_conv_abs.
+  apply Lc.conv_conv_abs.
   apply H0.
 Qed.
 
@@ -1137,28 +1049,28 @@ split; intros.
 
   apply H5.
 
- apply trans_conv_conv with (Lc.App (CAbs (tm j T) (tm (ilift j) M')) (tm j N)).
-  apply conv_conv_app; auto with *.
+ apply Lc.trans_conv_conv with (Lc.App (CAbs (tm j T) (tm (Lc.ilift j) M')) (tm j N)).
+  apply Lc.conv_conv_app; auto with *.
   unfold CAbs, Lc.App2.
-  apply conv_conv_app; auto with *.
-  apply conv_conv_app; auto with *.
-  apply conv_conv_abs.
+  apply Lc.conv_conv_app; auto with *.
+  apply Lc.conv_conv_app; auto with *.
+  apply Lc.conv_conv_abs.
   apply H.
- apply trans_conv_conv with (Lc.App (CAbs (tm j T) (tm (ilift j) M')) (tm j N')).
-  apply conv_conv_app; auto with *.
+ apply Lc.trans_conv_conv with (Lc.App (CAbs (tm j T) (tm (Lc.ilift j) M')) (tm j N')).
+  apply Lc.conv_conv_app; auto with *.
   apply H0.
  unfold CAbs, Lc.App2, Lc.K.
- eapply trans_conv_conv.
-  apply conv_conv_app;[|apply refl_conv].
-  apply conv_conv_app;[|apply refl_conv].
-  apply Lc.red_conv; apply Lc.one_step_red; apply beta.
+ eapply Lc.trans_conv_conv.
+  apply Lc.conv_conv_app;[|apply Lc.refl_conv].
+  apply Lc.conv_conv_app;[|apply Lc.refl_conv].
+  apply Lc.red_conv; apply Lc.one_step_red; apply Lc.beta.
   unfold Lc.subst; simpl.
- eapply trans_conv_conv.
-  apply conv_conv_app;[|apply refl_conv].
-  apply Lc.red_conv; apply Lc.one_step_red; apply beta.
+ eapply Lc.trans_conv_conv.
+  apply Lc.conv_conv_app;[|apply Lc.refl_conv].
+  apply Lc.red_conv; apply Lc.one_step_red; apply Lc.beta.
  unfold Lc.subst; rewrite Lc.simpl_subst; auto with arith; rewrite Lc.lift0.
  rewrite tm_subst_eq. 
- apply Lc.red_conv; apply Lc.one_step_red; apply beta.
+ apply Lc.red_conv; apply Lc.one_step_red; apply Lc.beta.
 Qed.
 
 (* Typing rules *)
@@ -1210,12 +1122,12 @@ Lemma prod_intro2 : forall dom f F t m,
   [lam dom f, CAbs t m] \real prod dom F.
 intros.
 apply prod_intro_lam in H3; trivial.
-unfold CAbs; apply inSAT_exp_K; trivial.
+unfold CAbs; apply real_exp_K; trivial.
 (* *)
 destruct H2.
 destruct H2.
 apply H3 in H2.
-apply inSAT_sn in H2.
+apply real_sn in H2.
 apply Lc.sn_subst with x0; trivial.
 Qed.
 
@@ -1274,14 +1186,14 @@ specialize vcons_add_var with (1:=is_val) (2:=in_T) (3:=T_not_tops);
   intros in_U.
 apply ty_U in in_U.
 split;[discriminate|simpl].
-assert (snU : Lc.sn (tm (ilift j) U)).
+assert (snU : Lc.sn (tm (Lc.ilift j) U)).
  apply Lc.sn_subst with witt.
  rewrite <- tm_subst_cons.
  destruct is_srt; subst s2; simpl in *.
   destruct in_U as (_,(_,snu)); trivial.
 
   destruct in_U as (_,mem); simpl in mem.
-  apply inSAT_sn in mem; trivial.
+  apply real_sn in mem; trivial.
 destruct is_srt; subst s2; simpl in *.
  (* s2=kind *)
  split.
@@ -1295,7 +1207,7 @@ destruct is_srt; subst s2; simpl in *.
 
  (* s2=prop *)
  unfold CProd.
- apply inSAT_exp_K.
+ apply real_exp_K.
   apply Lc.sn_abs; trivial.
  assert (prod (int i T) (fun x => int (cons x i) U) \in props).
   apply impredicative_prod; intros.   

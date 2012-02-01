@@ -336,7 +336,7 @@ induction t; intros.
   f_equal.
    rewrite H.
    rewrite tm_lift_rec_eq.
-   rewrite <- ilift_lams; trivial.
+   rewrite <- Lc.ilift_lams; trivial.
    unfold I.shift; auto.
 
    rewrite H.
@@ -373,7 +373,7 @@ induction t; intros.
    f_equal.
    rewrite H.
    rewrite tm_lift_rec_eq.
-   rewrite <- ilift_lams; trivial.
+   rewrite <- Lc.ilift_lams; trivial.
    unfold I.shift; auto.
 Qed.
 
@@ -446,9 +446,9 @@ induction t; intros.
    (* beware! arguments of ilams must reflect the right dependency
       w.r.t the substitution *)
    change
-     (I.lams (S k) (I.cons (tm (I.shift (S k) (ilift y)) (int_trm arg))) (ilift y))
-   with (I.lams (S k) (fun j => I.cons (tm j (int_trm arg)) j) (ilift y)).
-   rewrite <- ilift_lams; intros; auto.
+     (I.lams (S k) (I.cons (tm (I.shift (S k) (Lc.ilift y)) (int_trm arg))) (Lc.ilift y))
+   with (I.lams (S k) (fun j => I.cons (tm j (int_trm arg)) j) (Lc.ilift y)).
+   rewrite <- Lc.ilift_lams; intros; auto.
    destruct a; simpl; auto.
    unfold Lc.lift.
    rewrite <- tm_liftable.
@@ -495,9 +495,9 @@ induction t; intros.
    (* beware! arguments of I.lams must reflect the right dependency
       w.r.t the substitution *)
    change
-     (I.lams (S k) (I.cons (tm (I.shift (S k) (ilift y)) (int_trm arg))) (ilift y))
-   with (I.lams (S k) (fun j => I.cons (tm j (int_trm arg)) j) (ilift y)).
-   rewrite <- ilift_lams; intros; auto.
+     (I.lams (S k) (I.cons (tm (I.shift (S k) (Lc.ilift y)) (int_trm arg))) (Lc.ilift y))
+   with (I.lams (S k) (fun j => I.cons (tm j (int_trm arg)) j) (Lc.ilift y)).
+   rewrite <- Lc.ilift_lams; intros; auto.
    destruct a; simpl; auto.
    unfold Lc.lift.
    rewrite <- tm_liftable.
@@ -649,7 +649,7 @@ Lemma tm_red1 : forall x y,
   forall j, Lc.redp (SN.tm j (int_trm x)) (SN.tm j (int_trm y)).
 induction 1; simpl; intros; unfold Lc.App2; auto 10.
 apply t_trans with 
-  (Lc.App (Lc.Abs (SN.tm (SN.ilift j) (int_trm M)))
+  (Lc.App (Lc.Abs (SN.tm (Lc.ilift j) (int_trm M)))
      (SN.tm j (int_trm N))).
  apply Lc.redp_app_l.
  apply Lc.redp_K.

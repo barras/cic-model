@@ -1040,7 +1040,7 @@ Lemma red_term_app_l M M' N :
   red_term (App M N) (App M' N).
 unfold red_term; intros.
 specialize H with j.
-apply lc_red_trans_app_l; trivial.
+apply Lc.redp_app_l; trivial.
 Qed.
 
 
@@ -1049,7 +1049,7 @@ Lemma red_term_app_r M N N' :
   red_term (App M N) (App M N').
 unfold red_term; intros.
 specialize H with j.
-apply lc_red_trans_app_r; trivial.
+apply Lc.redp_app_r; trivial.
 Qed.
 
 Lemma red_term_abs_l M M' N :
@@ -1058,7 +1058,7 @@ Lemma red_term_abs_l M M' N :
 unfold red_term; intros.
 specialize H with j.
 simpl.
-apply lc_red_trans_app_r; trivial.
+apply Lc.redp_app_r; trivial.
 Qed.
 
 Lemma red_term_abs_r M N N' :
@@ -1067,9 +1067,9 @@ Lemma red_term_abs_r M N N' :
 unfold red_term; intros.
 specialize H with (Lc.ilift j).
 simpl.
-apply lc_red_trans_app_l; trivial.
-apply lc_red_trans_app_r; trivial.
-apply lc_red_trans_abs; trivial.
+apply Lc.redp_app_l; trivial.
+apply Lc.redp_app_r; trivial.
+apply Lc.redp_abs; trivial.
 Qed.
 
 
@@ -1079,8 +1079,8 @@ Lemma red_term_prod_l M M' N :
 unfold red_term; intros.
 specialize H with j.
 simpl.
-apply lc_red_trans_app_l; trivial.
-apply lc_red_trans_app_r; trivial.
+apply Lc.redp_app_l; trivial.
+apply Lc.redp_app_r; trivial.
 Qed.
 
 Lemma red_term_prod_r M N N' :
@@ -1089,16 +1089,16 @@ Lemma red_term_prod_r M N N' :
 unfold red_term; intros.
 specialize H with (Lc.ilift j).
 simpl.
-apply lc_red_trans_app_r; trivial.
-apply lc_red_trans_abs; trivial.
+apply Lc.redp_app_r; trivial.
+apply Lc.redp_abs; trivial.
 Qed.
 
 Lemma red1_beta T M N :
   red_term (App (Abs T M) N) (subst N M).
 red; simpl; intros.
 eapply t_trans.
- eapply lc_red_trans_app_l.
- eapply lc_red_K2.
+ eapply Lc.redp_app_l.
+ eapply Lc.redp_K.
 
  apply t_step.
  apply Lc.red1_beta.
@@ -1157,7 +1157,7 @@ split.
   rewrite tm_subst_rec_eq.
   apply tm_morph; auto with *.
   rewrite H.
-  apply Lc.cross_binder.
+  apply Lc.cross_binder_cons.
   unfold I.shift, Lc.ilift; simpl.
   unfold Lc.lift; rewrite <- tm_liftable; trivial.
 
@@ -1193,7 +1193,7 @@ split.
   rewrite tm_subst_rec_eq.
   apply tm_morph; auto with *.
   rewrite H.
-  apply Lc.cross_binder.
+  apply Lc.cross_binder_cons.
   unfold I.shift, Lc.ilift; simpl.
   unfold Lc.lift; rewrite <- tm_liftable; trivial.
 Qed.
