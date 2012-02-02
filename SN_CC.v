@@ -307,7 +307,7 @@ Import SN.
 
 Lemma int_lift_rec : forall n t k,
   eq_trm (lift_rec n k (int_trm t)) (int_trm (Tm.lift_rec n t k)).
-induction t; intros.
+induction t; simpl int_trm; intros.
  destruct s; simpl; trivial.
  split; red; intros; reflexivity.
 
@@ -318,63 +318,9 @@ induction t; intros.
 
   split; red; auto.
 
- simpl lift_rec; simpl int_trm.
- rewrite <- IHt1.
- rewrite <- IHt2.
- simpl; split; red; intros.
-  apply lam_ext; intros.
-   rewrite H.
-   symmetry; apply int_lift_rec_eq.
-
-   red; intros.
-   rewrite <- H; rewrite <- H1.
-   rewrite int_lift_rec_eq.
-   rewrite V.cons_lams; auto with *.
-   do 2 red; intros.
-   rewrite H2; reflexivity.
-
-  f_equal.
-   rewrite H.
-   rewrite tm_lift_rec_eq.
-   rewrite <- Lc.ilift_lams; trivial.
-   unfold I.shift; auto.
-
-   rewrite H.
-   symmetry; apply tm_lift_rec_eq.
-
- simpl; split; red; intros.
-   rewrite H; rewrite <- IHt1; rewrite <- IHt2.
-   do 2 rewrite int_lift_rec_eq.
-   reflexivity.
-
-   rewrite H; rewrite <- IHt1; rewrite <- IHt2.
-   do 2 rewrite tm_lift_rec_eq.
-   reflexivity.
-
- simpl lift_rec; simpl int_trm.
- rewrite <- IHt1.
- rewrite <- IHt2.
- simpl; split; red; intros.
-  apply prod_ext; intros.
-   rewrite H.
-   symmetry; apply int_lift_rec_eq.
-
-   red; intros.
-   rewrite <- H; rewrite <- H1.
-   rewrite int_lift_rec_eq.
-   rewrite V.cons_lams; auto with *.
-   do 2 red; intros.
-   rewrite H2; reflexivity.
-
-  f_equal.
-   rewrite H.
-   symmetry; apply tm_lift_rec_eq.
-
-   f_equal.
-   rewrite H.
-   rewrite tm_lift_rec_eq.
-   rewrite <- Lc.ilift_lams; trivial.
-   unfold I.shift; auto.
+ rewrite red_lift_abs; rewrite IHt1; rewrite IHt2; reflexivity.
+ rewrite red_lift_app; rewrite IHt1; rewrite IHt2; reflexivity.
+ rewrite red_lift_prod; rewrite IHt1; rewrite IHt2; reflexivity.
 Qed.
 
 Lemma int_lift : forall n t,
@@ -385,124 +331,36 @@ unfold Tm.lift, lift.
 apply int_lift_rec.
 Qed.
 
-
 Lemma int_subst_rec : forall arg,
   int_trm arg <> kind ->
   forall t k,
   eq_trm (subst_rec (int_trm arg) k (int_trm t)) (int_trm (Tm.subst_rec arg t k)).
 intros arg not_knd.
-induction t; intros.
+induction t; simpl int_trm; intros.
  destruct s; simpl; trivial.
  split; red; intros; reflexivity.
 
  simpl Tm.subst_rec.
- destruct (lt_eq_lt_dec k n) as [[fv|eqv]|bv].
-  simpl; unfold V.lams, I.lams, V.shift, I.shift;
-   destruct (le_gt_dec k n); try (apply False_ind; omega; fail).
-  replace (n-k) with (S(pred n-k)) by omega; simpl.
-  replace (k+(pred n-k)) with (pred n) by omega; split; red; auto.
+ destruct (lt_eq_lt_dec k n) as [[fv|eqv]|bv]; simpl int_trm.
+  simpl int_trm.
+  destruct n; [inversion fv|].
+  rewrite SN.red_sigma_var_gt; auto with arith.
+  reflexivity.
 
-  rewrite int_lift.
-  simpl; unfold V.lams, I.lams, V.shift, I.shift;
-   destruct (le_gt_dec k n); try (apply False_ind; omega; fail).
-  destruct (int_trm arg); simpl; auto.
-  clear l; subst k.
-  replace (n-n) with 0 by omega.
-  simpl.
-  split; red; intros.
-   rewrite V.lams0.
-   change (V.shift n (fun k => y k)) with (V.shift n y).
-   rewrite <- H; reflexivity.
+  subst k; rewrite SN.red_sigma_var_eq; trivial.
+  symmetry; apply int_lift.
 
-   rewrite I.lams0.
-   change (I.shift n (fun k => y k)) with (I.shift n y).
-   rewrite <- H; reflexivity.
+  rewrite SN.red_sigma_var_lt; trivial.
+  reflexivity.
 
-  simpl; unfold V.lams, I.lams, V.shift, I.shift;
-   destruct (le_gt_dec k n); try (apply False_ind; omega; fail).
-  split; red; intros; auto.
+ rewrite SN.red_sigma_abs.
+ rewrite IHt1; rewrite IHt2; reflexivity.
 
- simpl Tm.subst_rec; simpl int_trm.
- rewrite <- IHt1.
- rewrite <- IHt2.
- simpl; split; red; intros.
-  apply lam_ext; intros.
-   rewrite H.
-   symmetry; apply int_subst_rec_eq.
+ rewrite SN.red_sigma_app.
+ rewrite IHt1; rewrite IHt2; reflexivity.
 
-   red; intros.
-   rewrite <- H; rewrite <- H1.
-   rewrite int_subst_rec_eq.
-   rewrite V.cons_lams.
-    rewrite V.shift_split; rewrite V.shift_cons.
-    reflexivity.
-
-    do 2 red; intros.
-    rewrite H2; reflexivity.
-
-  f_equal.
-   rewrite H.
-   rewrite tm_subst_rec_eq.
-   (* beware! arguments of ilams must reflect the right dependency
-      w.r.t the substitution *)
-   change
-     (I.lams (S k) (I.cons (tm (I.shift (S k) (Lc.ilift y)) (int_trm arg))) (Lc.ilift y))
-   with (I.lams (S k) (fun j => I.cons (tm j (int_trm arg)) j) (Lc.ilift y)).
-   rewrite <- Lc.ilift_lams; intros; auto.
-   destruct a; simpl; auto.
-   unfold Lc.lift.
-   rewrite <- tm_liftable.
-   apply tm_morph; auto.
-   reflexivity.
-
-   rewrite H.
-   symmetry; apply tm_subst_rec_eq.
-
- simpl Tm.subst_rec; simpl int_trm.
- rewrite <- IHt1.
- rewrite <- IHt2.
- simpl; split; red; intros.
-  rewrite H.
-  apply app_ext; symmetry; apply int_subst_rec_eq.
-
-  rewrite H; do 2 rewrite <- tm_subst_rec_eq; trivial.
-
- simpl subst_rec; simpl int_trm.
- rewrite <- IHt1.
- rewrite <- IHt2.
- simpl; split; red; intros.
-  apply prod_ext; intros.
-   rewrite H.
-   symmetry; apply int_subst_rec_eq.
-
-   red; intros.
-   rewrite <- H; rewrite <- H1.
-   rewrite int_subst_rec_eq.
-   rewrite V.cons_lams.
-    rewrite V.shift_split; rewrite V.shift_cons.
-    reflexivity.
-
-    do 2 red; intros.
-    rewrite H2; reflexivity.
-
-  f_equal.
-   rewrite H.
-   symmetry; apply tm_subst_rec_eq.
-
-   f_equal.
-   rewrite H.
-   rewrite tm_subst_rec_eq.
-   (* beware! arguments of I.lams must reflect the right dependency
-      w.r.t the substitution *)
-   change
-     (I.lams (S k) (I.cons (tm (I.shift (S k) (Lc.ilift y)) (int_trm arg))) (Lc.ilift y))
-   with (I.lams (S k) (fun j => I.cons (tm j (int_trm arg)) j) (Lc.ilift y)).
-   rewrite <- Lc.ilift_lams; intros; auto.
-   destruct a; simpl; auto.
-   unfold Lc.lift.
-   rewrite <- tm_liftable.
-   apply tm_morph; auto.
-   reflexivity.
+ rewrite SN.red_sigma_prod.
+ rewrite IHt1; rewrite IHt2; reflexivity.
 Qed.
 
 
@@ -521,6 +379,43 @@ destruct T1; discriminate.
 Qed.
 
 End LiftAndSubstEquiv.
+(* Proof that beta-reduction at the Lc level simulates beta-reduction
+   at the Tm level. One beta at the Tm level may require several
+   (but not zero) steps at the Lc level, because of the encoding
+   of type-carrying lambda abstractions.
+ *)
+Lemma red1_sound : forall x y,
+  Tm.red1 x y -> ~ Tm.mem_sort Tm.kind x ->
+  SN.red_term (int_trm x) (int_trm y).
+induction 1; simpl; intros.
+ rewrite int_subst.
+  apply SN.red_term_beta.
+
+  destruct N; try discriminate.
+  destruct s; try discriminate.
+  elim H; auto.
+
+ apply SN.red_term_abs_l; auto 10.
+ apply SN.red_term_abs_r; auto 10.
+ apply SN.red_term_app_l; auto 10.
+ apply SN.red_term_app_r; auto 10.
+ apply SN.red_term_prod_l; auto 10.
+ apply SN.red_term_prod_r; auto 10.
+Qed.
+
+Lemma sn_sound : forall M,
+  Acc (transp _ SN.red_term) (interp M) ->
+  ~ Tm.mem_sort Tm.kind (Ty.unmark_app M) ->
+  Tm.sn (Ty.unmark_app M).
+intros M accM.
+apply Acc_inverse_image with (f:=int_trm) in accM.
+induction accM; intros.
+constructor; intros.
+apply H0; trivial.
+ apply red1_sound; trivial.
+
+ intro; apply H1; apply Tm.exp_sort_mem with (1:=H2); trivial.
+Qed.
 
 Hint Resolve int_not_kind Ty.eq_typ_not_kind.
 
@@ -636,58 +531,6 @@ Qed.
 
 (***********)
 
-Hint Resolve Lc.redp_app_r Lc.redp_app_l Lc.redp_abs
-  Lc.redp_lift_rec.
-
-(* Proof that beta-reduction at the Lc level simulates beta-reduction
-   at the Tm level. One beta at the Tm level may require several
-   (but not zero) steps at the Lc level, because of the encoding
-   of type-carrying lambda abstractions.
- *)
-Lemma tm_red1 : forall x y,
-  Tm.red1 x y -> ~ Tm.mem_sort Tm.kind x ->
-  forall j, Lc.redp (SN.tm j (int_trm x)) (SN.tm j (int_trm y)).
-induction 1; simpl; intros; unfold Lc.App2; auto 10.
-apply t_trans with 
-  (Lc.App (Lc.Abs (SN.tm (Lc.ilift j) (int_trm M)))
-     (SN.tm j (int_trm N))).
- apply Lc.redp_app_l.
- apply Lc.redp_K.
-
- apply t_step; apply Lc.red1_beta.
- rewrite int_subst.
-  rewrite SN.tm_subst_eq; trivial.
-
-  destruct N; try discriminate.
-  destruct s; try discriminate.
-  elim H; auto.
-Qed.
-
-(* stdlib! *)
-Lemma clos_trans_transp : forall A R x y,
-  clos_trans A R x y ->
-  clos_trans A (transp _ R) y x.
-induction 1.
- apply t_step; trivial.
- apply t_trans with y; trivial.
-Qed.
-
-Lemma sn_tm : forall t j,
-  ~ Tm.mem_sort Tm.kind t -> Lc.sn (SN.tm j (int_trm t)) -> Tm.sn t.
-assert (forall x, Lc.sn x -> forall t j, x = SN.tm j (int_trm t) ->
-        ~ Tm.mem_sort Tm.kind t -> Tm.sn t); eauto.
-intros x snx.
-elim (Acc_clos_trans _ _ _ snx); intros.
-constructor; intros.
-unfold transp in *.
-apply H0 with (j:=j) (2:=eq_refl _).
- subst x0.
- apply clos_trans_transp.
- apply tm_red1; trivial.
-
- red; intro; apply H2; eapply Tm.exp_sort_mem; eauto.
-Qed.
-
 Lemma strong_normalization : forall e M M' T,
   Ty.eq_typ e M M' T ->
   Tm.sn (Ty.unmark_app M).
@@ -698,9 +541,8 @@ assert (~ Tm.mem_sort Tm.kind (Ty.unmark_app M)).
  red; intro Hm; apply (Types.typ_mem_kind _ _ _ Hm H).
 apply interp_sound in H.
 destruct H as (wfe,ty).
-apply SN.typ_sn in ty; trivial.
-destruct ty as (j,sn_j).
-apply sn_tm in sn_j; trivial.
+apply SN.model_strong_normalization in ty; trivial.
+apply sn_sound; trivial.
 Qed.
 
 (* Print the assumptions made to derive strong normalization of CC:

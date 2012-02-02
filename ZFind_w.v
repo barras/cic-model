@@ -1,4 +1,4 @@
-Require Import ZF ZFpairs ZFsum ZFnats ZFrelations ZFord ZFfix ZFstable.
+Require Import ZF ZFpairs ZFsum ZFnats ZFrelations ZFord ZFfix (*ZFstable*).
 Require Import ZFgrothendieck.
 Require Import ZFcoc ZFlist.
 Import IZF ZFrepl.
@@ -32,7 +32,7 @@ apply couple_intro_sigma.
  apply snd_typ_sigma with (y:=fst z) in H0; auto with *.
  revert H0; apply cc_prod_covariant; auto with *.
 Qed.
-
+(*
 Lemma W_F_stable : stable W_F.
 unfold W_F.
 apply sigma_stable'; auto with *.
@@ -43,7 +43,7 @@ apply sigma_stable'; auto with *.
  apply cc_prod_stable; intros; auto.
  apply id_stable.
 Qed.
-
+*)
 Let tys : forall x X, x \in W_F X -> snd x \in cc_prod (B (fst x)) (fun _ => X).
 intros.
 apply snd_typ_sigma with (y:=fst x) in H; auto with *.
@@ -454,7 +454,7 @@ rewrite H1.
 apply Wsup_typ_gen with X; auto with *.
 Qed.
 Hint Resolve Wf_typ.
-
+(*
 Lemma Wf_stable : forall X,
   X \incl power Wdom ->
   inter (replf X Wf) \incl Wf (inter X).
@@ -496,6 +496,7 @@ apply inter_intro.
  2:apply W_F_mono.
  exists x; auto with *.
 Qed.
+*)
 (*Hint Resolve Wf_stable.*)
 
 (* The fixpoint *)

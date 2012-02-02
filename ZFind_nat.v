@@ -1,4 +1,4 @@
-Require Import ZF ZFsum ZFfix ZFnats ZFrelations ZFord ZFcard ZFstable ZFcont.
+Require Import ZF ZFsum ZFfix ZFnats ZFrelations ZFord ZFcard (*ZFstable*) ZFcont.
 Require Import ZFind_basic.
 Import IZF ZFrepl.
 
@@ -75,7 +75,7 @@ apply NATf_case with (3:=H); intros.
 
  apply SUCC_inj in H1; rewrite H1; trivial.
 Qed.
-
+(*
 Lemma NATf_stable : stable NATf.
 unfold NATf.
 apply sum_stable.
@@ -88,7 +88,7 @@ Qed.
 
 Lemma NATf_stable2 : stable2 NATf.
 Proof stable2_weaker _ NATf_morph NATf_stable.
-
+*)
 End TypeConstructor.
 
 Hint Resolve NATf_mono Fmono_morph.
@@ -109,7 +109,7 @@ apply NATi_morph; trivial.
 Qed.
 Hint Resolve NATfun_ext.
 
-
+(*
 Lemma NATi_stable : stable_ord NATi.
 apply TI_stable; auto.
 apply NATf_stable.
@@ -133,7 +133,7 @@ apply NATf_stable2 in H1.
 revert H1; apply NATf_mono.
 apply NATi_stable2; trivial.
 Qed.
-
+*)
 
 Lemma ZEROi_typ : forall o,
   isOrd o -> ZERO \in NATi (osucc o).

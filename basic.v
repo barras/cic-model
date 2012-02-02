@@ -1,7 +1,9 @@
 Set Implicit Arguments.
+Require Export Compare_dec.
+Require Export List.
+Require Export Relations Relation_Operators Transitive_Closure.
 Require Export Coq.Program.Basics.
 Require Export Setoid Morphisms Morphisms_Prop.
-Require Export Relation_Operators.
 Export ProperNotations.
 
 Lemma impl_morph A A' B B' :

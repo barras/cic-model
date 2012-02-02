@@ -758,6 +758,7 @@ case_eq (nth_error e n); intros.
  rewrite H0 in H; contradiction.
 Qed.
 
+(* TODO: use split lift! *)
 Lemma weakeningS : forall e k M T A,
   typ e (lift k M) (lift k T) ->
   typ (A::e) (lift (S k) M) (lift (S k) T).
