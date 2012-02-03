@@ -1,7 +1,6 @@
-Require Export Relations Wellfounded Compare_dec.
 Require Import Sat.
-Require Import ZF ZFcoc.
-Require Import ZFlambda.
+Require Import ZF ZFcoc ZFlambda.
+Require GenRealSN.
 Import IZF.
 
 Set Implicit Arguments.
@@ -31,10 +30,16 @@ apply iSAT_morph.
 auto.
 Qed.
 
-(* Accessing the set of values of a type: *)
+(* Accessing the set of values of a type.
+   The official membership relation of the model (see inX below) will be
+   x \in El T, which reads "x is a value of type T"
+ *)
 Definition El T := fst T.
 
-(* Accessing the realizability relation *)
+(* Accessing the realizability relation.
+   inSAT t (Red T x), means that t is a realizer of x in type T. It
+   implicitely requires x \in El T. 
+ *)
 Definition Red T x := sSAT (cc_app (snd T) x) .
 
 Instance El_morph : morph1 El.
@@ -69,8 +74,12 @@ Qed.
 (* The realizability relation of a dependent product of domain type A
    and co-domain family of types F for a  function f:
    it is the intersection of all reducibility candidates {x}_A -> {f(x)}_F(x)
-   when x ranges A. *)
-Definition piSAT A (F:set->set) f :=
+   when x ranges A.
+   Note: {x}_A -> {f(x)}_F(x) is the set of that map any realizer of x (in A) to a
+   realizer of f(x) (in F(x)). So the intersection of these sets when x ranges El(A)
+   is the set of terms that realize f (in forall x:A. F(x)).
+ *)
+Definition piSAT A (F:set->set) (f:set->set) :=
   interSAT (fun p:{x|x \in El A} =>
     prodSAT (Red A (proj1_sig p)) (Red (F (proj1_sig p)) (f (proj1_sig p)))).
 
@@ -135,103 +144,57 @@ apply cc_prod_elim with (dom:=El dom) (F:=fun x => El(F x)); trivial.
 Qed.
 
 (* The type of propositions:
-   - propositions are types and do not interact with their surrounding context, so
-     the set of realizers of any proposition is SN
-   - all propositions are non-empty (and equal to True), but their set of
+   - propositions are types and do not interact with their surrounding context (they
+     are neutral), so the set of realizers of any proposition is SN;
+   - all propositions are non-empty (and have the same values as True), but their set of
      realizers must depend on the syntax of the propositions, because proofs compute.
      The realizer sets can be any reducibility candidate.
    Remark: we cannot have that all propositions are equal (they can differ on the
    set of realizers). Otherwise True=(True->True) wold allow non normalizing terms
    (e.g. Y).
  *)
+
+(* Injecting reducibility candidates into propositions *)
+Definition mkProp S := mkTY (singl empty) (fun _ => S).
+
+Instance mkProp_morph : Proper (eqSAT ==> eq_set) mkProp.
+unfold mkProp; do 2 red; intros.
+apply mkTY_ext; auto with *.
+Qed.
+
+Lemma El_mkProp : forall S, El (mkProp S) == singl empty.
+unfold mkProp; intros; rewrite El_def; auto with *.
+Qed.
+
+Lemma Red_mkProp S x : x == empty -> eqSAT (Red (mkProp S) x) S.
+unfold mkProp; intros.
+rewrite Red_def; auto with *.
+rewrite H; apply singl_intro.
+Qed.
+
+(* The sort of propositions *)
 Definition props :=
   mkTY
     (* The domain of props *)
-    (replSAT (fun A:SAT => mkTY (singl prf_trm) (fun _ => A)))
+    (replSAT (fun S:SAT => mkProp S))
     (* realizers of prop *)
     (fun _ => snSAT).
 
-Lemma prop_repl_morph :
-  Proper (eqSAT ==> eq_set) (fun A => mkTY (singl prf_trm) (fun _ => A)).
-do 2 red; intros.
-apply couple_morph; try reflexivity.
-apply cc_lam_ext; auto with *.
-red; intros.
-apply iSAT_morph; trivial.
+Lemma El_props_def P :
+  P \in El props <-> exists S, P == mkProp S.
+unfold props; rewrite El_def.
+rewrite replSAT_ax; eauto with *.
 Qed.
-Hint Resolve prop_repl_morph.
-
-
-(*
-Definition mkProp S :=
-  mkTy (power empty) (fun x t => inSAT t S).
-
-Lemma prop3 : forall S, Proper (eq_set ==> eq ==> iff) (fun _ t => inSAT t S).
-do 3 red; intros.
-subst y0; reflexivity.
-Qed.
-
-Lemma mkProp_def : forall x t S,
-  (x,t) \real mkProp S <-> x == empty /\ inSAT t S.
-intros.
-unfold mkProp.
-rewrite mkTy_def0.
-2:apply prop3.
- setoid_replace (x \in power empty) with (x == empty);
-   auto with *.
- rewrite power_ax.
- split; intros.
-  apply empty_ext; red; intros.
-  generalize (H _ H0); apply empty_ax.
-
-  rewrite <- H; trivial.
-
- intros _ _.
- generalize (proj2_sig S); apply iff_impl.
- apply is_cand_morph; red; intros.
- reflexivity.
-Qed.
-
-Lemma El_mkProp : forall S, El (mkProp S) == power empty.
-intros.
-apply power_ext; intros.
- rewrite El_def.
- exists (Lc.Ref 0).
- rewrite mkProp_def; split.
-  apply empty_ext; red; intros.
-  apply H in H0; elim empty_ax with x0; trivial.
-
-  apply varSAT.
-
- rewrite El_def in H.
- destruct H.
- rewrite mkProp_def in H; destruct H.
- rewrite H in H0; trivial.
-Qed.
-
-Lemma prop2 :
-  Proper (eq_set ==> eq ==> iff)
-    (fun P t => Lc.sn t /\ (exists S : SAT, P == mkProp S)).
-do 3 red; intros.
-subst y0.
-apply and_iff_morphism; auto with *.
-apply ex_morph; red; intros.
-rewrite H; reflexivity.
-Qed.
-
-Lemma props_def : forall x t,
-  (x,t) \real props <-> (exists S, x == mkProp S) /\ Lc.sn t.
-*)
 
   Lemma Red_sort : forall x, x \in El props -> eqSAT (Red props x) snSAT.
 intros.
-unfold props.
-rewrite Red_def; auto with *.
-unfold props in H; rewrite El_def in H; trivial.
+rewrite El_props_def in H; destruct H as (S,H).
+unfold props; rewrite Red_def; auto with *.
+rewrite replSAT_ax; eauto with *.
 Qed.
 
 (* Re-doing the impredicativity property in the case where we have no
-   empty propositions *)
+   empty propositions. (Could be moved to ZFcoc.) *)
 Lemma cc_impredicative_prod_non_empty : forall dom F,
   ext_fun dom F ->
   (forall x, x \in dom -> F x == singl prf_trm) ->
@@ -270,53 +233,36 @@ Lemma impredicative_prod : forall dom F,
   ext_fun (El dom) F ->
   (forall x, x \in El dom -> F x \in El props) ->
   prod dom F \in El props.
-unfold props, mkTY, El; intros.
-rewrite fst_def.
-rewrite replSAT_ax; trivial.
-unfold prod, mkTY.
+intros.
+rewrite El_props_def.
 exists (piSAT dom F (fun _ => prf_trm)).
 assert (forall x, x \in El dom -> El (F x) == singl prf_trm).
  intros.
  specialize H0 with (1:=H1).
- rewrite fst_def in H0.
- rewrite replSAT_ax in H0; trivial.
- destruct H0 as (A,H0); rewrite H0.
- unfold El; rewrite fst_def.
- reflexivity.
+ rewrite El_props_def in H0; destruct H0 as (S,H0).
+ rewrite H0; apply El_mkProp.
+unfold prod, mkProp.
 apply mkTY_ext.
- apply cc_impredicative_prod_non_empty; intros; auto.
- do 2 red; intros.
- unfold El; apply fst_morph; auto.
+ apply cc_impredicative_prod_non_empty; trivial.
+ do 2 red; intros; apply El_morph; apply H; trivial.
 
  intros.
  apply piSAT_morph; auto with *.
  red; intros.
- apply singl_elim.
- rewrite <- (H1 x0); trivial.
- apply cc_prod_elim with (1:=H2); trivial.
+ apply cc_prod_elim with (2:=H4) in H2.
+ rewrite H1 in H2; trivial.
+ apply singl_elim in H2; trivial.
 Qed.
 
 (* All propositions are inhabited: *)
   Definition daimon := prf_trm.
   Lemma daimon_false : prf_trm \in El (prod props (fun P => P)).
-setoid_replace prf_trm with (cc_lam (El props) (fun _ => prf_trm)).
- unfold prod, mkTY, El; rewrite fst_def.
- apply cc_prod_intro; intros.
-  do 2 red; reflexivity.
-
-  do 2 red; intros; apply fst_morph; trivial.
-  unfold props, mkTY in H.
-  rewrite fst_def in H.
-  rewrite replSAT_ax in H; trivial.
-  destruct H as (A, eq_x).
-  rewrite eq_x.
-  rewrite fst_def.
-  apply singl_intro.
-
- symmetry.
- apply cc_impredicative_lam; intros.
-  do 2 red; intros; reflexivity.
-  reflexivity.
+assert (prod props (fun P => P) \in El props).
+ apply impredicative_prod; auto with *.
+ do 2 red; auto.
+rewrite El_props_def in H; destruct H as (S,H).
+rewrite H.
+rewrite El_mkProp; apply singl_intro.
 Qed.
 
 (* Module bureaucracy *)
@@ -391,7 +337,6 @@ End ___.
 (***********************************************************************************************)
 
 (* Building the generic model *)
-Require GenRealSN.
 Module SN := GenRealSN.MakeModel CCSN CCSN.
 Import SN.
 
@@ -460,31 +405,25 @@ destruct H0.
 set (prf := tm (I.nil (Lc.Abs (Lc.Ref 0))) M) in H0.
 assert (forall S, inSAT (Lc.App prf (Lc.Abs (Lc.Ref 0))) S).
  intros.
- pose (P := mkTY (singl prf_trm) (fun _ => S)).
- assert ([P, Lc.Abs (Lc.Ref 0)] \real props). 
-  assert (P \in El props).
-   unfold props; rewrite El_def.
-   rewrite replSAT_ax; auto.
+ assert ([mkProp S, Lc.Abs (Lc.Ref 0)] \real props). 
+  assert (mkProp S \in El props).
+   rewrite El_props_def.
    exists S; reflexivity.
   split; trivial.
   rewrite Red_sort; auto.
   apply Lc.sn_abs; auto.
- assert (H2 := @prod_elim props (int(V.nil props) M) P (fun P=>P) prf (Lc.Abs (Lc.Ref 0))).
+ assert (H2 := @prod_elim props (int(V.nil props) M) (mkProp S) (fun P=>P) prf (Lc.Abs (Lc.Ref 0))).
  destruct H2; trivial.
   red; auto.
 
   split; trivial.
- setoid_replace  S with (Red P (cc_app (int (V.nil props) M) P)); trivial.
- unfold P; rewrite Red_def; auto with *.
- apply eq_elim with (El P).
-  unfold P; rewrite El_def.
-  reflexivity.
-
-  unfold inX, prod in H.
-  rewrite El_def in H.
-  apply cc_prod_elim with (1:=H).
-  unfold props; rewrite El_def.
-  rewrite replSAT_ax; auto.
+ rewrite Red_mkProp in H3; trivial.
+ unfold inX, prod in H.
+ rewrite El_def in H.
+ apply singl_elim.
+ rewrite <- (El_mkProp S).
+ apply cc_prod_elim with (1:=H).
+ rewrite El_props_def.
   exists S; reflexivity.
 destruct (neutral_not_closed _ H1).
 inversion_clear H2.
@@ -629,6 +568,8 @@ induction 1; simpl; intros.
  apply SN.red_term_prod_r; auto 10.
 Qed.
 
+Import Wellfounded.
+
 Lemma sn_sound : forall M,
   Acc (transp _ red_term) (interp M) ->
   ~ Tm.mem_sort Tm.kind (Ty.unmark_app M) ->
@@ -752,18 +693,6 @@ assert (wfe := Ty.typ_wf _ _ _ _ H).
 apply interp_wf in wfe.
 apply int_sound in H; destruct H; auto.
 Qed.
-
-(***********)
-(* stdlib! *)
-(*
-Lemma clos_trans_transp : forall A R x y,
-  clos_trans A R x y ->
-  clos_trans A (transp _ R) y x.
-induction 1.
- apply t_step; trivial.
- apply t_trans with y; trivial.
-Qed.
-*)
 
 (* The main theorem: strong normalization *)
 Theorem strong_normalization : forall e M M' T,

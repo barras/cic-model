@@ -44,7 +44,9 @@ Import MM.
 (* Derived properties of the abstract SN model *)
 
 (* We first introduce the realizability relation, which the conjunction
-   of the value and term interpretation requirements *)
+   of the value and term interpretation requirements.
+   [x,t] \real T reads "t is a realizer of x as a value of type T".
+ *)
 Notation "[ x , t ] \real A" := (x \in A  /\ inSAT t (Red A x)) (at level 60).
 
 Lemma piSAT_intro : forall A B f t,
@@ -377,6 +379,17 @@ destruct n; simpl in *.
  apply in_int_varS; auto.
 Qed.
 
+Lemma vcons_add_var_daimon : forall e T i j x,
+  val_ok e i j ->
+  x \in int i T ->
+  T <> kind ->
+  val_ok (T::e) (V.cons x i) (I.cons SatSet.daimon j).
+intros.
+apply vcons_add_var; trivial.
+split; trivial.
+apply varSAT.
+Qed.
+
 Lemma add_var_eq_fun : forall T U U' i,
   (forall x t, [x,t] \real int i T -> int (V.cons x i) U == int (V.cons x i) U') -> 
   eq_fun (int i T)
@@ -395,16 +408,13 @@ Definition wf (e:env) :=
   exists i, exists j, val_ok e i j.
 Definition typ (e:env) (M T:trm) :=
   forall i j, val_ok e i j -> in_int i j M T.
-(* Alternative equality: not intensional
 Definition eq_typ (e:env) (M M':trm) :=
-  forall i j, val_ok e i j -> int i M == int i M'.
-*)
-Definition eq_typ (e:env) (M M':trm) :=
-  (forall i j, val_ok e i j -> int i M == int i M') /\
-  (forall j, Lc.conv (tm j M) (tm j M')).
+  (forall i j, val_ok e i j -> int i M == int i M').
 Definition sub_typ (e:env) (M M':trm) :=
   forall i j, val_ok e i j ->
   (forall x t, [x,t] \real int i M -> [x,t] \real int i M').
+
+Definition eq_typ' e M N := eq_typ e M N /\ conv_term M N.
 
 Instance typ_morph : forall e, Proper (eq_trm ==> eq_trm ==> iff) (typ e).
 unfold typ; split; simpl; intros.
@@ -413,14 +423,17 @@ unfold typ; split; simpl; intros.
 Qed.
 
 Instance eq_typ_morph : forall e, Proper (eq_trm ==> eq_trm ==> iff) (eq_typ e).
-unfold eq_typ; split; simpl; intros.
- destruct H1; split; intros.
-  rewrite <- H; rewrite <- H0; eauto.
-  rewrite <- H; rewrite <- H0; auto.
+intro; apply morph_impl_iff2; auto with *.
+do 4 red; unfold eq_typ; intros.
+rewrite <- H; rewrite <- H0; eauto.
+Qed.
 
- destruct H1; split; intros.
-  rewrite H; rewrite H0; eauto.
-  rewrite H; rewrite H0; auto.
+Instance eq_typ'_morph : forall e, Proper (eq_trm ==> eq_trm ==> iff) (eq_typ' e).
+do 3 red; intros.
+apply and_iff_morphism.
+ apply eq_typ_morph; trivial.
+
+ rewrite H; rewrite H0; reflexivity.
 Qed.
 
 Instance sub_typ_morph : forall e, Proper (eq_trm ==> eq_trm ==> iff) (sub_typ e).
@@ -524,25 +537,23 @@ exists (V.cons x i); exists (I.cons u j).
 apply vcons_add_var; trivial.
 Qed.
 
-(* Equality rules *)
+(* Extensional equality rules *)
 
 Lemma refl : forall e M, eq_typ e M M.
-red; simpl; split; reflexivity.
+red; simpl; reflexivity.
 Qed.
 
 Lemma sym : forall e M M', eq_typ e M M' -> eq_typ e M' M.
-unfold eq_typ; destruct 1; split; intros; symmetry; eauto.
+unfold eq_typ; intros; symmetry; eauto.
 Qed.
 
 Lemma trans : forall e M M' M'',
   eq_typ e M M' -> eq_typ e M' M'' -> eq_typ e M M''.
-unfold eq_typ; destruct 1; destruct 1; split; intros.
- transitivity (int i M'); eauto.
-
- transitivity (tm j M'); trivial.
+unfold eq_typ; intros.
+transitivity (int i M'); eauto.
 Qed.
 
-Instance eq_typ_setoid : forall e, Equivalence (eq_typ e).
+Instance eq_typ_equiv : forall e, Equivalence (eq_typ e).
 split.
  exact (@refl e).
  exact (@sym e).
@@ -554,12 +565,9 @@ Lemma eq_typ_app : forall e M M' N N',
   eq_typ e M M' ->
   eq_typ e N N' ->
   eq_typ e (App M N) (App M' N').
-unfold eq_typ; destruct 1; destruct 1; split; simpl; intros.
- apply app_ext; eauto.
-
- apply Lc.conv_conv_app; auto.
+unfold eq_typ; simpl; intros.
+apply app_ext; eauto.
 Qed.
-
 
 Lemma eq_typ_abs : forall e T T' M M',
   eq_typ e T T' ->
@@ -567,18 +575,12 @@ Lemma eq_typ_abs : forall e T T' M M',
   T <> kind ->
   eq_typ e (Abs T M) (Abs T' M').
 Proof.
-unfold eq_typ; destruct 1; destruct 1; split; simpl; intros.
- apply lam_ext; eauto.
- red; intros.
- rewrite <- H6.
- apply H1 with (j:=I.cons SatSet.daimon j).
- apply vcons_add_var; auto.
- split; trivial; apply varSAT.
-
- unfold CAbs, Lc.App2.
- apply Lc.conv_conv_app; auto.
- apply Lc.conv_conv_app; auto with *.
- apply Lc.conv_conv_abs; auto.
+unfold eq_typ; simpl; intros.
+apply lam_ext; eauto.
+red; intros.
+rewrite <- H4.
+apply H0 with (j:=I.cons SatSet.daimon j).
+apply vcons_add_var_daimon; auto.
 Qed.
 
 Lemma eq_typ_prod : forall e T T' U U',
@@ -586,23 +588,13 @@ Lemma eq_typ_prod : forall e T T' U U',
   eq_typ (T::e) U U' ->
   T <> kind ->
   eq_typ e (Prod T U) (Prod T' U').
+Proof.
 unfold eq_typ; simpl; intros.
-split; intros.
- apply prod_ext.
-  eapply H; eauto.
- red; intros.
- rewrite <- H4.
- apply H0 with (j:=I.cons SatSet.daimon j).
- apply vcons_add_var; auto.
- split; trivial; apply varSAT.
-
- unfold CProd, Lc.App2.
- apply Lc.conv_conv_app.
-  apply Lc.conv_conv_app; auto with *.
-  apply H.
-
-  apply Lc.conv_conv_abs.
-  apply H0.
+apply prod_ext; eauto.
+red; intros.
+rewrite <- H4.
+apply H0 with (j:=I.cons SatSet.daimon j).
+apply vcons_add_var_daimon; auto.
 Qed.
 
 Lemma eq_typ_beta : forall e T M M' N N',
@@ -612,45 +604,79 @@ Lemma eq_typ_beta : forall e T M M' N N',
   T <> kind ->
   eq_typ e (App (Abs T M) N) (subst N' M').
 Proof.
-unfold eq_typ, typ, App, Abs; simpl; intros.
-split; intros.
- assert (eq_fun (int i T)
-   (fun x => int (V.cons x i) M) (fun x => int (V.cons x i) M)).
-  apply add_var_eq_fun with (T:=T); intros; trivial; reflexivity.
- assert ([int i N, tm j N] \real int i T).
-  apply H1 in H3.
-  apply in_int_not_kind in H3; trivial.
- rewrite beta_eq; auto.
-  rewrite <- int_subst_eq.
-  destruct H0 as (H0,_); destruct H as (H,_).
-  rewrite <- H0 with (1:=H3).
-  apply H with (j:=I.cons (tm j N) j).
-  apply vcons_add_var; auto.
+unfold eq_typ, typ; simpl; intros.
+assert (real_arg :  [int i N, tm j N]\real int i T).
+ apply in_int_not_kind; auto.
+rewrite beta_eq.
+ rewrite <- int_subst_eq.
+ rewrite <- H0 with (1:=H3).
+ apply H with (j:=I.cons (tm j N) j).
+ apply vcons_add_var; trivial.
 
-  apply H5.
+ apply add_var_eq_fun with (T:=T); intros; trivial; reflexivity.
 
- apply Lc.trans_conv_conv with (Lc.App (CAbs (tm j T) (tm (Lc.ilift j) M')) (tm j N)).
-  apply Lc.conv_conv_app; auto with *.
-  unfold CAbs, Lc.App2.
-  apply Lc.conv_conv_app; auto with *.
-  apply Lc.conv_conv_app; auto with *.
-  apply Lc.conv_conv_abs.
-  apply H.
- apply Lc.trans_conv_conv with (Lc.App (CAbs (tm j T) (tm (Lc.ilift j) M')) (tm j N')).
-  apply Lc.conv_conv_app; auto with *.
-  apply H0.
- unfold CAbs, Lc.App2, Lc.K.
- eapply Lc.trans_conv_conv.
-  apply Lc.conv_conv_app;[|apply Lc.refl_conv].
-  apply Lc.conv_conv_app;[|apply Lc.refl_conv].
-  apply Lc.red_conv; apply Lc.one_step_red; apply Lc.beta.
-  unfold Lc.subst; simpl.
- eapply Lc.trans_conv_conv.
-  apply Lc.conv_conv_app;[|apply Lc.refl_conv].
-  apply Lc.red_conv; apply Lc.one_step_red; apply Lc.beta.
- unfold Lc.subst; rewrite Lc.simpl_subst; auto with arith; rewrite Lc.lift0.
- rewrite tm_subst_eq. 
- apply Lc.red_conv; apply Lc.one_step_red; apply Lc.beta.
+ destruct real_arg; trivial.
+Qed.
+
+(* Intensional equality *)
+
+Instance eq_typ'_equiv : forall e, Equivalence (eq_typ' e).
+split; red; intros.
+ split; reflexivity.
+ destruct H; split; symmetry; trivial.
+ destruct H; destruct H0; split; transitivity y; trivial.
+Qed.
+
+Lemma eq_typ'_eq_typ e M N :
+  eq_typ' e M N -> eq_typ e M N.
+destruct 1; trivial.
+Qed.
+
+Lemma eq_typ'_app : forall e M M' N N',
+  eq_typ' e M M' ->
+  eq_typ' e N N' ->
+  eq_typ' e (App M N) (App M' N').
+destruct 1; destruct 1; split.
+ apply eq_typ_app; trivial.
+
+ apply conv_term_app; trivial.
+Qed.
+
+Lemma eq_typ'_abs : forall e T T' M M',
+  eq_typ' e T T' ->
+  eq_typ' (T::e) M M' ->
+  T <> kind ->
+  eq_typ' e (Abs T M) (Abs T' M').
+Proof.
+destruct 1; destruct 1; split.
+ apply eq_typ_abs; trivial.
+
+ apply conv_term_abs; trivial.
+Qed.
+
+Lemma eq_typ'_prod : forall e T T' U U',
+  eq_typ' e T T' ->
+  eq_typ' (T::e) U U' ->
+  T <> kind ->
+  eq_typ' e (Prod T U) (Prod T' U').
+Proof.
+destruct 1; destruct 1; split.
+ apply eq_typ_prod; trivial.
+
+ apply conv_term_prod; trivial.
+Qed.
+
+Lemma eq_typ'_beta : forall e T M M' N N',
+  eq_typ' (T::e) M M' ->
+  eq_typ' e N N' ->
+  typ e N T -> (* Typed reduction! *)
+  T <> kind ->
+  eq_typ' e (App (Abs T M) N) (subst N' M').
+Proof.
+destruct 1; destruct 1; split.
+ apply eq_typ_beta; trivial.
+
+ apply conv_term_beta; trivial.
 Qed.
 
 (* Typing rules *)
@@ -811,7 +837,6 @@ Lemma typ_conv : forall e M T T',
   typ e M T'.
 Proof.
 unfold typ, eq_typ; simpl; intros.
-destruct H0.
 specialize H with (1:=H3).
 specialize H0 with (1:=H3).
 generalize (proj1 H); intro.
@@ -821,7 +846,6 @@ rewrite <- H0; trivial.
 Qed.
 
 (* Weakening *)
-
 
 Lemma weakening : forall e M T A,
   typ e M T ->
@@ -871,6 +895,13 @@ Lemma sub_trans : forall e M1 M2 M3,
 unfold sub_typ; eauto.
 Qed.
 
+Instance sub_typ_preord e : PreOrder (sub_typ e).
+split; red; intros.
+ apply sub_refl; reflexivity.
+
+ apply sub_trans with y; trivial.
+Qed.
+
 (* subsumption: generalizes typ_conv *)
 Lemma typ_subsumption : forall e M T T',
   typ e M T ->
@@ -879,14 +910,12 @@ Lemma typ_subsumption : forall e M T T',
   T' <> kind ->
   typ e M T'.
 Proof.
-unfold typ, sub_typ, in_int; simpl; intros; auto.
-destruct T' as [(T',T'm)|]; simpl in *; trivial; auto.
- destruct T as [(T,Tm)|]; simpl in *.
-  destruct (H _ _ H3); eauto.
-
-  elim H1; trivial.
-
- elim H2; trivial.
+unfold typ, sub_typ; intros.
+specialize H with (1:=H3).
+specialize H0 with (1:=H3).
+assert (Mnk := proj1 H).
+apply in_int_not_kind in H; trivial.
+apply in_int_intro; auto.
 Qed.
 
 (* Covariance can be derived if we have a weak eta property:
@@ -910,7 +939,7 @@ assert (eqx : x == lam (int i U2) (app x)).
  apply eta_eq in tyx.
  apply (transitivity tyx).
  apply lam_ext.
-  apply (proj1 eqU) with (1:=is_val).
+  apply eqU with (1:=is_val).
 
   red; intros; apply app_ext; auto with *.
 rewrite eqx.
@@ -925,13 +954,13 @@ apply prod_intro_sn.
  intros.
  apply subV with (j:=I.cons u j).
   apply vcons_add_var; trivial.
-  rewrite (proj1 eqU _ _ is_val); trivial.
+  rewrite (eqU _ _ is_val); trivial.
 
   apply prod_elim with (2:=in1).
    red; intros.
    rewrite H1; auto with *.
 
-   rewrite (proj1 eqU _ _ is_val); trivial.
+   rewrite (eqU _ _ is_val); trivial.
 Qed.
 
 End MakeModel.

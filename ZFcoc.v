@@ -488,6 +488,7 @@ apply eq_intro; intros.
   rewrite cond_set_ax in H2; destruct H2; trivial.
 Qed.
 
+(* Proof that Grothendieck universes are closed by cc_prod *)
 
 Require Import ZFgrothendieck.
 
@@ -531,6 +532,7 @@ apply G_replf; auto with *.
    apply G_trans with (app x x0); trivial.
 Qed.
 
+(* Correspondance between ZF universes and (Coq + TTColl) universes *)
 
 Section Equiv_ZF_CICchoice.
 
@@ -548,18 +550,21 @@ Section Equiv_ZF_CICchoice.
   Hypothesis cc_set : set.
 
 Section SetInU.
-  (* Here we assume the elimination rule of the ens inductive type *)
+
+  (* Here we assume the elimination rule of the Ens.set inductive type *)
   Hypothesis cc_set_ind :
     forall P : set -> Prop,
     (forall y X f, morph1 f ->
+     (* y \in sigma X:U. U->Ens.set *)
      y == couple X (cc_lam X f) ->
      X \in U ->
      (forall x, x \in X -> f x \in cc_set) ->
+     (* induction hypothesis *)
      (forall x, x \in X -> P (f x)) ->
      P y) ->
     forall x, x \in cc_set -> P x.
 
-(* sets formed by indexes in U belong to U: *)
+(* Sets formed by indexes in U belong to U: *)
 Lemma cc_set_incl_U : cc_set \incl U.
 red; intros.
 apply cc_set_ind with (2:=H); intros.
@@ -587,16 +592,20 @@ End SetInU.
      axiom is really an instance of collection for universe U. *)
   Hypothesis cc_set_incl_U : cc_set \incl U.
 
-(* We don't even need the introduction rule for sets:
-Hypothesis cc_set_eq : cc_set == sigma U (fun X => cc_arr X cc_set).
-*)
-
-(* specialize version of Ens.ttcoll with B:=cc_set *)
+(* We prove that the model will validate TTColl (Ens.ttcoll).
+   This formulation heavily uses the reification of propositions of the model
+   as Coq's Prop elements. *)
 Lemma cc_ttcoll A R :
   Proper (eq_set ==> eq_set ==> iff) R ->
+  (* A : Ti *)
   A \in U ->
+  (* type of R + existence assumption *)
   (forall x, x \in A -> exists2 y, y \in cc_set & R x y) ->
-  exists2 X, X \in U & exists2 f, f \in cc_arr X cc_set &
+  (* exists X:Ti, *)
+  exists2 X, X \in U &
+    (* exists f:X->set, *)
+    exists2 f, f \in cc_arr X cc_set &
+    (* forall x:A, exists i:X, R x (f i) *)
     forall x, x \in A -> exists2 i, i \in X & R x (cc_app f i).
 intros.
 destruct coll_axU with (A:=A) (R:=fun x y => y \in cc_set /\ R x y) as (B,HB);

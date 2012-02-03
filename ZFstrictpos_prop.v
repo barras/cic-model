@@ -490,6 +490,6 @@ unfold p2P.
 
   unfold INDi in H4,H5|-*.
 
-Definition fsub a := forall P, a \in pos_oper p P -> b \in P
+Definition fsub a := forall P, a \in pos_oper p P -> b \in P.
 
 (* TODO: find an ordinal o such that IND = INDi o ... *)

@@ -3,25 +3,6 @@ Require Import ZFnats ZFwf.
 Require Export ZF.
 Import IZF.
 
-Instance wf_morph : Proper (eq_set ==> iff) (Acc in_set).
-do 2 red; intros.
-split; intros.
- revert y H.
- induction H0; intros.
- apply Acc_intro; intros.
- rewrite <- H1 in H2.
- apply H0 with y0; trivial.
- reflexivity.
-
- revert x H.
- induction H0; intros.
- apply Acc_intro; intros.
- rewrite H1 in H2.
- apply H0 with y; trivial.
- reflexivity.
-Qed.
-
-Scheme Acc_indd := Induction for Acc Sort Prop.
 
 (* Directed set (finite union) *)
 Definition isDir o := forall x y,
@@ -1040,8 +1021,6 @@ Qed.
 End TransfiniteIteration.
 Hint Resolve TI_fun_ext.
 
-
-
 Lemma isOrd_wf o : isOrd o -> isWf o.
 induction 1 using isOrd_ind; intros; apply isWf_intro; auto.
 Qed.
@@ -1054,8 +1033,6 @@ apply isWf_subset.
 apply isWf_union.
 apply isWf_pair; trivial.
 Qed.
-
-
 
   Definition osup2_rel x y z :=
     forall P,

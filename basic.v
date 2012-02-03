@@ -2,9 +2,15 @@ Set Implicit Arguments.
 Require Export Compare_dec.
 Require Export List.
 Require Export Relations Relation_Operators Transitive_Closure.
+Require Import Wellfounded.
 Require Export Coq.Program.Basics.
 Require Export Setoid Morphisms Morphisms_Prop.
 Export ProperNotations.
+
+Scheme Acc_indd := Induction for Acc Sort Prop.
+
+(**********************************************************************************)
+(* Setoid and morphisms stuff *)
 
 Lemma impl_morph A A' B B' :
   (A <-> A') ->
@@ -130,10 +136,45 @@ split; intros.
  apply H3 with y y0 y1 y2; trivial; symmetry; trivial.
 Qed.
 
+Instance wf_mono_eq A (eqA:A->A->Prop) :
+  Reflexive eqA ->
+  Proper ((eq==>eqA-->impl) --> eqA ==> impl) (@Acc A).
+do 4 red; intros.
+revert y0 H1.
+induction H2; intros.
+apply Acc_intro; intros.
+apply H2 with y1; trivial.
+apply H0 with (3:=H4); trivial.
+Qed.
+
+Instance wf_mono A (eqA:A->A->Prop) :
+  Reflexive eqA ->
+  Proper ((eqA==>eqA-->impl) --> eqA ==> impl) (@Acc A).
+do 3 red; intros.
+apply (wf_mono_eq H); trivial.
+do 3 red; intros.
+subst y1;apply H0; trivial.
+Qed.
+
+Instance wf_morph A (eqA:A->A->Prop) :
+  Reflexive eqA ->
+  Symmetric eqA ->
+  Proper ((eqA==>eqA==>iff) ==> eqA ==> iff) (@Acc A).
+intros.
+apply morph_impl_iff2; auto with *.
+ do 3 red; intros.
+ symmetry; apply H1; symmetry; trivial.
+
+ do 2 red; intros.
+ apply wf_mono; trivial.
+ do 3 red; intros.
+ red; apply H1; trivial.
+ symmetry; trivial.
+Qed.
+
 (* Pb: this is not proved automatically:*)
 Goal forall A (eqA:A->A->Prop) P F f g ,
   Equivalence eqA ->
-  (*Proper (eqA ==> impl) P ->*)
   Proper (eqA ==> iff) P ->
   Proper (eqA ==> eqA) F ->
   eqA f g ->
@@ -145,5 +186,16 @@ red; rewrite H2.  succeeds
 *)
 
 
+(******************************************************************)
+(* Relations additional properties *)
+
 Definition prod_eq A B R1 R2 (p1 p2:A*B) :=
   R1 (fst p1) (fst p2) /\ R2 (snd p1) (snd p2).
+
+Lemma clos_trans_transp : forall A R x y,
+  clos_trans A R x y ->
+  clos_trans A (transp _ R) y x.
+induction 1.
+ apply t_step; trivial.
+ apply t_trans with y; trivial.
+Qed.

@@ -148,7 +148,7 @@ Qed.
    and that is included in no type.
  *)
 Definition in_int (i:val) (j:Lc.intt) (M T:trm) :=
-  M <> None /\
+  M <> kind /\
   match T with
   | None => non_empty M /\ Lc.sn (tm j M)
   | _ => int i M \in int i T /\ inSAT (tm j M) (Red (int i T))

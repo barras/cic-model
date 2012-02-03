@@ -1,5 +1,5 @@
 
-Require Export ZF.
+Require Import ZF.
 Import IZF.
 
 Instance repl_mono_raw :

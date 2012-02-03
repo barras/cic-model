@@ -769,12 +769,11 @@ red; intros.
 rewrite <- H; rewrite <- H0; auto.
 Qed.
 
-Lemma red_term_trans M1 M2 M3 :
-  red_term M1 M2 -> red_term M2 M3 -> red_term M1 M3.
-unfold red_term; intros.
+Instance red_term_trans : Transitive red_term.
+unfold red_term; red; intros.
 specialize H with j.
 specialize H0 with j.
-apply t_trans with (tm j M2); trivial.
+apply t_trans with (tm j y); trivial.
 Qed.
 
 Lemma red_term_app_l M M' N :
@@ -853,6 +852,63 @@ eapply t_trans.
 
   rewrite Lc.simpl_subst; auto.
   rewrite Lc.lift0; trivial.
+Qed.
+
+(* "Untyped" conversion: can be used to make equality more
+   intensional: assume we have plus and plus' that perform the
+   addition, but with different algorithms. Then we won't
+   have conv_term plus plus', while eq_typ e plus plus' will
+   hold. *)
+Definition conv_term M N :=
+  forall j, Lc.conv (tm j M) (tm j N).
+
+Instance conv_term_morph : Proper (eq_trm ==> eq_trm ==> iff) conv_term.
+apply morph_impl_iff2; auto with *.
+do 4 red; intros.
+red; intros.
+rewrite <- H; rewrite <- H0; auto.
+Qed.
+
+Instance conv_term_equiv : Equivalence conv_term.
+split; red; red; intros.
+ apply Lc.conv_refl.
+ symmetry; trivial.
+ transitivity (tm j y); trivial. 
+Qed.
+
+Lemma red_conv_term M N :
+  red_term M N -> conv_term M N. 
+unfold red_term, conv_term; intros.
+induction (H j).
+ apply Lc.red_conv; apply Lc.one_step_red; trivial.
+ transitivity y; trivial.
+Qed.
+
+Instance conv_term_app : Proper (conv_term==>conv_term==>conv_term) App.
+unfold conv_term; do 3 red; simpl; intros.
+rewrite H; rewrite H0; reflexivity.
+Qed.
+
+Instance conv_term_abs : Proper (conv_term==>conv_term==>conv_term) Abs.
+unfold conv_term; do 3 red; simpl; intros.
+unfold CAbs, Lc.App2.
+rewrite H; rewrite H0; reflexivity.
+Qed.
+
+Instance conv_term_prod : Proper (conv_term==>conv_term==>conv_term) Prod.
+unfold conv_term; do 3 red; simpl; intros.
+unfold CProd, Lc.App2.
+rewrite H; rewrite H0; reflexivity.
+Qed.
+
+Lemma conv_term_beta T M M' N N' :
+  conv_term M M' ->
+  conv_term N N' ->
+  conv_term (App (Abs T M) N) (subst N' M').
+intros.
+rewrite H; rewrite H0.
+apply red_conv_term.
+apply red_term_beta.
 Qed.
 
 (* This lemma shows that the strong normalization of any

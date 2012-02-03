@@ -626,10 +626,11 @@ Qed.
 (* Collection *)
 Section Collection.
 
-Section FromWChoice.
+Section FromTTColl.
 
+(* TTColl is a consequence of choice *)
 Lemma ttcoll :
-  forall (A:Ti) R,
+  forall (A:Ti) (R:A->set->Prop),
   (forall x:A, exists y:set, R x y) ->
   exists X:Ti, exists f : X->set,
     forall x:A, exists i:X, R x (f i).
@@ -694,7 +695,7 @@ apply H with (4:=H2); auto with *.
 apply eq_set_refl.
 Qed.
 
-End FromWChoice.
+End FromTTColl.
 
 Section FromChoice.
 
