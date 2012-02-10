@@ -91,6 +91,19 @@ rewrite H0.
 reflexivity.
 Qed.
 
+(* The empty set behaves correctly w.r.t. function application *)
+Lemma cc_app_empty : forall x, cc_app empty x == empty.
+intro.
+apply empty_ext; red; intros.
+unfold cc_app, rel_image in H.
+apply subset_elim1 in H.
+apply union_elim in H; destruct H.
+apply union_elim in H0; destruct H0.
+apply subset_elim1 in H1.
+apply empty_ax in H1; trivial.
+Qed.
+
+
 (* Beta conversion *)
 
 Lemma cc_beta_eq:
@@ -373,7 +386,7 @@ Qed.
 
 (* Classical propositions: we also have a model for classical logic *)
 
-Definition cl_props := subset props (fun P => cc_arr (cc_arr P empty) empty \incl P).
+Definition cl_props := subset props (fun P => ~~empty \in P -> empty \in P).
 
 Lemma cc_cl_impredicative_prod : forall dom F,
   ext_fun dom F ->
@@ -387,35 +400,99 @@ apply subset_intro.
  apply H in H0.
  apply subset_elim1 in H0; trivial.
 
- red; intros.
- assert (z == empty).
-  specialize cc_eta_eq with (1:=H0); intro.
-  rewrite H1.
-  apply cc_impredicative_lam; intros.
-   do 2 red; intros; apply cc_app_morph; auto with *.
-
-   destruct (empty_ax (cc_app z x)).
-   apply cc_arr_elim with (1:=H0); trivial.
- rewrite H1.
+ intros.
  rewrite <- (cc_impredicative_lam dom (fun x => empty)); auto with *.
- apply cc_prod_intro; intros; auto with *.
- specialize H with (1:=H2).
- rewrite subset_ax in H; destruct H.
- destruct H3.
- rewrite <- H3 in H4; clear x0 H3.
- apply H4.
- apply in_reg with (cc_lam (cc_arr (F x) empty) (fun _ => empty)).
-  apply cc_impredicative_lam; auto with *.
- apply cc_arr_intro; intros; auto with *.
- destruct (empty_ax (cc_app z (cc_lam (cc_prod dom F) (fun f => cc_app f x)))).
- apply cc_prod_elim with (1:=H0).
- apply cc_arr_intro; intros.
-  do 2 red; intros; apply cc_app_morph; auto with *.
-
-  destruct (empty_ax (cc_app x0 (cc_app x1 x))).
-  apply cc_arr_elim with (1:=H3).
-  apply cc_prod_elim with (1:=H5); trivial.
+ apply cc_prod_intro; auto with *.
+ intros.
+ specialize H with (1:=H1).
+ rewrite subset_ax in H.
+ destruct H as (Fxp,(Fx',eqFx,clFx)).
+ rewrite <- eqFx in clFx; clear Fx' eqFx.
+ apply clFx.
+ intro nFx; apply H0; clear H0; intro; apply nFx; clear nFx.
+ rewrite <- cc_app_empty with (x:=x).
+ apply cc_prod_elim with (1:=H); trivial.
 Qed.
+
+Lemma cl_props_classical P :
+  P \in cl_props ->
+  cc_arr (cc_arr P empty) empty \incl P.
+red; intros.
+unfold cl_props in H; rewrite subset_ax in H.
+destruct H as (Pty,(P',eqP,clP)).
+rewrite <- eqP in clP; clear P' eqP.
+assert (z == empty).
+ assert (cc_arr (cc_arr P empty) empty \in props).
+  apply cc_impredicative_prod; intros.
+  apply power_intro; intros.
+  apply empty_ax in H1; contradiction.
+ specialize power_elim with (1:=H) (2:=H0); intro.
+ apply singl_elim in H1; trivial.
+rewrite H; apply clP.
+intro nP.
+assert (cc_lam P (fun x => x) \in cc_arr P empty).
+ apply cc_arr_intro; auto with *.
+  do 2 red; auto.
+
+  intros.
+  elim nP.
+  specialize power_elim with (1:=Pty) (2:=H1); intro.
+  apply singl_elim in H2; rewrite H2 in H1; trivial.
+specialize cc_arr_elim with (1:=H0) (2:=H1); intro.
+apply empty_ax in H2; contradiction.
+Qed.
+
+
+(* Auxiliary stuff for strong normalization proof: every type
+   contains the empty set. 
+ *)
+
+(* The operator that adds the empty set to a type. *)
+Definition cc_dec x := union2 (singl empty) x.
+
+Instance cc_dec_morph : morph1 cc_dec.
+unfold cc_dec; do 2 red; intros.
+rewrite H; reflexivity.
+Qed.
+
+Lemma cc_dec_ax : forall x z,
+  z \in cc_dec x <-> z == empty \/ z \in x.
+unfold cc_dec; intros.
+split; intros.
+ apply union2_elim in H; destruct H; auto.
+ apply singl_elim in H; auto.
+
+ destruct H.
+  apply union2_intro1; rewrite H; apply singl_intro.
+
+  apply union2_intro2; trivial.
+Qed.
+
+
+Lemma cc_dec_prop :
+    forall P, P \in cc_dec props -> cc_dec P \in props.
+intros.
+rewrite cc_dec_ax in H.
+apply power_intro; intros.
+rewrite cc_dec_ax in H0.
+destruct H0;[rewrite H0;apply singl_intro|].
+destruct H; [rewrite H in H0; apply empty_ax in H0;contradiction|].
+apply power_elim with (1:=H); trivial.
+Qed.
+
+
+Lemma cc_dec_cl_prop :
+    forall P, P \in cc_dec cl_props -> cc_dec P \in cl_props.
+intros.
+apply subset_intro.
+apply cc_dec_prop.
+rewrite cc_dec_ax in H|-*; destruct H; auto.
+apply subset_elim1 in H; auto.
+
+intros _.
+rewrite cc_dec_ax; auto with *.
+Qed.
+
 
 (* mapping (meta-level) propositions to props *)
 

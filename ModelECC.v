@@ -15,24 +15,6 @@ intros.
 rewrite <- H0; trivial.
 Qed.
 
-Lemma eq_fun_sym : forall x f1 f2, eq_fun x f1 f2 -> eq_fun x f2 f1.
-Proof.
-unfold eq_fun in |- *; intros.
-symmetry  in |- *.
-apply H.
- rewrite <- H1; trivial.
- symmetry  in |- *; trivial.
-Qed.
-
-Lemma eq_fun_trans : forall x f1 f2 f3,
-   eq_fun x f1 f2 -> eq_fun x f2 f3 -> eq_fun x f1 f3.
-Proof.
-unfold eq_fun in |- *; intros.
-transitivity (f2 y1); auto.
-apply H; trivial.
-reflexivity.
-Qed.
-
 (* interpretation *)
 
 Fixpoint int (i:nat->X) (t:term) {struct t} : X :=

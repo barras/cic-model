@@ -71,6 +71,26 @@ Parameter impredicative_prod : forall dom F,
 
 End CC_Model.
 
+(* Extension of CC_Model to ensure we can automatically derive
+   the strong normalization model.
+ *)
+Module Type CC_Daimon.
+  Include CC_Model.
+
+  Parameter daimon : X.
+  Parameter app_daimon : forall x, app daimon x == daimon.
+
+  Parameter dec_ty : X -> X.
+  Parameter dec_ty_morph : Proper (eqX==>eqX) dec_ty.
+  Parameter enc_round : forall T x,
+    x \in dec_ty T <-> x == daimon \/ x \in T.
+
+  Parameter dec_prop :
+    forall P, P \in dec_ty props -> dec_ty P \in props.
+Existing Instance dec_ty_morph.
+
+End CC_Daimon.
+
 
 Module Type ECC_Model.
 
