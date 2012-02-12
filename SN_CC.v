@@ -162,8 +162,8 @@ Definition app := cc_app.
 Definition lam := sn_lam.
 Definition prod := sn_prod.
 
-Notation "x \in y" := (inX x y) (at level 60).
-Notation "x == y" := (eqX x y) (at level 70).
+Notation "x \in y" := (inX x y).
+Notation "x == y" := (eqX x y).
 
 Definition eq_fun (x:X) (f1 f2:X->X) :=
   forall y1 y2, y1 \in x -> y1 == y2 -> f1 y1 == f2 y2.

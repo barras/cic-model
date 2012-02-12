@@ -1,40 +1,6 @@
+Require Export basic ZF.
 Require Import ZFnats.
-Require Export ZF.
 Import IZF.
-
-(* duplicate ZFnats *)
-(*Definition lt := in_set.
-Instance lt_morph : Proper (eq_set ==> eq_set ==> iff) lt.
-exact in_set_morph.
-Qed.
-Definition zero := empty.
-*)
-
-(* e' \incl e
-ord e e' <->
-(forall a, a \in e -> a \in e' -> ord a a) /\
-(forall a b, ord b a -> a \incl b -> b \in e -> b \in e' -> a \in e').
-*)
-
-Instance wf_morph : Proper (eq_set ==> iff) (Acc in_set).
-do 2 red; intros.
-split; intros.
- revert y H.
- induction H0; intros.
- apply Acc_intro; intros.
- rewrite <- H1 in H2.
- apply H0 with y0; trivial.
- reflexivity.
-
- revert x H.
- induction H0; intros.
- apply Acc_intro; intros.
- rewrite H1 in H2.
- apply H0 with y; trivial.
- reflexivity.
-Qed.
-
-Scheme Acc_indd := Induction for Acc Sort Prop.
 
 (* Directed set (finite union) *)
 Definition isDir o := forall x y,

@@ -9,8 +9,8 @@ Require Import Setoid.
 
 Require Ens0.
 Require Ens.
-Module S := Ens0.IZF. (* small sets *)
-Module B := Ens.IZF. (* big sets *)
+Module S := Ens0.IZF_R. (* small sets *)
+Module B := Ens.IZF_R. (* big sets *)
 
 Fixpoint injU (a:S.set) : B.set :=
   match a with

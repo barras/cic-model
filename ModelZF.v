@@ -9,8 +9,8 @@ Definition X := set.
 Definition inX : X -> X -> Prop := in_set.
 Definition eqX : X -> X -> Prop := eq_set.
 Definition eqX_equiv : Equivalence eqX := eq_set_equiv.
-Notation "x \in y" := (inX x y) (at level 60).
-Notation "x == y" := (eqX x y) (at level 70).
+Notation "x \in y" := (inX x y).
+Notation "x == y" := (eqX x y).
 
 Lemma in_ext: Proper (eqX ==> eqX ==> iff) inX.
 Proof in_set_morph.

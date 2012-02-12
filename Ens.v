@@ -5,7 +5,7 @@ Require Import Choice. (* Axiom *)
    in Coq.
  *)
 
-Module IZF <: IZF_Ex_sig.
+Module IZF_R <: IZF_R_Ex_sig.
 
 (* The level of indexes *)
 Definition Ti := Type.
@@ -548,8 +548,8 @@ destruct repl_ax with
   apply H0 with (1:=H6); trivial.
 Qed.
 
-Notation "x \in y" := (in_set x y) (at level 60).
-Notation "x == y" := (eq_set x y) (at level 70).
+Notation "x \in y" := (in_set x y).
+Notation "x == y" := (eq_set x y).
 
 (* Deriving the existentially quantified sets *)
 
@@ -1261,4 +1261,4 @@ Qed.
 
 End Regularity.
 
-End IZF.
+End IZF_R.

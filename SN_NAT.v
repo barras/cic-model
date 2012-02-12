@@ -430,22 +430,27 @@ split.
 
   rewrite NATREC_0; trivial.
 
-  rewrite NATREC_S; trivial.
   rewrite Red_prod in rg.
-  apply piSAT_elim with (x:=n0)(u:=m) in rg.
-  2:unfold inX;rewrite ElNat_eq; trivial.
-  2:rewrite RedNat_eq; trivial.
+   rewrite piNAT_ax.
+    split; intros.
+    apply sat_sn in rg; trivial.
+   rewrite NATREC_S; trivial.
+   intros m satm.
+   apply piSAT_elim with (x:=n0)(u:=m) in rg.
+   2:unfold inX;rewrite ElNat_eq; trivial.
+   2:rewrite RedNat_eq; trivial.
    rewrite intProd_eq in rg.
    rewrite Red_prod in rg.
-   apply piSAT_elim with (x:=NATREC (int i f) gg n0)(u:=y) in rg.
-    simpl int in rg.
-    rewrite split_lift in rg.
-    do 2 rewrite int_cons_lift_eq in rg.
-    rewrite beta_eq in rg; auto with *.
-     red; intros.
-     rewrite H5; reflexivity.
+    intros y saty.
+    apply piSAT_elim with (x:=NATREC (int i f) gg n0)(u:=y) in rg.
+     simpl int in rg.
+     rewrite split_lift in rg.
+     do 2 rewrite int_cons_lift_eq in rg.
+     rewrite beta_eq in rg; auto with *.
+      red; intros.
+      rewrite H3; reflexivity.
 
-     rewrite El_def; trivial.
+      rewrite El_def; trivial.
 
     unfold inX; auto.
     simpl int.
@@ -455,13 +460,13 @@ split.
     rewrite int_cons_lift_eq; auto.
 
 red; intros.
-rewrite <- H5; reflexivity.
+rewrite <- H3; reflexivity.
 
 apply cc_prod_elim with (1:=ty).
 rewrite ElNat_eq; trivial.
 
 red; intros.
-rewrite <- H5; reflexivity.
+rewrite <- H1; reflexivity.
 
 revert ty; apply eq_elim.
 unfold prod; rewrite El_def.

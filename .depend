@@ -1,206 +1,240 @@
-CCTnat.vo CCTnat.glob CCTnat.v.beautified: CCTnat.v Explicit_sub.vo FOTheory.vo basic1.vo
-CCUT.vo CCUT.glob CCUT.v.beautified: CCUT.v Models.vo GenModelSN.vo ZF.vo ZFind_nat.vo SN_CC.vo
-CCUT2.vo CCUT2.glob CCUT2.v.beautified: CCUT2.v Models.vo GenModelSN.vo ZF.vo ZFind_nat.vo SN_NAT.vo
-Can.vo Can.glob Can.v.beautified: Can.v Lambda.vo
-CanF.vo CanF.glob CanF.v.beautified: CanF.v LambdaF.vo
-Choice.vo Choice.glob Choice.v.beautified: Choice.v
-Conv.vo Conv.glob Conv.v.beautified: Conv.v Term.vo
-ConvECC.vo ConvECC.glob ConvECC.v.beautified: ConvECC.v TermECC.vo
-Ens.vo Ens.glob Ens.v.beautified: Ens.v ZFskol.vo Choice.vo
-Ens0.vo Ens0.glob Ens0.v.beautified: Ens0.v ZFskol.vo Choice.vo
-EnsUniv.vo EnsUniv.glob EnsUniv.v.beautified: EnsUniv.v Ens0.vo Ens.vo basic.vo
-Env.vo Env.glob Env.v.beautified: Env.v MyList.vo Term.vo
-EnvECC.vo EnvECC.glob EnvECC.v.beautified: EnvECC.v MyList.vo TermECC.vo
-Explicit_sub.vo Explicit_sub.glob Explicit_sub.v.beautified: Explicit_sub.v TheoryInTerm.vo
-FOTheory.vo FOTheory.glob FOTheory.v.beautified: FOTheory.v
-GenModel.vo GenModel.glob GenModel.v.beautified: GenModel.v basic.vo Models.vo VarMap.vo
-GenModelSN.vo GenModelSN.glob GenModelSN.v.beautified: GenModelSN.v Sat.vo Models.vo ObjectSN.vo
-GenModelSN2.vo GenModelSN2.glob GenModelSN2.v.beautified: GenModelSN2.v Sat.vo Models.vo VarMap.vo
-GenModelSyntax.vo GenModelSyntax.glob GenModelSyntax.v.beautified: GenModelSyntax.v Models.vo TypeJudge.vo GenModel.vo
-GenRealSN.vo GenRealSN.glob GenRealSN.v.beautified: GenRealSN.v basic.vo Sat.vo Models.vo ObjectSN.vo
-GenRealSNF.vo GenRealSNF.glob GenRealSNF.v.beautified: GenRealSNF.v basic.vo SatF.vo Models.vo ZF.vo ZFpairs.vo ZFcoc.vo ZFlambdaF.vo VarMap.vo
-GenSN.vo GenSN.glob GenSN.v.beautified: GenSN.v Sat.vo Models.vo VarMap.vo
-Groupoid.vo Groupoid.glob Groupoid.v.beautified: Groupoid.v ZF.vo ZFiso.vo
-HF.vo HF.glob HF.v.beautified: HF.v
-HFcoc.vo HFcoc.glob HFcoc.v.beautified: HFcoc.v HFrelation.vo
-HFrelation.vo HFrelation.glob HFrelation.v.beautified: HFrelation.v HF.vo
-IntMap.vo IntMap.glob IntMap.v.beautified: IntMap.v
-Lambda.vo Lambda.glob Lambda.v.beautified: Lambda.v VarMap.vo
-LambdaF.vo LambdaF.glob LambdaF.v.beautified: LambdaF.v
-ModelCIC.vo ModelCIC.glob ModelCIC.v.beautified: ModelCIC.v Models.vo ZFfunext.vo ZFfixrec.vo ZFecc.vo ZFind_nat.vo ModelZF.vo
-ModelECC.vo ModelECC.glob ModelECC.v.beautified: ModelECC.v IntMap.vo TypeECC.vo Models.vo TypeJudgeECC.vo ZF.vo ZFcoc.vo ModelZF.vo ZFecc.vo
-ModelHF.vo ModelHF.glob ModelHF.v.beautified: ModelHF.v HFcoc.vo Models.vo GenModelSyntax.vo Term.vo TypeJudge.vo
-ModelSyntax.vo ModelSyntax.glob ModelSyntax.v.beautified: ModelSyntax.v Term.vo Conv.vo Models.vo
-ModelZF.vo ModelZF.glob ModelZF.v.beautified: ModelZF.v basic.vo Models.vo GenModelSyntax.vo ZF.vo ZFcoc.vo Term.vo Env.vo TypeJudge.vo ZFrepl.vo
-Models.vo Models.glob Models.v.beautified: Models.v basic.vo
-MyList.vo MyList.glob MyList.v.beautified: MyList.v
-ObjectSN.vo ObjectSN.glob ObjectSN.v.beautified: ObjectSN.v basic.vo Models.vo VarMap.vo Lambda.vo
-Plump.vo Plump.glob Plump.v.beautified: Plump.v basic.vo
-Plump_gen.vo Plump_gen.glob Plump_gen.v.beautified: Plump_gen.v basic.vo
-SATnat.vo SATnat.glob SATnat.v.beautified: SATnat.v basic.vo Can.vo Sat.vo ZF.vo ZFind_nat.vo
-SN_CC.vo SN_CC.glob SN_CC.v.beautified: SN_CC.v Sat.vo ZF.vo ZFcoc.vo ZFlambda.vo Models.vo GenModelSN.vo TypeJudge.vo
-SN_CC2.vo SN_CC2.glob SN_CC2.v.beautified: SN_CC2.v Sat.vo ZF.vo ZFcoc.vo ZFlambda.vo Models.vo GenModelSN2.vo TypeJudge.vo
-SN_CC_Real.vo SN_CC_Real.glob SN_CC_Real.v.beautified: SN_CC_Real.v Sat.vo ZF.vo ZFcoc.vo ZFlambda.vo GenRealSN.vo TypeJudge.vo
-SN_NAT.vo SN_NAT.glob SN_NAT.v.beautified: SN_NAT.v ZF.vo ZFcoc.vo ZFind_nat.vo basic.vo Can.vo Sat.vo SATnat.vo SN_CC_Real.vo ZFord.vo ZFrepl.vo
-Sat.vo Sat.glob Sat.v.beautified: Sat.v Lambda.vo Can.vo
-SatF.vo SatF.glob SatF.v.beautified: SatF.v LambdaF.vo CanF.vo
-StrengthenECC.vo StrengthenECC.glob StrengthenECC.v.beautified: StrengthenECC.v TypeECC.vo
-Term.vo Term.glob Term.v.beautified: Term.v
-TermCCUT.vo TermCCUT.glob TermCCUT.v.beautified: TermCCUT.v
-TermECC.vo TermECC.glob TermECC.v.beautified: TermECC.v
-TheoryInTerm.vo TheoryInTerm.glob TheoryInTerm.v.beautified: TheoryInTerm.v ZFtheory.vo GenModel.vo ZFcoc.vo ModelZF.vo
-TypeECC.vo TypeECC.glob TypeECC.v.beautified: TypeECC.v ConvECC.vo EnvECC.vo
-TypeJudge.vo TypeJudge.glob TypeJudge.v.beautified: TypeJudge.v Types.vo
-TypeJudgeECC.vo TypeJudgeECC.glob TypeJudgeECC.v.beautified: TypeJudgeECC.v TypeECC.vo
-Types.vo Types.glob Types.v.beautified: Types.v Conv.vo Env.vo
-VarMap.vo VarMap.glob VarMap.v.beautified: VarMap.v
-ZF.vo ZF.glob ZF.v.beautified: ZF.v basic.vo ZFdef.vo Ens.vo ZFskol.vo
-ZFcard.vo ZFcard.glob ZFcard.v.beautified: ZFcard.v ZF.vo ZFnats.vo ZFord.vo ZFrelations.vo ZFrepl.vo
-ZFcardcl.vo ZFcardcl.glob ZFcardcl.v.beautified: ZFcardcl.v ZFnats.vo ZFord.vo ZFord_equiv.vo ZFcard.vo
-ZFclosord.vo ZFclosord.glob ZFclosord.v.beautified: ZFclosord.v ZF.vo ZFpairs.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFstable.vo ZFcoc.vo ZFlist.vo
-ZFcoc.vo ZFcoc.glob ZFcoc.v.beautified: ZFcoc.v ZF.vo ZFpairs.vo ZFrelations.vo ZFstable.vo ZFgrothendieck.vo
-ZFcocpart.vo ZFcocpart.glob ZFcocpart.v.beautified: ZFcocpart.v ZF.vo ZFpairs.vo ZFrelations.vo
-ZFcoll.vo ZFcoll.glob ZFcoll.v.beautified: ZFcoll.v ZF.vo
-ZFcont.vo ZFcont.glob ZFcont.v.beautified: ZFcont.v basic.vo ZF.vo ZFsum.vo ZFfix.vo ZFnats.vo ZFord.vo ZFstable.vo ZFrank.vo ZFrelations.vo
-ZFdef.vo ZFdef.glob ZFdef.v.beautified: ZFdef.v
-ZFdord.vo ZFdord.glob ZFdord.v.beautified: ZFdord.v ZFnats.vo ZF.vo ZFrepl.vo
-ZFecc.vo ZFecc.glob ZFecc.v.beautified: ZFecc.v ZF.vo ZFpairs.vo ZFnats.vo ZFgrothendieck.vo ZFcoc.vo
-ZFfix.vo ZFfix.glob ZFfix.v.beautified: ZFfix.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFrepl.vo
-ZFfixfun.vo ZFfixfun.glob ZFfixfun.v.beautified: ZFfixfun.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFcoc.vo ZFrepl.vo
-ZFfixrec.vo ZFfixrec.glob ZFfixrec.v.beautified: ZFfixrec.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFfix.vo ZFstable.vo ZFfunext.vo ZFcoc.vo
-ZFfunext.vo ZFfunext.glob ZFfunext.v.beautified: ZFfunext.v basic.vo ZF.vo ZFrelations.vo ZFnats.vo ZFcoc.vo
-ZFgrothendieck.vo ZFgrothendieck.glob ZFgrothendieck.v.beautified: ZFgrothendieck.v ZF.vo ZFpairs.vo ZFrelations.vo ZFrepl.vo ZFwf.vo ZFord.vo ZFfix.vo ZFstable.vo ZFlist.vo
-ZFinaccessible.vo ZFinaccessible.glob ZFinaccessible.v.beautified: ZFinaccessible.v ZFnats.vo ZFord.vo ZFrank.vo ZFgrothendieck.vo
-ZFind_basic.vo ZFind_basic.glob ZFind_basic.v.beautified: ZFind_basic.v ZF.vo ZFnats.vo
-ZFind_nat.vo ZFind_nat.glob ZFind_nat.v.beautified: ZFind_nat.v ZF.vo ZFsum.vo ZFfix.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFcard.vo ZFcont.vo ZFind_basic.vo ZFfunext.vo ZFfixrec.vo ZFrank.vo
-ZFind_ord.vo ZFind_ord.glob ZFind_ord.v.beautified: ZFind_ord.v ZF.vo ZFsum.vo ZFfix.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFcard.vo ZFcont.vo ZFstable.vo ZFrank.vo ZFgrothendieck.vo ZFinaccessible.vo ZFind_basic.vo ZFind_nat.vo ZFind_w.vo ZFlist.vo ZFcoc.vo
-ZFind_ord2.vo ZFind_ord2.glob ZFind_ord2.v.beautified: ZFind_ord2.v ZF.vo ZFsum.vo ZFfix.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFcard.vo ZFcont.vo ZFstable.vo ZFrank.vo ZFinaccessible.vo ZFind_nat.vo ZFgrothendieck.vo
-ZFind_w.vo ZFind_w.glob ZFind_w.v.beautified: ZFind_w.v ZF.vo ZFpairs.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFgrothendieck.vo ZFcoc.vo ZFlist.vo ZFfunext.vo ZFfixrec.vo
-ZFind_wnup.vo ZFind_wnup.glob ZFind_wnup.v.beautified: ZFind_wnup.v ZF.vo ZFpairs.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFstable.vo ZFcoc.vo ZFlist.vo ZFind_w.vo ZFfixfun.vo ZFiso.vo ZFgrothendieck.vo ZFfixrec.vo
-ZFiso.vo ZFiso.glob ZFiso.v.beautified: ZFiso.v basic.vo ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.vo ZFord.vo ZFfix.vo ZFfunext.vo ZFfixrec.vo ZFfixfun.vo ZFcont.vo
-ZFlambda.vo ZFlambda.glob ZFlambda.v.beautified: ZFlambda.v Lambda.vo ZF.vo ZFpairs.vo ZFnats.vo ZFord.vo Sat.vo ZFrepl.vo ZFfix.vo
-ZFlambdaF.vo ZFlambdaF.glob ZFlambdaF.v.beautified: ZFlambdaF.v LambdaF.vo ZF.vo ZFpairs.vo ZFnats.vo ZFord.vo SatF.vo
-ZFlist.vo ZFlist.glob ZFlist.v.beautified: ZFlist.v ZF.vo ZFpairs.vo ZFnats.vo ZFrepl.vo ZFord.vo ZFfix.vo
-ZFnats.vo ZFnats.glob ZFnats.v.beautified: ZFnats.v ZF.vo
-ZFord.vo ZFord.glob ZFord.v.beautified: ZFord.v ZFnats.vo ZFwf.vo ZF.vo ZFrepl.vo
-ZFord_equiv.vo ZFord_equiv.glob ZFord_equiv.v.beautified: ZFord_equiv.v ZFord.vo ZFplump.vo ZFordcl.vo
-ZFordcl.vo ZFordcl.glob ZFordcl.v.beautified: ZFordcl.v ZFnats.vo ZFrepl.vo
-ZFpairs.vo ZFpairs.glob ZFpairs.v.beautified: ZFpairs.v ZF.vo
-ZFplump.vo ZFplump.glob ZFplump.v.beautified: ZFplump.v ZFnats.vo ZF.vo ZFrepl.vo
-ZFrank.vo ZFrank.glob ZFrank.v.beautified: ZFrank.v ZF.vo ZFnats.vo ZFord.vo ZFstable.vo ZFfix.vo ZFrelations.vo ZFwf.vo ZFrepl.vo ZFcard.vo
-ZFrelations.vo ZFrelations.glob ZFrelations.v.beautified: ZFrelations.v ZFpairs.vo
-ZFrepl.vo ZFrepl.glob ZFrepl.v.beautified: ZFrepl.v ZF.vo
-ZFskol.vo ZFskol.glob ZFskol.v.beautified: ZFskol.v basic.vo ZFdef.vo
-ZFstable.vo ZFstable.glob ZFstable.v.beautified: ZFstable.v ZFsum.vo ZFpairs.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFfix.vo
-ZFstrictpos.vo ZFstrictpos.glob ZFstrictpos.v.beautified: ZFstrictpos.v ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.vo ZFord.vo ZFfix.vo ZFstable.vo ZFind_w.vo ZFiso.vo ZFgrothendieck.vo
-ZFstrictpos1.vo ZFstrictpos1.glob ZFstrictpos1.v.beautified: ZFstrictpos1.v ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.vo ZFord.vo ZFind_basic.vo ZFstrictpos.vo
-ZFstrictpos_prop.vo ZFstrictpos_prop.glob ZFstrictpos_prop.v.beautified: ZFstrictpos_prop.v ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.vo ZFord.vo ZFfix.vo ZFstable.vo
-ZFsum.vo ZFsum.glob ZFsum.v.beautified: ZFsum.v ZFnats.vo ZFpairs.vo
-ZFsup.vo ZFsup.glob ZFsup.v.beautified: ZFsup.v ZF.vo ZFpairs.vo ZFord.vo
-ZFtheory.vo ZFtheory.glob ZFtheory.v.beautified: ZFtheory.v ZFrepl.vo ZFnats.vo ZFind_basic.vo
-ZFwf.vo ZFwf.glob ZFwf.v.beautified: ZFwf.v ZF.vo ZFnats.vo ZFrepl.vo basic.vo
-basic.vo basic.glob basic.v.beautified: basic.v
-basic1.vo basic1.glob basic1.v.beautified: basic1.v
-CCTnat.html CCTnat.glob CCTnat.v.beautified: CCTnat.v Explicit_sub.html FOTheory.html basic1.html
-CCUT.html CCUT.glob CCUT.v.beautified: CCUT.v Models.html GenModelSN.html ZF.html ZFind_nat.html SN_CC.html
-CCUT2.html CCUT2.glob CCUT2.v.beautified: CCUT2.v Models.html GenModelSN.html ZF.html ZFind_nat.html SN_NAT.html
-Can.html Can.glob Can.v.beautified: Can.v Lambda.html
-CanF.html CanF.glob CanF.v.beautified: CanF.v LambdaF.html
-Choice.html Choice.glob Choice.v.beautified: Choice.v
-Conv.html Conv.glob Conv.v.beautified: Conv.v Term.html
-ConvECC.html ConvECC.glob ConvECC.v.beautified: ConvECC.v TermECC.html
-Ens.html Ens.glob Ens.v.beautified: Ens.v ZFskol.html Choice.html
-Ens0.html Ens0.glob Ens0.v.beautified: Ens0.v ZFskol.html Choice.html
-EnsUniv.html EnsUniv.glob EnsUniv.v.beautified: EnsUniv.v Ens0.html Ens.html basic.html
-Env.html Env.glob Env.v.beautified: Env.v MyList.html Term.html
-EnvECC.html EnvECC.glob EnvECC.v.beautified: EnvECC.v MyList.html TermECC.html
-Explicit_sub.html Explicit_sub.glob Explicit_sub.v.beautified: Explicit_sub.v TheoryInTerm.html
-FOTheory.html FOTheory.glob FOTheory.v.beautified: FOTheory.v
-GenModel.html GenModel.glob GenModel.v.beautified: GenModel.v basic.html Models.html VarMap.html
-GenModelSN.html GenModelSN.glob GenModelSN.v.beautified: GenModelSN.v Sat.html Models.html ObjectSN.html
-GenModelSN2.html GenModelSN2.glob GenModelSN2.v.beautified: GenModelSN2.v Sat.html Models.html VarMap.html
-GenModelSyntax.html GenModelSyntax.glob GenModelSyntax.v.beautified: GenModelSyntax.v Models.html TypeJudge.html GenModel.html
-GenRealSN.html GenRealSN.glob GenRealSN.v.beautified: GenRealSN.v basic.html Sat.html Models.html ObjectSN.html
-GenRealSNF.html GenRealSNF.glob GenRealSNF.v.beautified: GenRealSNF.v basic.html SatF.html Models.html ZF.html ZFpairs.html ZFcoc.html ZFlambdaF.html VarMap.html
-GenSN.html GenSN.glob GenSN.v.beautified: GenSN.v Sat.html Models.html VarMap.html
-Groupoid.html Groupoid.glob Groupoid.v.beautified: Groupoid.v ZF.html ZFiso.html
-HF.html HF.glob HF.v.beautified: HF.v
-HFcoc.html HFcoc.glob HFcoc.v.beautified: HFcoc.v HFrelation.html
-HFrelation.html HFrelation.glob HFrelation.v.beautified: HFrelation.v HF.html
-IntMap.html IntMap.glob IntMap.v.beautified: IntMap.v
-Lambda.html Lambda.glob Lambda.v.beautified: Lambda.v VarMap.html
-LambdaF.html LambdaF.glob LambdaF.v.beautified: LambdaF.v
-ModelCIC.html ModelCIC.glob ModelCIC.v.beautified: ModelCIC.v Models.html ZFfunext.html ZFfixrec.html ZFecc.html ZFind_nat.html ModelZF.html
-ModelECC.html ModelECC.glob ModelECC.v.beautified: ModelECC.v IntMap.html TypeECC.html Models.html TypeJudgeECC.html ZF.html ZFcoc.html ModelZF.html ZFecc.html
-ModelHF.html ModelHF.glob ModelHF.v.beautified: ModelHF.v HFcoc.html Models.html GenModelSyntax.html Term.html TypeJudge.html
-ModelSyntax.html ModelSyntax.glob ModelSyntax.v.beautified: ModelSyntax.v Term.html Conv.html Models.html
-ModelZF.html ModelZF.glob ModelZF.v.beautified: ModelZF.v basic.html Models.html GenModelSyntax.html ZF.html ZFcoc.html Term.html Env.html TypeJudge.html ZFrepl.html
-Models.html Models.glob Models.v.beautified: Models.v basic.html
-MyList.html MyList.glob MyList.v.beautified: MyList.v
-ObjectSN.html ObjectSN.glob ObjectSN.v.beautified: ObjectSN.v basic.html Models.html VarMap.html Lambda.html
-Plump.html Plump.glob Plump.v.beautified: Plump.v basic.html
-Plump_gen.html Plump_gen.glob Plump_gen.v.beautified: Plump_gen.v basic.html
-SATnat.html SATnat.glob SATnat.v.beautified: SATnat.v basic.html Can.html Sat.html ZF.html ZFind_nat.html
-SN_CC.html SN_CC.glob SN_CC.v.beautified: SN_CC.v Sat.html ZF.html ZFcoc.html ZFlambda.html Models.html GenModelSN.html TypeJudge.html
-SN_CC2.html SN_CC2.glob SN_CC2.v.beautified: SN_CC2.v Sat.html ZF.html ZFcoc.html ZFlambda.html Models.html GenModelSN2.html TypeJudge.html
-SN_CC_Real.html SN_CC_Real.glob SN_CC_Real.v.beautified: SN_CC_Real.v Sat.html ZF.html ZFcoc.html ZFlambda.html GenRealSN.html TypeJudge.html
-SN_NAT.html SN_NAT.glob SN_NAT.v.beautified: SN_NAT.v ZF.html ZFcoc.html ZFind_nat.html basic.html Can.html Sat.html SATnat.html SN_CC_Real.html ZFord.html ZFrepl.html
-Sat.html Sat.glob Sat.v.beautified: Sat.v Lambda.html Can.html
-SatF.html SatF.glob SatF.v.beautified: SatF.v LambdaF.html CanF.html
-StrengthenECC.html StrengthenECC.glob StrengthenECC.v.beautified: StrengthenECC.v TypeECC.html
-Term.html Term.glob Term.v.beautified: Term.v
-TermCCUT.html TermCCUT.glob TermCCUT.v.beautified: TermCCUT.v
-TermECC.html TermECC.glob TermECC.v.beautified: TermECC.v
-TheoryInTerm.html TheoryInTerm.glob TheoryInTerm.v.beautified: TheoryInTerm.v ZFtheory.html GenModel.html ZFcoc.html ModelZF.html
-TypeECC.html TypeECC.glob TypeECC.v.beautified: TypeECC.v ConvECC.html EnvECC.html
-TypeJudge.html TypeJudge.glob TypeJudge.v.beautified: TypeJudge.v Types.html
-TypeJudgeECC.html TypeJudgeECC.glob TypeJudgeECC.v.beautified: TypeJudgeECC.v TypeECC.html
-Types.html Types.glob Types.v.beautified: Types.v Conv.html Env.html
-VarMap.html VarMap.glob VarMap.v.beautified: VarMap.v
-ZF.html ZF.glob ZF.v.beautified: ZF.v basic.html ZFdef.html Ens.html ZFskol.html
-ZFcard.html ZFcard.glob ZFcard.v.beautified: ZFcard.v ZF.html ZFnats.html ZFord.html ZFrelations.html ZFrepl.html
-ZFcardcl.html ZFcardcl.glob ZFcardcl.v.beautified: ZFcardcl.v ZFnats.html ZFord.html ZFord_equiv.html ZFcard.html
-ZFclosord.html ZFclosord.glob ZFclosord.v.beautified: ZFclosord.v ZF.html ZFpairs.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFstable.html ZFcoc.html ZFlist.html
-ZFcoc.html ZFcoc.glob ZFcoc.v.beautified: ZFcoc.v ZF.html ZFpairs.html ZFrelations.html ZFstable.html ZFgrothendieck.html
-ZFcocpart.html ZFcocpart.glob ZFcocpart.v.beautified: ZFcocpart.v ZF.html ZFpairs.html ZFrelations.html
-ZFcoll.html ZFcoll.glob ZFcoll.v.beautified: ZFcoll.v ZF.html
-ZFcont.html ZFcont.glob ZFcont.v.beautified: ZFcont.v basic.html ZF.html ZFsum.html ZFfix.html ZFnats.html ZFord.html ZFstable.html ZFrank.html ZFrelations.html
-ZFdef.html ZFdef.glob ZFdef.v.beautified: ZFdef.v
-ZFdord.html ZFdord.glob ZFdord.v.beautified: ZFdord.v ZFnats.html ZF.html ZFrepl.html
-ZFecc.html ZFecc.glob ZFecc.v.beautified: ZFecc.v ZF.html ZFpairs.html ZFnats.html ZFgrothendieck.html ZFcoc.html
-ZFfix.html ZFfix.glob ZFfix.v.beautified: ZFfix.v ZF.html ZFrelations.html ZFnats.html ZFord.html ZFrepl.html
-ZFfixfun.html ZFfixfun.glob ZFfixfun.v.beautified: ZFfixfun.v ZF.html ZFrelations.html ZFnats.html ZFord.html ZFcoc.html ZFrepl.html
-ZFfixrec.html ZFfixrec.glob ZFfixrec.v.beautified: ZFfixrec.v ZF.html ZFrelations.html ZFnats.html ZFord.html ZFfix.html ZFstable.html ZFfunext.html ZFcoc.html
-ZFfunext.html ZFfunext.glob ZFfunext.v.beautified: ZFfunext.v basic.html ZF.html ZFrelations.html ZFnats.html ZFcoc.html
-ZFgrothendieck.html ZFgrothendieck.glob ZFgrothendieck.v.beautified: ZFgrothendieck.v ZF.html ZFpairs.html ZFrelations.html ZFrepl.html ZFwf.html ZFord.html ZFfix.html ZFstable.html ZFlist.html
-ZFinaccessible.html ZFinaccessible.glob ZFinaccessible.v.beautified: ZFinaccessible.v ZFnats.html ZFord.html ZFrank.html ZFgrothendieck.html
-ZFind_basic.html ZFind_basic.glob ZFind_basic.v.beautified: ZFind_basic.v ZF.html ZFnats.html
-ZFind_nat.html ZFind_nat.glob ZFind_nat.v.beautified: ZFind_nat.v ZF.html ZFsum.html ZFfix.html ZFnats.html ZFrelations.html ZFord.html ZFcard.html ZFcont.html ZFind_basic.html ZFfunext.html ZFfixrec.html ZFrank.html
-ZFind_ord.html ZFind_ord.glob ZFind_ord.v.beautified: ZFind_ord.v ZF.html ZFsum.html ZFfix.html ZFnats.html ZFrelations.html ZFord.html ZFcard.html ZFcont.html ZFstable.html ZFrank.html ZFgrothendieck.html ZFinaccessible.html ZFind_basic.html ZFind_nat.html ZFind_w.html ZFlist.html ZFcoc.html
-ZFind_ord2.html ZFind_ord2.glob ZFind_ord2.v.beautified: ZFind_ord2.v ZF.html ZFsum.html ZFfix.html ZFnats.html ZFrelations.html ZFord.html ZFcard.html ZFcont.html ZFstable.html ZFrank.html ZFinaccessible.html ZFind_nat.html ZFgrothendieck.html
-ZFind_w.html ZFind_w.glob ZFind_w.v.beautified: ZFind_w.v ZF.html ZFpairs.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFgrothendieck.html ZFcoc.html ZFlist.html ZFfunext.html ZFfixrec.html
-ZFind_wnup.html ZFind_wnup.glob ZFind_wnup.v.beautified: ZFind_wnup.v ZF.html ZFpairs.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFstable.html ZFcoc.html ZFlist.html ZFind_w.html ZFfixfun.html ZFiso.html ZFgrothendieck.html ZFfixrec.html
-ZFiso.html ZFiso.glob ZFiso.v.beautified: ZFiso.v basic.html ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFcoc.html ZFord.html ZFfix.html ZFfunext.html ZFfixrec.html ZFfixfun.html ZFcont.html
-ZFlambda.html ZFlambda.glob ZFlambda.v.beautified: ZFlambda.v Lambda.html ZF.html ZFpairs.html ZFnats.html ZFord.html Sat.html ZFrepl.html ZFfix.html
-ZFlambdaF.html ZFlambdaF.glob ZFlambdaF.v.beautified: ZFlambdaF.v LambdaF.html ZF.html ZFpairs.html ZFnats.html ZFord.html SatF.html
-ZFlist.html ZFlist.glob ZFlist.v.beautified: ZFlist.v ZF.html ZFpairs.html ZFnats.html ZFrepl.html ZFord.html ZFfix.html
-ZFnats.html ZFnats.glob ZFnats.v.beautified: ZFnats.v ZF.html
-ZFord.html ZFord.glob ZFord.v.beautified: ZFord.v ZFnats.html ZFwf.html ZF.html ZFrepl.html
-ZFord_equiv.html ZFord_equiv.glob ZFord_equiv.v.beautified: ZFord_equiv.v ZFord.html ZFplump.html ZFordcl.html
-ZFordcl.html ZFordcl.glob ZFordcl.v.beautified: ZFordcl.v ZFnats.html ZFrepl.html
-ZFpairs.html ZFpairs.glob ZFpairs.v.beautified: ZFpairs.v ZF.html
-ZFplump.html ZFplump.glob ZFplump.v.beautified: ZFplump.v ZFnats.html ZF.html ZFrepl.html
-ZFrank.html ZFrank.glob ZFrank.v.beautified: ZFrank.v ZF.html ZFnats.html ZFord.html ZFstable.html ZFfix.html ZFrelations.html ZFwf.html ZFrepl.html ZFcard.html
-ZFrelations.html ZFrelations.glob ZFrelations.v.beautified: ZFrelations.v ZFpairs.html
-ZFrepl.html ZFrepl.glob ZFrepl.v.beautified: ZFrepl.v ZF.html
-ZFskol.html ZFskol.glob ZFskol.v.beautified: ZFskol.v basic.html ZFdef.html
-ZFstable.html ZFstable.glob ZFstable.v.beautified: ZFstable.v ZFsum.html ZFpairs.html ZFrelations.html ZFnats.html ZFord.html ZFfix.html
-ZFstrictpos.html ZFstrictpos.glob ZFstrictpos.v.beautified: ZFstrictpos.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFcoc.html ZFord.html ZFfix.html ZFstable.html ZFind_w.html ZFiso.html ZFgrothendieck.html
-ZFstrictpos1.html ZFstrictpos1.glob ZFstrictpos1.v.beautified: ZFstrictpos1.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFcoc.html ZFord.html ZFind_basic.html ZFstrictpos.html
-ZFstrictpos_prop.html ZFstrictpos_prop.glob ZFstrictpos_prop.v.beautified: ZFstrictpos_prop.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFcoc.html ZFord.html ZFfix.html ZFstable.html
-ZFsum.html ZFsum.glob ZFsum.v.beautified: ZFsum.v ZFnats.html ZFpairs.html
-ZFsup.html ZFsup.glob ZFsup.v.beautified: ZFsup.v ZF.html ZFpairs.html ZFord.html
-ZFtheory.html ZFtheory.glob ZFtheory.v.beautified: ZFtheory.v ZFrepl.html ZFnats.html ZFind_basic.html
-ZFwf.html ZFwf.glob ZFwf.v.beautified: ZFwf.v ZF.html ZFnats.html ZFrepl.html basic.html
-basic.html basic.glob basic.v.beautified: basic.v
-basic1.html basic1.glob basic1.v.beautified: basic1.v
+CCTnat.vo CCTnat.glob: CCTnat.v Explicit_sub.vo FOTheory.vo basic1.vo
+CCUT.vo CCUT.glob: CCUT.v Models.vo GenModelSN.vo ZF.vo ZFind_nat.vo SN_CC.vo
+Can.vo Can.glob: Can.v Lambda.vo
+CanF.vo CanF.glob: CanF.v LambdaF.vo
+Choice.vo Choice.glob: Choice.v
+Conv.vo Conv.glob: Conv.v Term.vo
+ConvECC.vo ConvECC.glob: ConvECC.v TermECC.vo
+Ens.vo Ens.glob: Ens.v ZFskol.vo Choice.vo
+Ens0.vo Ens0.glob: Ens0.v ZFskol.vo Choice.vo
+EnsEm.vo EnsEm.glob: EnsEm.v basic.vo Choice.vo
+EnsIntuit.vo EnsIntuit.glob: EnsIntuit.v
+EnsUniv.vo EnsUniv.glob: EnsUniv.v Ens0.vo Ens.vo basic.vo
+Env.vo Env.glob: Env.v MyList.vo Term.vo
+EnvECC.vo EnvECC.glob: EnvECC.v MyList.vo TermECC.vo
+Ex.vo Ex.glob: Ex.v
+Explicit_sub.vo Explicit_sub.glob: Explicit_sub.v TheoryInTerm.vo
+FOTheory.vo FOTheory.glob: FOTheory.v
+GenModel.vo GenModel.glob: GenModel.v basic.vo Models.vo VarMap.vo
+GenModelK.vo GenModelK.glob: GenModelK.v basic.vo Models.vo VarMap.vo
+GenModelSN.vo GenModelSN.glob: GenModelSN.v Sat.vo Models.vo ObjectSN.vo
+GenModelSyntax.vo GenModelSyntax.glob: GenModelSyntax.v Models.vo TypeJudge.vo GenModel.vo
+GenRealSN.vo GenRealSN.glob: GenRealSN.v basic.vo Sat.vo Models.vo ObjectSN.vo
+GenRealSNF.vo GenRealSNF.glob: GenRealSNF.v basic.vo SatF.vo Models.vo ZF.vo ZFpairs.vo ZFcoc.vo ZFlambdaF.vo VarMap.vo
+HF.vo HF.glob: HF.v
+HFcoc.vo HFcoc.glob: HFcoc.v HFrelation.vo
+HFrelation.vo HFrelation.glob: HFrelation.v HF.vo
+IntMap.vo IntMap.glob: IntMap.v
+Lambda.vo Lambda.glob: Lambda.v VarMap.vo
+LambdaF.vo LambdaF.glob: LambdaF.v
+Logics.vo Logics.glob: Logics.v
+ModelCIC.vo ModelCIC.glob: ModelCIC.v Models.vo ZFfunext.vo ZFfixrec.vo ZFecc.vo ZFind_nat.vo ModelZF.vo
+ModelCIC2.vo ModelCIC2.glob: ModelCIC2.v Models.vo ZFfunext.vo ZFfixrec.vo ZFecc.vo ZFind_nat.vo ModelZF.vo
+ModelECC.vo ModelECC.glob: ModelECC.v IntMap.vo TypeECC.vo Models.vo TypeJudgeECC.vo ZF.vo ZFcoc.vo ModelZF.vo ZFecc.vo
+ModelHF.vo ModelHF.glob: ModelHF.v HFcoc.vo Models.vo GenModelSyntax.vo Term.vo TypeJudge.vo
+ModelZF.vo ModelZF.glob: ModelZF.v basic.vo Models.vo GenModelSyntax.vo ZF.vo ZFcoc.vo Term.vo Env.vo TypeJudge.vo ZFrepl.vo
+Models.vo Models.glob: Models.v basic.vo
+MyList.vo MyList.glob: MyList.v
+ObjectSN.vo ObjectSN.glob: ObjectSN.v basic.vo Models.vo VarMap.vo Lambda.vo
+SATnat.vo SATnat.glob: SATnat.v basic.vo Can.vo Sat.vo ZF.vo ZFind_nat.vo ZFord.vo
+SN_CC.vo SN_CC.glob: SN_CC.v Sat.vo ZF.vo ZFcoc.vo ZFlambda.vo Models.vo GenModelSN.vo TypeJudge.vo
+SN_CC_Real.vo SN_CC_Real.glob: SN_CC_Real.v Sat.vo ZF.vo ZFcoc.vo ZFlambda.vo GenRealSN.vo TypeJudge.vo
+SN_NAT.vo SN_NAT.glob: SN_NAT.v ZF.vo ZFcoc.vo ZFind_nat.vo basic.vo Can.vo Sat.vo SATnat.vo SN_CC_Real.vo ZFord.vo ZFrepl.vo
+Sat.vo Sat.glob: Sat.v Lambda.vo Can.vo
+SatF.vo SatF.glob: SatF.v LambdaF.vo CanF.vo
+StrengthenECC.vo StrengthenECC.glob: StrengthenECC.v TypeECC.vo
+Term.vo Term.glob: Term.v
+TermCCUT.vo TermCCUT.glob: TermCCUT.v
+TermECC.vo TermECC.glob: TermECC.v
+TheoryInTerm.vo TheoryInTerm.glob: TheoryInTerm.v ZFtheory.vo GenModel.vo ZFcoc.vo ModelZF.vo
+ThierryFix.vo ThierryFix.glob: ThierryFix.v ZF.vo ZFord.vo
+TypeECC.vo TypeECC.glob: TypeECC.v ConvECC.vo EnvECC.vo
+TypeJudge.vo TypeJudge.glob: TypeJudge.v Types.vo
+TypeJudgeECC.vo TypeJudgeECC.glob: TypeJudgeECC.v TypeECC.vo
+Types.vo Types.glob: Types.v Conv.vo Env.vo
+VarMap.vo VarMap.glob: VarMap.v
+ZF.vo ZF.glob: ZF.v basic.vo ZFdef.vo Ens.vo ZFskol.vo
+ZFcard.vo ZFcard.glob: ZFcard.v ZF.vo ZFnats.vo ZFord.vo ZFrelations.vo ZFrepl.vo
+ZFcardcl.vo ZFcardcl.glob: ZFcardcl.v ZFnats.vo ZFord.vo ZFord_equiv.vo ZFcard.vo
+ZFclosord.vo ZFclosord.glob: ZFclosord.v ZF.vo ZFpairs.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFstable.vo ZFcoc.vo ZFlist.vo
+ZFcoc.vo ZFcoc.glob: ZFcoc.v ZF.vo ZFpairs.vo ZFrelations.vo ZFstable.vo ZFgrothendieck.vo
+ZFcoll.vo ZFcoll.glob: ZFcoll.v ZF.vo
+ZFcont.vo ZFcont.glob: ZFcont.v basic.vo ZF.vo ZFsum.vo ZFfix.vo ZFnats.vo ZFord.vo ZFstable.vo ZFrank.vo ZFrelations.vo
+ZFdef.vo ZFdef.glob: ZFdef.v basic.vo
+ZFecc.vo ZFecc.glob: ZFecc.v ZF.vo ZFpairs.vo ZFnats.vo ZFgrothendieck.vo ZFcoc.vo
+ZFem.vo ZFem.glob: ZFem.v Logics.vo EnsEm.vo ZFskolEm.vo
+ZFemb.vo ZFemb.glob: ZFemb.v basic.vo ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.vo ZFord.vo ZFfix.vo ZFfunext.vo ZFfixrec.vo ZFfixfun.vo ZFcont.vo
+ZFfix.vo ZFfix.glob: ZFfix.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFrepl.vo
+ZFfix2.vo ZFfix2.glob: ZFfix2.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFrepl.vo
+ZFfixfun.vo ZFfixfun.glob: ZFfixfun.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFcoc.vo ZFrepl.vo
+ZFfixfun1.vo ZFfixfun1.glob: ZFfixfun1.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFcoc.vo
+ZFfixrec.vo ZFfixrec.glob: ZFfixrec.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFfix.vo ZFstable.vo ZFfunext.vo ZFcoc.vo
+ZFfunext.vo ZFfunext.glob: ZFfunext.v basic.vo ZF.vo ZFrelations.vo ZFnats.vo ZFcoc.vo
+ZFgrothendieck.vo ZFgrothendieck.glob: ZFgrothendieck.v ZF.vo ZFpairs.vo ZFrelations.vo ZFrepl.vo ZFwf.vo ZFord.vo ZFfix.vo ZFstable.vo ZFlist.vo
+ZFinaccessible.vo ZFinaccessible.glob: ZFinaccessible.v ZFnats.vo ZFord.vo ZFrank.vo ZFgrothendieck.vo
+ZFind_basic.vo ZFind_basic.glob: ZFind_basic.v ZF.vo ZFnats.vo
+ZFind_nat.vo ZFind_nat.glob: ZFind_nat.v ZF.vo ZFsum.vo ZFfix.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFcard.vo ZFcont.vo ZFind_basic.vo ZFfunext.vo ZFfixrec.vo ZFrank.vo
+ZFind_ord.vo ZFind_ord.glob: ZFind_ord.v ZF.vo ZFsum.vo ZFfix.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFcard.vo ZFcont.vo ZFstable.vo ZFrank.vo ZFgrothendieck.vo ZFinaccessible.vo ZFind_basic.vo ZFind_nat.vo ZFind_w.vo ZFlist.vo ZFcoc.vo
+ZFind_set.vo ZFind_set.glob: ZFind_set.v ZF.vo ZFord.vo ZFind_w.vo ZFwf.vo ZFgrothendieck.vo
+ZFind_w.vo ZFind_w.glob: ZFind_w.v ZF.vo ZFpairs.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFgrothendieck.vo ZFcoc.vo ZFlist.vo ZFfunext.vo ZFfixrec.vo
+ZFind_w1.vo ZFind_w1.glob: ZFind_w1.v ZF.vo ZFpairs.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFstable.vo ZFgrothendieck.vo ZFcoc.vo ZFlist.vo ZFind_w.vo ZFind_nat.vo ZFfixfun.vo
+ZFind_w_prop.vo ZFind_w_prop.glob: ZFind_w_prop.v ZF.vo ZFpairs.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFstable.vo ZFgrothendieck.vo ZFcoc.vo ZFlist.vo
+ZFind_wd.vo ZFind_wd.glob: ZFind_wd.v ZF.vo ZFpairs.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFstable.vo ZFcoc.vo ZFlist.vo ZFfixfun.vo
+ZFind_wi.vo ZFind_wi.glob: ZFind_wi.v ZF.vo ZFpairs.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFstable.vo ZFgrothendieck.vo ZFcoc.vo ZFlist.vo
+ZFind_wnup.vo ZFind_wnup.glob: ZFind_wnup.v ZF.vo ZFpairs.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFstable.vo ZFcoc.vo ZFlist.vo ZFind_w.vo ZFfixfun.vo ZFiso.vo ZFgrothendieck.vo ZFfixrec.vo
+ZFinfra.vo ZFinfra.glob: ZFinfra.v ZF.vo
+ZFiso.vo ZFiso.glob: ZFiso.v basic.vo ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.vo ZFord.vo ZFfix.vo ZFfunext.vo ZFfixrec.vo ZFfixfun.vo ZFcont.vo
+ZFiso2.vo ZFiso2.glob: ZFiso2.v basic.vo ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.vo
+ZFiso3.vo ZFiso3.glob: ZFiso3.v basic.vo ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.vo
+ZFlambda.vo ZFlambda.glob: ZFlambda.v Lambda.vo ZF.vo ZFpairs.vo ZFnats.vo ZFord.vo Sat.vo ZFrepl.vo ZFfix.vo
+ZFlambdaF.vo ZFlambdaF.glob: ZFlambdaF.v LambdaF.vo ZF.vo ZFpairs.vo ZFnats.vo ZFord.vo SatF.vo
+ZFlist.vo ZFlist.glob: ZFlist.v ZF.vo ZFpairs.vo ZFnats.vo ZFrepl.vo ZFord.vo ZFfix.vo
+ZFmisc.vo ZFmisc.glob: ZFmisc.v ZF.vo ZFtrans.vo
+ZFnats.vo ZFnats.glob: ZFnats.v ZF.vo
+ZFord.vo ZFord.glob: ZFord.v ZFnats.vo ZFwf.vo ZF.vo ZFrepl.vo
+ZFord_equiv.vo ZFord_equiv.glob: ZFord_equiv.v ZFord.vo ZFplump.vo ZFordcl.vo
+ZFord_plump.vo ZFord_plump.glob: ZFord_plump.v basic.vo ZF.vo ZFnats.vo ZFrepl.vo
+ZFordcl.vo ZFordcl.glob: ZFordcl.v ZFnats.vo ZFrepl.vo
+ZFpairs.vo ZFpairs.glob: ZFpairs.v ZF.vo
+ZFplump.vo ZFplump.glob: ZFplump.v basic.vo ZF.vo ZFnats.vo ZFrepl.vo
+ZFrank.vo ZFrank.glob: ZFrank.v ZF.vo ZFnats.vo ZFord.vo ZFstable.vo ZFfix.vo ZFrelations.vo ZFwf.vo ZFrepl.vo ZFcard.vo
+ZFrelations.vo ZFrelations.glob: ZFrelations.v ZFpairs.vo
+ZFrepl.vo ZFrepl.glob: ZFrepl.v ZF.vo
+ZFskol.vo ZFskol.glob: ZFskol.v basic.vo ZFdef.vo
+ZFskol0.vo ZFskol0.glob: ZFskol0.v basic.vo ZFdef.vo
+ZFskol1.vo ZFskol1.glob: ZFskol1.v basic.vo ZFdef.vo
+ZFskol2.vo ZFskol2.glob: ZFskol2.v basic.vo ZFdef.vo
+ZFskolEm.vo ZFskolEm.glob: ZFskolEm.v basic.vo EnsEm.vo
+ZFstable.vo ZFstable.glob: ZFstable.v ZFsum.vo ZFpairs.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFfix.vo
+ZFstrictpos.vo ZFstrictpos.glob: ZFstrictpos.v ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.vo ZFord.vo ZFfix.vo ZFstable.vo ZFind_w.vo ZFiso.vo ZFgrothendieck.vo
+ZFstrictpos1.vo ZFstrictpos1.glob: ZFstrictpos1.v ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.vo ZFord.vo ZFind_basic.vo ZFstrictpos.vo
+ZFstrictpos1bis.vo ZFstrictpos1bis.glob: ZFstrictpos1bis.v ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.vo ZFord.vo ZFfix.vo ZFstable.vo ZFind_basic.vo ZFfixfun.vo ZFind_w.vo ZFiso.vo
+ZFstrictpos2.vo ZFstrictpos2.glob: ZFstrictpos2.v ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.vo ZFord.vo ZFind_basic.vo ZFstrictpos.vo
+ZFstrictpos_prop.vo ZFstrictpos_prop.glob: ZFstrictpos_prop.v ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.vo ZFord.vo ZFfix.vo ZFstable.vo
+ZFsum.vo ZFsum.glob: ZFsum.v ZFnats.vo ZFpairs.vo
+ZFtheory.vo ZFtheory.glob: ZFtheory.v ZFrepl.vo ZFnats.vo ZFind_basic.vo
+ZFtr.vo ZFtr.glob: ZFtr.v ZFnats.vo ZFord.vo ZFrepl.vo
+ZFtrans.vo ZFtrans.glob: ZFtrans.v ZF.vo ZFpairs.vo ZFrelations.vo ZFnats.vo
+ZFwf.vo ZFwf.glob: ZFwf.v ZF.vo ZFnats.vo ZFrepl.vo basic.vo
+basic.vo basic.glob: basic.v
+basic1.vo basic1.glob: basic1.v
+CCTnat.html CCTnat.glob: CCTnat.v Explicit_sub.html FOTheory.html basic1.html
+CCUT.html CCUT.glob: CCUT.v Models.html GenModelSN.html ZF.html ZFind_nat.html SN_CC.html
+Can.html Can.glob: Can.v Lambda.html
+CanF.html CanF.glob: CanF.v LambdaF.html
+Choice.html Choice.glob: Choice.v
+Conv.html Conv.glob: Conv.v Term.html
+ConvECC.html ConvECC.glob: ConvECC.v TermECC.html
+Ens.html Ens.glob: Ens.v ZFskol.html Choice.html
+Ens0.html Ens0.glob: Ens0.v ZFskol.html Choice.html
+EnsEm.html EnsEm.glob: EnsEm.v basic.html Choice.html
+EnsIntuit.html EnsIntuit.glob: EnsIntuit.v
+EnsUniv.html EnsUniv.glob: EnsUniv.v Ens0.html Ens.html basic.html
+Env.html Env.glob: Env.v MyList.html Term.html
+EnvECC.html EnvECC.glob: EnvECC.v MyList.html TermECC.html
+Ex.html Ex.glob: Ex.v
+Explicit_sub.html Explicit_sub.glob: Explicit_sub.v TheoryInTerm.html
+FOTheory.html FOTheory.glob: FOTheory.v
+GenModel.html GenModel.glob: GenModel.v basic.html Models.html VarMap.html
+GenModelK.html GenModelK.glob: GenModelK.v basic.html Models.html VarMap.html
+GenModelSN.html GenModelSN.glob: GenModelSN.v Sat.html Models.html ObjectSN.html
+GenModelSyntax.html GenModelSyntax.glob: GenModelSyntax.v Models.html TypeJudge.html GenModel.html
+GenRealSN.html GenRealSN.glob: GenRealSN.v basic.html Sat.html Models.html ObjectSN.html
+GenRealSNF.html GenRealSNF.glob: GenRealSNF.v basic.html SatF.html Models.html ZF.html ZFpairs.html ZFcoc.html ZFlambdaF.html VarMap.html
+HF.html HF.glob: HF.v
+HFcoc.html HFcoc.glob: HFcoc.v HFrelation.html
+HFrelation.html HFrelation.glob: HFrelation.v HF.html
+IntMap.html IntMap.glob: IntMap.v
+Lambda.html Lambda.glob: Lambda.v VarMap.html
+LambdaF.html LambdaF.glob: LambdaF.v
+Logics.html Logics.glob: Logics.v
+ModelCIC.html ModelCIC.glob: ModelCIC.v Models.html ZFfunext.html ZFfixrec.html ZFecc.html ZFind_nat.html ModelZF.html
+ModelCIC2.html ModelCIC2.glob: ModelCIC2.v Models.html ZFfunext.html ZFfixrec.html ZFecc.html ZFind_nat.html ModelZF.html
+ModelECC.html ModelECC.glob: ModelECC.v IntMap.html TypeECC.html Models.html TypeJudgeECC.html ZF.html ZFcoc.html ModelZF.html ZFecc.html
+ModelHF.html ModelHF.glob: ModelHF.v HFcoc.html Models.html GenModelSyntax.html Term.html TypeJudge.html
+ModelZF.html ModelZF.glob: ModelZF.v basic.html Models.html GenModelSyntax.html ZF.html ZFcoc.html Term.html Env.html TypeJudge.html ZFrepl.html
+Models.html Models.glob: Models.v basic.html
+MyList.html MyList.glob: MyList.v
+ObjectSN.html ObjectSN.glob: ObjectSN.v basic.html Models.html VarMap.html Lambda.html
+SATnat.html SATnat.glob: SATnat.v basic.html Can.html Sat.html ZF.html ZFind_nat.html ZFord.html
+SN_CC.html SN_CC.glob: SN_CC.v Sat.html ZF.html ZFcoc.html ZFlambda.html Models.html GenModelSN.html TypeJudge.html
+SN_CC_Real.html SN_CC_Real.glob: SN_CC_Real.v Sat.html ZF.html ZFcoc.html ZFlambda.html GenRealSN.html TypeJudge.html
+SN_NAT.html SN_NAT.glob: SN_NAT.v ZF.html ZFcoc.html ZFind_nat.html basic.html Can.html Sat.html SATnat.html SN_CC_Real.html ZFord.html ZFrepl.html
+Sat.html Sat.glob: Sat.v Lambda.html Can.html
+SatF.html SatF.glob: SatF.v LambdaF.html CanF.html
+StrengthenECC.html StrengthenECC.glob: StrengthenECC.v TypeECC.html
+Term.html Term.glob: Term.v
+TermCCUT.html TermCCUT.glob: TermCCUT.v
+TermECC.html TermECC.glob: TermECC.v
+TheoryInTerm.html TheoryInTerm.glob: TheoryInTerm.v ZFtheory.html GenModel.html ZFcoc.html ModelZF.html
+ThierryFix.html ThierryFix.glob: ThierryFix.v ZF.html ZFord.html
+TypeECC.html TypeECC.glob: TypeECC.v ConvECC.html EnvECC.html
+TypeJudge.html TypeJudge.glob: TypeJudge.v Types.html
+TypeJudgeECC.html TypeJudgeECC.glob: TypeJudgeECC.v TypeECC.html
+Types.html Types.glob: Types.v Conv.html Env.html
+VarMap.html VarMap.glob: VarMap.v
+ZF.html ZF.glob: ZF.v basic.html ZFdef.html Ens.html ZFskol.html
+ZFcard.html ZFcard.glob: ZFcard.v ZF.html ZFnats.html ZFord.html ZFrelations.html ZFrepl.html
+ZFcardcl.html ZFcardcl.glob: ZFcardcl.v ZFnats.html ZFord.html ZFord_equiv.html ZFcard.html
+ZFclosord.html ZFclosord.glob: ZFclosord.v ZF.html ZFpairs.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFstable.html ZFcoc.html ZFlist.html
+ZFcoc.html ZFcoc.glob: ZFcoc.v ZF.html ZFpairs.html ZFrelations.html ZFstable.html ZFgrothendieck.html
+ZFcoll.html ZFcoll.glob: ZFcoll.v ZF.html
+ZFcont.html ZFcont.glob: ZFcont.v basic.html ZF.html ZFsum.html ZFfix.html ZFnats.html ZFord.html ZFstable.html ZFrank.html ZFrelations.html
+ZFdef.html ZFdef.glob: ZFdef.v basic.html
+ZFecc.html ZFecc.glob: ZFecc.v ZF.html ZFpairs.html ZFnats.html ZFgrothendieck.html ZFcoc.html
+ZFem.html ZFem.glob: ZFem.v Logics.html EnsEm.html ZFskolEm.html
+ZFemb.html ZFemb.glob: ZFemb.v basic.html ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFcoc.html ZFord.html ZFfix.html ZFfunext.html ZFfixrec.html ZFfixfun.html ZFcont.html
+ZFfix.html ZFfix.glob: ZFfix.v ZF.html ZFrelations.html ZFnats.html ZFord.html ZFrepl.html
+ZFfix2.html ZFfix2.glob: ZFfix2.v ZF.html ZFrelations.html ZFnats.html ZFord.html ZFrepl.html
+ZFfixfun.html ZFfixfun.glob: ZFfixfun.v ZF.html ZFrelations.html ZFnats.html ZFord.html ZFcoc.html ZFrepl.html
+ZFfixfun1.html ZFfixfun1.glob: ZFfixfun1.v ZF.html ZFrelations.html ZFnats.html ZFord.html ZFcoc.html
+ZFfixrec.html ZFfixrec.glob: ZFfixrec.v ZF.html ZFrelations.html ZFnats.html ZFord.html ZFfix.html ZFstable.html ZFfunext.html ZFcoc.html
+ZFfunext.html ZFfunext.glob: ZFfunext.v basic.html ZF.html ZFrelations.html ZFnats.html ZFcoc.html
+ZFgrothendieck.html ZFgrothendieck.glob: ZFgrothendieck.v ZF.html ZFpairs.html ZFrelations.html ZFrepl.html ZFwf.html ZFord.html ZFfix.html ZFstable.html ZFlist.html
+ZFinaccessible.html ZFinaccessible.glob: ZFinaccessible.v ZFnats.html ZFord.html ZFrank.html ZFgrothendieck.html
+ZFind_basic.html ZFind_basic.glob: ZFind_basic.v ZF.html ZFnats.html
+ZFind_nat.html ZFind_nat.glob: ZFind_nat.v ZF.html ZFsum.html ZFfix.html ZFnats.html ZFrelations.html ZFord.html ZFcard.html ZFcont.html ZFind_basic.html ZFfunext.html ZFfixrec.html ZFrank.html
+ZFind_ord.html ZFind_ord.glob: ZFind_ord.v ZF.html ZFsum.html ZFfix.html ZFnats.html ZFrelations.html ZFord.html ZFcard.html ZFcont.html ZFstable.html ZFrank.html ZFgrothendieck.html ZFinaccessible.html ZFind_basic.html ZFind_nat.html ZFind_w.html ZFlist.html ZFcoc.html
+ZFind_set.html ZFind_set.glob: ZFind_set.v ZF.html ZFord.html ZFind_w.html ZFwf.html ZFgrothendieck.html
+ZFind_w.html ZFind_w.glob: ZFind_w.v ZF.html ZFpairs.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFgrothendieck.html ZFcoc.html ZFlist.html ZFfunext.html ZFfixrec.html
+ZFind_w1.html ZFind_w1.glob: ZFind_w1.v ZF.html ZFpairs.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFstable.html ZFgrothendieck.html ZFcoc.html ZFlist.html ZFind_w.html ZFind_nat.html ZFfixfun.html
+ZFind_w_prop.html ZFind_w_prop.glob: ZFind_w_prop.v ZF.html ZFpairs.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFstable.html ZFgrothendieck.html ZFcoc.html ZFlist.html
+ZFind_wd.html ZFind_wd.glob: ZFind_wd.v ZF.html ZFpairs.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFstable.html ZFcoc.html ZFlist.html ZFfixfun.html
+ZFind_wi.html ZFind_wi.glob: ZFind_wi.v ZF.html ZFpairs.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFstable.html ZFgrothendieck.html ZFcoc.html ZFlist.html
+ZFind_wnup.html ZFind_wnup.glob: ZFind_wnup.v ZF.html ZFpairs.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFstable.html ZFcoc.html ZFlist.html ZFind_w.html ZFfixfun.html ZFiso.html ZFgrothendieck.html ZFfixrec.html
+ZFinfra.html ZFinfra.glob: ZFinfra.v ZF.html
+ZFiso.html ZFiso.glob: ZFiso.v basic.html ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFcoc.html ZFord.html ZFfix.html ZFfunext.html ZFfixrec.html ZFfixfun.html ZFcont.html
+ZFiso2.html ZFiso2.glob: ZFiso2.v basic.html ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFcoc.html
+ZFiso3.html ZFiso3.glob: ZFiso3.v basic.html ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFcoc.html
+ZFlambda.html ZFlambda.glob: ZFlambda.v Lambda.html ZF.html ZFpairs.html ZFnats.html ZFord.html Sat.html ZFrepl.html ZFfix.html
+ZFlambdaF.html ZFlambdaF.glob: ZFlambdaF.v LambdaF.html ZF.html ZFpairs.html ZFnats.html ZFord.html SatF.html
+ZFlist.html ZFlist.glob: ZFlist.v ZF.html ZFpairs.html ZFnats.html ZFrepl.html ZFord.html ZFfix.html
+ZFmisc.html ZFmisc.glob: ZFmisc.v ZF.html ZFtrans.html
+ZFnats.html ZFnats.glob: ZFnats.v ZF.html
+ZFord.html ZFord.glob: ZFord.v ZFnats.html ZFwf.html ZF.html ZFrepl.html
+ZFord_equiv.html ZFord_equiv.glob: ZFord_equiv.v ZFord.html ZFplump.html ZFordcl.html
+ZFord_plump.html ZFord_plump.glob: ZFord_plump.v basic.html ZF.html ZFnats.html ZFrepl.html
+ZFordcl.html ZFordcl.glob: ZFordcl.v ZFnats.html ZFrepl.html
+ZFpairs.html ZFpairs.glob: ZFpairs.v ZF.html
+ZFplump.html ZFplump.glob: ZFplump.v basic.html ZF.html ZFnats.html ZFrepl.html
+ZFrank.html ZFrank.glob: ZFrank.v ZF.html ZFnats.html ZFord.html ZFstable.html ZFfix.html ZFrelations.html ZFwf.html ZFrepl.html ZFcard.html
+ZFrelations.html ZFrelations.glob: ZFrelations.v ZFpairs.html
+ZFrepl.html ZFrepl.glob: ZFrepl.v ZF.html
+ZFskol.html ZFskol.glob: ZFskol.v basic.html ZFdef.html
+ZFskol0.html ZFskol0.glob: ZFskol0.v basic.html ZFdef.html
+ZFskol1.html ZFskol1.glob: ZFskol1.v basic.html ZFdef.html
+ZFskol2.html ZFskol2.glob: ZFskol2.v basic.html ZFdef.html
+ZFskolEm.html ZFskolEm.glob: ZFskolEm.v basic.html EnsEm.html
+ZFstable.html ZFstable.glob: ZFstable.v ZFsum.html ZFpairs.html ZFrelations.html ZFnats.html ZFord.html ZFfix.html
+ZFstrictpos.html ZFstrictpos.glob: ZFstrictpos.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFcoc.html ZFord.html ZFfix.html ZFstable.html ZFind_w.html ZFiso.html ZFgrothendieck.html
+ZFstrictpos1.html ZFstrictpos1.glob: ZFstrictpos1.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFcoc.html ZFord.html ZFind_basic.html ZFstrictpos.html
+ZFstrictpos1bis.html ZFstrictpos1bis.glob: ZFstrictpos1bis.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFcoc.html ZFord.html ZFfix.html ZFstable.html ZFind_basic.html ZFfixfun.html ZFind_w.html ZFiso.html
+ZFstrictpos2.html ZFstrictpos2.glob: ZFstrictpos2.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFcoc.html ZFord.html ZFind_basic.html ZFstrictpos.html
+ZFstrictpos_prop.html ZFstrictpos_prop.glob: ZFstrictpos_prop.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFcoc.html ZFord.html ZFfix.html ZFstable.html
+ZFsum.html ZFsum.glob: ZFsum.v ZFnats.html ZFpairs.html
+ZFtheory.html ZFtheory.glob: ZFtheory.v ZFrepl.html ZFnats.html ZFind_basic.html
+ZFtr.html ZFtr.glob: ZFtr.v ZFnats.html ZFord.html ZFrepl.html
+ZFtrans.html ZFtrans.glob: ZFtrans.v ZF.html ZFpairs.html ZFrelations.html ZFnats.html
+ZFwf.html ZFwf.glob: ZFwf.v ZF.html ZFnats.html ZFrepl.html basic.html
+basic.html basic.glob: basic.v
+basic1.html basic1.glob: basic1.v

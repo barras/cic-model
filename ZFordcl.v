@@ -655,58 +655,6 @@ Qed.
 
 End LimOrdRel.
 
-Inductive ord : Set := OO | OS (o:ord) | OL (f:nat->ord).
-
-Fixpoint ord2set (o:ord) : set :=
-  match o with
-  | OO => zero
-  | OS k => succ (ord2set k)
-  | OL f => ord_sup (fun k => ord2set (f k)) 
-  end.
-
-Lemma ord2set_typ : forall o, isOrd (ord2set o).
-induction o; simpl; intros.
- apply isOrd_zero.
- apply isOrd_succ; trivial.
- apply isOrd_sup; trivial.
-Qed.
-
-(* f^w(o) *)
-Definition iter_w (f:set->set) o :=
-  ord_sup(nat_rect(fun _=>set) o (fun _ => f)).
-
-Lemma isOrd_iter_w : forall f o,
-  (forall x, isOrd x -> isOrd (f x)) ->
-  isOrd o ->
-  isOrd (iter_w f o).
-intros.
-unfold iter_w.
-apply isOrd_sup.
-induction n; simpl; intros; auto.
-Qed.
-
-Definition plus_w := iter_w succ.
-Definition mult_w := iter_w plus_w.
-Definition pow_w := iter_w mult_w.
-Definition epsilon0 : set := iter_w pow_w N.
-
-Lemma isOrd_epsilon0: isOrd epsilon0.
-unfold epsilon0, pow_w, mult_w, plus_w.
-apply isOrd_iter_w; intros.
- apply isOrd_iter_w; intros; trivial. 
- apply isOrd_iter_w; intros; trivial. 
- apply isOrd_iter_w; intros; trivial. 
- apply isOrd_succ; trivial.
-
- apply isOrd_N.
-Qed.
-
-Lemma zero_typ_e0 : zero \in epsilon0.
-unfold epsilon0, iter_w.
-apply isOrd_sup_intro with 0; simpl.
-apply zero_typ.
-Qed.
-
 Section TransfiniteRecursion.
 
   Variable F : (set -> set) -> set -> set.

@@ -251,10 +251,10 @@ rewrite osup2_def; trivial.
   apply G_union; trivial.
   apply G_replf; trivial; intros.
    do 2 red; intros; apply replf_morph; auto with *.
-   red; intros; apply osup2m; trivial.
+   red; intros; apply osup2_morph; trivial.
 
    apply G_replf; trivial; intros.
-    do 2 red; intros; apply osup2m; auto with *.
+    do 2 red; intros; apply osup2_morph; auto with *.
 
     apply H; eauto using G_trans.
 Qed.

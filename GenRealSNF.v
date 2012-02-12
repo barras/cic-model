@@ -21,7 +21,7 @@ Parameter inX : X * Lc.term -> X -> Prop.
 Parameter eqX : X -> X -> Prop.
 Parameter eqX_equiv : Equivalence eqX.
 Notation "x \real y" := (inX x y) (at level 60).
-Notation "x == y" := (eqX x y) (at level 70).
+Notation "x == y" := (eqX x y).
 
 Definition Pi dom F f :=
   Inter _ (fun x:X =>
@@ -106,7 +106,7 @@ Lemma eqX_equiv : Equivalence eqX.
 auto with *.
 Qed.
 
-Notation "x == y" := (eqX x y) (at level 70).
+Notation "x == y" := (eqX x y).
 
 
 Definition inTyp (p:X*Lc.term) (x:X) :=

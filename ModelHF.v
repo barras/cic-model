@@ -15,8 +15,8 @@ split.
  apply eq_hf_trans.
 Qed.
 
-Notation "x \in y" := (inX x y) (at level 60).
-Notation "x == y" := (eqX x y) (at level 70).
+Notation "x \in y" := (inX x y).
+Notation "x == y" := (eqX x y).
 
 Lemma in_ext: Proper (eqX ==> eqX ==> iff) inX.
 Proof In_hf_morph.

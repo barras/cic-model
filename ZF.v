@@ -4,7 +4,7 @@ Require Export ZFdef.
 
 (* We assume the existence of a model of IZF: *)
 Require Ens ZFskol.
-Module IZF : IZF_sig := ZFskol.Skolem Ens.IZF.
+Module IZF : IZF_R_sig := ZFskol.Skolem Ens.IZF_R.
 Import IZF.
 
 Notation morph1 := (Proper (eq_set ==> eq_set)).

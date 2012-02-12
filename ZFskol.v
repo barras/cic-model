@@ -6,7 +6,7 @@
 Require Import basic.
 Require Export ZFdef.
 
-Module Skolem (Z : IZF_Ex_sig) <: IZF_sig.
+Module Skolem (Z : IZF_R_Ex_sig) <: IZF_R_sig.
 
 Instance Zsetoid: Equivalence Z.eq_set.
 Proof.
@@ -59,11 +59,11 @@ split; intros.
  constructor; trivial.
 Qed.
 
-Notation "x \in y" := (in_set x y) (at level 60).
+Notation "x \in y" := (in_set x y).
 
 Definition eq_set a b := forall x, x \in a <-> x \in b.
 
-Notation "x == y" := (eq_set x y) (at level 70).
+Notation "x == y" := (eq_set x y).
 
 Lemma eq_set_ax : forall a b, a == b <-> (forall x, x \in a <-> x \in b).
 reflexivity.
