@@ -1,7 +1,6 @@
 CCTnat.vo CCTnat.glob: CCTnat.v Explicit_sub.vo FOTheory.vo basic1.vo
 CCUT.vo CCUT.glob: CCUT.v Models.vo GenModelSN.vo ZF.vo ZFind_nat.vo SN_CC.vo
 Can.vo Can.glob: Can.v Lambda.vo
-CanF.vo CanF.glob: CanF.v LambdaF.vo
 Choice.vo Choice.glob: Choice.v
 Conv.vo Conv.glob: Conv.v Term.vo
 ConvECC.vo ConvECC.glob: ConvECC.v TermECC.vo
@@ -20,13 +19,11 @@ GenModelK.vo GenModelK.glob: GenModelK.v basic.vo Models.vo VarMap.vo
 GenModelSN.vo GenModelSN.glob: GenModelSN.v Sat.vo Models.vo ObjectSN.vo
 GenModelSyntax.vo GenModelSyntax.glob: GenModelSyntax.v Models.vo TypeJudge.vo GenModel.vo
 GenRealSN.vo GenRealSN.glob: GenRealSN.v basic.vo Sat.vo Models.vo ObjectSN.vo
-GenRealSNF.vo GenRealSNF.glob: GenRealSNF.v basic.vo SatF.vo Models.vo ZF.vo ZFpairs.vo ZFcoc.vo ZFlambdaF.vo VarMap.vo
 HF.vo HF.glob: HF.v
 HFcoc.vo HFcoc.glob: HFcoc.v HFrelation.vo
 HFrelation.vo HFrelation.glob: HFrelation.v HF.vo
 IntMap.vo IntMap.glob: IntMap.v
 Lambda.vo Lambda.glob: Lambda.v VarMap.vo
-LambdaF.vo LambdaF.glob: LambdaF.v
 Logics.vo Logics.glob: Logics.v
 ModelCIC.vo ModelCIC.glob: ModelCIC.v Models.vo ZFfunext.vo ZFfixrec.vo ZFecc.vo ZFind_nat.vo ModelZF.vo
 ModelCIC2.vo ModelCIC2.glob: ModelCIC2.v Models.vo ZFfunext.vo ZFfixrec.vo ZFecc.vo ZFind_nat.vo ModelZF.vo
@@ -41,7 +38,6 @@ SN_CC.vo SN_CC.glob: SN_CC.v Sat.vo ZF.vo ZFcoc.vo ZFlambda.vo Models.vo GenMode
 SN_CC_Real.vo SN_CC_Real.glob: SN_CC_Real.v Sat.vo ZF.vo ZFcoc.vo ZFlambda.vo GenRealSN.vo TypeJudge.vo
 SN_NAT.vo SN_NAT.glob: SN_NAT.v ZF.vo ZFcoc.vo ZFind_nat.vo basic.vo Can.vo Sat.vo SATnat.vo SN_CC_Real.vo ZFord.vo ZFrepl.vo
 Sat.vo Sat.glob: Sat.v Lambda.vo Can.vo
-SatF.vo SatF.glob: SatF.v LambdaF.vo CanF.vo
 StrengthenECC.vo StrengthenECC.glob: StrengthenECC.v TypeECC.vo
 Term.vo Term.glob: Term.v
 TermCCUT.vo TermCCUT.glob: TermCCUT.v
@@ -87,7 +83,6 @@ ZFiso.vo ZFiso.glob: ZFiso.v basic.vo ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo Z
 ZFiso2.vo ZFiso2.glob: ZFiso2.v basic.vo ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.vo
 ZFiso3.vo ZFiso3.glob: ZFiso3.v basic.vo ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.vo
 ZFlambda.vo ZFlambda.glob: ZFlambda.v Lambda.vo ZF.vo ZFpairs.vo ZFnats.vo ZFord.vo Sat.vo ZFrepl.vo ZFfix.vo
-ZFlambdaF.vo ZFlambdaF.glob: ZFlambdaF.v LambdaF.vo ZF.vo ZFpairs.vo ZFnats.vo ZFord.vo SatF.vo
 ZFlist.vo ZFlist.glob: ZFlist.v ZF.vo ZFpairs.vo ZFnats.vo ZFrepl.vo ZFord.vo ZFfix.vo
 ZFmisc.vo ZFmisc.glob: ZFmisc.v ZF.vo ZFtrans.vo
 ZFnats.vo ZFnats.glob: ZFnats.v ZF.vo
@@ -121,7 +116,6 @@ basic1.vo basic1.glob: basic1.v
 CCTnat.html CCTnat.glob: CCTnat.v Explicit_sub.html FOTheory.html basic1.html
 CCUT.html CCUT.glob: CCUT.v Models.html GenModelSN.html ZF.html ZFind_nat.html SN_CC.html
 Can.html Can.glob: Can.v Lambda.html
-CanF.html CanF.glob: CanF.v LambdaF.html
 Choice.html Choice.glob: Choice.v
 Conv.html Conv.glob: Conv.v Term.html
 ConvECC.html ConvECC.glob: ConvECC.v TermECC.html
@@ -140,13 +134,11 @@ GenModelK.html GenModelK.glob: GenModelK.v basic.html Models.html VarMap.html
 GenModelSN.html GenModelSN.glob: GenModelSN.v Sat.html Models.html ObjectSN.html
 GenModelSyntax.html GenModelSyntax.glob: GenModelSyntax.v Models.html TypeJudge.html GenModel.html
 GenRealSN.html GenRealSN.glob: GenRealSN.v basic.html Sat.html Models.html ObjectSN.html
-GenRealSNF.html GenRealSNF.glob: GenRealSNF.v basic.html SatF.html Models.html ZF.html ZFpairs.html ZFcoc.html ZFlambdaF.html VarMap.html
 HF.html HF.glob: HF.v
 HFcoc.html HFcoc.glob: HFcoc.v HFrelation.html
 HFrelation.html HFrelation.glob: HFrelation.v HF.html
 IntMap.html IntMap.glob: IntMap.v
 Lambda.html Lambda.glob: Lambda.v VarMap.html
-LambdaF.html LambdaF.glob: LambdaF.v
 Logics.html Logics.glob: Logics.v
 ModelCIC.html ModelCIC.glob: ModelCIC.v Models.html ZFfunext.html ZFfixrec.html ZFecc.html ZFind_nat.html ModelZF.html
 ModelCIC2.html ModelCIC2.glob: ModelCIC2.v Models.html ZFfunext.html ZFfixrec.html ZFecc.html ZFind_nat.html ModelZF.html
@@ -161,7 +153,6 @@ SN_CC.html SN_CC.glob: SN_CC.v Sat.html ZF.html ZFcoc.html ZFlambda.html Models.
 SN_CC_Real.html SN_CC_Real.glob: SN_CC_Real.v Sat.html ZF.html ZFcoc.html ZFlambda.html GenRealSN.html TypeJudge.html
 SN_NAT.html SN_NAT.glob: SN_NAT.v ZF.html ZFcoc.html ZFind_nat.html basic.html Can.html Sat.html SATnat.html SN_CC_Real.html ZFord.html ZFrepl.html
 Sat.html Sat.glob: Sat.v Lambda.html Can.html
-SatF.html SatF.glob: SatF.v LambdaF.html CanF.html
 StrengthenECC.html StrengthenECC.glob: StrengthenECC.v TypeECC.html
 Term.html Term.glob: Term.v
 TermCCUT.html TermCCUT.glob: TermCCUT.v
@@ -207,7 +198,6 @@ ZFiso.html ZFiso.glob: ZFiso.v basic.html ZF.html ZFpairs.html ZFsum.html ZFrela
 ZFiso2.html ZFiso2.glob: ZFiso2.v basic.html ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFcoc.html
 ZFiso3.html ZFiso3.glob: ZFiso3.v basic.html ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFcoc.html
 ZFlambda.html ZFlambda.glob: ZFlambda.v Lambda.html ZF.html ZFpairs.html ZFnats.html ZFord.html Sat.html ZFrepl.html ZFfix.html
-ZFlambdaF.html ZFlambdaF.glob: ZFlambdaF.v LambdaF.html ZF.html ZFpairs.html ZFnats.html ZFord.html SatF.html
 ZFlist.html ZFlist.glob: ZFlist.v ZF.html ZFpairs.html ZFnats.html ZFrepl.html ZFord.html ZFfix.html
 ZFmisc.html ZFmisc.glob: ZFmisc.v ZF.html ZFtrans.html
 ZFnats.html ZFnats.glob: ZFnats.v ZF.html

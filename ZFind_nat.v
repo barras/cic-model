@@ -522,42 +522,42 @@ apply Firrel; trivial.
 Qed.
 Hint Resolve Firrel_NAT.
 
+  Lemma NAT_recursor : recursor ord NATi Q F.
+constructor; trivial.
+ apply TI_morph.
+
+ apply NATi_cont.
+Qed.
+
+ Hint Resolve NAT_recursor.
+
   (* Main properties of NATREC: typing and equation *)
   Lemma NATREC_wt : NATREC ord \in Ty ord.
 intros.
 refine ((fun h => NATREC_typing
           ord (NATREC ord) oord (reflexivity _) (proj1 h) (proj2 h)) _).
 apply REC_wt with (T:=NATi) (Q:=Q); auto.
- apply TI_morph.
-
- apply NATi_cont.
 Qed.
 
   Lemma NATREC_ext G :
     is_cc_fun (NATi ord) G ->
     (forall o', o' \in ord ->
+     NATREC o' == ZFcoc.cc_lam (NATi o') (ZFcoc.cc_app G) ->
      fcompat (NATi (osucc o')) G (F o' (ZFcoc.cc_lam (NATi o') (ZFcoc.cc_app G)))) ->
     NATREC ord == G.
 intros.
 apply REC_ext with (T:=NATi) (Q:=Q); auto.
- apply TI_morph.
-
- apply NATi_cont; trivial.
 Qed.
 
   Lemma NATREC_expand : forall n,
     n \in NATi ord -> ZFcoc.cc_app (NATREC ord) n == ZFcoc.cc_app (F ord (NATREC ord)) n.
 intros.
 apply REC_expand with (T:=NATi) (Q:=Q); auto.
- apply TI_morph.
-
- apply NATi_cont.
 Qed.
 
   Lemma NATREC_eqn :
     NATREC ord == ZFcoc.cc_lam (NATi ord) (ZFcoc.cc_app (F ord (NATREC ord))).
 apply REC_eqn with (Q:=Q); auto with *.
-apply NATi_cont.
 Qed.
 
 End Recursor.

@@ -181,6 +181,14 @@ exists (fun i => t (V.lams m (V.shift n) i)).
  rewrite H; reflexivity.
 Defined.
 
+Instance lift_rec_morph n k : Proper (eq_term ==> eq_term) (lift_rec n k).
+do 3 red; intros.
+destruct x as [(x,xm)|]; destruct y as [(y,ym)|]; simpl in H|-*; try contradiction; trivial.
+red; intros.
+apply H.
+rewrite H0; reflexivity.
+Qed.
+
 Definition lift1 n := lift_rec n 1.
 
 Lemma lift10: forall T, eq_term (lift1 0 T) T.
@@ -245,6 +253,46 @@ repeat rewrite <- V.cons_lams.
  do 2 red; intros; rewrite H; reflexivity.
 Qed.
 
+Lemma eqterm_lift_cst : forall n k c,
+  eq_term (lift_rec n k (cst c)) (cst c).
+red; simpl; intros.
+red; reflexivity.
+Qed.
+
+Lemma eq_lift_abs : forall n A B k,
+  eq_term (lift_rec n k (Abs A B))
+    (Abs (lift_rec n k A) (lift_rec n (S k) B)).
+do 5 red; simpl; intros.
+apply lam_ext; intros.
+ rewrite int_lift_rec_eq.
+ rewrite H; reflexivity.
+
+ red; intros.
+ rewrite int_lift_rec_eq.
+ rewrite <- V.cons_lams; auto with *.
+  rewrite H1; rewrite H; reflexivity.
+
+  do 2 red; intros.
+  rewrite H2; reflexivity.
+Qed.
+
+Lemma eq_lift_prod : forall n A B k,
+  eq_term (lift_rec n k (Prod A B))
+    (Prod (lift_rec n k A) (lift_rec n (S k) B)).
+do 5 red; simpl; intros.
+apply prod_ext; intros.
+ rewrite int_lift_rec_eq.
+ rewrite H; reflexivity.
+
+ red; intros.
+ rewrite int_lift_rec_eq.
+ rewrite <- V.cons_lams; auto with *.
+  rewrite H1; rewrite H; reflexivity.
+
+  do 2 red; intros.
+  rewrite H2; reflexivity.
+Qed.
+
 End Lift.
 
 Section Substitution.
@@ -255,6 +303,14 @@ exists (fun i => body (V.lams m (V.cons (int arg (V.shift m i))) i)).
  do 2 red; intros.
  rewrite H; reflexivity.
 Defined.
+
+Instance subst_rec_morph : Proper (eq_term ==> eq ==> eq_term ==> eq_term) subst_rec.
+do 4 red; intros.
+destruct x1 as [(x1,x1m)|]; destruct y1 as [(y1,y1m)|]; simpl in H1|-*; try contradiction; trivial.
+red; intros.
+apply H1.
+rewrite H; rewrite H0; rewrite H2; reflexivity.
+Qed.
 
 Lemma int_subst_rec_eq : forall arg k T i,
   int (subst_rec arg k T) i == int T (V.lams k (V.cons (int arg (V.shift k i))) i).
@@ -289,6 +345,34 @@ rewrite V.lams0.
 rewrite V.shift0.
 reflexivity.
 Qed.
+
+Lemma eqterm_subst_App : forall N u v,
+  eq_term (subst N (App u v)) (App (subst N u) (subst N v)).
+red; simpl; intros.
+red; intros.
+unfold subst.
+do 2 rewrite int_subst_rec_eq.
+rewrite H.
+reflexivity.
+Qed.
+
+Lemma eq_subst_prod : forall u A B k,
+  eq_term (subst_rec u k (Prod A B))
+    (Prod (subst_rec u k A) (subst_rec u (S k) B)).
+do 5 red; simpl; intros.
+apply prod_ext; intros.
+ rewrite int_subst_rec_eq.
+ rewrite H; reflexivity.
+
+ red; intros.
+ rewrite int_subst_rec_eq.
+ rewrite <- V.cons_lams; auto with *.
+  rewrite H1; rewrite H; reflexivity.
+
+  do 2 red; intros.
+  rewrite H2; reflexivity.
+Qed.
+
 
 End Substitution.
 
@@ -568,6 +652,34 @@ unfold V.lams at 1, V.shift at 1 2; simpl.
 replace (n-0) with n; auto with arith.
 Qed.
 
+Lemma weakening0 : forall e M T,
+  typ e M T ->
+  typ e (lift 0 M) (lift 0 T).
+red; intros.
+destruct T as [(T,Tm)|]; simpl; trivial.
+rewrite V.lams0.
+unfold V.shift; simpl.
+rewrite lift0_term.
+apply H; trivial.
+Qed.
+
+(* TODO: use split lift! *)
+Lemma weakeningS : forall e k M T A,
+  typ e (lift k M) (lift k T) ->
+  typ (A::e) (lift (S k) M) (lift (S k) T).
+red; intros.
+assert (val_ok e (V.shift 1 i)).
+ red; intros.
+ specialize (H0 (S n) _ H1).
+ destruct T0 as [(T0,T0m)|]; simpl in *; auto.
+specialize (H _ H1).
+destruct T as [(T,Tm)|]; simpl in *; auto.
+unfold lift in H|-*.
+rewrite int_lift_rec_eq in H|-*.
+rewrite V.lams0 in H|-*.
+assumption.
+Qed.
+
 
 (* Subtyping *)
 Lemma sub_refl : forall e M M',
@@ -623,6 +735,8 @@ Qed.
 End R.
 
 Hint Resolve in_int_el.
+Existing Instance lift_rec_morph.
+Existing Instance subst_rec_morph.
 
 End MakeModel.
 
