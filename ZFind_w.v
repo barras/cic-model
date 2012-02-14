@@ -1029,17 +1029,23 @@ apply Firrel; trivial.
 
  apply WREC_typing; trivial. 
 Qed.
-Hint Resolve Firrel_W.
+
+  Lemma WREC_recursor : recursor ord (TI W_F) Q F.
+split; auto.
+ apply TI_morph.
+
+ apply Wi_cont.
+
+ apply Firrel_W.
+Qed.
+Hint Resolve WREC_recursor.
 
   (* Main properties of WREC: typing and equation *)
   Lemma WREC_wt : WREC ord \in Ty ord.
 intros.
-refine ((fun h => WREC_typing
-          ord (WREC ord) oord (reflexivity _) (proj1 h) (proj2 h)) _).
-apply REC_wt with (T:=TI W_F) (Q:=Q); auto.
- apply TI_morph.
-
- apply Wi_cont.
+apply WREC_typing; auto with *.
+ apply REC_wt with (1:=oord) (2:=WREC_recursor).
+ apply REC_wt with (1:=oord) (2:=WREC_recursor).
 Qed.
 
   Lemma WREC_ind : forall P x,
@@ -1053,25 +1059,18 @@ Qed.
     P ord x (cc_app (WREC ord) x).
 intros.
 unfold WREC.
-apply REC_ind with (T:=TI W_F) (Q:=Q); auto.
- apply TI_morph.
-
- apply Wi_cont.
-
- intros.
- apply TI_elim in H4; auto.
- destruct H4 as (o',?,?).
- apply H0 with o'; eauto using isOrd_inv.
- red; auto.
+apply REC_ind with (2:=WREC_recursor); auto.
+intros.
+apply TI_elim in H4; auto.
+destruct H4 as (o',?,?).
+apply H0 with o'; eauto using isOrd_inv.
+red; auto.
 Qed.
 
   Lemma WREC_expand : forall n,
     n \in TI W_F ord -> cc_app (WREC ord) n == cc_app (F ord (WREC ord)) n.
 intros.
-apply REC_expand with (T:=TI W_F) (Q:=Q); auto.
- apply TI_morph.
-
- apply Wi_cont.
+apply REC_expand with (2:=WREC_recursor) (Q:=Q); auto.
 Qed.
 
 End Recursor.

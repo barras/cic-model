@@ -1287,8 +1287,6 @@ destruct TI_iso_fun with
 
   apply W_F_mono; trivial.
 
-  do 2 red; intros; apply trad_pos_w_morph; trivial.
-
   apply trad_pos_w_morph0; trivial.
 
   apply trad_w_iso_fun; trivial.

@@ -1944,74 +1944,7 @@ Require Import ZFord ZFfix ZFfunext ZFfixrec.
 Section TI_iso.
 
   Definition TI_iso F g o :=
-    cc_app (REC (fun o f => cc_lam (TI F (osucc o)) (g (cc_app f))) o).
-
-(*
-Lemma iso_inter X X' Y Y' f1 f2 x y :
-iso_fun X X' f1 ->
-iso_fun Y Y' f2 ->
-iso_fun (inter2 X Y) (inter2 X' Y') f1 ->
-eq_fun (inter2 X Y) f1 f2 ->
-x \in X ->
-y \in Y ->
-f1 x == f2 y ->
-x == y.
-intros iso1 iso2 isoi eq12 tyx tyy eqimg.
-clear isoi; assert (isoi : iso_fun (inter2 X Y) (inter2 X' Y') f1).
-constructor; intros.
- do 2 red; intros.
- apply (iso_funm iso1); trivial.
- rewrite inter2_def in H; destruct H; trivial.
-
- assert (eqx12 := eq12 _ _ H (reflexivity _)).
- rewrite inter2_def in H; destruct H.
- rewrite inter2_def; split.
-  apply (iso_typ iso1); trivial.
-
-  rewrite eqx12; apply (iso_typ iso2); trivial.
-
- rewrite inter2_def in H; destruct H.
- rewrite inter2_def in H0; destruct H0.
- apply (iso_inj iso1) in H1; trivial.
-
- rewrite inter2_def in H; destruct H.
- destruct (iso_surj iso1) with y0; trivial.
- destruct (iso_surj iso2) with y0; trivial.
- exists x0; trivial.
- rewrite inter2_def; split; trivial.
-rewrite <- H2 in H.
-generalize (iso_inv_typ iso1 H); intro.
-generalize (iso_inv_eq2 iso1 H1); intro.
-rewrite <- H4 in H0.
-generalize (iso_inv_typ iso2 H0); intro.
-generalize (iso_inv_eq2 iso2 H3); intro.
-
-assert (iso_inv X f1 y0 == iso_inv Y f2 y0).
-
-apply (iso_funm iso1) in H6; trivial.
-
-
-
-assert (tyx1 := iso_typ iso1 tyx).
-assert (tyy1 := iso_typ iso2 tyy).
-assert (tyint : f1 x \in inter2 X' Y').
- rewrite inter2_def; split; trivial.
- rewrite eqimg; trivial.
-assert (tyx2 := iso_inv_typ isoi tyint).
-assert (eqx := iso_inv_eq isoi tyint).
-assert (eqx' := transitivity eqx eqimg).
-apply (iso_inj iso1) in eqx; trivial.
- rewrite (eq12 _ _ tyx2 (reflexivity _)) in eqx'.
- apply (iso_inj iso2) in eqx'; trivial.
-  rewrite eqx in eqx'; trivial.
-
-  apply (inter2_incl2 X Y).
-  apply iso_inv_typ with (1:=isoi); trivial.
-
- apply (inter2_incl1 X Y).
- apply iso_inv_typ with (1:=isoi); trivial.
-Qed.
-*)
+    cc_app (REC (fun o f => cc_lam (F (TI F o)) (g (cc_app f))) o).
 
 Lemma iso_cont : forall F G o f,
   Proper (incl_set ==> incl_set) F ->
@@ -2068,34 +2001,28 @@ constructor; intros.
  rewrite <- TI_mono_succ; eauto using isOrd_inv.
 Qed.
 
-  Lemma TI_iso_fun : forall F G g o,
-    Proper (incl_set ==> incl_set) F ->
-    Proper (incl_set ==> incl_set) G ->
-    Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) g ->
-    (forall X f f', eq_fun X f f' -> eq_fun (F X) (g f) (g f')) ->
-    (forall X Y f, iso_fun X Y f -> iso_fun (F X) (G Y) (g f)) ->
-    isOrd o ->
-    iso_fun (TI F o) (TI G o) (TI_iso F g o) /\
-    (forall x, x \in TI F o -> TI_iso F g o x == g (TI_iso F g o) x).
-intros F G g o Fmono Gmono gm geq isog oo.
-assert (Fm := Fmono_morph _ Fmono).
-assert (Gm := Fmono_morph _ Gmono).
-assert (egf : forall o f, isOrd o -> ext_fun (TI F (osucc o)) (g (cc_app f))).
- do 2 red; intros.
- apply (geq (TI F o0)); trivial.
-  red; intros.
-  rewrite H3; reflexivity.
+  Variable F G : set -> set.
+  Variable g : (set -> set) -> set -> set.
+  Variable o : set.
+  Hypothesis Fmono : Proper (incl_set ==> incl_set) F.
+  Hypothesis Gmono : Proper (incl_set ==> incl_set) G.
+  Hypothesis gext : forall X f f', eq_fun X f f' -> eq_fun (F X) (g f) (g f').
+  Hypothesis isog : forall X Y f, iso_fun X Y f -> iso_fun (F X) (G Y) (g f).
+  Hypothesis oord : isOrd o.
 
-  rewrite <- TI_mono_succ; auto.
-unfold TI_iso.
-destruct
- (let T:=TI F in
-  let Q:=fun o f => iso_fun (TI F o) (TI G o) (cc_app f) in
-  let F:=fun o f => cc_lam (TI F (osucc o)) (g (cc_app f)) in
-  fun Tm Tc Qm Qc Fm Ftyp Tstb =>
-  conj (REC_typing o oo T Tm Tc Q Qm Qc F Fm Ftyp Tstb)
-       (REC_expand o oo T Tm Tc Q Qm Qc F Fm Ftyp Tstb))
- as (isoTI,expTI); intros; auto.
+  Let Fm := Fmono_morph _ Fmono.
+  Let Gm := Fmono_morph _ Gmono.
+  Let egf : forall o' f, isOrd o' -> ext_fun (F (TI F o')) (g (cc_app f)).
+do 2 red; intros.
+apply (@gext (TI F o')); trivial.
+red; intros; apply cc_app_morph; auto with *.
+Qed.
+
+  Lemma TI_iso_recursor :
+    recursor o (TI F)
+      (fun o f => iso_fun (TI F o) (TI G o) (cc_app f))
+      (fun o f => cc_lam (F (TI F o)) (g (cc_app f))).
+constructor; intros.
  apply TI_morph.
 
  rewrite TI_eq; auto.
@@ -2104,6 +2031,7 @@ destruct
  rewrite TI_mono_succ; auto with *.
   apply Fm.
   apply TI_morph; trivial.
+
   rewrite <- H1; apply isOrd_inv with o0; trivial.
 
  revert H3; apply iso_fun_morph; auto with *.
@@ -2115,15 +2043,15 @@ destruct
   apply iso_cont; trivial.
 
  do 3 red; intros.
- apply cc_lam_morph; intros.
-  apply TI_morph; auto.
-  apply osucc_morph; trivial.
+ apply cc_lam_ext.
+  apply Fm; apply TI_morph; auto.
 
   red; intros.
-  apply gm; trivial.
-  red; intros; apply cc_app_morph; auto.
+  apply (@gext (TI F x)); trivial.
+   red; intros; apply cc_app_morph; auto with *.
 
  split.
+  rewrite TI_mono_succ; auto with *.
   apply is_cc_fun_lam; auto.
 
   apply isog in H2.
@@ -2133,35 +2061,40 @@ destruct
 
    red; intros.  
    rewrite cc_beta_eq; auto.
-    apply (geq (TI F o0)); trivial.
+    apply (@gext (TI F o0)); trivial.
     red; intros.
     rewrite H5; reflexivity.
 
-    rewrite <- H3; rewrite TI_mono_succ; auto.
+    rewrite <- H3; trivial.
 
  (* irrel : *)
  red; intros.
  red; intros.
  destruct H1 as (oo0,(ofun,oiso)); destruct H2 as (oo',(o'fun,o'iso)).
  rewrite cc_beta_eq; auto.
+ 2:rewrite TI_mono_succ in H4; auto with *.
  rewrite cc_beta_eq; auto.
-  apply (geq (TI F o0)); auto with *.
+  apply (@gext (TI F o0)); auto with *.
    red; intros.
    rewrite <- H2; auto.
 
    rewrite <- TI_mono_succ; auto.
 
-  revert H4; apply TI_mono; auto.
-  red; intros.
-  apply ole_lts; eauto using isOrd_inv.
-  apply olts_le in H1.
-  transitivity o0; trivial.
+  rewrite TI_mono_succ in H4; auto with *.
+  revert H4; apply Fmono; apply TI_mono; auto.
+Qed.
 
-(* main goal *)
-split; trivial; intros.
-rewrite expTI; trivial.
-rewrite cc_beta_eq; auto with *.
-revert H; apply TI_incl; auto.
+  Lemma TI_iso_fun :
+    iso_fun (TI F o) (TI G o) (TI_iso F g o) /\
+    (forall x, x \in TI F o -> TI_iso F g o x == g (TI_iso F g o) x).
+split; intros.
+ apply REC_typing with (1:=oord) (2:=TI_iso_recursor).
+
+ unfold TI_iso.
+ rewrite REC_expand with (1:=oord) (2:=TI_iso_recursor); trivial.
+ rewrite cc_beta_eq; auto with *.
+ rewrite <- TI_mono_succ; auto.
+ revert H; apply TI_incl; auto.
 Qed.
 
 End TI_iso.
@@ -2183,8 +2116,6 @@ Lemma TIF_iso_cont : forall o f,
    iso_fun (TIF A F (osucc o') a) (TIF A G (osucc o') a) (f a)) ->
   forall a, a \in A -> iso_fun (TIF A F o a) (TIF A G o a) (f a).
 intros o f oo iso' a tya.
-(*assert (Fm := FFmono_ext _ _ Fmono).
-assert (Gm := FFmono_ext _ _ Gmono).*)
 constructor; intros.
  do 2 red; intros.
  apply TIF_elim in H; trivial.
@@ -2307,32 +2238,26 @@ apply eq_intro; intros.
   do 2 red; intros; apply H; auto with *.
 Qed.
 
-
-  Lemma TIF_iso_fun : forall g o,
-    Proper ((eq_set==>eq_set==>eq_set)==>eq_set==>eq_set==>eq_set) g ->
-    (forall X f f', morph1 X -> morph2 f -> morph2 f' ->
+  Variable g : (set -> set -> set) -> set -> set -> set.
+  Hypothesis gm : Proper ((eq_set==>eq_set==>eq_set)==>eq_set==>eq_set==>eq_set) g.
+  Hypothesis gext :
+     forall X f f', morph1 X -> morph2 f -> morph2 f' ->
      (forall a, a \in A -> eq_fun (X a) (f a) (f' a)) ->
-     forall a, a \in A -> eq_fun (F X a) (g f a) (g f' a)) ->
-    (forall X Y f, morph1 X -> morph1 Y -> morph2 f ->
+     forall a, a \in A -> eq_fun (F X a) (g f a) (g f' a).
+  Hypothesis isog :
+     forall X Y f, morph1 X -> morph1 Y -> morph2 f ->
      (forall a, a \in A -> iso_fun (X a) (Y a) (f a)) ->
-      forall a, a \in A -> iso_fun (F X a) (G Y a) (g f a)) ->
-    isOrd o ->
-    forall a, a \in A ->
-    iso_fun (TIF A F o a) (TIF A G o a) (TIF_iso g o a) /\
-    (forall x, x \in TIF A F o a -> TIF_iso g o a x == g (TIF_iso g o) a x).
-intros g o gm gext isog oo a tya.
-(*assert (Fm := FFmono_ext _ _ Fmono).
-assert (Gm := FFmono_ext _ _ Gmono).*)
-unfold TIF_iso.
-destruct
- (let T:=fun o => sigma A (fun a' => TIF A F o a') in
-  let Q:=fun o f => forall a, a \in A -> iso_fun (TIF A F o a) (TIF A G o a) (fun x => cc_app f (couple a x)) in
-  let F:=fun o f =>  cc_lam (sigma A (fun a' => TIF A F (osucc o) a'))
-     (fun p => g (fun x y => cc_app f (couple x y)) (fst p) (snd p)) in
-  fun Tm Tc Qm Qc Fm Ftyp Tstb =>
-  conj (REC_typing o oo T Tm Tc Q Qm Qc F Fm Ftyp Tstb)
-       (REC_expand o oo T Tm Tc Q Qm Qc F Fm Ftyp Tstb))
- as (isoTI,expTI); intros; auto.
+      forall a, a \in A -> iso_fun (F X a) (G Y a) (g f a).
+
+  Variable o : set.
+  Variable oo : isOrd o.
+
+  Lemma TIF_iso_recursor :
+    recursor o (fun o => sigma A (fun a' => TIF A F o a'))
+      (fun o f => forall a, a \in A -> iso_fun (TIF A F o a) (TIF A G o a) (fun x => cc_app f (couple a x)))
+      (fun o f =>  cc_lam (sigma A (fun a' => TIF A F (osucc o) a'))
+            (fun p => g (fun x y => cc_app f (couple x y)) (fst p) (snd p))).
+constructor; intros.
  do 2 red; intros; apply sigma_morph; auto with *.
  red; intros; apply TIF_morph; auto with *.
 
@@ -2381,7 +2306,7 @@ destruct
   apply is_cc_fun_lam; auto.
 
   intros.
-  apply isog with (a:=a0) in H2; trivial.
+  apply isog with (a:=a) in H2; trivial.
   2:apply TIF_morph; auto with *.
   2:apply TIF_morph; auto with *.
    revert H2; apply iso_fun_morph.
@@ -2446,15 +2371,23 @@ destruct
 
     red; intro; apply eq_elim.
     apply TIF_morph; auto with *.
+Qed.
 
-(* main subgoal *)
+
+  Lemma TIF_iso_fun :
+    forall a, a \in A ->
+    iso_fun (TIF A F o a) (TIF A G o a) (TIF_iso g o a) /\
+    (forall x, x \in TIF A F o a -> TIF_iso g o a x == g (TIF_iso g o) a x).
+intros a tya.
 split; intros.
- apply isoTI; trivial.
+ unfold TIF_iso.
+ revert a tya.
+ apply REC_typing with (1:=oo) (2:=TIF_iso_recursor).
 
  assert (couple a x \in sigma A (fun a' => TIF A F o a')).
   apply couple_intro_sigma; trivial.
   do 2 red; intros; apply TIF_morph; auto with *.
- rewrite expTI; trivial.
+ unfold TIF_iso; rewrite REC_expand with (1:=oo) (2:=TIF_iso_recursor); trivial.
  rewrite cc_beta_eq; auto with *.
   apply gm.
    do 2 red; intros.
