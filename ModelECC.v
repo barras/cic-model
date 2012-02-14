@@ -498,3 +498,7 @@ Module ECC <: ECC_Model.
 
 End ECC.
 
+Module ECC_Sound := MakeModel ECC.
+
+Print Assumptions ECC_Sound.int_sound.
+

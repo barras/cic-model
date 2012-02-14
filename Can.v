@@ -133,106 +133,6 @@ intros.
 elim H with t; auto with coc.
 Qed.
 
-(* Completion: work in progress *)
-
-Section Completion.
-
-  Variable P : term -> Prop.
-
-  Definition compl : CR :=
-    fun t => forall C, is_cand C -> (forall u, sn u -> P u -> C u) -> C t.
-
-  Lemma is_can_compl : is_cand compl.
-split.
- intros.
- apply (H sn); auto.
- apply cand_sn.
-
- red; intros.
- apply (clos_red C) with t; auto.
- apply (H C); trivial.
-
- red; intros.
- apply (clos_exp C); trivial; intros.
- apply H0; trivial.
-Qed.
-
-  Lemma compl_intro : forall t, sn t -> P t -> compl t.
-red; intros; auto.
-Qed.
-
-  Lemma compl_elim : forall t,
-    compl t ->
-    (exists2 u, conv t u & compl u /\ P u) \/
-    (forall C, is_cand C -> C t).
-intros.
-apply (@proj2 (sn t)).
-apply H; intros.
- split; intros.
-  destruct H0; trivial.
-
-  destruct H0.
-  split.
-   apply sn_red_sn with t0; trivial.
-
-   destruct H2.
-    left.
-    destruct H2.
-    exists x; trivial.
-    apply trans_conv_conv with t0; auto.
-    apply red_sym_conv; trivial.
-
-    right; intros.
-    apply (clos_red C) with t0; trivial.
-    apply (H2 C); trivial.
-
-  split.
-   constructor; intros.
-   destruct (H1 y); auto.
-
-   assert ((exists u, red1 t0 u) \/ normal t0).
-    admit.
-   destruct H2.
-    destruct H2.
-    destruct (H1 x); auto.
-    destruct H4.
-     left.
-     destruct H4.
-     exists x0; trivial.
-     apply trans_conv_conv with x; trivial.
-     apply red_conv; auto with coc.
-
-     right; intros.
-     admit. (*?*)
-
-    right; intros.
-    apply (clos_exp C); trivial; intros.
-    elim H2 with u; trivial.
-
- split; trivial.
- left.
- exists u.
-  constructor.
-
-  split; trivial.
-  red; auto.
-Qed.
-
-
-End Completion.
-
-  Lemma eq_can_compl : forall X Y,
-    eq_cand X Y -> eq_cand (compl X) (compl Y).
-unfold eq_cand; simpl; split; intros.
- red; intros.
- apply (H0 C); trivial; intros.
- rewrite H in H4; auto.
-
- red; intros.
- apply (H0 C); trivial; intros.
- rewrite <- H in H4; auto.
-Qed.
-
 (* Intersection of candidates *)
 
   Definition Inter (X:Type) (F:X->CR) t :=
@@ -309,6 +209,7 @@ split; intros.
  apply (incl_sn X); trivial.
 Qed.
 
+(*
   Definition InterSubset (X:Type) (P:X->Prop) (f:X->CR) :=
     Inter {x|P x} (fun x => f (proj1_sig x)).
 
@@ -316,7 +217,7 @@ Qed.
 
   Lemma is_cand_neutral : is_cand Neutral.
 Admitted.
-
+*)
 
 (* Explicit definition of the CR of neutral terms *)
   Definition Neu : CR := fun t =>
@@ -352,6 +253,118 @@ split; intros.
   transitivity x; auto with coc.
 
   exists t; auto with *.
+Qed.
+
+(* Completion: work in progress *)
+
+Section Completion.
+
+  Variable P : term -> Prop.
+
+  Definition compl : CR :=
+    fun t => forall C, is_cand C -> (forall u, sn u -> P u -> C u) -> C t.
+
+  Lemma is_can_compl : is_cand compl.
+split.
+ intros.
+ apply (H sn); auto.
+ apply cand_sn.
+
+ red; intros.
+ apply (clos_red C) with t; auto.
+ apply (H C); trivial.
+
+ red; intros.
+ apply (clos_exp C); trivial; intros.
+ apply H0; trivial.
+Qed.
+
+  Lemma compl_intro : forall t, sn t -> P t -> compl t.
+red; intros; auto.
+Qed.
+
+  Lemma compl_elim : forall t,
+    compl t ->
+    (exists2 u, conv t u & compl u /\ P u) \/ Neu t.
+intros.
+apply (@proj2 (sn t)).
+apply H; intros.
+ split; intros.
+  destruct H0; trivial.
+
+  destruct H0.
+  split.
+   apply sn_red_sn with t0; trivial.
+
+   destruct H2.
+    left.
+    destruct H2.
+    exists x; trivial.
+    apply trans_conv_conv with t0; auto.
+    apply red_sym_conv; trivial.
+
+    right.
+    apply (clos_red Neu) with t0; trivial.
+    apply neutral_is_cand.
+
+  split.
+   constructor; intros.
+   destruct (H1 y); auto.
+
+   assert ((exists u, red1 t0 u) \/ normal t0).
+    destruct (red1_dec t0).
+     destruct s as (u,?); left; exists u; trivial.
+     right; red; intros; apply nf_norm; trivial.
+   destruct H2.
+    destruct H2.
+    destruct (H1 x); auto.
+    destruct H4.
+     left.
+     destruct H4.
+     exists x0; trivial.
+     apply trans_conv_conv with x; trivial.
+     apply red_conv; auto with coc.
+
+     right.
+     destruct H4.
+     destruct H5.
+     split.
+      constructor; intros; apply H1; trivial.
+
+      exists x0; trivial.
+      apply red_trans with x; auto.
+      apply one_step_red; auto.
+
+    right.
+    split.
+     constructor; intros.
+     elim (H2 y); trivial.
+
+     exists t0; auto with *.
+     split; trivial.
+     apply nf_sound; trivial.
+
+ split; trivial.
+ left.
+ exists u.
+  constructor.
+
+  split; trivial.
+  red; auto.
+Qed.
+
+End Completion.
+
+  Lemma eq_can_compl : forall X Y,
+    eq_cand X Y -> eq_cand (compl X) (compl Y).
+unfold eq_cand; simpl; split; intros.
+ red; intros.
+ apply (H0 C); trivial; intros.
+ rewrite H in H4; auto.
+
+ red; intros.
+ apply (H0 C); trivial; intros.
+ rewrite <- H in H4; auto.
 Qed.
 
 (* Interpreting non dependent products *)

@@ -1,4 +1,5 @@
 
+
 (* Nat *)
 Set Implicit Arguments.
 
@@ -7,7 +8,7 @@ Import IZF.
 
 Require Import basic Can Sat SATnat GenRealSN.
 Module Lc:=Lambda.
-Import MM.
+Require Import SN_CC_Real.
 
 
 (* Constructor iteration *)
@@ -71,7 +72,7 @@ Qed.
 
 
 Instance cNATi_morph : Proper (eq_set ==> eqfam) cNATi.
-unfold cNATi; do 3 red; simpl; intros.
+(*unfold cNATi; do 3 red; simpl; intros.
 apply interSAT_morph; red; intros.
 split; intros.
  exists x1; simpl.
@@ -86,6 +87,8 @@ split; intros.
   apply (proj2_sig y1); auto with *.
   red; reflexivity.
 Qed.
+*)
+Admitted.
 
 Lemma cNATi_incr : forall o o', o \in o' -> forall k,
   inclSAT (cNATi o k) (cNATi o' k).
@@ -170,7 +173,7 @@ split; intros.
 Qed.
 *)
 
-Lemma cNATi_ZE : forall o, isOrd o -> inSAT ZE (cNATi (osucc o) ZEROt).
+Lemma cNATi_ZE : forall o, isOrd o -> inSAT ZE (cNATi (osucc o) ZERO).
 intros.
 rewrite cNATi_ax; intros.
 destruct H0 as (_,(_,?)).
@@ -181,16 +184,18 @@ apply H0 with (o:=o).
 Qed.
 
 Lemma cNATi_SU : forall o n t,
-  isOrd o -> inSAT t (cNATi o n) -> inSAT (Lc.App SU t) (cNATi (osucc o) (SUCCt n)). 
+  n \in NAT ->
+  isOrd o -> inSAT t (cNATi o n) -> inSAT (Lc.App SU t) (cNATi (osucc o) (SUCC n)). 
 intros.
-rewrite cNATi_ax in H0|-*; intros.
-apply (proj2 (proj2 H1)) with (o:=o).
+rewrite cNATi_ax in H1|-*; intros.
+apply (proj2 (proj2 H2)) with (o:=o).
  apply lt_osucc; trivial.
 
  apply fNAT_SU; auto.
- apply H0 with (1:=fNAT_posti H1).
+ apply H1 with (1:=fNAT_posti H2).
 Qed.
 
+(*
 Definition realNati o (n:X) (t:Lc.term) :=
   exists H:n \in NAT, inSAT t (cNATi o (mkNat H)).
 
@@ -255,7 +260,7 @@ rewrite mkTy_def0; intros.
 
  apply realNati_cand; trivial.
 Qed.
-
+*)
 
 Lemma cNATi_incl_cNAT :
   forall o k, inclSAT (cNATi o k) (cNAT k).
@@ -779,6 +784,171 @@ apply H4 with (P:=mkFam _ Fm) (f:=b0)
      destruct n; trivial.
 Qed.
 
+
+Definition natg :=
+  Lc.Abs (Lc.Abs (Lc.Abs
+     (Lc.App2 (Lc.Ref 0)
+        (Lc.App2 (Lc.Ref 2) (Lc.Ref 1) (Lc.Ref 0))
+        (Lc.Abs (Lc.Abs (Lc.App2 (Lc.Ref 4) (Lc.Ref 3) (Lc.Ref 2))))))).
+
+Definition natfix :=
+  Lc.Abs
+    (Lc.App
+       (Lc.Abs (Lc.App (Lc.Ref 1) (Lc.App2 natg (Lc.Ref 0) (Lc.Ref 0))))
+       (Lc.Abs (Lc.App (Lc.Ref 1) (Lc.App2 natg (Lc.Ref 0) (Lc.Ref 0))))).
+
+Definition NatFix (O M:trm) : trm.
+left.
+exists (fun i =>
+  NATREC (fun o' f => int (V.cons f (V.cons o' i)) M) (int i O))
+  (fun j => Lc.App natfix (Lc.Abs (tm (ilift (I.cons (tm j O) j)) M))).
+ admit.
+ admit.
+ admit.
+ admit.
+Defined.
+
+Require Import List.
+Lemma typ_Fix : forall e O M U,
+  typ e O Ord ->
+  typ (Prod (Nati (Ref 0)) (App (App (lift 2 U) (Ref 1)) (Ref 0)) :: OSucc O :: e)
+    M
+    (Prod (Nati (OSucc (Ref 0))) (App (App (lift 3 U) (OSucc (Ref 2))) (Ref 0))) ->
+  typ e (NatFix O M) (Prod (Nati O) (App (lift 1 (App U O)) (Ref 0))).
+red; red; simpl; intros e O M U tyO tyM i j v_ok.
+specialize typ_ord_inv with (1:=tyO) (2:=v_ok); intro Oo.
+split.
+ discriminate.
+set (g := fun o' f :set => int (V.cons f (V.cons o' i)) M) in |-*.
+apply inSAT_val with
+  (g (int i O) (NATREC g (int i O)))
+  (MM.prod (NATi (int i O)) (MM.app (int i U) (int i O)).
+
+
+
+
+
+
+
+
+rewrite prod_def.
+split.
+ admit.
+
+ red; intros.
+ red; simpl.
+ split.
+  admit.
+ red; intros.
+ apply inSAT_val with
+   (MM.app (g (int i O) (NATREC g (int i O))) x)
+   (MM.app (MM.app (int i U) (int i O)) x).
+  admit.
+  admit.
+
+  unfold natfix.
+ apply inSAT_exp_sat1 .
+  admit.
+assert (sapp : 
+  forall m n u, Lc.subst u (Lc.App m n) = Lc.App (Lc.subst u m) (Lc.subst u n)).
+ intros.
+ reflexivity.
+rewrite sapp.
+unfold Lc.subst at 1.
+simpl.
+ apply inSAT_exp_sat1.
+  admit.
+ rewrite sapp.
+ unfold Lc.subst at 1.
+ rewrite simpl_subst.
+ rewrite Lc.lift0.
+ apply inSAT_exp_sat1.
+  admit.
+ rewrite <- tm_subst_cons.
+red in tyM.
+red in tyM.
+simpl in tyM.
+
+ unfold Lc.subst; simpl.
+simpl.
+ unfold ilift at 2.
+assert (sapp : 
+  forall m n u, Lc.subst u (Lc.App m n) = Lc.App (Lc.subst u m) (Lc.subst u n)).
+ intros.
+ reflexivity.
+
+ unfold Lc.subst; simpl.
+ unfold Lc.lift; simpl.
+
+
+   red in tyM; specialize tyM with (1:=H3).
+   red in tyM; simpl in tyM.
+   destruct tyM as (_,tyM).
+   rewrite prod_def in tyM.
+   destruct tyM as (tyM,_).
+   apply eq_elim with (2:=tyM).
+   symmetry.
+   apply cc_prod_ext.
+    admit. (* ... *)
+
+    red; intros.
+    do 2 (rewrite split_lift; rewrite int_cons_lift_eq).
+    rewrite int_cons_lift_eq.
+    admit.
+
+  admit.
+
+  admit.
+
+  admit.
+
+  apply cc_app_morph; auto with *.
+  rewrite V.lams0.
+  unfold V.shift; simpl.
+  apply cc_app_morph; auto with *.
+   apply int_morph; auto with *.
+   red; red; simpl; reflexivity.
+
+   apply int_morph; auto with *.
+   red; red; simpl; reflexivity.
+
+Lemma inSAT_exp_fx : forall x A m u,
+  Lc.sn u ->
+  (x,Lc.App2 m (Lc.App FX m) (Lc.Abs u)) \real A ->
+  (x,Lc.App2 FX m (Lc.Abs u)) \real A. 
+Admitted.
+
+assert (val_ok (Prod (Nati (Ref 0)) (App (App (lift 2 U) (Ref 1)) (Ref 0))
+           :: OSucc O :: e)
+  (V.cons (NATREC g (int i O)) (V.cons (int i O) i))
+  (I.cons (Lc.App FX (Lc.Abs (tm (ilift (I.cons (tm j O) j)) M)))
+    (I.cons (tm j O) j))).
+ admit.
+red in tyM; specialize tyM with (1:=H0).
+red in tyM; simpl in tyM.
+destruct tyM as (_,tyM).
+fold (g (int i O) (NATREC g (int i O))) in tyM.
+apply prod_elim with (F:=fun x => MM.app (MM.app (int i U) (int i O)) x)
+ (dom := mkTy NAT (realNati (int i O))); trivial.
+ red; intros.
+ rewrite H2; reflexivity.
+
+ 
+
+
+ apply inSAT_exp with daimon.
+  admit.
+
+  exact I.
+
+  intros.
+
+
+
+  assert
+inversion H0.
+admit.
+  red; simpl.
 
 
 

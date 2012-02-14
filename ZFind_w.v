@@ -497,8 +497,6 @@ apply inter_intro.
  exists x; auto with *.
 Qed.
 
-(*Hint Resolve Wf_stable.*)
-
 (* The fixpoint *)
 
 Definition W := Ffix Wf Wdom.

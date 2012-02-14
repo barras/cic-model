@@ -871,6 +871,27 @@ induction H0; simpl; intros; auto.
  inversion_clear H; auto.
 Qed.
 
+Lemma nf_sound : forall t, normal t -> nf t.
+induction t; simpl; trivial; intros.
+ constructor.
+ apply IHt.
+ red; red; intros.
+ apply (H (Abs u)).
+ auto with *.
+
+ constructor; auto.
+  destruct t1; simpl; trivial.
+  elim (H (subst t2 t1)); auto with *.
+
+  apply IHt1.
+  do 2red; intros.
+  elim (H (App u t2)); auto with *.
+
+  apply IHt2.
+  do 2 red; intros.
+  elim (H (App t1 u)); auto with *.
+Qed.
+
 Lemma nf_neutral_open : forall t,
   nf t ->
   neutral t ->
@@ -1008,17 +1029,167 @@ destruct (red1_dec x).
 Qed.
 
 (* Confluence *)
+Section Confluence.
 
-  Theorem church_rosser :
-   forall u v, conv u v -> exists2 t, red u t & red v t.
-Admitted.
+  Inductive redpar : term->term->Prop :=
+  | Redpar_beta m m' n n':
+      redpar m m' -> redpar n n' -> redpar (App (Abs m) n) (subst n' m')
+  | Redpar_ref n : redpar (Ref n) (Ref n)
+  | Redpar_app m m' n n':
+      redpar m m' -> redpar n n' -> redpar (App m n) (App m' n')
+  | Redpar_abs m m':
+      redpar m m' -> redpar (Abs m) (Abs m').
+
+  Lemma rp_refl m : redpar m m.
+induction m; constructor; trivial.
+Qed.
+
+  Lemma rp1 m m' : red m m' -> clos_trans _ redpar m m'.
+induction 1.
+ constructor; apply rp_refl.
+
+ apply t_trans with P; trivial.
+ constructor.
+ clear H IHred.
+ induction H0; try (constructor; trivial using rp_refl).
+Qed.
+
+  Lemma rp2 m m': clos_trans _ redpar m m' -> red m m'.
+induction 1; intros; auto with *.
+ induction H; auto with *.
+ apply red_trans with (App (Abs m') n'); auto with *.
+
+ apply red_trans with y; trivial.
+Qed.
+
+  Lemma rp_lift n m m' :
+    redpar m m' ->
+    forall k, redpar (lift_rec n m k) (lift_rec n m' k).
+induction 1; simpl; intros.
+ rewrite distr_lift_subst.
+ constructor; trivial.
+
+ destruct (le_gt_dec k n0); constructor.
+
+ constructor; trivial.
+
+ constructor; trivial.
+Qed.
+
+  Lemma rp_subst m m' n n' k :
+    redpar m m' ->
+    redpar n n' ->
+    redpar (subst_rec n m k) (subst_rec n' m' k).
+intros.
+revert k; induction H; simpl; intros.
+ rewrite distr_subst; constructor; trivial.
+
+ destruct (lt_eq_lt_dec k n0) as [[_|_]|_]; try constructor.
+ apply rp_lift; trivial.
+
+ constructor; trivial.
+
+ constructor; trivial.
+Qed.
+
+  Lemma confl_rp t t1 :
+    redpar t t1 -> forall t2, redpar t t2 -> 
+    exists2 t3, redpar t1 t3 & redpar t2 t3.
+revert t1; induction t; intros.
+ inversion_clear H; inversion_clear H0; exists (Ref n); constructor.
+
+ inversion_clear H; inversion_clear H0.
+ destruct IHt with m' m'0; trivial.
+ exists (Abs x); constructor; trivial.
+
+ inversion H; inversion H0; clear H H0; subst.
+  injection H6; clear H6; intros; subst m0.
+  destruct IHt1 with (Abs m') (Abs m'0); [constructor|constructor|]; trivial.
+  revert H0; inversion_clear H; intros.
+  inversion_clear H1.
+  destruct IHt2 with n' n'0; trivial.
+  exists (subst x0 m'1).
+   apply rp_subst; trivial.
+   apply rp_subst; trivial.
+
+  inversion_clear H8.
+  destruct IHt1 with (Abs m') (Abs m'1); [constructor|constructor|]; trivial.
+  revert H1; inversion_clear H0; intros.
+  inversion_clear H0.
+  destruct IHt2 with n' n'0; trivial.
+  exists (subst x0 m'2).
+   apply rp_subst; trivial.
+
+   constructor; trivial.
+
+  inversion_clear H3.
+  destruct IHt1 with (Abs m'0) (Abs m'1); [constructor|constructor|]; trivial.
+  revert H1; inversion_clear H0; intros.
+  inversion_clear H0.
+  destruct IHt2 with n' n'0; trivial.
+  exists (subst x0 m'2).
+   constructor; trivial.
+
+   apply rp_subst; trivial.
+
+  destruct IHt1 with m' m'0; trivial.
+  destruct IHt2 with n' n'0; trivial.
+  exists (App x x0); constructor; trivial.
+Qed.
+
+  Lemma confl_rp' t t1 :
+    clos_trans _ redpar t t1 -> forall t2, redpar t t2 -> 
+    exists2 t3, redpar t1 t3 & clos_trans _ redpar t2 t3.
+induction 1; intros.
+ destruct confl_rp with (1:=H) (2:=H0).
+ exists x0; trivial.
+ constructor; trivial.
+
+ destruct IHclos_trans1 with (1:=H1); trivial.
+ destruct IHclos_trans2 with (1:=H2); trivial.
+ exists x1; trivial.
+ apply t_trans with x0; trivial.
+Qed.
+
+  Lemma confl_rp'' t t1 :
+    clos_trans _ redpar t t1 -> forall t2, clos_trans _ redpar t t2 -> 
+    exists2 t3, clos_trans _ redpar t1 t3 & clos_trans _ redpar t2 t3.
+intros.
+revert t1 H; induction H0; intros.
+ destruct confl_rp' with (1:=H0) (2:=H).
+ exists x0; trivial.
+ constructor; trivial.
+
+ destruct IHclos_trans1 with (1:=H); trivial.
+ destruct IHclos_trans2 with (1:=H1); trivial.
+ exists x1; trivial.
+ apply t_trans with x0; trivial.
+Qed.
 
   Theorem confluence :
    forall m u v, red m u -> red m v -> exists2 t, red u t & red v t.
 intros.
-apply church_rosser.
-transitivity m; auto with coc.
+apply rp1 in H; apply rp1 in H0.
+destruct confl_rp'' with (1:=H) (2:=H0).
+exists x; apply rp2; trivial.
 Qed.
+
+  Theorem church_rosser :
+   forall u v, conv u v -> exists2 t, red u t & red v t.
+induction 1; intros.
+ exists u; auto with *.
+
+ destruct IHconv.
+ destruct confluence with (1:=H2) (v:=N); auto with *.
+ exists x0; trivial.
+ apply red_trans with x; trivial.
+
+ destruct IHconv.
+ exists x; trivial.
+ apply red_trans with P; auto with *.
+Qed.
+
+End Confluence.
 
 (* Term-interpretation *)
 Require VarMap.
