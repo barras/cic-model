@@ -352,6 +352,63 @@ Lemma union_ax: forall a x,
   x \in union a <-> (exists2 y, x \in y & y \in a).
 Proof fun a => proj2_sig (union_sig a).
 
+(* subset *)
+
+Lemma subset_sig: forall a P,
+  { subset | forall x, x \in subset <->
+             (x \in a /\ exists2 x', x==x' & P x') }.
+intros a P.
+apply set_intro with
+  (fun x => forall y, y \in Z2set x <->
+    (y \in a /\ exists2 y', y==y' & P y')); intros.
+ elim (Z2set_surj a); intros.
+ elim Z.subset_ex with
+   x (fun z => exists2 z', z' == Z2set z & P z'); intros.
+ exists x0; intros.
+ elim (Z2set_surj y); intros.
+ rewrite H1.
+ transitivity (Z.in_set x1 x0).
+  split; intros; first [apply inZ_in|apply in_inZ]; trivial. 
+  apply iff_trans with (1:=H0 x1).
+  rewrite H.
+  apply and_iff_morphism.
+   split; intros; first [apply inZ_in|apply in_inZ]; trivial. 
+
+   split; destruct 1.
+    destruct H3.
+    exists x3; trivial.
+    rewrite H1; rewrite H3; apply Zeq_eq; trivial.
+
+    exists x1;[reflexivity|].
+    exists x2; trivial.
+    rewrite <- H1; symmetry; trivial.
+
+ apply eq_Zeq.
+ rewrite eq_set_ax; intros.
+ rewrite H.
+ rewrite H0.
+ reflexivity.
+
+ split; intros.
+  rewrite in_set_elim in H.
+  destruct H; simpl in *.
+  destruct H0.
+  apply (proj1 (H0 x)).
+  constructor.
+  exists x0; trivial; simpl.
+  exists x1; trivial; reflexivity.
+
+  apply In_intro; simpl; intros.
+  apply in_inZ.
+  rewrite <- (Eq_proj _ _ H0). 
+  apply (proj2 (H1 x)); trivial.
+Qed.
+
+Definition subset a P := proj1_sig (subset_sig a P).
+Lemma subset_ax : forall a P x,
+    x \in subset a P <-> (x \in a /\ exists2 x', x==x' & P x').
+Proof fun a P => proj2_sig (subset_sig a P).
+
 (* power set *)
 
 Lemma power_sig: forall a,
