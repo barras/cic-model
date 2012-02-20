@@ -160,6 +160,13 @@ Qed.
 
 (* Set induction *)
 
+Fixpoint isWf x := Forall(fun i => isWf (elts x i)).
+
+Lemma set_isWf x : holds (isWf x).
+induction x; simpl.
+rewrite rForall; trivial.
+Qed.
+
 Lemma wf_ax :
   forall (P:set->prop),
   (forall x, (forall y, y \in x -> holds (P y)) -> holds (P x)) ->
@@ -175,7 +182,21 @@ apply H0 with x.
 apply eq_set_sym; trivial.
 Qed.
 
-(* *)
+Lemma wf_ax' : forall P : set -> Prop,
+  (exists P', forall x, P x <-> holds (P' x)) ->
+  (forall x : set,
+   (forall y : set, y \in x -> P y) -> P x) ->
+  forall x : set, P x.
+intros.
+destruct H as (P',H).
+rewrite H.
+apply wf_ax; intros.
+rewrite <- H; apply H0; intros.
+rewrite H; auto.
+Qed.
+
+(***********************************************************)
+(* Empty set *)
 
 Definition empty :=
   sup False (fun x => match x with end).
@@ -187,6 +208,7 @@ apply rExE with (2:=H); intros.
 contradiction.
 Qed.
 
+(* Singleton and pairs *)
 Definition singl x := sup unit (fun _ => x).
 
 Definition pair x y :=
@@ -222,6 +244,8 @@ split; intros.
   apply rOrI; left; apply eq_set_trans with a'; trivial.
   apply rOrI; right; apply eq_set_trans with b'; trivial.
 Qed.
+
+(* Union *)
 
 Definition union (x:set) :=
   sup {i:idx x & idx (elts x i)}
@@ -263,6 +287,7 @@ split; intros.
  apply eq_elim with a'; trivial.
 Qed.
 
+(* Separation axiom *)
 Definition subset (x:set) (P:set->prop) :=
   sup {a|holds(Exist(fun x' => eq_set (elts x a) x' /\ P x'))}
     (fun y => elts x (proj1_sig y)).
@@ -293,8 +318,10 @@ split; intros.
   apply eq_set_trans with z; trivial.
   apply eq_set_sym; trivial.
  apply rExI.
- exists (exist (fun _ =>_) x1 H4); simpl; trivial.
+ exists (exist (fun i =>holds(Exist(fun x'=>eq_set(elts x i) x'/\P x'))) x1 H4); simpl; trivial.
 Qed.
+
+(* Power-set axiom *)
 
 Definition power (x:set) :=
   sup (idx x->prop)
@@ -331,6 +358,17 @@ split; intros.
   apply eq_set_trans with x0; trivial.
 Qed.
 
+Lemma power_morph : forall x x', x == x' -> power x == power x'.
+intros.
+rewrite eq_set_ax; intros.
+do 2 rewrite power_ax.
+apply fa_morph; intro y.
+apply fa_morph; intros _.
+assert (H' := eq_set_sym _ _ H).
+split; intros; eapply eq_elim; eassumption.
+Qed.
+
+(* Infinity *)
 
 Fixpoint num (n:nat) : set :=
   match n with
@@ -358,12 +396,12 @@ Qed.
 
 (* Functional Replacement *)
 
-Definition repl0 (x:set) (F:set->set) :=
+Definition replf (x:set) (F:set->set) :=
   sup _ (fun i => F (elts x i)).
 
-Lemma repl0_ax : forall x F z,
+Lemma replf_ax : forall x F z,
   (forall z z', z \in x -> z == z' -> F z == F z') ->
-  (z \in repl0 x F <->
+  (z \in replf x F <->
    holds(Exist(fun y => in_set y x /\ eq_set z (F y)))).
 split; intros.
  apply rExE with (2:=H0); intros.
@@ -465,6 +503,54 @@ destruct collection_ax with (A:=A)(R:=R) as (B,HB); trivial.
 exists B; auto.
 Qed.
 
+(* Replacement as a weaker form of collection *)
+
+Lemma repl_ax_from_collection : forall a (R:set->set->prop),
+    (forall x x' y y', x \in a -> holds (R x y) -> holds (R x' y') -> x == x' -> y == y') ->
+    exists b, forall x, x \in b <-> holds(Exist(fun y => in_set y a /\ Exist(fun x' => eq_set x x' /\ R y x'))).
+intros a R Rfun.
+destruct collection_ax with (A:=a)
+  (R:=fun x y => Exist(fun x'=>eq_set x x'/\Exist(fun y'=>eq_set y y'/\R x' y'))) as (B,HB).
+ intros.
+ apply rExE with (2:=H2); clear H2; intros x'' H2; rewrite rAnd in H2; destruct H2.
+ apply rExE with (2:=H3); clear H3; intros y'' H3; rewrite rAnd in H3; destruct H3.
+ apply rExI; exists x''; rewrite rAnd; split.
+  apply eq_set_trans with x; trivial.
+  apply eq_set_sym; trivial.
+ apply rExI; exists y''; rewrite rAnd; split; trivial.
+ apply eq_set_trans with y; trivial.
+ apply eq_set_sym; trivial.
+exists (subset B (fun y => Exist(fun x => in_set x a/\R x y))); split; intros.
+ rewrite subset_ax in H; destruct H.
+ apply rExE with (2:=H0); clear H0; intros y; rewrite rAnd; intros (?,?).
+ apply rExE with (2:=H1); clear H1; intros x'; rewrite rAnd; intros (?,?).
+ apply rExI; exists x'; rewrite rAnd; split; trivial.
+ apply rExI; exists y; rewrite rAnd; auto.
+
+ apply rExE with (2:=H);clear H; intros x'; rewrite rAnd; intros(?,?).
+ apply rExE with (2:=H0);clear H0; intros y; rewrite rAnd; intros(?,?).
+ rewrite subset_ax; split.
+  refine (rExE _ (HB x' H _)); clear HB;
+    [intros y'; rewrite rAnd; intros(?,?)|].
+   apply rExE with (2:=H3); clear H3; intros x''; rewrite rAnd; intros(?,?).
+   apply rExE with (2:=H4); clear H4; intros y''; rewrite rAnd; intros(?,?).
+   apply in_reg with y'; trivial.
+   apply eq_set_trans with y''; trivial.
+   apply eq_set_trans with y;[|apply eq_set_sym; trivial].
+   apply Rfun with x'' x'; trivial.
+    apply in_reg with x'; trivial.
+    apply eq_set_sym; trivial.
+
+   apply rExI; exists y.
+   apply rExI; exists x'; rewrite rAnd; split; [apply eq_set_refl|].
+   apply rExI; exists y; rewrite rAnd; auto using eq_set_refl.
+
+ apply rExI; exists y; rewrite rAnd; split; trivial.
+ apply rExI; exists x'; rewrite rAnd; auto.
+Qed.
+
+Definition repl_ex := repl_ax_from_collection.
+
 (* Deriving the existentially quantified sets *)
 
 Lemma empty_ex: exists empty, forall x, ~ x \in empty.
@@ -531,5 +617,440 @@ exists infinity.
 
   apply infty_ax2; trivial.
 Qed.
+
+(* Showing that in classical logic, collection can be made
+   deterministic, by building the smallest element of
+   Veblen hierarchy containing the images *)
+
+
+(* Fixpoint *)
+Fixpoint wfrec (F:(set->set)->set->set) (x:set) : set :=
+  F (fun y => union (sup {i:idx x|elts x i == y}
+               (fun i => wfrec F (elts x (proj1_sig i))))) x.
+Section FixRec.
+Hypothesis F : (set->set)->set->set.
+Hypothesis Fext : forall x x' f f',
+  (forall y y', y \in x -> y == y' -> f y == f' y') ->
+  x == x' ->
+  F f x == F f' x'.
+
+Lemma wfrecm x x' : x == x' -> wfrec F x == wfrec F x'.
+revert x'; induction x; destruct x'; intros.
+simpl wfrec.
+apply Fext; trivial.
+rewrite eq_set_def in H0; simpl in H0; destruct H0.
+intros.
+apply union_morph.
+rewrite eq_set_def; simpl idx; simpl elts; split; intros (i,e); simpl proj1_sig.
+ clear H2.
+ apply rExE with (2:=H0 i); intros j ?.
+ assert (e' : f0 j == y').
+  apply eq_set_trans with y; trivial.
+  apply eq_set_trans with (f i); trivial.
+  apply eq_set_sym; trivial.
+ apply rExI; exists (exist (fun j => f0 j == y') j e'); simpl; auto.
+
+ apply rExE with (2:=H2); clear H2; intros j H2; simpl in j,H2.
+ apply eq_set_sym in H2.
+ apply rExI; exists (exist (fun i => f i == y) j H2); simpl.
+ apply H.
+ apply eq_set_trans with y; trivial.
+ apply eq_set_trans with y'; trivial.
+ apply eq_set_sym; trivial.
+Qed.
+
+Lemma wfrec_eqn x :
+  wfrec F x == F (wfrec F) x.
+destruct x; simpl.
+apply Fext.
+2:apply eq_set_refl.
+intros.
+rewrite eq_set_ax.
+intros z.
+rewrite union_ax.
+split; intros.
+ apply rExE with (2:=H1); clear H1; intros b h.
+ rewrite rAnd in h; destruct h.
+ apply rExE with (2:=H2); clear H2; intros (j,e) ?.
+ simpl in H2.
+ apply eq_elim with b; trivial.
+ apply eq_set_trans with (1:=H2).
+ apply wfrecm.
+ apply eq_set_trans with y; trivial.
+
+ apply rExE with (2:=H); clear H; simpl; intros i H.
+ apply eq_set_sym in H0.
+ apply rExI; exists (wfrec F (f i)); rewrite rAnd; split.
+  apply eq_elim with (1:=H1).
+  apply wfrecm.
+  apply eq_set_trans with y; trivial.
+
+  apply eq_set_sym in H.
+  apply rExI; exists (exist (fun i => (f i == y)) i H).
+  simpl.
+  apply eq_set_refl.
+Qed.
+End FixRec.
+
+
+Section ClassicalCollection.
+
+(* Veblen cumulative hierarchy (applied to any set) *)
+Fixpoint V (x:set) := union (replf x (fun x' => power (V x'))).
+
+Lemma V_morph : forall x x', x == x' -> V x == V x'.
+induction x; destruct x'; intros.
+simpl V; unfold replf; simpl sup.
+apply union_morph.
+rewrite eq_set_def in H0; simpl in H0.
+destruct H0.
+apply eq_intro; intros.
+ apply rExE with (2:=H2); clear H2; simpl; intros.
+ apply rExE with (2:=H0 x); simpl; intros.
+ apply rExI; exists x0; simpl.
+ apply eq_set_trans with (1:=H2).
+ apply power_morph.
+ auto.
+
+ apply rExE with (2:=H2); clear H2; simpl; intros.
+ apply rExE with (2:=H1 x); simpl; intros.
+ apply rExI; exists x0; simpl.
+ apply eq_set_trans with (1:=H2).
+ apply eq_set_sym.
+ apply power_morph.
+ auto.
+Qed.
+
+Lemma V_def : forall x z,
+  z \in V x <-> holds(Exist(fun y => in_set y x /\ in_set z (power (V y)))).
+destruct x; simpl; intros.
+rewrite union_ax.
+unfold replf; simpl.
+split; intros.
+ apply rExE with (2:=H); clear H; intros.
+ rewrite rAnd in H; destruct H.
+ apply rExE with (2:=H0); clear H0; simpl; intros.
+ apply rExI; exists (f x0); rewrite rAnd; split.
+  apply rExI; exists x0; apply eq_set_refl.
+
+  specialize eq_elim with (1:=H) (2:=H0); intro; trivial.
+
+ apply rExE with (2:=H); clear H; intros.
+ rewrite rAnd in H; destruct H.
+ apply rExE with (2:=H); clear H; simpl; intros.
+ apply rExI; exists (power (V x)); rewrite rAnd; split; trivial.
+ apply rExI; exists x0; simpl elts.
+ apply power_morph.
+ apply V_morph; trivial.
+Qed.
+
+
+(* Automatically prove that Prop-predicates based on
+   conjunction, universal quantification, implication
+   and predicates of the logic remain in the same
+   logic. *)
+Ltac clause_tac :=
+ econstructor; intros; repeat
+   (reflexivity||
+    (rewrite rAnd; apply and_iff_morphism) ||
+    (rewrite rImp; apply fa_morph; intros _) ||
+    (rewrite rForall; apply fa_morph; intro)).
+
+Lemma V_trans : forall x y z,
+  z \in y -> y \in V x -> z \in V x.
+intros x.
+apply wf_ax' with (x:=x).
+ clause_tac.
+clear x; intros.
+rewrite V_def in H1|-*.
+apply rExE with (2:=H1);clear H1; intros.
+rewrite rAnd in H1; destruct H1.
+apply rExI; exists x0; rewrite rAnd; split; trivial.
+rewrite power_ax in H2|-*; eauto.
+Qed.
+
+Lemma V_pow : forall x, power (V x) == V (singl x).
+intros.
+apply eq_intro; intros.
+ rewrite V_def.
+ apply rExI; exists x; rewrite rAnd; split; trivial.
+ apply rExI; exists tt; apply eq_set_refl.
+
+ rewrite V_def in H.
+ apply rExE with (2:=H); clear H; intros.
+ rewrite rAnd in H; destruct H.
+ apply rExE with (2:=H); clear H; simpl; intros.
+ apply eq_elim with (power (V x0)); auto.
+ apply power_morph.
+ apply V_morph; trivial.
+Qed.
+
+Lemma V_mono : forall x x',
+  x \in x' -> V x \in V x'.
+intros.
+rewrite (V_def x').
+apply rExI; exists x; rewrite rAnd; split; trivial.
+rewrite power_ax; auto.
+Qed.
+
+Lemma V_sub : forall x y y',
+  y \in V x -> y' \in power y -> y' \in V x.
+intros.
+rewrite V_def in H|-*.
+apply rExE with (2:=H); clear H; intros.
+rewrite rAnd in H; destruct H.
+apply rExI; exists x0; rewrite rAnd; split; trivial.
+rewrite power_ax in H0,H1|-*; auto.
+Qed.
+
+Lemma V_compl : forall x z, z \in V x <-> V z \in V x. 
+intros x.
+pattern x; apply wf_ax'; clear x; intros.
+ clause_tac.
+repeat rewrite V_def.
+split; intros.
+ apply rExE with (2:=H0); clear H0; intros.
+ rewrite rAnd in H0; destruct H0.
+ apply rExI; exists x0; rewrite rAnd; split; trivial.
+ rewrite power_ax in H1|-*; intros.
+ rewrite V_def in H2.
+ apply rExE with (2:=H2); intros.
+ rewrite rAnd in H3; destruct H3.
+ apply H1 in H3.
+ rewrite H in H3; trivial.
+ apply V_sub with (V x1); trivial.
+
+ apply rExE with (2:=H0); clear H0; intros.
+ rewrite rAnd in H0; destruct H0.
+ apply rExI; exists x0; rewrite rAnd; split; trivial.
+ rewrite power_ax in H1|-*; intros.
+ rewrite H; trivial.
+ apply H1.
+ apply V_mono; trivial.
+Qed.
+
+Lemma V_comp2 x y : x \in power (V y) -> V x \in power (V y).
+intros.
+apply eq_elim with (V (singl y)).
+2:apply eq_set_sym; apply V_pow.
+apply -> V_compl.
+apply eq_elim with (1:=H).
+apply V_pow.
+Qed.
+
+Lemma V_intro : forall x, x \in power (V x).
+intros x.
+rewrite power_ax; intros.
+rewrite V_compl; apply V_mono; trivial.
+Qed.
+
+Lemma V_idem : forall x, V (V x) == V x.
+intros.
+apply eq_intro; intros.
+ rewrite V_def in H.
+ apply rExE with (2:=H); clear H; intros.
+ rewrite rAnd in H; destruct H.
+ apply V_sub with (V x0); trivial.
+ rewrite <- V_compl; trivial.
+
+ apply V_sub with (V z).
+  apply V_mono; trivial.
+  apply V_intro.
+Qed.
+
+Lemma rk_induc :
+  forall P:set->Prop,
+  (exists P', forall x, P x <-> holds (P' x)) ->
+  (forall x, (forall y, y \in V x -> P y) -> P x) ->
+  forall x, P x.
+intros.
+destruct H as (P',H).
+cut (forall y, V y \in power (V x) -> P y).
+ intros.
+ apply H1.
+ rewrite power_ax; auto.
+apply wf_ax' with (x:=x); intros.
+ clause_tac.
+ apply H.
+apply H0; intros.
+rewrite power_ax in H2; specialize H2 with (1:=H3).
+rewrite V_def in H2.
+rewrite H; apply rExE with (2:=H2); clear H2; intros; rewrite <- H.
+rewrite rAnd in H2; destruct H2.
+apply H1 with x1; trivial.
+apply V_comp2; trivial.
+Qed.
+
+
+Hypothesis EM : forall A, holds (Or A (Not A)).
+
+(* classical *)
+Lemma V_total : forall x y, holds (Or (in_set (V x) (V y)) (in_set (V y) (power (V x)))).
+intros x y.
+revert x.
+apply wf_ax' with (x:=y); clear y.
+ clause_tac.
+ instantiate (1:=fun x0 => Or (in_set (V x0) (V x)) (in_set (V x) (power (V x0)))); reflexivity.
+ (* reflexivity should have worked: pattern! *)
+intros y Hy x.
+apply rOrE with (2:=EM (Exist(fun y' => in_set y' (V y) /\ (in_set (V x) (power y'))))).
+destruct 1.
+ apply rOrI; left.
+ apply rExE with (2:=H); clear H; intros.
+ rewrite rAnd in H; destruct H.
+ apply V_sub with x0; trivial.
+
+ apply rOrI; right; rewrite power_ax; intros.
+ rewrite rNot in H.
+ rewrite V_def in H0.
+ apply rExE with (2:=H0); clear H0; intros.
+ rewrite rAnd in H0; destruct H0.
+ assert (holds (Exist(fun w => in_set w (V x) /\ Not (in_set w (V x0))))).
+  apply rOrE with (2:=EM (Exist(fun w => in_set w (V x) /\ Not(in_set w (V x0)))));
+   destruct 1; trivial.
+  rewrite rNot in H2.
+  assert (~ V x \in power (V x0)).
+   red; intros; apply H.
+   apply rExI; exists (V x0); rewrite rAnd; split; trivial.
+   apply V_mono; trivial.
+  elim H3; rewrite power_ax; intros.
+  apply rOrE with (2:=EM (in_set y1 (V x0))); destruct 1; trivial.
+  elim H2.
+  apply rExI; exists y1; rewrite rAnd; split; trivial.
+ apply rExE with (2:=H2); clear H2; intros.
+ rewrite rAnd in H2; destruct H2.
+ apply rOrE with (2:=Hy _ H0 x1); destruct 1.
+  rewrite rNot in H3; elim H3.
+  apply V_sub with (V x1); trivial.
+  apply V_intro.
+
+  apply V_sub with (V x1).
+   apply -> V_compl; trivial.
+
+   rewrite power_ax in H1,H4|-*; auto.
+Qed.
+
+Definition lst_rk (P:set->prop) (y:set) :=
+  P y /\
+  eq_set y (V y) /\
+  (Forall(fun x=> Imp(eq_set x (V x))(Imp(P x)(in_set y (power(V x)))))).
+
+Lemma lst_rk_morph :
+  forall (P P':set->prop), (forall x x', x == x' -> (holds (P x) <-> holds (P' x'))) ->
+  forall y y', y == y' -> holds (lst_rk P y) -> holds (lst_rk P' y').
+intros.
+unfold lst_rk in H1; repeat rewrite rAnd in H1.
+destruct H1.
+destruct H2.
+rewrite rForall in H3.
+unfold lst_rk; repeat rewrite rAnd.
+split; [|split].
+ revert H1; apply H; trivial.
+
+ apply eq_set_trans with y;[apply eq_set_sym; trivial|].
+ apply eq_set_trans with (V y); trivial.
+ apply V_morph; trivial.
+
+ rewrite rForall; intros x.
+ assert (h:=H3 x); clear H3.
+ repeat rewrite rImp in h|-*; intros.
+ apply in_reg with y; trivial.
+ apply h; trivial.
+ revert H4; apply H.
+ apply eq_set_refl.
+Qed.
+
+Lemma lst_incl : forall P y, holds (lst_rk P y) -> holds (P y). 
+intros.
+unfold lst_rk in H; rewrite rAnd in H; destruct H; trivial.
+Qed.
+
+Lemma lst_fun : forall P y y', holds (lst_rk P y) -> holds (lst_rk P y') -> y == y'.
+unfold lst_rk; intros.
+repeat rewrite rAnd in H,H0.
+destruct H as (p1,(ex1,lst1)); destruct H0 as (p2,(ex2,lst2)).
+rewrite rForall in lst1, lst2.
+assert (lst1':=lst1 y'); clear lst1.
+assert (lst2':=lst2 y); clear lst2.
+repeat rewrite rImp in lst1', lst2'.
+specialize lst1' with (1:=ex2) (2:=p2).
+specialize lst2' with (1:=ex1) (2:=p1).
+apply eq_set_trans with (V y); trivial.
+apply eq_set_trans with (V y');[|apply eq_set_sym; trivial].
+apply V_comp2 in lst1'.
+apply V_comp2 in lst2'.
+rewrite power_ax in lst1', lst2'.
+apply eq_intro; intros; auto.
+Qed.
+
+Lemma lst_ex : forall (P:set->prop),
+  (forall x x', x == x' -> holds (P x) -> holds (P x')) ->
+  holds (Exist(fun x => P (V x))) ->
+  holds (Exist(lst_rk P)).
+intros P Pm Pex.
+apply rExE with (2:=Pex); clear Pex.
+intros x.
+apply rk_induc with (x:=x); clear x; intros.
+ clause_tac.
+apply rOrE with (2:=EM (Exist(fun z => in_set z (V x) /\ P (V z)))); destruct 1.
+ apply rExE with (2:=H1); clear H1; intros.
+ rewrite rAnd in H1; destruct H1.
+ eauto.
+
+ apply rExI; exists (V x).
+ unfold lst_rk; repeat rewrite rAnd; split; [|split]; trivial.
+  apply eq_set_sym; apply V_idem.
+
+  rewrite rForall; intros y.
+  repeat rewrite rImp; intros.
+  apply rOrE with (2:=V_total y x); destruct 1; auto.
+  rewrite rNot in H1; elim H1; clear H1.
+  apply rExI; exists y; rewrite rAnd; split.
+   apply in_reg with (V y); trivial.
+   apply eq_set_sym; trivial.
+
+   revert H3; apply Pm; trivial.
+Qed.
+
+Lemma coll_ax_uniq : forall A (R:set->set->prop), 
+    (forall x x' y y', x \in A -> x == x' -> y == y' ->
+     holds (R x y) -> holds (R x' y')) ->
+    holds(Exist(lst_rk (fun B =>
+      Forall(fun x => Imp(in_set x A)
+      (Imp(Exist(fun y => R x y))
+          (Exist(fun y => in_set y B /\ R x y))))))).
+intros.
+destruct collection_ax with (A:=A) (R:=R); trivial.
+apply lst_ex.
+ intros a a' eqa.
+ do 2 rewrite rForall; apply fa_morph; intros x0.
+ repeat rewrite rImp.
+ apply fa_morph; intros _.
+ apply fa_morph; intros _.
+ split; intros.
+  apply rExE with (2:=H1); clear H1; intros.
+  rewrite rAnd in H1; destruct H1.
+  apply rExI; exists x1; rewrite rAnd; split; trivial.
+  apply eq_elim with a'; trivial.
+  apply eq_set_sym; trivial.
+
+  apply rExE with (2:=H1); clear H1; intros.
+  rewrite rAnd in H1; destruct H1.
+  apply rExI; exists x1; rewrite rAnd; split; trivial.
+  apply eq_elim with a; trivial.
+
+ apply rExI; exists x.
+ rewrite rForall; intros a.
+ repeat rewrite rImp; intros.
+ apply H0 in H2; trivial.
+ apply rExE with (2:=H2); clear H2; intros.
+ rewrite rAnd in H2; destruct H2.
+ apply rExI; exists x0; rewrite rAnd; split; trivial.
+ apply V_mono in H2.
+ apply V_sub with (V x0); trivial.
+ apply V_intro.
+Qed.
+
+End ClassicalCollection.
 
 End Ensembles.

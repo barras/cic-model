@@ -571,6 +571,14 @@ exists (union a).
 apply union_ax.
 Qed.
 
+Lemma subset_ex : forall x P, exists b,
+  forall z, z \in b <->
+  (z \in x /\ exists2 z', z == z' & P z').
+intros.
+exists (subset x P).
+apply subset_ax.
+Qed.
+
 Lemma power_ex: forall a, exists b,
      forall x, x \in b <-> (forall y, y \in x -> y \in a).
 intros.

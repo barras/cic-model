@@ -143,38 +143,6 @@ rewrite <- H1; rewrite <- H0 in H3; auto.
 Qed.
 
 
-(* Derived axioms *)
-
-Definition subset a (P:set->Prop) := repl a (fun x y => x==y /\ P x).
-
-Lemma subset_ax: forall a (P:set->Prop),
-    forall x, x \in subset a P <-> (x \in a /\ exists2 x', x==x' & P x').
-intros.
-unfold subset.
-rewrite repl_ax.
- split; intros.
-  destruct H.
-  destruct H0.
-  destruct H1.
-  rewrite <- H1 in H0.
-  split.
-   rewrite H0; trivial.
-
-   exists x0; trivial.
-
-  destruct H.
-  destruct H0.
-  exists x0.
-   rewrite <- H0; trivial.
-
-   exists x0; auto with *.
-
- intros.
- destruct H0.
- destruct H1.
- rewrite <- H0; rewrite H2; trivial.
-Qed. 
-
 (* rephrasing axioms *)
 
 Lemma empty_ext : forall e, (forall x, ~x \in e) -> e == empty.

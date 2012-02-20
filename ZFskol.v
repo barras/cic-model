@@ -870,4 +870,110 @@ induction xs using Z.wf_ax; intros.
  apply in_inZ in H2; eauto.
 Qed.
 
+(* Proving that collection can be skolemized in classical ZF:
+   we need excluded-middle to prove coll_ax_uniq (see EnsEm)
+ *)
+
+Section Collection.
+
+(* A predicate transformer that is true for the least element of
+   the Veblen hierarchy that satisfies the input predicate. If there
+   is no unique solution, the returned predicate is empty. No
+   excluded-middle needed here.
+ *)
+Hypothesis lst_rk : (Z.set->Prop) -> Z.set -> Prop.
+Hypothesis lst_rk_morph : forall (P P':Z.set->Prop),
+  (forall x x', Z.eq_set x x' -> (P x <-> P' x')) ->
+  forall y y', Z.eq_set y y' -> lst_rk P y -> lst_rk P' y'.
+Hypothesis lst_incl : forall P y, lst_rk P y -> P y.
+Hypothesis lst_fun : forall P y y', lst_rk P y -> lst_rk P y' -> Z.eq_set y y'.
+
+(* The modification of the collection axiom that return the least Veblen universe
+   that collects all the images of A. This can exist only when the Veblen hierarchy
+   is totally ordered, which requires excluded-middle. See EnsEm for the
+   construction.
+ *)
+Hypothesis coll_ax_uniq : forall A (R:Z.set->Z.set->Prop), 
+    (forall x x' y y', Z.in_set x A -> Z.eq_set x x' -> Z.eq_set y y' ->
+     R x y -> R x' y') ->
+    exists B, lst_rk(fun B =>
+      forall x, Z.in_set x A ->
+      (exists y, R x y) ->
+      exists2 y, Z.in_set y B & R x y) B.
+(* We could also try to prove that B grows when A and R do. *)
+
+Lemma coll_sig : forall A (R:set->set->Prop), 
+  {coll| Proper (eq_set==>eq_set==>iff) R ->
+     forall x, x \in A -> (exists y, R x y) ->
+     exists2 y, y \in coll & R x y }.
+intros A R.
+pose (R' x y := exists2 x', Z2set x == x' & exists2 y', Z2set y == y' & R x' y').
+assert (R'm : forall x x' y y', Z.eq_set x x' -> Z.eq_set y y' ->
+     R' x y -> R' x' y').
+ destruct 3 as (x'',?,(y'',?,?)).
+ exists x'';[|exists y'';trivial].
+  transitivity (Z2set x); trivial.
+  apply Zeq_eq.
+  symmetry; trivial.
+
+  transitivity (Z2set y); trivial.
+  apply Zeq_eq.
+  symmetry; trivial.
+apply set_intro with
+  (lst_rk(fun B => exists2 A', Z2set A' == A & forall x, Z.in_set x A' ->
+      (exists y, R' x y) ->
+      exists2 y, Z.in_set y B & R' x y)); intros.
+ destruct (Z2set_surj A) as (A',e).
+ destruct coll_ax_uniq with A' R' as (B,HB); eauto.
+ exists B.
+ revert HB; apply lst_rk_morph; auto with *.
+ intros.
+ split; intros.
+  exists A'; intros; auto with *.
+  destruct H0 with x0 as (y,?,?); trivial.
+  exists y; trivial.
+  revert H3; apply Zin_morph; auto with *.
+
+  destruct H0 as (A'',e',?).
+  rewrite e in e'.
+  apply eq_Zeq in e'.
+  rewrite <- e' in H1.
+  destruct H0 with x0 as (y,?,?); trivial.
+  exists y; trivial.
+  revert H3; apply Zin_morph; auto with *.
+
+ apply lst_fun with (1:=H) (2:=H0).
+
+ destruct Hex as (B,HB).
+ assert (Bok := lst_incl _ _ HB).
+ destruct Bok as (A',eA,Bok).
+ destruct (Z2set_surj x) as (x',ex).
+ destruct Bok with x' as (y,?,?).
+  apply in_inZ.
+  rewrite eA; rewrite <- ex; trivial.
+
+  destruct H1 as (y,Rxy).
+  destruct (Z2set_surj y) as (y',ey).
+  exists y'; exists x; [|exists y]; auto with *.
+
+  exists (Z2set y).
+   apply In_intro; simpl; intros.
+   specialize Huniq with (1:=HB) (2:=H5).
+   rewrite <- Huniq.
+   rewrite H4; trivial.
+
+   destruct H3 as (x'',?,(y',?,?)).
+   revert H5; apply H; trivial.
+   rewrite ex; rewrite <- H3; auto with *.
+Qed.
+
+Definition coll A R := proj1_sig (coll_sig A R).
+Lemma coll_ax : forall A (R:set->set->Prop), 
+  Proper (eq_set==>eq_set==>iff) R ->
+  forall x, x \in A -> (exists y, R x y) ->
+  exists2 y, y \in coll A R & R x y.
+Proof (fun A R => proj2_sig (coll_sig A R)).
+
+End Collection.
+
 End Skolem.

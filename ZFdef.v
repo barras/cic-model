@@ -131,8 +131,7 @@ Module Type IZF_R_HalfEx_sig.
 Include Zermelo_sig.
 
 Parameter
- (repl_ex:
-    forall a (R:set->set->Prop),
+ (repl_ex : forall a (R:set->set->Prop),
     (forall x x' y y', x \in a -> R x y -> R x' y' -> x == x' -> y == y') ->
     exists b, forall x, x \in b <-> (exists2 y, y \in a & exists2 x', x == x' & R y x')).
 
@@ -145,8 +144,7 @@ Module Type IZF_R_Ex_sig.
 Include Zermelo_Ex_sig.
 
 Parameter
- (repl_ex:
-    forall a (R:set->set->Prop),
+ (repl_ex : forall a (R:set->set->Prop),
     (forall x x' y y', x \in a -> R x y -> R x' y' -> x == x' -> y == y') ->
     exists b, forall x, x \in b <-> (exists2 y, y \in a & exists2 x', x == x' & R y x')).
 
@@ -162,8 +160,6 @@ Include Zermelo_sig.
 Parameter
  (coll_ax : forall A (R:set->set->Prop), 
     Proper (eq_set ==> eq_set ==> iff) R ->
-(*(forall x x' y y', x \in A -> x == x' -> y == y' ->
-     R x y -> R x' y') ->*)
     exists B, forall x, x \in A ->
       (exists y, R x y) -> exists2 y, y \in B & R x y).
 
