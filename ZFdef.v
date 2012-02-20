@@ -57,6 +57,7 @@ Parameter
  (empty : set)
  (pair : set -> set -> set)
  (union : set -> set)
+ (subset : set -> (set -> Prop) -> set)
  (infinite : set)
  (power : set -> set).
 
@@ -64,6 +65,8 @@ Parameter
  (empty_ax: forall x, ~ x \in empty)
  (pair_ax: forall a b x, x \in pair a b <-> (x == a \/ x == b))
  (union_ax: forall a x, x \in union a <-> (exists2 y, x \in y & y \in a))
+ (subset_ax : forall a P x,
+    x \in subset a P <-> (x \in a /\ exists2 x', x==x' & P x'))
  (infinity_ax1: empty \in infinite)
  (infinity_ax2: forall x,
                 x \in infinite -> union (pair x (pair x x)) \in infinite)
@@ -80,6 +83,8 @@ Parameter
  (pair_ex: forall a b, exists c, forall x, x \in c <-> (x == a \/ x == b))
  (union_ex: forall a, exists b,
     forall x, x \in b <-> (exists2 y, x \in y & y \in a))
+ (subset_ex : forall a P, exists b,
+    forall x, x \in b <-> (x \in a /\ exists2 x', x==x' & P x'))
  (infinity_ex: exists2 infinite,
     (exists2 empty, (forall x, ~ x \in empty) & empty \in infinite) &
     (forall x, x \in infinite ->
@@ -156,9 +161,11 @@ Include Zermelo_sig.
 
 Parameter
  (coll_ax : forall A (R:set->set->Prop), 
-    (forall x x' y y', x \in A -> x == x' -> y == y' -> R x y -> R x' y') ->
-    (forall x, x \in A -> exists y, R x y) ->
-    exists B, forall x, x \in A -> exists2 y, y \in B & R x y).
+    Proper (eq_set ==> eq_set ==> iff) R ->
+(*(forall x x' y y', x \in A -> x == x' -> y == y' ->
+     R x y -> R x' y') ->*)
+    exists B, forall x, x \in A ->
+      (exists y, R x y) -> exists2 y, y \in B & R x y).
 
 End IZF_C_sig.
 
