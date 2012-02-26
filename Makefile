@@ -25,7 +25,9 @@ DOCVO=$(DOCV:.v=.vo)
 
 .PHONY: html
 
-html:: $(DOCVO)
+src-html:: $(DOCVO)
+	$(MAKE) html
+html::
 	mkdir -p html
 	$(COQDOC) -html -d html -g $(ALLV) template/*.v
 	mv html/index.html html/coqindex.html
@@ -34,6 +36,8 @@ html:: $(DOCVO)
 
 Ens0.v: Ens.v
 	cp Ens.v Ens0.v
+EnsEm0.v: EnsEm.v
+	cp EnsEm.v EnsEm0.v
 
 
 .SUFFIXES: .v .vo .ml .mli .cmo .cmi .html

@@ -7,10 +7,10 @@ Require Import Sublogic.
    Axiom (TTColl).
  *)
 
-Module Ensembles (L:Sublogic).
+Module Ensembles (L:Sublogic) (Lthms:SublogicTheory L).
 
-Module Lthms := BuildLogic L.
-Export L Lthms.
+(*Module Lthms := BuildLogic L.*)
+Import L Lthms.
 
 (** The level of sets *)
 Definition Thi := Type.
@@ -27,7 +27,42 @@ Definition elts (x:set) : idx x -> set :=
   match x return idx x -> set with
   | sup X f => f
   end.
+(*
+Definition TTColl := forall (X:Tlo) (R:X->set->Prop),
+  exists Y, exists g:Y->set,
+    forall i, (exists w, R i w) -> exists j:Y, R i (g j).
+Record isSet (S:Thi) : Prop := {
+  Sup : forall (X:Tlo), (X->S)->S;
+  Set_rect : forall P:S->Type, (forall X f, (forall i, P (f i)) -> P (Sup X f)) -> forall x, P x;
+  Set_elim : forall P F X f, Set_rect P F (Sup X f) = F X f (fun i => Set_rect P F (f i))
+}.
+Definition TTCollG (S:Thi) := forall (X:Tlo) (R:X->S->Prop),
+  exists Y, exists g:Y->S,
+    forall i, (exists w, R i w) -> exists j:Y, R i (g j).
+Lemma TTColl_equiv : TTCollG set <-> forall S, isSet S -> TTCollG S.
+split; intros.
+ destruct H0.
+ red; intros.
+ pose (set2S := fix F x := Sup (idx x) (fun i => F (elts x i))).
+ red in H.
+ destruct (H X (fun i a => R i (set2S a))) as (Y,(g,?)).
+ exists Y; exists (fun i => set2S (g i)); intros.
+ apply H0.
+ destruct H1.
+ pose (S2set := Set_rect (fun _=>set) (fun X f F => sup X F)).
+ exists (S2set x).
+ replace (set2S (S2set x)) with x; trivial.
+ pattern x; apply Set_rect; intros.
+ unfold S2set.
+ rewrite Set_elim; simpl.
+ f_equal.
+ assert (forall g, (forall i, f i = g i) -> f = g) by admit.
+ apply H3; intro.
+ apply H2.
 
+ apply H; exists sup set__rect; reflexivity.
+Qed.
+*)
 Fixpoint eq_set (x y:set) {struct x} :=
   (forall i, Tr(exists j, eq_set (elts x i) (elts y j))) /\
   (forall j, Tr(exists i, eq_set (elts x i) (elts y j))).
@@ -185,14 +220,7 @@ apply proj2_sig.
 Defined.
 
 (** Set induction *)
-(*
-Fixpoint isWf x := Forall(fun i => isWf (elts x i)).
 
-Lemma set_isWf x : holds (isWf x).
-induction x; simpl.
-rewrite rForall; trivial.
-Qed.
-*)
 Lemma wf_ax :
   forall (P:set->Prop),
   (forall x, isL (P x)) ->
@@ -216,7 +244,7 @@ Definition empty :=
   sup False (fun x => match x with end).
 
 Lemma empty_ax : forall x, x \in empty -> Tr False.
-red; intros.
+intros.
 Tdestruct H.
 Tin; trivial.
 Qed.
@@ -548,6 +576,7 @@ End NotClassical.
 (* The intuitionistic collection axiom (TTColl) is a consequence of
    [choice], but it is sufficient to prove collection.
  *)
+
 Lemma ttcoll (X:Tlo) (R:X->set->Prop):
   exists Y, exists g:Y->set,
     forall i, (exists w, R i w) -> exists j:Y, R i (g j).
