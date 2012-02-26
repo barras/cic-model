@@ -6,6 +6,9 @@ Require Import Logics.
    in Coq extended with the Type-Theoretical Collection
    Axiom (TTColl).
  *)
+(** This version is based on Logics, and appears as quite
+    cumbersome. This file is kept mainly for the record
+ *)
 
 Module Ensembles (L:ConsistentLogic).
 
