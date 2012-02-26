@@ -46,9 +46,83 @@ Module AlternativeFormulations.
 End AlternativeFormulations.
   
 
-Module BuildLogic (L:Sublogic).
+Module Type SublogicTheory (L:Sublogic).
+Import L.
 
-Include L.
+Definition isL (P:Prop) := Tr P -> P.
+
+Global Instance Tr_morph : Proper (iff==>iff) Tr.
+Admitted.
+Global Instance isL_morph : Proper (iff==>iff) isL.
+Admitted.
+
+  (* bind *)
+  Parameter TrB : forall (P Q:Prop), Tr P -> (P -> Tr Q) -> Tr Q.
+  Parameter Tr_ind : forall (P Q:Prop) {i:isL Q}, (P -> Q) -> Tr P -> Q.
+  Parameter TrE : forall P, isL P -> Tr P -> P.
+
+  (** The set of L-propositions: introduction rules *)
+  Parameter Tr_isL : forall P, isL (Tr P).
+  Parameter T_isL : forall P:Prop, P -> isL P.
+  Parameter and_isL : forall P Q, isL P -> isL Q -> isL (P/\Q).
+  Parameter fa_isL : forall A (P:A->Prop),
+    (forall x, isL (P x)) -> isL(forall x, P x).
+  Parameter imp_isL : forall P Q, isL Q -> isL (P -> Q).
+  Parameter iff_isL : forall P Q, isL P -> isL Q -> isL (P <-> Q).
+
+Global Hint Resolve Tr_isL T_isL and_isL fa_isL imp_isL iff_isL.
+
+  Parameter rFF : forall (Q:Prop), Tr False -> Tr Q.
+  Parameter rFF': forall (Q:Prop), Tr False -> isL Q -> Q.
+
+(** Introduction tactics *)
+
+Ltac Tin := apply TrI.
+Ltac Texists t := Tin; exists t.
+Ltac Tleft := Tin; left.
+Ltac Tright := Tin; right.
+
+(** Elimination tactics:
+    - Tabsurd replaces the current goal with Tr False (ex-falso)
+    - Telim H implements rules H:Tr P |- G   -->  |- P->G when G is a L-prop
+    - Tdestruct H is the equivalent of destruct on a hypothesis Tr(Ind x).
+      The goal shall be an L-prop
+ *)
+
+Ltac prove_isL :=
+  intros;
+  lazymatch goal with
+  | |- isL(Tr _) => apply Tr_isL
+  | |- isL(_ /\ _) => apply and_isL; prove_isL
+  | |- isL True => apply T_isL; exact I
+  | |- isL(impl _ _) => apply imp_isL; prove_isL
+  | |- isL(iff _ _) => apply iff_isL; prove_isL
+  | |- isL(_ -> _) => apply imp_isL; prove_isL
+  | |- isL(forall x, _) => apply fa_isL; intro; prove_isL
+  | |- isL _ => auto 10; fail "Cannot prove isL side-condition"
+  | |- _ => fail "Tactic prove_isL does not apply to this goal"
+  end.
+
+Ltac Tabsurd := 
+  lazymatch goal with
+  | |- Tr _ => apply rFF
+  | |- _ => apply rFF';[|auto 10;fail"Cannot prove isL side-condition"]
+  end.
+Ltac Telim H :=
+  lazymatch goal with
+  | |- Tr _ => apply TrB with (1:=H); try clear H
+  | |- _ => apply Tr_ind with (3:=H);[auto 10;fail"Cannot prove isL side-condition"|]; try clear H
+  end.
+Tactic Notation "Tdestruct" constr(H) :=
+  Telim H; destruct 1.
+Tactic Notation "Tdestruct" constr(H) "as" simple_intropattern(p) :=
+  Telim H; intros p.
+
+End SublogicTheory.
+
+Module BuildLogic (L:Sublogic) <: SublogicTheory L.
+
+Import L.
 
   (** Derived sublogic concepts:
      - more elimination rules
@@ -116,6 +190,8 @@ Lemma rFF' (Q:Prop) : Tr False -> isL Q -> Q.
 intros; apply TrE; trivial; apply rFF; trivial.
 Qed.
 
+End BuildLogic.
+(*
 (** Introduction tactics *)
 
 Ltac Tin := apply TrI.
@@ -160,7 +236,7 @@ Tactic Notation "Tdestruct" constr(H) "as" simple_intropattern(p) :=
   Telim H; intros p.
 
 End BuildLogic.
-
+*)
 
 Module BuildConsistentSublogic (L:ConsistentSublogic).
 
@@ -184,6 +260,8 @@ Definition TrMono (P Q:Prop) (f:P->Q) (p:Tr P) : Tr Q := f p.
 Definition TrCons : ~ Tr False := fun h => h.
 End CoqSublogic.
 
+Module CoqSublogicThms := BuildLogic CoqSublogic.
+
 Module ClassicSublogic <: ConsistentSublogic.
 Definition Tr (P:Prop) := ~~P.
 Definition TrI (P:Prop) (p:P) : Tr P := fun np => np p.
@@ -194,13 +272,15 @@ Definition TrMono (P Q:Prop) (f:P->Q) (nnp:Tr P) : Tr Q :=
 Definition TrCons : ~ Tr False := fun h => h (fun x => x).
 End ClassicSublogic.
 
+Module ClassicSublogicThms := BuildLogic ClassicSublogic.
+
 (***************************************************************************)
 (** Building a higher-order logic with L-props. *)
 
 
 Module SublogicToHOLogic (L:Sublogic) <: HOLogic.
 Module L' := BuildLogic L.
-Import L'.
+Import L L'.
 
 Record prop_ := mkP { holds : Prop; isprop : isL holds }.
 Definition prop := prop_.
