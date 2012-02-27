@@ -1,6 +1,6 @@
 Require Export basic.
 
-(* This module defines interfaces implementing various flavour
+(** This module defines interfaces implementing various flavour
    of set theory, from Zermelo to IZF_R and IZF_C (ZF)
  *)
 Reserved Notation "x \in y" (at level 60).
@@ -8,7 +8,7 @@ Reserved Notation "x == y" (at level 70).
 Reserved Notation "x \incl y" (at level 70).
 
 (************************************************************************)
-(* A generic set theory signature *)
+(** * A generic set theory signature *)
 
 Module Type SetTheory.
 
@@ -26,7 +26,7 @@ Parameter
 
 End SetTheory.
 
-(* ...and with well-foundation axiom.
+(** ...and with well-foundation axiom.
    Plays the role of regularity axiom, but in an intutionistic
    setting (regularity is classical). *)
 Module Type WfSetTheory.
@@ -40,7 +40,7 @@ Parameter
 End WfSetTheory.
 
 (************************************************************************)
-(* Zermelo set theory:
+(** * Zermelo set theory:
    - empty set
    - pair axiom
    - union axiom
@@ -74,7 +74,7 @@ Parameter
 
 End Zermelo_sig.
 
-(* Existential version *)
+(** ** Existential version *)
 Module Type Zermelo_Ex_sig.
 Include WfSetTheory.
 
@@ -96,13 +96,12 @@ Parameter
 End Zermelo_Ex_sig.
 
 (************************************************************************)
-(*
-  IZF_R, Myhill's version of IZF:
+(** * IZF_R, Myhill's version of IZF:
    - regularity is stated as a well-foundation axiom
    - we use replacement, not collection
  *)
 
-(* Skolemized version of IZF_R *)
+(** Skolemized version of IZF_R *)
 
 Module Type IZF_R_sig.
 
@@ -124,7 +123,7 @@ Parameter
 End IZF_R_sig.
 
 
-(* Existential versions (Zermelo still skolemized) *)
+(** Existential versions (Zermelo still skolemized) *)
 
 Module Type IZF_R_HalfEx_sig.
 
@@ -137,7 +136,7 @@ Parameter
 
 End IZF_R_HalfEx_sig.
 
-(* Fully existential version *)
+(** Fully existential version *)
 
 Module Type IZF_R_Ex_sig.
 
@@ -151,7 +150,7 @@ Parameter
 End IZF_R_Ex_sig.
 
 (************************************************************************)
-(* Collection and ZF *)
+(** * Collection and ZF *)
 
 Module Type IZF_C_sig.
 
@@ -165,7 +164,22 @@ Parameter
 
 End IZF_C_sig.
 
+(** With skolemized collection *)
+Module Type ZF_sig.
+
+Include Zermelo_sig.
+
+Parameter
+ (coll : set -> (set->set->Prop) -> set)
+ (coll_ax : forall A R, 
+    Proper (eq_set==>eq_set==>iff) R ->
+    forall x, x \in A ->
+      (exists y, R x y) -> exists2 y, y \in coll A R & R x y).
+
+End ZF_sig.
+
 (************************************************************************)
+(* ----- *)
 
 Module Type Choice_Sig (S:SetTheory).
 Import S.
