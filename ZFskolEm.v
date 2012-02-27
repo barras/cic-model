@@ -7,10 +7,10 @@ Require Import basic.
 Require Export ZFdef.
 Require Import EnsEm Sublogic.
 
-Module Skolem (L:Sublogic) (L':SublogicTheory L). (*<: IZF_R_sig.*)
+Module Skolem (L:SublogicTheory). (*<: IZF_R_sig.*)
 
-Module Z := Ensembles L L'.
-Import L L'.
+Module Z := Ensembles L.
+Import L.
 
 Instance Zsetoid: Equivalence Z.eq_set.
 Proof.
@@ -952,7 +952,7 @@ End Skolem.
 (** Several instances *)
 
 Module IZF_R <: IZF_R_sig.
- Include Skolem CoqSublogic CoqSublogicThms.
+ Include Skolem CoqSublogicThms.
 
  Lemma wf_ax (P:set->Prop):
   (forall x, (forall y, y \in x -> P y) -> P x) ->
@@ -962,7 +962,7 @@ Proof (wf_axL P (fun x h => h)).
 End IZF_R.
 
 Module ZF0 <: ZF_sig.
- Include Skolem CoqSublogic CoqSublogicThms.
+ Include Skolem CoqSublogicThms.
  Lemma wf_ax (P:set->Prop):
   (forall x, (forall y, y \in x -> P y) -> P x) ->
   forall x, P x.
@@ -981,8 +981,8 @@ End ZF0.
     by the logic.
  *)
 Module ZF. (*<: ZF_sig.*)
- Include Skolem ClassicSublogic ClassicSublogicThms.
- Import ClassicSublogic ClassicSublogicThms.
+ Include Skolem ClassicSublogicThms.
+ Import ClassicSublogicThms.
  Lemma wf_ax (P:set->Prop):
   (forall x, isL (P x)) ->
   (forall x, (forall y, y \in x -> P y) -> P x) ->

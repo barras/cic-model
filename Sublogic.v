@@ -3,7 +3,8 @@ Require Import Logics.
 
 Set Implicit Arguments.
 
-(** Wrapped in a module *)
+(***************************************************************************)
+(** * 1. Sublogics, wrapped in modules and functors *)
 
 Module Type Sublogic.
   Parameter Inline Tr : Prop -> Prop.
@@ -45,9 +46,11 @@ Module AlternativeFormulations.
 
 End AlternativeFormulations.
   
+(** Sublogic equipped with tools useful for doing logics *)
 
-Module Type SublogicTheory (L:Sublogic).
-Import L.
+Module Type SublogicTheory.
+
+Include Sublogic.
 
 Definition isL (P:Prop) := Tr P -> P.
 
@@ -56,7 +59,7 @@ Admitted.
 Global Instance isL_morph : Proper (iff==>iff) isL.
 Admitted.
 
-  (* bind *)
+  (* monad bind *)
   Parameter TrB : forall (P Q:Prop), Tr P -> (P -> Tr Q) -> Tr Q.
   Parameter Tr_ind : forall (P Q:Prop) {i:isL Q}, (P -> Q) -> Tr P -> Q.
   Parameter TrE : forall P, isL P -> Tr P -> P.
@@ -120,13 +123,13 @@ Tactic Notation "Tdestruct" constr(H) "as" simple_intropattern(p) :=
 
 End SublogicTheory.
 
-Module BuildLogic (L:Sublogic) <: SublogicTheory L.
+Module BuildLogic (L:Sublogic) <: SublogicTheory.
 
-Import L.
+Include L.
 
-  (** Derived sublogic concepts:
-     - more elimination rules
-     - the set of L-propositions *)
+(** Derived sublogic concepts:
+    - more elimination rules
+    - the set of L-propositions *)
 
 Global Instance Tr_morph : Proper (iff==>iff) Tr.
 split; apply TrMono; apply H.
@@ -191,58 +194,13 @@ intros; apply TrE; trivial; apply rFF; trivial.
 Qed.
 
 End BuildLogic.
-(*
-(** Introduction tactics *)
 
-Ltac Tin := apply TrI.
-Ltac Texists t := Tin; exists t.
-Ltac Tleft := Tin; left.
-Ltac Tright := Tin; right.
-
-(** Elimination tactics:
-    - Tabsurd replaces the current goal with Tr False (ex-falso)
-    - Telim H implements rules H:Tr P |- G   -->  |- P->G when G is a L-prop
-    - Tdestruct H is the equivalent of destruct on a hypothesis Tr(Ind x).
-      The goal shall be an L-prop
- *)
-
-Ltac prove_isL :=
-  intros;
-  lazymatch goal with
-  | |- isL(Tr _) => apply Tr_isL
-  | |- isL(_ /\ _) => apply and_isL; prove_isL
-  | |- isL True => apply T_isL; exact I
-  | |- isL(impl _ _) => apply imp_isL; prove_isL
-  | |- isL(iff _ _) => apply iff_isL; prove_isL
-  | |- isL(_ -> _) => apply imp_isL; prove_isL
-  | |- isL(forall x, _) => apply fa_isL; intro; prove_isL
-  | |- isL _ => auto 10; fail "Cannot prove isL side-condition"
-  | |- _ => fail "Tactic prove_isL does not apply to this goal"
-  end.
-
-Ltac Tabsurd := 
-  lazymatch goal with
-  | |- Tr _ => apply rFF
-  | |- _ => apply rFF';[|auto 10;fail"Cannot prove isL side-condition"]
-  end.
-Ltac Telim H :=
-  lazymatch goal with
-  | |- Tr _ => apply TrB with (1:=H); try clear H
-  | |- _ => apply Tr_ind with (3:=H);[auto 10;fail"Cannot prove isL side-condition"|]; try clear H
-  end.
-Tactic Notation "Tdestruct" constr(H) :=
-  Telim H; destruct 1.
-Tactic Notation "Tdestruct" constr(H) "as" simple_intropattern(p) :=
-  Telim H; intros p.
-
-End BuildLogic.
-*)
+(** The same for consistent logics: False is now an L-prop *)
 
 Module BuildConsistentSublogic (L:ConsistentSublogic).
+  Module tmp <: SublogicTheory := BuildLogic L.
+  Include tmp.
 
-Include BuildLogic L.
-
-(** In consistent logics, False is an L-prop *)
 Lemma FF_isL : isL False.
 Proof L.TrCons.
 
@@ -250,8 +208,10 @@ Global Hint Resolve FF_isL.
 
 End BuildConsistentSublogic.
 
-(** Examples of sublogic modules *)
+(***************************************************************************)
+(** * 2.Examples of sublogic modules *)
 
+(** Coq's intuitionistic logic *)
 Module CoqSublogic <: ConsistentSublogic.
 Definition Tr P:Prop := P.
 Definition TrI (P:Prop) (p:P) : Tr P := p.
@@ -260,8 +220,9 @@ Definition TrMono (P Q:Prop) (f:P->Q) (p:Tr P) : Tr Q := f p.
 Definition TrCons : ~ Tr False := fun h => h.
 End CoqSublogic.
 
-Module CoqSublogicThms := BuildLogic CoqSublogic.
+Module CoqSublogicThms := BuildConsistentSublogic CoqSublogic.
 
+(** Classical logic through negated translation *)
 Module ClassicSublogic <: ConsistentSublogic.
 Definition Tr (P:Prop) := ~~P.
 Definition TrI (P:Prop) (p:P) : Tr P := fun np => np p.
@@ -272,15 +233,141 @@ Definition TrMono (P Q:Prop) (f:P->Q) (nnp:Tr P) : Tr Q :=
 Definition TrCons : ~ Tr False := fun h => h (fun x => x).
 End ClassicSublogic.
 
-Module ClassicSublogicThms := BuildLogic ClassicSublogic.
+Module ClassicSublogicThms.
+  Include BuildConsistentSublogic ClassicSublogic.
+
+  Lemma nnpp (P:Prop) : ((P->False)->False) -> Tr P.
+Proof (fun h => h).
+
+  (* excluded-middle: note that P need not be classical, which makes the
+     positive case stronger. *)
+  Lemma classic : forall P, Tr(P \/ (Tr P -> False)).
+intros P nem.
+apply nem; right; intro tp.
+apply Tr_ind with (3:=tp); intros; trivial.
+apply nem; left; assumption.
+Qed.
+End ClassicSublogicThms.
+
+(** Friedman's A-translation *)
+
+Module Type Aprop. Parameter A:Prop. End Aprop.
+
+Module ASublogic.
+  (* First A is parameterized, but then the signatures do not match *)
+  Module Parameterized.
+    Definition Tr A P := P \/ A.
+    Definition TrI (A P:Prop) (p:P) : Tr A P := or_introl p.
+    Definition TrP (A P:Prop) (p:(P\/A)\/A) :=
+      match p with
+      | or_introl p => p
+      | or_intror a => or_intror a
+      end.
+    Definition TrMono (A P Q:Prop) (f:P->Q) (p:P\/A) :=
+      match p with
+      | or_introl p => or_introl (f p)
+      | or_intror a => or_intror a
+      end.
+  End Parameterized.
+  Module Instance (A:Aprop) <: Sublogic.
+    Import Parameterized A.
+    Definition Tr := Tr A.
+    Definition TrI := @TrI A.
+    Definition TrP := @TrP A.
+    Definition TrMono := @TrMono A.
+  End Instance.
+End ASublogic.
+
+Module ASublogicThms (A:Aprop).
+  Module Asl := ASublogic.Instance A.
+  Import A Asl.
+  Include BuildLogic Asl.
+
+Lemma Aconsistency : isL False <-> ~A. 
+firstorder.
+Qed.
+
+Lemma atom_isL (P:Prop) : (A->P) -> isL P.
+firstorder.
+Qed.
+
+(* or does not need to be modified *)
+Lemma or_isL P Q : isL P \/ isL Q -> isL (P\/Q).
+firstorder.
+Qed.
+Global Hint Resolve or_isL.
+
+Lemma FF_a : Tr False <-> A.
+split.
+ destruct 1;[contradiction|trivial].
+ right; trivial.
+Qed.
+
+End ASublogicThms.
+
+(* Example: if ~~exists x. P(x) is derivable, then so is exists x. P(x) *)
+Module AtransExample.
+Parameter (T:Type) (P : T->Prop).
+Module nnex. Definition A:=exists x, P x. End nnex.
+Module Atr := ASublogicThms nnex.
+Import nnex Atr.
+
+Lemma nnex_elim :
+  ((Tr(exists x, P x) -> Tr False) -> Tr False) ->
+  exists x, P x.
+intro.
+apply FF_a.
+apply H; intro.
+apply Tr_ind with (3:=H0); intros; trivial.
+apply FF_a.
+assumption.
+Qed.
+End AtransExample.
+
+(** Peirce translation *)
+
+Module PeirceTrans.
+  Module Parameterized.
+    Definition Tr (R A:Prop) := (A->R)->A.
+    Definition TrI (R A:Prop) (a:A) : Tr R A := fun ar => a.
+    Definition TrP (R A:Prop) (tta:Tr R (Tr R A)) : Tr R A :=
+     fun ar => tta (fun ara => ar (ara ar)) ar. 
+    Definition TrMono (R A B:Prop) (f:A->B) (ta:Tr R A) : Tr R B :=
+     fun br => f (ta (fun a => br (f a))).
+    Definition TrCons (R:Prop) : ~ Tr R False :=
+     fun frf => frf (False_ind R).
+  End Parameterized.
+  Module Instance (R:Aprop) <: ConsistentSublogic.
+    Import Parameterized R.
+    Definition Tr := Tr A.
+    Definition TrI := @TrI A.
+    Definition TrP := @TrP A.
+    Definition TrMono := @TrMono A.
+    Definition TrCons := @TrCons A.
+  End Instance.
+End PeirceTrans.
+
+(** Intersection or cartesian product *)
+
+Module Inter2 (L1 L2:Sublogic) <: Sublogic.
+  Definition Tr P := L1.Tr P /\ L2.Tr P.
+  Definition TrI (P:Prop) (p:P) : Tr P := conj (L1.TrI p) (L2.TrI p).
+  Definition TrP (P:Prop) (ttp:Tr(Tr P)) : Tr P :=
+    conj (L1.TrP (L1.TrMono (fun p => proj1 p) (proj1 ttp)))
+         (L2.TrP (L2.TrMono (fun p => proj2 p) (proj2 ttp))).
+  Definition TrMono (P Q:Prop) (f:P->Q) (p:Tr P) : Tr Q :=
+    conj (L1.TrMono f (proj1 p)) (L2.TrMono f (proj2 p)).
+  Lemma equiCons : Tr False <-> L1.Tr False /\ L2.Tr False.
+    reflexivity.
+  Qed.
+End Inter2.
 
 (***************************************************************************)
-(** Building a higher-order logic with L-props. *)
+(** * 3. Building a higher-order logic with L-props. *)
 
 
-Module SublogicToHOLogic (L:Sublogic) <: HOLogic.
-Module L' := BuildLogic L.
-Import L L'.
+Module SublogicToHOLogic (L:SublogicTheory) <: HOLogic.
+Import L.
 
 Record prop_ := mkP { holds : Prop; isprop : isL holds }.
 Definition prop := prop_.
@@ -367,7 +454,7 @@ Qed.
 End SublogicToHOLogic.
 
 (***************************************************************************)
-(** * The same ideas but using records and typeclasses *)
+(** * 4. The same ideas but using records and typeclasses *)
 
 Module TypeClasses.
 
@@ -723,7 +810,7 @@ Qed.
 End Atrans.
 
 
-Section PierceTrans.
+Section PeirceTrans.
 
 Definition Ptr (R A:Prop) := (A->R)->A.
 
@@ -743,6 +830,6 @@ apply H; intros.
 contradiction.
 Qed.
 
-End PierceTrans.
+End PeirceTrans.
 
 End TypeClasses.

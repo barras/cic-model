@@ -1,4 +1,5 @@
 Require Import basic.
+Require Import Sublogic.
 
 (** In this file we show that Coq universes allows to build
    Grothendieck universes.
@@ -6,16 +7,15 @@ Require Import basic.
    "big set" of all the "small sets" (that we call U),
    and we show that U is a Grothendieck universe.
  *)
-Require Import Sublogic.
-Declare Module L:Sublogic.
 
-Module Lthms : SublogicTheory L := BuildLogic L.
-Export L Lthms.
+Module BuildUniverse (L:SublogicTheory).
+
+Import L.
 
 Require EnsEm0.
 Require EnsEm.
-Module S := EnsEm0.Ensembles L Lthms. (* small sets *)
-Module B := EnsEm.Ensembles L Lthms. (* big sets *)
+Module S := EnsEm0.Ensembles L. (* small sets *)
+Module B := EnsEm.Ensembles L. (* big sets *)
 
 Notation "x \in y" := (B.in_set x y) (at level 60).
 Notation "x == y" := (B.eq_set x y) (at level 70).
@@ -497,3 +497,5 @@ constructor.
    apply B.eq_set_trans with (1:=H3).
    apply B.eq_set_sym; trivial.
 Qed.
+
+End BuildUniverse.

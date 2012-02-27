@@ -1,4 +1,4 @@
-Require Import Setoid.
+Require Import basic.
 
 (* In this file we show that Coq universes allows to build
    Grothendieck universes.
@@ -12,32 +12,17 @@ Require Ens.
 Module S := Ens0.IZF_R. (* small sets *)
 Module B := Ens.IZF_R. (* big sets *)
 
+Notation "x \in y" := (B.in_set x y) (at level 60).
+Notation "x == y" := (B.eq_set x y) (at level 70).
+
+(* This definition implies that the universe of indexes of small
+   sets is lower than (or equal to) the universes of indexes of
+   large sets (Ens0.Tlo <= Ens.Tlo)
+ *)
 Fixpoint injU (a:S.set) : B.set :=
   match a with
     S.sup X f => B.sup X (fun i => injU (f i))
   end.
-
-Definition U : B.set := B.sup S.set injU.
-
-Notation "x \in y" := (B.in_set x y) (at level 60).
-Notation "x == y" := (B.eq_set x y) (at level 70).
-
-Lemma U_elim : forall x, x \in U -> exists x', x == injU x'.
-destruct 1.
-exists x0; trivial.
-Qed.
-
-Lemma U_intro : forall x, injU x \in U.
-red; intros.
-exists x.
-apply B.eq_set_refl.
-Qed.
-
-Lemma injU_elim : forall x y, x \in injU y -> x \in U.
-destruct y; destruct 1; simpl; intros.
-exists (f x0).
-assumption.
-Qed.
 
 Lemma lift_eq : forall x y, S.eq_set x y -> injU x == injU y.
 intros.
@@ -75,7 +60,6 @@ exists x0.
 assumption.
 Qed.
 
-
 Lemma down_in : forall x y, injU x \in injU y -> S.in_set x y.
 destruct y; simpl; intros.
 destruct H.
@@ -90,13 +74,71 @@ Lemma down_in_ex  x y y' :
   exists2 x', x == injU x' & S.in_set x' y'.
 intros.
 specialize B.eq_elim with (1:=H0) (2:=H); intro.
-destruct U_elim with (1:=injU_elim _ _ H1).
-exists x0; trivial.
+destruct H1.
+destruct y' as (Y,f).
+simpl in x0, H1.
+exists (f x0); trivial.
 apply down_in.
 apply B.eq_elim with y; trivial.
 apply B.in_reg with x; trivial.
 Qed.
 
+(* Now the universe of small sets is lower than (or equal to)
+   the universe of indexes of big sets (Ens0.Thi <= Ens.Tlo).
+ *)
+Definition U : B.set := B.sup S.set injU.
+
+Lemma U_elim : forall x, x \in U -> exists x', x == injU x'.
+destruct 1.
+exists x0; trivial.
+Qed.
+
+Lemma U_intro : forall x, injU x \in U.
+red; intros.
+exists x.
+apply B.eq_set_refl.
+Qed.
+
+Lemma injU_elim : forall x y, x \in injU y -> x \in U.
+destruct y; destruct 1; simpl; intros.
+exists (f x0).
+assumption.
+Qed.
+
+(* Equivalence of all set-theoretical constructions *)
+
+Lemma pair_equiv : forall x y,
+  B.pair (injU x) (injU y) == injU (S.pair x y).
+intros.
+unfold B.pair, S.pair; simpl.
+split; intros.
+ exists i; destruct i; apply B.eq_set_refl.
+ exists j; destruct j; apply B.eq_set_refl.
+Qed.
+
+Lemma union_equiv : forall x, B.union (injU x) == injU (S.union x).
+intros.
+apply B.eq_intro; intros.
+ apply B.union_ax in H.
+ destruct H.
+ apply down_in_ex with (1:=B.eq_set_refl _) in H0.
+ destruct H0.
+ apply down_in_ex with (1:=H0) in H; destruct H.
+ apply B.in_reg with (injU x2).
+  apply B.eq_set_sym; trivial.
+ apply lift_in.
+ rewrite S.union_ax.
+ exists x1; trivial.
+
+ rewrite B.union_ax.
+ apply down_in_ex with (1:=B.eq_set_refl _) in H; destruct H.
+ rewrite S.union_ax in H0; destruct H0.
+ apply lift_in in H0.
+ apply lift_in in H1.
+ exists (injU x1); trivial.
+ apply B.in_reg with (injU x0); trivial.
+ apply B.eq_set_sym; trivial.
+Qed.
 
 Lemma subset_equiv : forall x P Q,
   (forall x y, y == injU x -> (P x <-> Q y)) ->
@@ -125,7 +167,6 @@ split; intros.
  exists (exist (fun a => exists2 x', S.eq_set (f a) x' & P x') x H0); simpl.
  apply B.eq_set_refl.
 Qed.
-
 
 Lemma power_equiv : forall x, B.power (injU x) == injU (S.power x).
 intros.
@@ -180,39 +221,6 @@ apply B.eq_intro; intros.
 
 Qed.
 
-Lemma pair_equiv : forall x y,
-  B.pair (injU x) (injU y) == injU (S.pair x y).
-intros.
-unfold B.pair, S.pair; simpl.
-split; intros.
- exists i; destruct i; apply B.eq_set_refl.
- exists j; destruct j; apply B.eq_set_refl.
-Qed.
-
-Lemma union_equiv : forall x, B.union (injU x) == injU (S.union x).
-intros.
-apply B.eq_intro; intros.
- apply B.union_ax in H.
- destruct H.
- apply down_in_ex with (1:=B.eq_set_refl _) in H0.
- destruct H0.
- apply down_in_ex with (1:=H0) in H; destruct H.
- apply B.in_reg with (injU x2).
-  apply B.eq_set_sym; trivial.
- apply lift_in.
- rewrite S.union_ax.
- exists x1; trivial.
-
- rewrite B.union_ax.
- apply down_in_ex with (1:=B.eq_set_refl _) in H; destruct H.
- rewrite S.union_ax in H0; destruct H0.
- apply lift_in in H0.
- apply lift_in in H1.
- exists (injU x1); trivial.
- apply B.in_reg with (injU x0); trivial.
- apply B.eq_set_sym; trivial.
-Qed.
-
 Lemma repl1_equiv : forall x f a F,
   a == injU x ->
   (forall x x', proj1_sig x' == injU (proj1_sig x) -> F x' == injU (f x)) ->
@@ -229,6 +237,8 @@ split; simpl; intros.
  exists x; simpl.
  apply H0; simpl; trivial.
 Qed.
+
+(* Closure properties of U *)
 
 Lemma U_trans : forall x y, y \in x -> x \in U -> y \in U.
 intros.
@@ -278,15 +288,17 @@ apply B.in_reg with (injU (S.union x0)).
  apply U_intro.
 Qed.
 
-Require Import basic.
 
 Lemma U_repl : forall a R,
   Proper (B.eq_set==>B.eq_set==>iff) R ->
   a \in U ->
-  (forall x y y', x \in a -> y \in U -> y' \in U -> R x y -> R x y' -> y == y') ->
-  exists2 b, b \in U & forall y, y \in U -> (y \in b <-> exists2 x, x \in a & R x y).
+  (forall x y y', x \in a -> y \in U -> y' \in U ->
+   R x y -> R x y' -> y == y') ->
+  exists2 b, b \in U & forall y, y \in U ->
+                         (y \in b <-> exists2 x, x \in a & R x y).
 intros.
 apply U_elim in H0; destruct H0.
+(* replacement on small sets *)
 destruct S.repl_ax with x (fun x y => R (injU x) (injU y)) as (b,Hb).
  intros.
  revert H5; apply iff_impl; apply H; apply lift_eq; trivial.
@@ -336,6 +348,8 @@ destruct S.repl_ax with x (fun x y => R (injU x) (injU y)) as (b,Hb).
   apply B.eq_set_sym; trivial.
 Qed.
 
+(* If the small sets are closed under collection, then so
+   is U. *)
 Lemma U_coll : forall a R,
   Proper (B.eq_set==>B.eq_set==>iff) R ->
   a \in U ->
@@ -343,6 +357,7 @@ Lemma U_coll : forall a R,
   exists2 b, b \in U & forall x, x \in a -> exists2 y, y \in b & R x y.
 intros.
 apply U_elim in H0; destruct H0 as (a',?).
+(* We use collection on small sets *)
 destruct S.coll_ax_ttcoll with a' (fun x y => R (injU x) (injU y)).
  intros.
  revert H5; apply iff_impl; apply H; apply lift_eq; trivial.
@@ -374,6 +389,7 @@ destruct S.coll_ax_ttcoll with a' (fun x y => R (injU x) (injU y)).
     apply B.eq_set_refl.
 Qed.
 
+(* Grothendieck universe *)
 Record grot_univ (U:B.set) : Prop := {
   G_trans : forall x y, y \in x -> x \in U -> y \in U;
   G_pair : forall x y, x \in U -> y \in U -> B.pair x y \in U;
@@ -393,6 +409,9 @@ constructor.
  apply U_repl.
 Qed.
 
+(* Weak Grothendieck universe: closure only under
+   *functional* replacement.
+ *)
 Record grot_univ1 (U:B.set) : Prop := {
   G_trans1 : forall x y, y \in x -> x \in U -> y \in U;
   G_pair1 : forall x y, x \in U -> y \in U -> B.pair x y \in U;

@@ -7,10 +7,9 @@ Require Import Sublogic.
    Axiom (TTColl).
  *)
 
-Module Ensembles (L:Sublogic) (Lthms:SublogicTheory L).
+Module Ensembles (L:SublogicTheory).
 
-(*Module Lthms := BuildLogic L.*)
-Import L Lthms.
+Import L.
 
 (** The level of sets *)
 Definition Thi := Type.
