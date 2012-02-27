@@ -154,24 +154,24 @@ intros.
 unfold S.subset, B.subset.
 destruct x; simpl.
 split; intros.
- destruct i; simpl.
- assert (Tr(exists2 x', injU (f x) == x' & Q x')).
-  Tdestruct t.
-  Texists (injU x0).
+ destruct i as (i,spec); simpl in *.
+ assert (Tr(exists2 x', injU (f i) == x' & Q x')).
+  Tdestruct spec.
+  Texists (injU x).
    apply lift_eq; trivial.
-   rewrite <- (H x0); trivial.
+   rewrite <- (H x); trivial.
    apply B.eq_set_refl.
- Texists (exist (fun a => Tr(exists2 x', injU (f a) == x' & Q x')) x H0); simpl.
+ Texists (B.mkSi (B.sup X (fun i => injU(f i))) _ i H0); simpl.
  apply B.eq_set_refl.
 
- destruct j; simpl.
- assert (Tr(exists2 x', S.eq_set (f x) x' & P x')).
-  Tdestruct t.
-  Texists (f x).
+ destruct j as (j,h); simpl in j, h.
+ assert (Tr(exists2 x', S.eq_set (f j) x' & P x')).
+  Tdestruct h.
+  Texists (f j).
    apply S.eq_set_refl.
-   rewrite (H (f x) x0); trivial.
+   rewrite (H (f j) x); trivial.
    apply B.eq_set_sym; trivial.
- Texists (exist (fun a => Tr(exists2 x', S.eq_set (f a) x' & P x')) x H0); simpl.
+ Texists (S.mkSi (S.sup X f) _ j H0); simpl.
  apply B.eq_set_refl.
 Qed.
 
@@ -440,8 +440,7 @@ constructor.
     again. Relational replacement does it.
   *)
  destruct S.intuit_repl_ax with x
-         (fun x' y => exists h:injU x' \in I,
-          F (exist (fun y=>y \in I) (injU x') h) == injU y)
+         (fun x' y => exists h:injU x' \in I, F (B.eli I _ h) == injU y)
    as (B,HB).
   exact intuit.
 
@@ -493,7 +492,7 @@ constructor.
    Tdestruct H4.
    destruct H5.
    rewrite B.repl1_ax; trivial.
-   Texists (exist (fun y=>y \in I) (injU x1) x2).
+   Texists (B.eli I (injU x1) x2).
    apply B.eq_set_trans with (1:=H3).
    apply B.eq_set_sym; trivial.
 Qed.

@@ -197,13 +197,15 @@ split; intros.
  apply eq_elim with y0; trivial.
 Qed.
 
-Definition elts' (x:set) (i:idx x) : {y|y \in x}.
+Definition el (x:set) := {z|z \in x}.
+Definition eli x y (h:y \in x): el x := exist (fun z=>z\in x) y h.
+
+Definition elts' (x:set) (i:idx x) : el x.
 exists (elts x i).
 abstract (Texists i; apply eq_set_refl).
 Defined.
 
-Lemma eq_elim1 x y :
-  {z|z \in x} -> x == y -> {z|z \in y}.
+Lemma eq_elim1 x y : el x -> x == y -> el y.
 intros z eqxy.
 exists (proj1_sig z).
 apply eq_elim with x; trivial.
@@ -211,7 +213,7 @@ apply proj2_sig.
 Defined.
 
 Lemma incl_elim1 x y :
-  {z|z \in x} -> (forall z, z \in x -> z \in y) -> {z|z \in y}.
+  el x -> (forall z, z \in x -> z \in y) -> el y.
 intros z eqxy.
 exists (proj1_sig z).
 apply eqxy.
@@ -286,25 +288,31 @@ Qed.
 
 (** Union *)
 
+Record union_idx x := mkUi {
+  un_i : idx x;
+  un_j : idx(elts x un_i)
+}.
+
 Definition union (x:set) :=
-  sup {i:idx x & idx (elts x i)}
-    (fun p => elts (elts x (projS1 p)) (projS2 p)).
+  sup (union_idx x)
+    (fun p => elts (elts x (un_i _ p)) (un_j _ p)).
 
 Lemma union_ax : forall a z,
   z \in union a <-> Tr(exists2 b, z \in b & b \in a).
 split; intros.
  Tdestruct H.
- destruct x; simpl in *.
- Texists (elts a x).
-  Texists i; trivial.
+ destruct x as (i,j); simpl in *.
+ Texists (elts a i).
+  Texists j; trivial.
 
-  Texists x; apply eq_set_refl.
+  Texists i; apply eq_set_refl.
 
  Tdestruct H.
  Tdestruct H0.
  specialize eq_elim with (1:=H) (2:=H0); intro.
  Tdestruct H1.
- Texists (existT (fun _=>_) x0 x1); simpl; trivial.
+ unfold union.
+ Texists (mkUi _ x0 x1); simpl; trivial.
 Qed.
 
 Lemma union_morph :
@@ -325,9 +333,13 @@ Qed.
 
 (** Separation axiom *)
 
+Record subset_idx x (P:set->Prop) := mkSi {
+  sb_i : idx x;
+  sb_spec : Tr(exists2 x', elts x sb_i == x' & P x')
+}.
+
 Definition subset (x:set) (P:set->Prop) :=
-  sup {a|Tr(exists2 x', elts x a == x' & P x')}
-    (fun y => elts x (proj1_sig y)).
+  sup (subset_idx x P) (fun y => elts x (sb_i _ _ y)).
 
 Lemma subset_ax : forall x P z,
   z \in subset x P <->
@@ -335,13 +347,13 @@ Lemma subset_ax : forall x P z,
 intros x P z.
 split; intros.
  Tdestruct H.
- destruct x0; simpl in *.
+ destruct x0 as (i,h); simpl in *.
  split.
-  Texists x0; trivial.
+  Texists i; trivial.
 
-  Tdestruct t.
-  Texists x1; trivial.
-  apply eq_set_trans with (elts x x0); trivial.
+  Tdestruct h as (x',?,?).
+  Texists x'; trivial.
+  apply eq_set_trans with (elts x i); trivial.
 
  destruct H.
  Tdestruct H0.
@@ -350,8 +362,7 @@ split; intros.
   Texists x0; trivial.
   apply eq_set_trans with z; trivial.
   apply eq_set_sym; trivial.
- Texists (exist (fun i =>Tr(exists2 x', elts x i == x' & P x'))
-           x1 H2); simpl; trivial.
+ Texists (mkSi x P x1 H2); trivial.
 Qed.
 
 (** Power-set axiom *)
@@ -448,7 +459,7 @@ Qed.
 
 (** Functional replacement with domain information *)
 
-Definition repl1 (x:set) (F:{y|y \in x}->set) :=
+Definition repl1 (x:set) (F:el x->set) :=
   sup _ (fun i => F (elts' x i)).
 
 Lemma repl1_ax : forall x F z,
@@ -517,26 +528,31 @@ Section NotClassical.
 (** This does not work in classial logic... *)
 Hypothesis intuit : forall P:Prop, Tr P -> P.
 
+Record repl_dom a (R:set->set->Prop) := mkRi {
+  rd_i : idx a;
+  rd_dom : Tr(exists y, R (elts a rd_i) y)
+}.
+
 Lemma intuit_repl_ax a (R:set->set->Prop) :
     (forall x x' y y', x \in a -> x == x' -> y == y' -> R x y -> R x' y') ->
     (forall x y y', x \in a -> R x y -> R x y' -> y == y') ->
     exists b, forall x, x \in b <-> Tr(exists2 y, y \in a & R y x).
 intros.
-destruct (ttrepl_axiom {i:idx a|Tr(exists y, R (elts a i) y)}
-        (fun i y => Tr(R (elts a (proj1_sig i)) y))) as (f,?); intros.
- destruct x as (i,?); simpl. 
- set (x:=elts a i) in t.
- apply (intuit (exists y, R x y)) in t. (* We use only this instance of intuit *)
- destruct t; subst x; eauto using TrI.
+destruct (ttrepl_axiom (repl_dom a R)
+        (fun i y => Tr(R (elts a (rd_i _ _ i)) y))) as (f,?); intros.
+ destruct x as (i,h); simpl. 
+ set (x:=elts a i) in h.
+ apply (intuit (exists y, R x y)) in h. (* We use only this instance of intuit *)
+ destruct h; subst x; eauto using TrI.
 
  Telim H1; intro.
  split; intros.
   Telim H2; intro H2.
-  apply H0 with (elts a (proj1_sig x)); trivial.
-  Texists (proj1_sig x); apply eq_set_refl.
+  apply H0 with (elts a (rd_i _ _ x)); trivial.
+  Texists (rd_i _ _ x); apply eq_set_refl.
 
   Tin; revert H1; apply H; trivial.
-   Texists (proj1_sig x); apply eq_set_refl.
+   Texists (rd_i _ _ x); apply eq_set_refl.
 
    apply eq_set_refl.
 
@@ -545,11 +561,11 @@ unfold in_set at 1; simpl.
 split; intros.
  Tdestruct H2 as (j,?).
  Telim (H1 j); intro.
- Texists (elts a (proj1_sig j)).
-  apply (proj2_sig (elts' a (proj1_sig j))).
+ Texists (elts a (rd_i _ _ j)).
+  apply (proj2_sig (elts' a _)).
 
   revert H3; apply H.
-   apply (proj2_sig (elts' a (proj1_sig j))).
+   apply (proj2_sig (elts' a _)).
 
    apply eq_set_refl.
 
@@ -560,8 +576,10 @@ split; intros.
   assert (R (elts a i) x).
    revert H3; apply H; trivial.
    apply eq_set_refl.
-  Texists (exist (fun _ => _) i (TrI (ex_intro (fun _ => _) x H5))).
-  Telim (H1 (exist (fun _ => _) i (TrI (ex_intro (fun _ => _) x H5)))); simpl; intro.
+  assert (Tr(exists y, R (elts a i) y)).
+   Texists x; trivial.
+  Texists (mkRi _ _ i H6).
+  Telim (H1 (mkRi _ _ i H6)); simpl; intro.
   apply H0 with (elts a i); trivial.
   Texists i; apply eq_set_refl.
 Qed.
@@ -576,18 +594,23 @@ End NotClassical.
    [choice], but it is sufficient to prove collection.
  *)
 
+Record ttcoll_dom X (R:X->set->Prop) := mkCi {
+  cd_i:X;
+  cd_dom : exists y, R cd_i y
+}.
+
 Lemma ttcoll (X:Tlo) (R:X->set->Prop):
   exists Y, exists g:Y->set,
     forall i, (exists w, R i w) -> exists j:Y, R i (g j).
 intros.
-destruct (choice_axiom {i:X|exists w, R i w} set (fun i y => R (proj1_sig i) y)) as (f,Hf).
- apply proj2_sig.
+destruct (choice_axiom (ttcoll_dom X R) set (fun i y => R (cd_i _ _ i) y)) as (f,Hf).
+ intros; apply (cd_dom _ _ x).
 
- exists {i:X|exists w, R i w}.
+ exists (ttcoll_dom X R).
  exists f.
  intros.
- exists (existT _ i H).
- apply (Hf (existT _ i H)).
+ exists (mkCi _ _ i H).
+ apply (Hf (mkCi _ _ i H)).
 Qed.
 
 (* ttcoll rephrased on sets: *)
@@ -845,9 +868,15 @@ Texists infinity.
 Qed.
 
 (** Fixpoint *)
+
+Record wfrec_dom x y := mkWi {
+  wf_i : idx x;
+  wf_eq : elts x wf_i == y
+}.
+
 Fixpoint wfrec (F:(set->set)->set->set) (x:set) : set :=
-  F (fun y => union (sup {i:idx x|elts x i == y}
-               (fun i => wfrec F (elts x (proj1_sig i))))) x.
+  F (fun y => union (sup (wfrec_dom x y)
+               (fun i => wfrec F (elts x (wf_i _ _ i))))) x.
 Section FixRec.
 Hypothesis F : (set->set)->set->set.
 Hypothesis Fext : forall x x' f f',
@@ -870,11 +899,11 @@ rewrite eq_set_def; simpl idx; simpl elts; split; intros (i,e); simpl proj1_sig.
   apply eq_set_trans with y; trivial.
   apply eq_set_trans with (f i); trivial.
   apply eq_set_sym; trivial.
- Texists (exist (fun j => g j == y') j e'); simpl; auto.
+ Texists (mkWi (sup Y g) _ j e'); simpl; auto.
 
  Tdestruct H2 as (j,H2); simpl in j,H2.
  apply eq_set_sym in H2.
- Texists (exist (fun i => f i == y) j H2); simpl.
+ Texists (mkWi (sup X f) _ j H2); simpl.
  apply H.
  apply eq_set_trans with y; trivial.
  apply eq_set_trans with y'; trivial.
@@ -907,7 +936,7 @@ split; intros.
   apply eq_set_trans with y; trivial.
 
   apply eq_set_sym in H.
-  Texists (exist (fun i => (f i == y)) i H).
+  Texists (mkWi (sup X f) _ i H).
   simpl.
   apply eq_set_refl.
 Qed.
@@ -1205,9 +1234,9 @@ Lemma ttcoll_from_ttrepl_em (X:Tlo) (R:X->set->Prop):
     forall i, (exists w, R i w) -> exists j:Y, R i (g j).
 intros.
 pose (P i v := exists2 x, x \in v & R i x).
-destruct (@ttrepl_axiom {i:X|exists y, R i y}
-  (fun i y => lst_rk (P (proj1_sig i)) y)) as (f,?).
- destruct x as (i,?); simpl.
+destruct (@ttrepl_axiom (ttcoll_dom X R)
+  (fun i y => lst_rk (P (cd_i _ _ i)) y)) as (f,?).
+ destruct x as (i,e); simpl.
  assert (exists x, P i (V x)).
   destruct e.
   exists (singl x).
@@ -1240,7 +1269,7 @@ destruct (@ttrepl_axiom {i:X|exists y, R i y}
 pose (B := union (sup _ f)).
 exists (idx B); exists (elts B).
 intros.
-specialize H with (exist (fun i => exists y, R i y) i H0); simpl in H.
+specialize H with (mkCi _ _ i H0); simpl in H.
 apply lst_incl in H.
 red in H.
 destruct H.
