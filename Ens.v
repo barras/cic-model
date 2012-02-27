@@ -599,8 +599,13 @@ elim (repl1_ax _ x x0); intros.
 
   apply eq_set_refl.
 
- apply H0 with (proj1_sig x); trivial.
- apply (proj1 (proj1 (subset_ax _ _ _) (proj2_sig x))).
+ assert (in_set (proj1_sig x) a).
+  apply (proj1 (proj1 (subset_ax _ _ _) (proj2_sig x))).
+ split; intros.
+  apply H0 with (proj1_sig x); trivial.
+
+  revert H1; apply H; trivial.
+  apply eq_set_refl.
 Qed.
 
 (* Attempt to prove that choice is necessary for replacement, by deriving
