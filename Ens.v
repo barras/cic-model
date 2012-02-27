@@ -135,6 +135,29 @@ Qed.
 
 (* Set induction *)
 
+Lemma Acc_in_set : forall x, Acc in_set x.
+cut (forall x y, eq_set x y -> Acc in_set y).
+ intros.
+ apply H with x; apply eq_set_refl.
+induction x; intros.
+constructor; intros.
+specialize eq_elim with (1:=H1)(2:=eq_set_sym _ _ H0); intro.
+clear y H0 H1.
+destruct H2; simpl in *.
+apply H with x.
+apply eq_set_sym; trivial.
+Qed.
+
+
+Lemma wf_rec :
+  forall P : set -> Type,
+  (forall x, (forall y, in_set y x -> P y) -> P x) -> forall x, P x.
+intros.
+elim (Acc_in_set x); intros.
+apply X; apply X0.
+Defined.
+
+
 Lemma wf_ax :
   forall (P:set->Prop),
   (forall x, (forall y, in_set y x -> P y) -> P x) -> forall x, P x.
@@ -242,6 +265,79 @@ split; intros.
  apply eq_set_sym; trivial.
 Qed.
 
+(* Fixpoint *)
+Fixpoint wfrec (F:(set->set)->set->set) (x:set) : set :=
+  F (fun y => union (sup {i:idx x|eq_set (elts x i) y}
+               (fun i => wfrec F (elts x (proj1_sig i))))) x.
+Section FixRec.
+Hypothesis F : (set->set)->set->set.
+Hypothesis Fext : forall x x' f f',
+  (forall y y', in_set y x -> eq_set y y' -> eq_set (f y) (f' y')) ->
+  eq_set x x' ->
+  eq_set (F f x) (F f' x').
+
+Instance wfrecm : Proper (eq_set==>eq_set) (wfrec F).
+do 2 red.
+induction x; destruct y; intros.
+simpl wfrec.
+apply Fext; trivial.
+simpl in H0; destruct H0.
+intros.
+apply union_morph.
+simpl.
+split; intros.
+ clear H2; destruct i as (i,?); simpl.
+ destruct (H0 i) as (j,?).
+ assert (eq_set (f0 j) y').
+  apply eq_set_trans with y; trivial.
+  apply eq_set_trans with (f i); trivial.
+  apply eq_set_sym; trivial.
+ exists (exist _ j H4); simpl.
+ apply H; trivial.
+
+ destruct H2 as (i,?H2); simpl in i,H2.
+ destruct j as (j,?).
+ exists (exist _ i (eq_set_sym _ _ H2)); simpl.
+ apply H.
+ apply eq_set_sym.
+ apply eq_set_trans with y; trivial. 
+ apply eq_set_trans with y'; trivial.
+ apply eq_set_sym; trivial.
+Qed.
+
+Lemma wfrec_eqn x :
+  eq_set (wfrec F x) (F (wfrec F) x).
+destruct x; simpl.
+apply Fext.
+2:apply eq_set_refl.
+intros.
+rewrite eq_set_ax.
+intros z.
+rewrite union_ax.
+split; intros.
+ destruct H1 as (b,?,?).
+ destruct H2 as ((j,e),?).
+ simpl in H2.
+ apply eq_elim with b; trivial.
+ apply eq_set_trans with (1:=H2).
+ apply wfrecm.
+ apply eq_set_trans with y; trivial.
+
+ destruct H as (i,H).
+ simpl in i,H.
+ apply eq_set_sym in H0.
+ exists (wfrec F (f i)).
+  apply eq_elim with (1:=H1).
+  apply wfrecm.
+  apply eq_set_trans with y; trivial.
+
+  apply eq_set_sym in H.
+  exists (exist _ i H).
+  simpl.
+  apply eq_set_refl.
+Qed.
+End FixRec.
+
 Definition subset (x:set) (P:set->Prop) :=
   sup {a|exists2 x', eq_set (elts x a) x' & P x'}
     (fun y => elts x (proj1_sig y)).
@@ -341,15 +437,15 @@ apply pair_morph; trivial.
 apply pair_morph; trivial.
 Qed.
 
-Definition repl0 (x:set) (F:set->set) :=
+Definition replf (x:set) (F:set->set) :=
   sup _ (fun i => F (elts x i)).
 
-Lemma repl0_ax : forall x F z,
+Lemma replf_ax : forall x F z,
   (forall z z', in_set z x ->
    eq_set z z' -> eq_set (F z) (F z')) ->
-  (in_set z (repl0 x F) <->
+  (in_set z (replf x F) <->
    exists2 y, in_set y x & eq_set z (F y)).
-unfold in_set at 2, repl0; simpl; intros.
+unfold in_set at 2, replf; simpl; intros.
 split; intros.
  destruct H0.
  exists (elts x x0); trivial.
@@ -436,10 +532,13 @@ apply eq_intro; intros.
  apply eq_set_sym; apply H0; simpl; apply eq_set_refl.
 Qed.
 
-(* We only use the following instance of choice: *)
-Definition choice' := forall a:set, unique_choice {x|in_set x a} set eq_set.
+(* We only use the following instance of unique choice for
+   replacement: *)
+Definition ttrepl :=
+  forall a:set, unique_choice {x|in_set x a} set eq_set.
 
-Lemma choice'_axiom : choice'.
+(* We show it is a consequence of [choice]. *)
+Lemma ttrepl_axiom : ttrepl.
 red; red; intros; apply choice_axiom; trivial.
 Qed.
 
@@ -451,9 +550,9 @@ Lemma repl_ax:
     exists b, forall x, in_set x b <->
      (exists2 y, in_set y a & R y x).
 intros.
-pose (a' := {x|in_set x (subset a (fun x => exists y, R x y))}).
-elim (choice'_axiom (subset a (fun x=>exists y, R x y))
+elim (ttrepl_axiom (subset a (fun x=>exists y, R x y))
         (fun p y => R (proj1_sig p) y)); intros.
+pose (a' := {x|in_set x (subset a (fun x => exists y, R x y))}).
 fold a' in x,H1.
 exists (repl1 _ x).
 intros.
@@ -507,45 +606,53 @@ Qed.
 (* Attempt to prove that choice is necessary for replacement, by deriving
    choice from replacement. Works only for relations that are morphisms for
    set equality... *)
-Lemma choice'_almost_necessary_for_repl : choice'.
-red; red; intros.
-assert (Rext :
-        forall x x' y y', eq_set (proj1_sig x) (proj1_sig x') -> eq_set y y' ->
-        R x y -> R x' y') by admit. (* R is up to set equality... *)
+Lemma ttrepl_needed_for_repl :
+  forall a:set,
+  let A := {x|in_set x a} in
+  let eqA (x y:A) := eq_set (proj1_sig x) (proj1_sig y) in
+  let B := set in
+  let eqB := eq_set in
+  forall (R:A->B->Prop),
+  Proper (eqA==>eqB==>iff) R ->
+  (forall x:A, exists y:B, R x y) ->
+  (forall x y y', R x y -> R x y' -> eqB y y') ->
+  exists f:A->B, forall x:A, R x (f x).
+intros a A eqA B eqB R Rext Rex Runiq.
 destruct repl_ax with
   (a:=a) (R:=fun x y => exists h:in_set x a, R (exist _ x h) y).
  intros.
- destruct H4.
- exists (in_reg _ _ _ H2 x0).
- apply Rext with (3:=H4); trivial.
-
- intros.
  destruct H2.
- destruct H3.
- apply H0 with (1:=H2).
- apply Rext with (3:=H3); apply eq_set_refl.
+ exists (in_reg _ _ _ H0 x0).
+ revert H2; apply Rext; apply eq_set_sym; assumption.
+
+ intros x y y' _ (h,Rxy) (h',Rxy').
+ apply Runiq with (1:=Rxy).
+ revert Rxy'; apply Rext.
+  apply eq_set_refl.
+  apply eq_set_refl.
 
  exists (fun y => union (subset x (fun z => R y z))).
  intro.
- destruct H with x0.
- apply Rext with (3:=H2);[apply eq_set_refl|].
+ destruct Rex with x0.
+ apply Rext with (3:=H0);[apply eq_set_refl|].
+ apply eq_set_sym.
  apply eq_set_ax; split; intros.
   rewrite union_ax; exists x1; trivial.
   rewrite subset_ax.
   split.
-   apply H1.
+   apply H.
    exists (proj1_sig x0); [apply proj2_sig|].
    exists (proj2_sig x0).
    destruct x0; trivial.
 
    exists x1; trivial; apply eq_set_refl.
 
-  rewrite union_ax in H3; destruct H3.
-  rewrite subset_ax in H4; destruct H4.
-  destruct H5.
+  rewrite union_ax in H1; destruct H1.
+  rewrite subset_ax in H2; destruct H2.
+  destruct H3.
   apply eq_elim with x2; trivial.
-  apply eq_set_trans with (1:=H5).
-  apply H0 with (1:=H6); trivial.
+  apply eq_set_trans with (1:=H3).
+  apply Runiq with (1:=H4); trivial.
 Qed.
 
 Notation "x \in y" := (in_set x y).
@@ -736,11 +843,11 @@ Section FromReplClassic.
 Hypothesis EM : forall A:Prop, A \/ ~A.
 
 (* von Neumann cumulative hierarchy (applied to any set) *)
-Fixpoint V (x:set) := union (repl0 x (fun x' => power (V x'))).
+Fixpoint V (x:set) := union (replf x (fun x' => power (V x'))).
 
 Lemma V_morph : forall x x', eq_set x x' -> eq_set (V x) (V x').
 induction x; destruct x'; intros.
-simpl V; unfold repl0; simpl sup.
+simpl V; unfold replf; simpl sup.
 apply union_morph.
 simpl in H0.
 destruct H0.
@@ -766,7 +873,7 @@ Lemma V_def : forall x z,
   in_set z (V x) <-> exists y, in_set y x /\ incl_set z (V y).
 destruct x; simpl; intros.
 rewrite union_ax.
-unfold repl0; simpl.
+unfold replf; simpl.
 split; intros.
  destruct H.
  destruct H0; simpl in *.
