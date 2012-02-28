@@ -9,6 +9,7 @@ Reserved Notation "x \incl y" (at level 70).
 
 (************************************************************************)
 (** * A generic set theory signature *)
+Require Import Sublogic.
 
 Module Type SetTheory.
 
@@ -29,11 +30,12 @@ End SetTheory.
 (** ...and with well-foundation axiom.
    Plays the role of regularity axiom, but in an intutionistic
    setting (regularity is classical). *)
-Module Type WfSetTheory.
+Module Type WfSetTheory (L:SublogicTheory).
 Include SetTheory.
 
 Parameter
  (wf_ax: forall P:set->Prop,
+    (forall x, L.isL (P x)) ->
     (forall x, (forall y, y \in x -> P y) -> P x) ->
     forall x, P x).
 
@@ -49,9 +51,9 @@ End WfSetTheory.
    - infinity
  *)
 
-Module Type Zermelo_sig.
+Module Type Zermelo_sig (L:SublogicTheory).
 
-Include WfSetTheory.
+Include WfSetTheory L.
 
 Parameter
  (empty : set)
@@ -62,11 +64,11 @@ Parameter
  (power : set -> set).
 
 Parameter
- (empty_ax: forall x, ~ x \in empty)
- (pair_ax: forall a b x, x \in pair a b <-> (x == a \/ x == b))
- (union_ax: forall a x, x \in union a <-> (exists2 y, x \in y & y \in a))
+ (empty_ax: forall x, x \in empty -> L.Tr False)
+ (pair_ax: forall a b x, x \in pair a b <-> L.Tr(x == a \/ x == b))
+ (union_ax: forall a x, x \in union a <-> L.Tr(exists2 y, x \in y & y \in a))
  (subset_ax : forall a P x,
-    x \in subset a P <-> (x \in a /\ exists2 x', x==x' & P x'))
+    x \in subset a P <-> (x \in a /\ L.Tr(exists2 x', x==x' & P x')))
  (infinity_ax1: empty \in infinite)
  (infinity_ax2: forall x,
                 x \in infinite -> union (pair x (pair x x)) \in infinite)
@@ -75,23 +77,24 @@ Parameter
 End Zermelo_sig.
 
 (** ** Existential version *)
-Module Type Zermelo_Ex_sig.
-Include WfSetTheory.
+Module Type Zermelo_Ex_sig (L:SublogicTheory).
+Include WfSetTheory L.
 
 Parameter
- (empty_ex: exists empty, forall x, ~ x \in empty)
- (pair_ex: forall a b, exists c, forall x, x \in c <-> (x == a \/ x == b))
- (union_ex: forall a, exists b,
-    forall x, x \in b <-> (exists2 y, x \in y & y \in a))
- (subset_ex : forall a P, exists b,
-    forall x, x \in b <-> (x \in a /\ exists2 x', x==x' & P x'))
- (infinity_ex: exists2 infinite,
-    (exists2 empty, (forall x, ~ x \in empty) & empty \in infinite) &
+ (empty_ex: L.Tr(exists empty, forall x, x \in empty -> L.Tr False))
+ (pair_ex: forall a b, L.Tr(exists c, forall x, x \in c <-> L.Tr(x == a \/ x == b)))
+ (union_ex: forall a, L.Tr(exists b,
+    forall x, x \in b <-> L.Tr(exists2 y, x \in y & y \in a)))
+ (subset_ex : forall a P, L.Tr(exists b,
+    forall x, x \in b <-> (x \in a /\ exists2 x', x==x' & P x')))
+ (infinity_ex: L.Tr(exists2 infinite,
+    L.Tr(exists2 empty, (forall x, x \in empty -> L.Tr False) &
+           empty \in infinite) &
     (forall x, x \in infinite ->
-     exists2 y, (forall z, z \in y <-> (z == x \/ z \in x)) &
-       y \in infinite))
- (power_ex: forall a, exists b,
-     forall x, x \in b <-> (forall y, y \in x -> y \in a)).
+     L.Tr(exists2 y, (forall z, z \in y <-> (z == x \/ z \in x)) &
+       y \in infinite))))
+ (power_ex: forall a, L.Tr(exists b,
+     forall x, x \in b <-> (forall y, y \in x -> y \in a))).
 
 End Zermelo_Ex_sig.
 
@@ -103,9 +106,9 @@ End Zermelo_Ex_sig.
 
 (** Skolemized version of IZF_R *)
 
-Module Type IZF_R_sig.
+Module Type IZF_R_sig (L:SublogicTheory).
 
-Include Zermelo_sig.
+Include Zermelo_sig L.
 
 Parameter
  (repl : set -> (set -> set -> Prop) -> set).
@@ -118,21 +121,23 @@ Parameter
     forall z, z \in repl a R -> z \in repl a' R')
  (repl_ax: forall a (R:set->set->Prop),
     (forall x x' y y', x \in a -> R x y -> R x' y' -> x == x' -> y == y') ->
-    forall x, x \in repl a R <-> (exists2 y, y \in a & exists2 x', x == x' & R y x')).
+    forall x, x \in repl a R <->
+      L.Tr(exists2 y, y \in a & exists2 x', x == x' & R y x')).
 
 End IZF_R_sig.
 
 
 (** Existential versions (Zermelo still skolemized) *)
 
-Module Type IZF_R_HalfEx_sig.
+Module Type IZF_R_HalfEx_sig (L:SublogicTheory).
 
-Include Zermelo_sig.
+Include Zermelo_sig L.
 
 Parameter
  (repl_ex : forall a (R:set->set->Prop),
     (forall x x' y y', x \in a -> R x y -> R x' y' -> x == x' -> y == y') ->
-    exists b, forall x, x \in b <-> (exists2 y, y \in a & exists2 x', x == x' & R y x')).
+    L.Tr(exists b, forall x, x \in b <->
+        L.Tr(exists2 y, y \in a & exists2 x', x == x' & R y x')).
 
 End IZF_R_HalfEx_sig.
 
@@ -145,7 +150,8 @@ Include Zermelo_Ex_sig.
 Parameter
  (repl_ex : forall a (R:set->set->Prop),
     (forall x x' y y', x \in a -> R x y -> R x' y' -> x == x' -> y == y') ->
-    exists b, forall x, x \in b <-> (exists2 y, y \in a & exists2 x', x == x' & R y x')).
+    L.Tr(exists b, forall x, x \in b <->
+            L.Tr(exists2 y, y \in a & exists2 x', x == x' & R y x'))).
 
 End IZF_R_Ex_sig.
 
@@ -159,8 +165,8 @@ Include Zermelo_sig.
 Parameter
  (coll_ax : forall A (R:set->set->Prop), 
     Proper (eq_set ==> eq_set ==> iff) R ->
-    exists B, forall x, x \in A ->
-      (exists y, R x y) -> exists2 y, y \in B & R x y).
+    L.Tr(exists B, forall x, x \in A ->
+         L.Tr(exists y, R x y) -> L.Tr(exists2 y, y \in B & R x y))).
 
 End IZF_C_sig.
 
@@ -174,7 +180,7 @@ Parameter
  (coll_ax : forall A R, 
     Proper (eq_set==>eq_set==>iff) R ->
     forall x, x \in A ->
-      (exists y, R x y) -> exists2 y, y \in coll A R & R x y).
+      L.Tr(exists y, R x y) -> L.Tr(exists2 y, y \in coll A R & R x y)).
 
 End ZF_sig.
 
@@ -186,5 +192,5 @@ Import S.
 Parameter
   (choose : set -> set)
   (choose_morph : forall x x', x == x' -> choose x == choose x')
-  (choose_ax : forall a, (exists x, x \in a) -> choose a \in a).
+  (choose_ax : forall a, L.Tr(exists x, x \in a) -> choose a \in a).
 End Choice_Sig.

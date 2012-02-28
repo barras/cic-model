@@ -26,42 +26,7 @@ Definition elts (x:set) : idx x -> set :=
   match x return idx x -> set with
   | sup X f => f
   end.
-(*
-Definition TTColl := forall (X:Tlo) (R:X->set->Prop),
-  exists Y, exists g:Y->set,
-    forall i, (exists w, R i w) -> exists j:Y, R i (g j).
-Record isSet (S:Thi) : Prop := {
-  Sup : forall (X:Tlo), (X->S)->S;
-  Set_rect : forall P:S->Type, (forall X f, (forall i, P (f i)) -> P (Sup X f)) -> forall x, P x;
-  Set_elim : forall P F X f, Set_rect P F (Sup X f) = F X f (fun i => Set_rect P F (f i))
-}.
-Definition TTCollG (S:Thi) := forall (X:Tlo) (R:X->S->Prop),
-  exists Y, exists g:Y->S,
-    forall i, (exists w, R i w) -> exists j:Y, R i (g j).
-Lemma TTColl_equiv : TTCollG set <-> forall S, isSet S -> TTCollG S.
-split; intros.
- destruct H0.
- red; intros.
- pose (set2S := fix F x := Sup (idx x) (fun i => F (elts x i))).
- red in H.
- destruct (H X (fun i a => R i (set2S a))) as (Y,(g,?)).
- exists Y; exists (fun i => set2S (g i)); intros.
- apply H0.
- destruct H1.
- pose (S2set := Set_rect (fun _=>set) (fun X f F => sup X F)).
- exists (S2set x).
- replace (set2S (S2set x)) with x; trivial.
- pattern x; apply Set_rect; intros.
- unfold S2set.
- rewrite Set_elim; simpl.
- f_equal.
- assert (forall g, (forall i, f i = g i) -> f = g) by admit.
- apply H3; intro.
- apply H2.
 
- apply H; exists sup set__rect; reflexivity.
-Qed.
-*)
 Fixpoint eq_set (x y:set) {struct x} :=
   (forall i, Tr(exists j, eq_set (elts x i) (elts y j))) /\
   (forall j, Tr(exists i, eq_set (elts x i) (elts y j))).
@@ -594,6 +559,65 @@ End NotClassical.
    [choice], but it is sufficient to prove collection.
  *)
 
+
+Record ttcoll_dom X (R:X->set->Prop) := mkCi {
+  cd_i:X;
+  cd_dom : exists y, R cd_i y
+}.
+
+Lemma ttcoll (X:Tlo) (R:X->set->Prop):
+  (forall i, Proper (eq_set==>iff) (R i)) ->
+  exists Y, exists g:Y->set,
+    forall i, (exists w, R i w) -> exists j:Y, R i (g j).
+intros.
+destruct (choice_axiom (ttcoll_dom X R) set (fun i y => R (cd_i _ _ i) y)) as (f,Hf).
+ intros; apply (cd_dom _ _ x).
+
+ exists (ttcoll_dom X R).
+ exists f.
+ intros.
+ exists (mkCi _ _ i H0).
+ apply (Hf (mkCi _ _ i H0)).
+Qed.
+
+(* ttcoll rephrased on sets: *)
+Lemma ttcoll_set A (R:set->set->Prop) :
+  Proper (eq_set==>eq_set==>iff) R ->
+  exists z, forall i, (exists w, R (elts A i) w) ->
+            exists j, R (elts A i) (elts z j).
+intros.
+destruct (ttcoll (idx A) (fun i y => R (elts A i) y)) as (Y,(g,Hg)).
+ intros; apply H; apply eq_set_refl.
+exists (sup Y g); trivial.
+Qed.
+
+(* Collection axiom out of TTColl: *)
+Lemma collection_ax : forall A (R:set->set->Prop), 
+    Proper (eq_set==>eq_set==>iff) R ->
+    exists B, forall x, x \in A ->
+      Tr (exists y, R x y) ->
+      Tr (exists2 y, y \in B & R x y).
+intros.
+destruct ttcoll_set with A R as (B,HB); trivial.
+exists B; intros x inA H0.
+Tdestruct H0 as (w, Rxw).
+assert (h:=inA); Tdestruct h as (i, eqx).
+assert (R (elts A i) w).
+ revert Rxw; apply H; trivial.
+  apply eq_set_sym; trivial.
+  apply eq_set_refl.
+destruct (HB i) as (j,Rxy).
+ exists w; trivial.
+
+ Texists (elts B j).
+  apply (proj2_sig (elts' B j)).
+
+  revert Rxy; apply H; trivial.
+  apply eq_set_refl.
+Qed.
+
+(*
+
 Record ttcoll_dom X (R:X->set->Prop) := mkCi {
   cd_i:X;
   cd_dom : exists y, R cd_i y
@@ -650,15 +674,15 @@ destruct (HB i) as (j,Rxy).
 
    apply eq_set_refl.
 Qed.
+*)
 
 Lemma collection_ax' : forall A (R:set->set->Prop), 
-    (forall x x' y y', x \in A -> x == x' -> y == y' ->
-     R x y -> R x' y') ->
+    Proper (eq_set==>eq_set==>iff) R ->
     (forall x, x \in A -> Tr(exists y, R x y)) ->
-    exists B, forall x, x \in A -> Tr(exists2 y, y \in B & R x y).
+    Tr(exists B, forall x, x \in A -> Tr(exists2 y, y \in B & R x y)).
 intros.
-destruct collection_ax with (A:=A)(R:=R) as (B,HB); trivial.
-exists B; auto.
+destruct (collection_ax A R H) as (B,HB); trivial.
+Texists B; auto.
 Qed.
 
 (** Comparison of replacement and collection *)
@@ -667,6 +691,11 @@ Qed.
 Lemma ttrepl_from_ttcoll : ttrepl.
 red; red; intros.
 destruct (ttcoll X R) as (Y,(g,HB)).
+ do 2 red; intros.
+ split; intros.
+  apply H0 with x; trivial.
+  apply H0 with y; trivial.
+  apply eq_set_sym; trivial.
 exists (fun i => union (subset (sup Y g) (fun y => R i y))).
 intros i.
 destruct (H i) as (y,Hy).
@@ -698,35 +727,41 @@ Qed.
    we would need to be intuitionistic
  *)
 
-Lemma repl_ax_from_collection : forall a (R:set->set->Prop),
-    (forall x x' y y', x \in a -> R x y -> R x' y' -> x == x' -> y == y') ->
-    exists b, forall x, x \in b <-> Tr(exists2 y, y \in a & Tr(exists2 x', x == x' & R y x')).
-intros a R Rfun.
-destruct collection_ax with (A:=a)
-  (R:=fun x y => Tr(exists2 x', x==x' & Tr(exists2 y', y==y' & R x' y'))) as (B,HB).
- intros.
- Tdestruct H2 as (x'',H2,H3).
- Tdestruct H3 as (y'',H3,H4).
- Texists x''.
+Definition mkRel (R:set->set->Prop) x y :=
+  exists2 x', x==x' & exists2 y', y==y' & R x' y'.
+
+Instance mkRel_morph R : Proper (eq_set==>eq_set==>iff) (mkRel R).
+unfold mkRel; do 3 red; intros.
+apply ex2_morph; red; intros.
+ split; intros.
   apply eq_set_trans with x; trivial.
   apply eq_set_sym; trivial.
- Texists y'';  trivial.
- apply eq_set_trans with y; trivial.
- apply eq_set_sym; trivial.
-exists (subset B (fun y => Tr(exists2 x, x \in a & R x y))); split; intros.
- rewrite subset_ax in H; destruct H.
- Tdestruct H0 as (y,?,?).
- Tdestruct H1 as (x',?,?).
- Texists x'; trivial.
- Texists y; auto.
 
- Tdestruct H as (x',?,?).
- Tdestruct H0 as (y,?,?).
+  apply eq_set_trans with y; trivial.
+apply ex2_morph; red; intros; auto with *.
+split; intros.
+ apply eq_set_trans with x0; trivial.
+ apply eq_set_sym; trivial.
+
+ apply eq_set_trans with y0; trivial.
+Qed.
+
+Lemma repl_ax_from_collection : forall a (R:set->set->Prop),
+    (forall x x' y y', x \in a -> R x y -> R x' y' -> x == x' -> y == y') ->
+    exists b, forall x, x \in b <->
+                 Tr(exists2 y, y \in a & exists2 x', x == x' & R y x').
+intros a R Rfun.
+destruct (collection_ax a (mkRel R) (mkRel_morph R)) as (B,HB).
+exists (subset B (fun y => exists2 x, x \in a & R x y)); split; intros.
+ rewrite subset_ax in H; destruct H.
+ Tdestruct H0 as (y,?,(x',?,?)).
+ Texists x'; trivial.
+ exists y; auto.
+
+ Tdestruct H as (x',?,(y,?,?)).
  rewrite subset_ax; split.
   elim HB with x' using Tr_ind; clear HB; trivial.
-   intros (y',?,?).
-   Tdestruct H3 as (x'',?,?).
-   Tdestruct H4 as (y'',?,?).
+   intros (y',?,(x'',?,(y'',?,?))).
    apply in_reg with y'; trivial.
    apply eq_set_trans with y''; trivial.
    apply eq_set_trans with y;[|apply eq_set_sym; trivial].
@@ -735,20 +770,21 @@ exists (subset B (fun y => Tr(exists2 x, x \in a & R x y))); split; intros.
     apply eq_set_sym; trivial.
 
    Texists y.
-   Texists x'; [apply eq_set_refl|].
-   Texists y; auto using eq_set_refl.
+   exists x'; [apply eq_set_refl|].
+   exists y; auto using eq_set_refl.
 
  Texists y; trivial.
- Texists x'; auto.
+ exists x'; auto.
 Qed.
 
 (* *)
 Lemma ttrepl_needed_for_replacement : ttrepl.
 red; red; intros.
+(* Note quite: we need a set [a] with an injection from X to elements of a *)
 assert (exists2 a, X = idx a & forall i i', elts a i == elts a i' -> i=i') by admit.
 destruct H1 as (a,?,elinj); subst X.
-destruct repl_ax_from_collection with
-  (a:=a) (R:=fun x y => exists2 i, x == elts a i & exists2 y', y == y' & R i y').
+pose (R' x y := exists2 i, x == elts a i & exists2 y', y == y' & R i y').
+assert (R'fun : forall x x' y y', x \in a -> R' x y -> R' x' y' -> x == x' -> y == y').
  intros.
  destruct H2 as (i,?,(z,?,?)).
  destruct H3 as (i',?,(z',?,?)).
@@ -761,38 +797,39 @@ destruct repl_ax_from_collection with
  apply elinj in H9.
  apply H0 with i'; trivial.
  subst i'; trivial.
+destruct (repl_ax_from_collection a R' R'fun).
+exists (fun y => union (subset x (fun z => R y z))).
+intro.
+destruct H with x0.
+apply H0 with x1; trivial.
+apply eq_set_ax; split; intros.
+ rewrite union_ax.
+ Texists x1; trivial.
+ rewrite subset_ax.
+ split.
+  rewrite H1.
+  Texists (elts a x0).
+   Texists x0; apply eq_set_refl.
+  exists x1;[apply eq_set_refl|].
+  exists x0;[apply eq_set_refl|].
+  exists x1; trivial.
+  apply eq_set_refl.
 
- exists (fun y => union (subset x (fun z => R y z))).
- intro.
- destruct H with x0.
- apply H0 with x1; trivial.
- apply eq_set_ax; split; intros.
-  rewrite union_ax.
   Texists x1; trivial.
-  rewrite subset_ax.
-  split.
-   rewrite H1.
-   Texists (elts a x0).
-    Texists x0; apply eq_set_refl.
-   Texists x1;[apply eq_set_refl|].
-   exists x0;[apply eq_set_refl|].
-   exists x1; trivial.
-   apply eq_set_refl.
+  apply eq_set_refl.
 
-   Texists x1; trivial.
-   apply eq_set_refl.
-
-  rewrite union_ax in H3.
-  Tdestruct H3.
-  rewrite subset_ax in H4; destruct H4.
-  Tdestruct H5.
-  apply eq_elim with x2; trivial.
-  apply eq_set_trans with x3; trivial.
-  apply H0 with x0; trivial.
+ rewrite union_ax in H3.
+ Tdestruct H3.
+ rewrite subset_ax in H4; destruct H4.
+ Tdestruct H5.
+ apply eq_elim with x2; trivial.
+ apply eq_set_trans with x3; trivial.
+ apply H0 with x0; trivial.
 Qed.
 
 
-Definition repl_ex := repl_ax_from_collection.
+Definition repl_ex :=
+  fun a R Rm => TrI(repl_ax_from_collection a R Rm).
 
 (* Deriving the existentially quantified sets *)
 
@@ -1228,11 +1265,15 @@ Tdestruct (EM (Tr(exists2 z, z \in V x & P (V z)))).
    revert H3; apply -> Pm; trivial.
 Qed.
 
-Axiom nnpp : forall P, ((P->Tr False)->Tr False) -> P.
+(* We are actually in classical logic...
+   Otherwise ttrepl would allow to build IFZ_C.
+ *)
+(*Axiom nnpp : forall P, ((P->Tr False)->Tr False) -> P.
 Lemma ttcoll_from_ttrepl_em (X:Tlo) (R:X->set->Prop):
+  (forall i, Proper (eq_set ==> iff) (R i)) ->
   exists Y, exists g:Y->set,
     forall i, (exists w, R i w) -> exists j:Y, R i (g j).
-intros.
+intros Rm.
 pose (P i v := exists2 x, x \in v & R i x).
 destruct (@ttrepl_axiom (ttcoll_dom X R)
   (fun i y => lst_rk (P (cd_i _ _ i)) y)) as (f,?).
@@ -1281,59 +1322,10 @@ assert (x \in B).
 apply nnpp; intro.
 Tdestruct H2 as (j,?).
 apply H3; exists j.
-admit. (* x == elts B j -> R i x -> R i (elts B j)...*)
-Qed.
-
-(*
-Lemma coll_ax : forall A (R:set->set->Prop), 
-    (forall x x' y y', in_set x A ->
-     eq_set x x' -> eq_set y y' -> R x y -> R x' y') ->
-    (forall x, in_set x A -> exists y, R x y) ->
-    exists B, forall x, in_set x A -> exists y, in_set y B /\ R x y.
-
-assert (Pm : forall x x', x \in A -> x == x' -> forall y y', y == y' -> P x y -> P x' y').
- intros.
- destruct H4.
- destruct H5; destruct H5.
- split; [|exists x0;split].
-  apply in_reg with x; trivial.
-
-  apply eq_elim with y; trivial.
-
-  apply H with x x0; trivial.
-  apply eq_set_refl.
-assert (Pwit : forall x, x \in A -> exists y, P x (V y)). 
- intros.
- destruct (H0 x); trivial.
- exists (singl x0); split; trivial.
- exists x0; split; trivial.
- apply V_sub with (V x0).
-  apply V_mono; exists tt; apply eq_set_refl.
-  apply V_intro.
-destruct (@repl_ax A (fun x y => lst_rk (P x) y)); eauto using lst_fun, lst_ex.
- intros.
- apply lst_rk_morph with (P x) y; trivial.
- intros.
- split; intros; eauto.
-  apply Pm with x' x'0; trivial.
-   apply in_reg with x; trivial.
-   apply eq_set_sym; trivial.
-   apply eq_set_sym; trivial.
-
- exists (union x); intros.
- destruct lst_ex with (P x0); auto.
-  apply Pm; trivial; apply eq_set_refl.
-
-  specialize lst_incl with (1:=H3).
-  destruct 1 as (_,(?,(?,?))).
-  exists x2; split; trivial.
-  rewrite union_ax.
-  exists x1; trivial.
-  rewrite H1.
-  exists x0; auto.
+revert H1; apply Rm.
+apply eq_set_sym; trivial.
 Qed.
 *)
-
 (* We could also try to prove that B grows when A and R do. *)
 Lemma coll_ax_uniq : forall A (R:set->set->Prop), 
     (forall x x' y y', x \in A -> x == x' -> y == y' ->
@@ -1343,7 +1335,14 @@ Lemma coll_ax_uniq : forall A (R:set->set->Prop),
       Tr(exists y, R x y) ->
       Tr(exists2 y, y \in B & R x y)))).
 intros.
-destruct collection_ax with (A:=A) (R:=R); trivial.
+pose (R' x y := x \in A /\ R x y).
+destruct collection_ax with (A:=A) (R:=R'); trivial.
+ unfold R'; do 3 red; intros.
+ split; destruct 1; split.
+  apply in_reg with x; trivial.
+  revert H3; apply H; trivial.
+  apply in_reg with y; trivial; apply eq_set_sym; trivial.
+  revert H3; apply H; trivial; apply eq_set_sym; trivial.
 apply lst_ex.
  intros a a' eqa.
  apply fa_morph; intros x0.
@@ -1355,14 +1354,76 @@ apply lst_ex.
 
  Texists x.
  intros a ? ?.
- apply H0 in H2; trivial.
- Tdestruct H2.
- Texists x0; trivial.
- apply V_mono in H2.
- apply V_sub with (V x0); trivial.
+ assert (Tr(exists y, R' a y)).
+  Tdestruct H2.
+  Texists x0; split; trivial.
+ clear H2.
+ apply H0 in H3; trivial.
+ Tdestruct H3 as (y,yx,(_,Ray)). 
+ Texists y; trivial.
+ apply V_mono in yx.
+ apply V_sub with (V y); trivial.
  apply V_intro.
 Qed.
 
 End ClassicalCollection.
 
 End Ensembles.
+
+(* Proving that ttrepl + EM => ttcoll
+   If we could avoid EM, we would have that ttrepl
+   gives Coq the strength of ZF
+ *)
+Axiom EM : forall P, P\/~P.
+
+Module E := Ensembles CoqSublogicThms.
+Import E.
+Lemma ttcoll_from_ttrepl_em (X:Tlo) (R:X->set->Prop):
+  (forall i, Proper (eq_set ==> iff) (R i)) ->
+  exists Y, exists g:Y->set,
+    forall i, (exists w, R i w) -> exists j:Y, R i (g j).
+intros Rm.
+pose (P i v := exists2 x, x \in v & R i x).
+destruct (@ttrepl_axiom (ttcoll_dom X R)
+  (fun i y => lst_rk (P (cd_i _ _ i)) y)) as (f,?).
+ destruct x as (i,e); simpl.
+ assert (exists x, P i (V x)).
+  destruct e.
+  exists (singl x).
+  red.
+  exists x; trivial.
+  apply eq_elim with (power (V x)).
+   2:apply V_pow.
+  apply V_intro.
+ apply lst_ex with (1:=EM); trivial.
+ do 2 red; intros.
+ unfold P.
+ apply ex2_morph; red; intros; auto with *.
+ apply in_set_morph; [apply eq_set_refl|trivial].
+
+ split; intros.
+  apply lst_fun with (1:=H) (2:=H0).
+
+  revert H; apply lst_rk_morph; intros; trivial.
+  unfold P.
+  apply ex2_morph; red; intros; auto with *.
+  apply in_set_morph; [apply eq_set_refl|trivial].
+
+(* main *)
+pose (B := union (sup _ f)).
+exists (idx B); exists (elts B).
+intros.
+specialize H with (mkCi _ _ i H0); simpl in H.
+apply lst_incl in H.
+red in H.
+destruct H.
+assert (x \in B).
+ simpl.
+ unfold B; rewrite union_ax.
+ econstructor;[eexact H|].
+ econstructor; eapply eq_set_refl.
+destruct H2 as (j,?).
+exists j.
+revert H1; apply Rm.
+apply eq_set_sym; trivial.
+Qed.
