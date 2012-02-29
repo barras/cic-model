@@ -1,13 +1,14 @@
 Require Export basic.
 Require Import Choice. (* Axiom *)
 Require Import Sublogic.
+Require Import ZFdef.
 
 (** In this file, we build a model of both intuitionistic and
    classical ZF in Coq extended with the Type-Theoretical Collection
    Axiom (TTColl).
  *)
 
-Module Ensembles (L:SublogicTheory).
+Module Ensembles (L:SublogicTheory) <: IZF_C_sig L <: IZF_R_HalfEx_sig L.
 
 Import L.
 
@@ -383,15 +384,15 @@ Fixpoint num (n:nat) : set :=
   | S k => union (pair (num k) (pair (num k) (num k)))
   end.
 
-Definition infinity := sup _ num.
+Definition infinite := sup _ num.
 
-Lemma infty_ax1 : empty \in infinity.
+Lemma infinity_ax1 : empty \in infinite.
 Texists 0.
 apply eq_set_refl.
 Qed.
 
-Lemma infty_ax2 : forall x, x \in infinity ->
-  union (pair x (pair x x)) \in infinity.
+Lemma infinity_ax2 : forall x, x \in infinite ->
+  union (pair x (pair x x)) \in infinite.
 intros.
 Tdestruct H.
 Texists (S x0); simpl elts.
@@ -484,26 +485,32 @@ Definition ttrepl :=
   forall X:Tlo, unique_choice X set eq_set.
 
 (** We show it is a consequence of [choice]. *)
-Lemma ttrepl_axiom : ttrepl.
-red; red; intros; apply choice_axiom; trivial.
+Lemma ttrepl_axiom_from_choice :
+  (forall X:Tlo, choice X set) -> ttrepl.
+red; red; intros choice_ax X R Rex _Runiq. (* unicity not needed *)
+apply choice_ax; trivial.
 Qed.
 
-Section NotClassical.
+Axiom ttrepl_ax : ttrepl.
 
-(** This does not work in classial logic... *)
-Hypothesis intuit : forall P:Prop, Tr P -> P.
+Section NotClassical.
 
 Record repl_dom a (R:set->set->Prop) := mkRi {
   rd_i : idx a;
   rd_dom : Tr(exists y, R (elts a rd_i) y)
 }.
 
+(** Showing that TTRepl implies Replacement.
+    This proofs requires that we are in the intuitionistic fragment.
+    If L is classical logic, we would have a model of ZF in Coq+TTRepl.
+ *)
+Hypothesis intuit : forall P:Prop, Tr P -> P.
 Lemma intuit_repl_ax a (R:set->set->Prop) :
     (forall x x' y y', x \in a -> x == x' -> y == y' -> R x y -> R x' y') ->
     (forall x y y', x \in a -> R x y -> R x y' -> y == y') ->
     exists b, forall x, x \in b <-> Tr(exists2 y, y \in a & R y x).
 intros.
-destruct (ttrepl_axiom (repl_dom a R)
+destruct (ttrepl_ax (repl_dom a R)
         (fun i y => Tr(R (elts a (rd_i _ _ i)) y))) as (f,?); intros.
  destruct x as (i,h); simpl. 
  set (x:=elts a i) in h.
@@ -553,32 +560,71 @@ End NotClassical.
 
 (** Collection *)
 
-(* intuitionistic version *)
-
-(* The intuitionistic collection axiom (TTColl) is a consequence of
+(* The type-theoretical collection axiom (TTColl) is a consequence of
    [choice], but it is sufficient to prove collection.
  *)
 
-
-Record ttcoll_dom X (R:X->set->Prop) := mkCi {
-  cd_i:X;
-  cd_dom : exists y, R cd_i y
-}.
-
-Lemma ttcoll (X:Tlo) (R:X->set->Prop):
+Definition ttcoll := forall (X:Tlo) (R:X->set->Prop),
   (forall i, Proper (eq_set==>iff) (R i)) ->
   exists Y, exists g:Y->set,
     forall i, (exists w, R i w) -> exists j:Y, R i (g j).
-intros.
-destruct (choice_axiom (ttcoll_dom X R) set (fun i y => R (cd_i _ _ i) y)) as (f,Hf).
+
+(** TTColl is a consequence of choice *)
+
+Record ttcoll_dom (X:Tlo) (R:X->set->Prop) : Tlo := mkCi {
+  cd_i:X;
+  cd_dom : exists y, R cd_i y
+}.
+Lemma ttcoll_axiom_from_choice :
+  (forall (X:Tlo), choice X set) -> ttcoll.
+red; intros choice_ax X R _Rm. (* We don't need that R is a morphism *)
+destruct (choice_ax (ttcoll_dom X R) (fun i y => R (cd_i _ _ i) y)) as (f,Hf).
  intros; apply (cd_dom _ _ x).
 
  exists (ttcoll_dom X R).
  exists f.
  intros.
- exists (mkCi _ _ i H0).
- apply (Hf (mkCi _ _ i H0)).
+ exists (mkCi _ _ i H).
+ apply (Hf (mkCi _ _ i H)).
 Qed.
+
+(** TTColl is stronger than TTRepl *)
+Lemma ttrepl_from_ttcoll : ttcoll -> ttrepl.
+red; red; intros ttcoll_ax X R Rex Runiq.
+destruct (ttcoll_ax X R) as (Y,(g,HB)).
+ do 2 red; intros.
+ split; intros.
+  apply Runiq with x; trivial.
+  apply Runiq with y; trivial.
+  apply eq_set_sym; trivial.
+exists (fun i => union (subset (sup Y g) (fun y => R i y))).
+intros i.
+destruct (Rex i) as (y,Hy).
+assert (y == union (subset (sup Y g) (fun y => R i y))).
+ apply eq_intro; intros.
+  rewrite union_ax.
+  Texists y; trivial.
+  rewrite subset_ax.
+  split.
+   destruct HB with i as (j,?); trivial.
+   Texists j; simpl.
+   apply Runiq with i; trivial.
+
+   Texists y; trivial.
+   apply eq_set_refl.
+
+ rewrite union_ax in H.
+ Tdestruct H as (b, ?, ?).
+ rewrite subset_ax in H0; destruct H0.
+ Tdestruct H1 as (b', ?, ?).
+ apply eq_elim with b; trivial.
+ apply eq_set_trans with b'; trivial.
+ apply Runiq with i; trivial.
+apply Runiq with y; trivial.
+Qed.
+
+(** We now show that TTColl implies (set-theoretical) collection *)
+Axiom ttcoll_axiom : ttcoll.
 
 (* ttcoll rephrased on sets: *)
 Lemma ttcoll_set A (R:set->set->Prop) :
@@ -586,7 +632,7 @@ Lemma ttcoll_set A (R:set->set->Prop) :
   exists z, forall i, (exists w, R (elts A i) w) ->
             exists j, R (elts A i) (elts z j).
 intros.
-destruct (ttcoll (idx A) (fun i y => R (elts A i) y)) as (Y,(g,Hg)).
+destruct (ttcoll_axiom (idx A) (fun i y => R (elts A i) y)) as (Y,(g,Hg)).
  intros; apply H; apply eq_set_refl.
 exists (sup Y g); trivial.
 Qed.
@@ -616,66 +662,6 @@ destruct (HB i) as (j,Rxy).
   apply eq_set_refl.
 Qed.
 
-(*
-
-Record ttcoll_dom X (R:X->set->Prop) := mkCi {
-  cd_i:X;
-  cd_dom : exists y, R cd_i y
-}.
-
-Lemma ttcoll (X:Tlo) (R:X->set->Prop):
-  exists Y, exists g:Y->set,
-    forall i, (exists w, R i w) -> exists j:Y, R i (g j).
-intros.
-destruct (choice_axiom (ttcoll_dom X R) set (fun i y => R (cd_i _ _ i) y)) as (f,Hf).
- intros; apply (cd_dom _ _ x).
-
- exists (ttcoll_dom X R).
- exists f.
- intros.
- exists (mkCi _ _ i H).
- apply (Hf (mkCi _ _ i H)).
-Qed.
-
-(* ttcoll rephrased on sets: *)
-Lemma ttcoll_set A (R:set->set->Prop) :
-  exists z, forall i, (exists w, R (elts A i) w) ->
-            exists j, R (elts A i) (elts z j).
-intros.
-destruct (ttcoll (idx A) (fun i y => R (elts A i) y)) as (Y,(g,Hg)).
-exists (sup Y g); trivial.
-Qed.
-
-(* Collection axiom out of TTColl: *)
-Lemma collection_ax : forall A (R:set->set->Prop), 
-    (forall x x' y y', x \in A -> x == x' -> y == y' ->
-     R x y -> R x' y') ->
-    exists B, forall x, x \in A ->
-      Tr (exists y, R x y) ->
-      Tr (exists2 y, y \in B & R x y).
-intros.
-destruct ttcoll_set with A (fun x y => R x y) as (B,HB).
-exists B; intros x inA H0.
-Tdestruct H0 as (w, Rxw).
-assert (h:=inA); Tdestruct h as (i, eqx).
-assert (R (elts A i) w).
- apply H with (4:=Rxw); trivial.
- apply eq_set_refl.
-destruct (HB i) as (j,Rxy).
- exists w; trivial.
-
- Texists (elts B j).
-  apply (proj2_sig (elts' B j)).
-
-  apply H with (4:=Rxy).
-   apply in_reg with x; trivial.
-
-   apply eq_set_sym; trivial.
-
-   apply eq_set_refl.
-Qed.
-*)
-
 Lemma collection_ax' : forall A (R:set->set->Prop), 
     Proper (eq_set==>eq_set==>iff) R ->
     (forall x, x \in A -> Tr(exists y, R x y)) ->
@@ -687,43 +673,9 @@ Qed.
 
 (** Comparison of replacement and collection *)
 
-(** TTColl is stronger than TTRepl *)
-Lemma ttrepl_from_ttcoll : ttrepl.
-red; red; intros.
-destruct (ttcoll X R) as (Y,(g,HB)).
- do 2 red; intros.
- split; intros.
-  apply H0 with x; trivial.
-  apply H0 with y; trivial.
-  apply eq_set_sym; trivial.
-exists (fun i => union (subset (sup Y g) (fun y => R i y))).
-intros i.
-destruct (H i) as (y,Hy).
-assert (y == union (subset (sup Y g) (fun y => R i y))).
- apply eq_intro; intros.
-  rewrite union_ax.
-  Texists y; trivial.
-  rewrite subset_ax.
-  split.
-   destruct HB with i as (j,?); trivial.
-   Texists j; simpl.
-   apply H0 with i; trivial.
-
-   Texists y; trivial.
-   apply eq_set_refl.
-
- rewrite union_ax in H1.
- Tdestruct H1 as (b, ?, ?).
- rewrite subset_ax in H2; destruct H2.
- Tdestruct H3 as (b', ?, ?).
- apply eq_elim with b; trivial.
- apply eq_set_trans with b'; trivial.
- apply H0 with i; trivial.
-apply H0 with y; trivial.
-Qed.
 
 (* Replacement as a weaker form of collection.
-   This is stronger than combining the previous lemma with intuit_repl_ax because
+   This is stronger than combining ttrepl_from_ttcoll with intuit_repl_ax because
    we would need to be intuitionistic
  *)
 
@@ -777,7 +729,7 @@ exists (subset B (fun y => exists2 x, x \in a & R x y)); split; intros.
  exists x'; auto.
 Qed.
 
-(* *)
+(** ttrepl_needed_for_replacement proof not completed *)
 Lemma ttrepl_needed_for_replacement : ttrepl.
 red; red; intros.
 (* Note quite: we need a set [a] with an injection from X to elements of a *)
@@ -828,9 +780,6 @@ apply eq_set_ax; split; intros.
 Qed.
 
 
-Definition repl_ex :=
-  fun a R Rm => TrI(repl_ax_from_collection a R Rm).
-
 (* Deriving the existentially quantified sets *)
 
 Lemma empty_ex: Tr(exists empty, forall x, x \in empty -> Tr False).
@@ -874,10 +823,10 @@ Lemma infinity_ex: Tr(exists2 infinite,
      Tr(exists2 y,
        (forall z, z \in y <-> Tr(z == x \/ z \in x)) &
        y \in infinite))).
-Texists infinity.
+Texists infinite.
  Texists empty.
   exact empty_ax.
-  exact infty_ax1.
+  exact infinity_ax1.
 
  intros.
  Texists (union (pair x (pair x x))); intros.
@@ -901,8 +850,14 @@ Texists infinity.
     Texists x; trivial.
     rewrite pair_ax; Tleft; apply eq_set_refl.
 
-  apply infty_ax2; trivial.
+  apply infinity_ax2; trivial.
 Qed.
+
+Definition repl_ex :=
+  fun a R Rm => TrI(repl_ax_from_collection a R Rm).
+
+Definition coll_ex :=
+  fun a R Rm => TrI(collection_ax a R Rm).
 
 (** Fixpoint *)
 
@@ -1265,84 +1220,26 @@ Tdestruct (EM (Tr(exists2 z, z \in V x & P (V z)))).
    revert H3; apply -> Pm; trivial.
 Qed.
 
-(* We are actually in classical logic...
-   Otherwise ttrepl would allow to build IFZ_C.
- *)
-(*Axiom nnpp : forall P, ((P->Tr False)->Tr False) -> P.
-Lemma ttcoll_from_ttrepl_em (X:Tlo) (R:X->set->Prop):
-  (forall i, Proper (eq_set ==> iff) (R i)) ->
-  exists Y, exists g:Y->set,
-    forall i, (exists w, R i w) -> exists j:Y, R i (g j).
-intros Rm.
-pose (P i v := exists2 x, x \in v & R i x).
-destruct (@ttrepl_axiom (ttcoll_dom X R)
-  (fun i y => lst_rk (P (cd_i _ _ i)) y)) as (f,?).
- destruct x as (i,e); simpl.
- assert (exists x, P i (V x)).
-  destruct e.
-  exists (singl x).
-  red.
-  exists x; trivial.
-  apply eq_elim with (power (V x)).
-   2:apply V_pow.
-  apply V_intro.
- apply TrI in H.
- apply lst_ex in H.
-  apply nnpp; intro.
-  Tdestruct H.
-  apply H0.
-  exists x; trivial.
-
-  do 2 red; intros.
-  unfold P.
-  apply ex2_morph; red; intros; auto with *.
-  apply in_set_morph; [apply eq_set_refl|trivial].
-
- split; intros.
-  apply lst_fun with (1:=H) (2:=H0).
-
-  revert H; apply lst_rk_morph; intros; trivial.
-  unfold P.
-  apply ex2_morph; red; intros; auto with *.
-  apply in_set_morph; [apply eq_set_refl|trivial].
-
-(* main *)
-pose (B := union (sup _ f)).
-exists (idx B); exists (elts B).
-intros.
-specialize H with (mkCi _ _ i H0); simpl in H.
-apply lst_incl in H.
-red in H.
-destruct H.
-assert (x \in B).
- simpl.
- unfold B; rewrite union_ax.
- Tin; econstructor;[eexact H|].
- Tin; econstructor; eapply eq_set_refl.
-apply nnpp; intro.
-Tdestruct H2 as (j,?).
-apply H3; exists j.
-revert H1; apply Rm.
-apply eq_set_sym; trivial.
-Qed.
-*)
 (* We could also try to prove that B grows when A and R do. *)
-Lemma coll_ax_uniq : forall A (R:set->set->Prop), 
-    (forall x x' y y', x \in A -> x == x' -> y == y' ->
-     R x y -> R x' y') ->
-    Tr(ex(lst_rk (fun B =>
+
+Definition coll_spec A R B :=
+  lst_rk (fun B =>
       forall x, x \in A ->
       Tr(exists y, R x y) ->
-      Tr(exists2 y, y \in B & R x y)))).
+      Tr(exists2 y, y \in B & R x y)) B.
+
+Lemma coll_ax_uniq : forall A (R:set->set->Prop), 
+    Proper (eq_set ==> eq_set ==> iff) R ->
+    Tr(exists B, coll_spec A R B).
 intros.
 pose (R' x y := x \in A /\ R x y).
 destruct collection_ax with (A:=A) (R:=R'); trivial.
  unfold R'; do 3 red; intros.
  split; destruct 1; split.
   apply in_reg with x; trivial.
-  revert H3; apply H; trivial.
-  apply in_reg with y; trivial; apply eq_set_sym; trivial.
   revert H3; apply H; trivial; apply eq_set_sym; trivial.
+  apply in_reg with y; trivial; apply eq_set_sym; trivial.
+  revert H3; apply H; trivial.
 apply lst_ex.
  intros a a' eqa.
  apply fa_morph; intros x0.
@@ -1366,25 +1263,35 @@ apply lst_ex.
  apply V_intro.
 Qed.
 
+Lemma coll_ax_mono : forall A A' (R:set->set->Prop) B B', 
+    Proper (eq_set ==> eq_set ==> iff) R ->
+    coll_spec A R B ->
+    coll_spec A' R B' ->
+    (forall z, z \in A -> z \in A') ->
+    (forall z, z \in B -> z \in B').
+intros.
+destruct H0 as (HB,(BV,Blst)).
+destruct H1 as (HB',(B'V,_)).
+specialize Blst with (1:=B'V) (2:=fun x xA => HB' x (H2 _ xA)).
+rewrite power_ax in Blst.
+apply eq_elim with (V B'); [auto|apply eq_set_sym; trivial].
+Qed.
+
 End ClassicalCollection.
 
 End Ensembles.
 
-(* Proving that ttrepl + EM => ttcoll
-   If we could avoid EM, we would have that ttrepl
-   gives Coq the strength of ZF
- *)
-Axiom EM : forall P, P\/~P.
+Module Ens := Ensembles CoqSublogicThms.
+Import Ens.
 
-Module E := Ensembles CoqSublogicThms.
-Import E.
-Lemma ttcoll_from_ttrepl_em (X:Tlo) (R:X->set->Prop):
-  (forall i, Proper (eq_set ==> iff) (R i)) ->
-  exists Y, exists g:Y->set,
-    forall i, (exists w, R i w) -> exists j:Y, R i (g j).
-intros Rm.
+(** Proving that ttrepl + EM => ttcoll
+    If we could avoid EM, we would have that ttrepl
+    gives Coq the strength of ZF
+ *)
+Lemma ttcoll_from_ttrepl_em : (forall P,P\/~P) -> ttrepl -> ttcoll.
+intros EM ttrepl_ax X R Rm.
 pose (P i v := exists2 x, x \in v & R i x).
-destruct (@ttrepl_axiom (ttcoll_dom X R)
+destruct (@ttrepl_ax (ttcoll_dom X R)
   (fun i y => lst_rk (P (cd_i _ _ i)) y)) as (f,?).
  destruct x as (i,e); simpl.
  assert (exists x, P i (V x)).

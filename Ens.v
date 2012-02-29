@@ -1,11 +1,12 @@
 Require Import ZFskol.
 Require Import Choice. (* Axiom *)
+Require Import Sublogic.
 
-(* In this file, we give an attempt to build a model of IZF
+(** In this file, we give an attempt to build a model of IZF
    in Coq.
  *)
 
-Module IZF_R <: IZF_R_Ex_sig.
+Module IZF_R <: IZF_R_Ex_sig CoqSublogicThms.
 
 (* The level of indexes *)
 Definition Ti := Type.
@@ -160,8 +161,9 @@ Defined.
 
 Lemma wf_ax :
   forall (P:set->Prop),
+  (forall x, P x -> P x) ->
   (forall x, (forall y, in_set y x -> P y) -> P x) -> forall x, P x.
-intros.
+intros P _ H x.
 cut (forall x', eq_set x x' -> P x');[auto using eq_set_refl|].
 induction x; intros.
 apply H; intros.
@@ -902,7 +904,7 @@ Qed.
 Lemma V_trans : forall x y z,
   z \in y -> y \in V x -> z \in V x.
 intros x.
-pattern x; apply wf_ax; clear x; intros.
+pattern x; apply wf_ax; trivial; clear x; intros.
 rewrite V_def in H1|-*.
 destruct H1.
 destruct H1.
@@ -936,7 +938,7 @@ Qed.
 Lemma V_sub : forall x y y',
   in_set y (V x) -> incl_set y' y -> in_set y' (V x).
 intros x.
-pattern x; apply wf_ax; clear x; intros.
+pattern x; apply wf_ax; trivial; clear x; intros.
 rewrite V_def in H0|-*.
 destruct H0; destruct H0.
 exists x0; split; trivial.
@@ -946,7 +948,7 @@ Qed.
 
 Lemma V_compl : forall x z, in_set z (V x) -> in_set (V z) (V x). 
 intros x.
-pattern x; apply wf_ax; clear x; intros.
+pattern x; apply wf_ax; trivial; clear x; intros.
 rewrite V_def in *.
 destruct H0; destruct H0.
 exists x0; split; trivial.
@@ -958,7 +960,7 @@ Qed.
 
 Lemma V_intro : forall x, incl_set x (V x).
 intros x.
-pattern x; apply wf_ax; clear x; intros.
+pattern x; apply wf_ax; trivial; clear x; intros.
 red; intros.
 rewrite V_def.
 exists z; split; auto.
@@ -985,7 +987,7 @@ cut (forall y, incl_set (V y) (V x) -> P y).
  intros.
  apply H0.
  red; trivial.
-induction x using wf_ax; intros.
+induction x using wf_ax; trivial; intros.
 apply H; intros.
 apply H1 in H2.
 rewrite V_def in H2; destruct H2; destruct H2.
@@ -1001,7 +1003,7 @@ Qed.
 Lemma V_total : forall x y, in_set (V x) (V y) \/ incl_set (V y) (V x).
 intros x y.
 revert x.
-pattern y; apply wf_ax; clear y.
+pattern y; apply wf_ax; trivial; clear y.
 intros y Hy x.
 destruct (EM (exists y', y' \in V y /\ incl_set (V x) y')).
 left.

@@ -14,34 +14,34 @@ Parameter repl1_morph : forall x y F G,
   repl1 x F == repl1 y G.
 
 
-(* Investigations on the relation between the various
+(** Investigations on the relation between the various
    statements of replacement and collection.
  *)
 
-(* 1- Replacement *)
+(** 1- Replacement *)
 
-(* Relation is required to be functional only on A *)
+(** Relation is required to be functional only on A *)
 Definition rep_bnd A R :=
   Proper (eq_set ==> eq_set ==> iff) R ->
   (forall x, x \in A -> exists y, R x y) ->
   (forall x y y', x \in A -> R x y -> R x y' -> y == y') ->
   exists B, forall y, (y \in B <-> exists x, x \in A /\ R x y).
 
-(* Weaker statement (the constraint on R is tighter): the
-   relation should be functional on the full class of sets. *)
+(** Weaker statement (the constraint on R is tighter): the
+    relation should be functional on the full class of sets. *)
 Definition rep_ubnd A R :=
   Proper (eq_set ==> eq_set ==> iff) R ->
   (forall x, exists y, R x y) ->
   (forall x y y', R x y -> R x y' -> y == y') ->
   exists B, forall y, (y \in B <-> exists x, x \in A /\ R x y).
 
-(* The bounded version is stronger. *)
+(** The bounded version is stronger. *)
 Lemma rep_bnd_ubnd : forall A R, rep_bnd A R -> rep_ubnd A R.
 red; intros.
 apply H; eauto.
 Qed.
 
-(* Both versions are equivalent when membership to A can be
+(** Both versions are equivalent when membership to A can be
    "decided" (in Prop), either because we are in classical logic, or
    because it can be decided. *)
 Lemma rep_ubnd_bnd_dec :
@@ -89,7 +89,7 @@ destruct (H0 (fun x y => (x \in A /\ R x y) \/
   exists x0; auto.
 Qed.
 
-(* A more general presentation, not requiring the relation to be
+(** A more general presentation, not requiring the relation to be
    functional, but then only the images of inputs where the relation
    is functional are collected.
    It is equivalent to the bounded statement. *)
@@ -157,7 +157,7 @@ split; red; intros.
   exists x0; split; [|split]; trivial; eauto.
 Qed.
 
-(* Summary for replacement:
+(** Summary for replacement:
    rep_gen <--> rep_bnd --> rep_ubnd
                         <-- (if A is decidable)
 *)
@@ -206,21 +206,21 @@ Qed.
 *)
 
 
-(* 2- Collection *)
+(** 2- Collection *)
 
-(* The bounded version *)
+(** The bounded version *)
 Definition coll_bnd A R :=
   Proper (eq_set ==> eq_set ==> iff) R ->
   (forall x, x \in A -> exists y, R x y) ->
   exists B, forall x, x \in A -> exists y, y \in B /\ R x y.
 
-(* The unbounded version *)
+(** The unbounded version *)
 Definition coll_ubnd A R :=
   Proper (eq_set ==> eq_set ==> iff) R ->
   (forall x, exists y, R x y) ->
   exists B, forall x, x \in A -> exists y, y \in B /\ R x y.
 
-(* The same relationship between these statements hold for collection: *)
+(** The same relationship between these statements hold for collection: *)
 Lemma coll_bnd_ubnd : forall A R, coll_bnd A R -> coll_ubnd A R.
 red; intros.
 apply H; trivial.
@@ -251,7 +251,7 @@ destruct (H0 (fun x y => R x y \/ (~ x \in A /\ y == empty))).
   elim H6; trivial.
 Qed.
 
-(* The "general" version, equivalent to the bounded one. *)
+(** The "general" version, equivalent to the bounded one. *)
 Definition coll_gen A R :=
   Proper (eq_set ==> eq_set ==> iff) R ->
   exists B, forall x, x \in A -> (exists y, R x y) -> exists y, y \in B /\ R x y.
@@ -276,7 +276,7 @@ split; red; intros.
  apply H2; auto.
 Qed.
 
-(* 3- Collection implies Replacement *)
+(** 3- Collection implies Replacement *)
 
 Lemma coll_repl_bnd : forall A R, coll_bnd A R -> rep_bnd A R.
 red; intros.
@@ -321,9 +321,7 @@ split; intros.
   exists x0; auto.
 Qed.
 
-(* 4- Replacement imples Collection if from any non empty
-   class we can build a set containing an element of that
-   class. *)
+(** 4- Replacement + excluded-middle imples Collection. *)
 
 Section ReplImpliesCollFromExcludedMiddleAndWellFoundation.
 
@@ -338,7 +336,7 @@ Parameter rk_def : forall x z,
 Lemma rk_trans : forall x y z,
   z \in y -> y \in rk x -> z \in rk x.
 intros x.
-pattern x; apply wf_ax; clear x; intros.
+pattern x; apply wf_ax; trivial; clear x; intros.
 rewrite rk_def in H1|-*.
 destruct H1.
 destruct H1.
@@ -350,7 +348,7 @@ Qed.
 Lemma rk_sub : forall x y y',
   y \in rk x -> y' \incl y -> y' \in rk x.
 intros x.
-pattern x; apply wf_ax; clear x; intros.
+pattern x; apply wf_ax; trivial; clear x; intros.
 rewrite rk_def in H0|-*.
 destruct H0; destruct H0.
 exists x0; split; trivial.
@@ -368,7 +366,7 @@ Qed.
 
 Lemma rk_compl : forall x z, z \in rk x -> rk z \in rk x. 
 intros x.
-pattern x; apply wf_ax; clear x; intros.
+pattern x; apply wf_ax; trivial; clear x; intros.
 rewrite rk_def in *.
 destruct H0; destruct H0.
 exists x0; split; trivial.
@@ -395,7 +393,7 @@ Qed.
 Lemma rk_intro :
   forall x, x \in power (rk x).
 intros.
-pattern x; apply wf_ax; clear x; intros.
+pattern x; apply wf_ax; trivial; clear x; intros.
 rewrite power_ax; intros.
 rewrite rk_def.
 exists y; split; auto.
@@ -422,7 +420,7 @@ cut (forall y, rk y \incl rk x -> P y).
  intros.
  apply H0.
  red; trivial.
-pattern x; apply wf_ax; clear x; intros.
+pattern x; apply wf_ax; trivial; clear x; intros.
 apply H; intros.
 apply H1 in H2.
 rewrite rk_def in H2; destruct H2; destruct H2.
@@ -441,7 +439,7 @@ Hypothesis EM : forall P, P \/ ~P.
 Lemma rk_total : forall x y, rk x \in rk y \/ rk y \incl rk x.
 intros x y.
 revert x.
-pattern y; apply wf_ax; clear y; intros y Hy x.
+pattern y; apply wf_ax; trivial; clear y; intros y Hy x.
 destruct (EM (exists y', y' \in rk y /\ rk x \incl y')).
  left.
  destruct H; destruct H.
@@ -621,7 +619,8 @@ Qed.
 
 End ReplImpliesCollFromExcludedMiddleAndWellFoundation.
 
-(* The usual statements found in the litterature. *)
+(** The usual statements found in the litterature. *)
+
 Definition replacement := forall A R, rep_bnd A R.
 
 Definition collection := forall A R, coll_ubnd A R.

@@ -1,10 +1,11 @@
 
 Require Export basic.
+Require Import Sublogic.
 Require Export ZFdef.
 
-(* We assume the existence of a model of IZF: *)
-Require Ens ZFskol.
-Module IZF : IZF_R_sig := ZFskol.Skolem Ens.IZF_R.
+(** We assume the existence of a model of IZF: *)
+Require ZFskolEm.
+Module IZF : IZF_R_sig CoqSublogicThms := ZFskolEm.IZF_R.
 Import IZF.
 
 Notation morph1 := (Proper (eq_set ==> eq_set)).
@@ -63,7 +64,7 @@ apply eq_intro; auto.
 Qed.
 
 
-(* Extentional equivalences *)
+(** Extentional equivalences *)
 
 Definition eq_fun dom F G :=
   forall x x', x \in dom -> x == x' -> F x == G x'.
@@ -142,8 +143,7 @@ subst y.
 rewrite <- H1; rewrite <- H0 in H3; auto.
 Qed.
 
-
-(* rephrasing axioms *)
+(** Rephrasing axioms *)
 
 Lemma empty_ext : forall e, (forall x, ~x \in e) -> e == empty.
 Proof.
@@ -390,12 +390,15 @@ symmetry; apply union_ext; intros.
  rewrite <- H0; trivial.
 Qed.
 
+(*Parameter replf : set -> (set->set) -> set.*)
 Definition replf a (F:set->set) :=
   repl a (fun x y => y == F x).
 
+
 Instance replf_mono_raw :
   Proper (incl_set ==> (eq_set ==> eq_set) ==> incl_set) replf.
-unfold replf.
+Admitted.
+(*unfold replf.
 do 4 red; intros.
 rewrite repl_ax in H1.
  rewrite repl_ax.
@@ -415,6 +418,7 @@ rewrite repl_ax in H1.
  rewrite H3; rewrite H4; transitivity (y0 x'); auto.
  symmetry; auto with *.
 Qed.
+*)
 
 Instance replf_morph_raw :
   Proper (eq_set ==> (eq_set ==> eq_set) ==> eq_set) replf.
@@ -431,7 +435,8 @@ Qed.
 Lemma replf_ax : forall a F z,
   ext_fun a F ->
   (z \in replf a F <-> exists2 x, x \in a & z == F x).
-unfold replf; intros.
+Admitted.
+(*unfold replf; intros.
 rewrite repl_ax; intros.
  split; intros.
   destruct H0.
@@ -445,6 +450,7 @@ rewrite repl_ax; intros.
 
  rewrite H1; rewrite H2; auto.
 Qed.
+*)
 
 Lemma replf_intro : forall a F y x,
   ext_fun a F -> x \in a -> y == F x -> y \in replf a F.
@@ -563,7 +569,7 @@ apply eq_intro; intros.
  exists x; auto with *.
 Qed.
 
-(* Conditional set *)
+(** Conditional set *)
 
   Definition cond_set P x := subset x (fun _ => P). 
 
@@ -613,7 +619,7 @@ Qed.
 rewrite cond_set_ax; destruct 1; trivial.
 Qed.
 
-(* other properties of axioms *)
+(** other properties of axioms *)
 
 Lemma pair_commut : forall x y, pair x y == pair y x.
 Proof.
@@ -657,7 +663,7 @@ rewrite H.
 apply pair_intro1.
 Qed.
 
-(* macros *)
+(** macros *)
 Definition singl x := pair x x.
 
 Lemma singl_intro : forall x, x \in singl x.
@@ -709,7 +715,7 @@ rewrite <- (union_singl_eq x); rewrite <- (union_singl_eq y).
 apply union_morph;trivial.
 Qed.
 
-(* union of 2 sets *)
+(** Union of 2 sets *)
 Definition union2 x y := union (pair x y).
 
 Lemma union2_intro1: forall x y z, z \in x -> z \in union2 x y.
@@ -752,11 +758,11 @@ unfold union2; rewrite pair_commut; reflexivity.
 Qed.
 
 
-(* subtraction *)
+(** subtraction *)
 Definition minus2 x y := subset x (fun x' => ~ (x' \in y)).
 
 
-(* Upper bound of a family of sets *)
+(** Upper bound of a family of sets *)
 
 Definition sup x F := union (replf x F).
 
@@ -824,7 +830,7 @@ Qed.
 Hint Resolve sup_incl.
 
 
-(* Russel's paradox *)
+(** Russel's paradox *)
 
 Section Russel.
 
@@ -854,7 +860,7 @@ Proof (omega_not_in_omega omega_in_omega).
 
 End Russel.
 
-(* intersection *)
+(** intersection *)
 
 Definition inter x := subset (union x) (fun y => forall z, z \in x -> y \in z).
 
@@ -929,7 +935,7 @@ apply subset_morph; intros;  eauto.
  rewrite H in H2; auto.
 Qed.
 
-(* Binary intersection *)
+(** Binary intersection *)
 
 Definition inter2 x y := inter (pair x y).
 
@@ -953,4 +959,3 @@ Lemma inter2_incl2 : forall x y, inter2 x y \incl y.
 red; intros.
 rewrite inter2_def in H; destruct H; trivial.
 Qed.
-

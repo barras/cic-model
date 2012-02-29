@@ -5,8 +5,9 @@
 
 Require Import basic.
 Require Export ZFdef.
+Require Import Sublogic.
 
-Module Skolem (Z : IZF_R_Ex_sig) <: IZF_R_sig.
+Module Skolem (Z : IZF_R_Ex_sig CoqSublogicThms) <: IZF_R_sig CoqSublogicThms.
 
 Instance Zsetoid: Equivalence Z.eq_set.
 Proof.
@@ -855,19 +856,20 @@ Proof proj2 (proj2_sig infinite_sig).
 (* well-founded induction *)
 
 Lemma wf_ax : forall (P:set->Prop),
+  (forall x, P x -> P x) ->
   (forall x, (forall y, y \in x -> P y) -> P x) ->
   forall x, P x.
-intros.
+intros P _ H x.
 cut (forall xs (x:set), x == Z2set xs -> P x).
  intros.
  destruct (Z2set_surj x).
  eauto.
 clear x.
-induction xs using Z.wf_ax; intros.
- apply H; intros.
- elim (Z2set_surj y); intros.
- rewrite H1,H3 in H2.
- apply in_inZ in H2; eauto.
+intros xs; elim xs using Z.wf_ax; intros; trivial.
+apply H; intros.
+elim (Z2set_surj y); intros.
+rewrite H1,H3 in H2.
+apply in_inZ in H2; eauto.
 Qed.
 
 (* Proving that collection can be skolemized in classical ZF:

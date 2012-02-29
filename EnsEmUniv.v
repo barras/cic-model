@@ -368,8 +368,8 @@ intros.
 apply U_elim in H0; Tdestruct H0 as (a',?).
 (* We use collection on small sets *)
 destruct S.collection_ax with a' (fun x y => R (injU x) (injU y)) as (B,HB).
- intros.
- revert H5; apply iff_impl; apply H; apply lift_eq; trivial.
+ do 3 red; intros.
+ apply H; apply lift_eq; trivial.
 
  Texists (injU B).
   apply U_intro.

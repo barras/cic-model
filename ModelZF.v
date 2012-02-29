@@ -1,4 +1,5 @@
 Require Import basic.
+Require Import Sublogic.
 Require Import Models GenModelSyntax.
 Require Import ZF ZFcoc.
 Import IZF.
@@ -104,7 +105,7 @@ setoid_replace (CCM.prod CCM.props (fun x => x)) with empty in H0.
 Qed.
 
 
-Module TypChoice (C : Choice_Sig IZF).
+Module TypChoice (C : Choice_Sig CoqSublogicThms IZF).
 
 Import C.
 Import BuildModel.

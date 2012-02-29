@@ -137,15 +137,15 @@ Parameter
  (repl_ex : forall a (R:set->set->Prop),
     (forall x x' y y', x \in a -> R x y -> R x' y' -> x == x' -> y == y') ->
     L.Tr(exists b, forall x, x \in b <->
-        L.Tr(exists2 y, y \in a & exists2 x', x == x' & R y x')).
+        L.Tr(exists2 y, y \in a & exists2 x', x == x' & R y x'))).
 
 End IZF_R_HalfEx_sig.
 
 (** Fully existential version *)
 
-Module Type IZF_R_Ex_sig.
+Module Type IZF_R_Ex_sig (L:SublogicTheory).
 
-Include Zermelo_Ex_sig.
+Include Zermelo_Ex_sig L.
 
 Parameter
  (repl_ex : forall a (R:set->set->Prop),
@@ -158,12 +158,12 @@ End IZF_R_Ex_sig.
 (************************************************************************)
 (** * Collection and ZF *)
 
-Module Type IZF_C_sig.
+Module Type IZF_C_sig (L:SublogicTheory).
 
-Include Zermelo_sig.
+Include Zermelo_sig L.
 
 Parameter
- (coll_ax : forall A (R:set->set->Prop), 
+ (coll_ex : forall A (R:set->set->Prop), 
     Proper (eq_set ==> eq_set ==> iff) R ->
     L.Tr(exists B, forall x, x \in A ->
          L.Tr(exists y, R x y) -> L.Tr(exists2 y, y \in B & R x y))).
@@ -171,9 +171,9 @@ Parameter
 End IZF_C_sig.
 
 (** With skolemized collection *)
-Module Type ZF_sig.
+Module Type ZF_sig (L:SublogicTheory).
 
-Include Zermelo_sig.
+Include Zermelo_sig L.
 
 Parameter
  (coll : set -> (set->set->Prop) -> set)
@@ -187,7 +187,7 @@ End ZF_sig.
 (************************************************************************)
 (* ----- *)
 
-Module Type Choice_Sig (S:SetTheory).
+Module Type Choice_Sig (L:SublogicTheory) (S:SetTheory).
 Import S.
 Parameter
   (choose : set -> set)

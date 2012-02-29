@@ -14,12 +14,32 @@ Module Type Sublogic.
 
 End Sublogic.
 
+(** Family of sublogic *)
+Module Type SublogicFamily.
+  Parameter T : Type.
+  Parameter Inline Tr : T -> Prop -> Prop.
+  Parameter TrI : forall x (P:Prop), P -> Tr x P.
+  Parameter TrP : forall x (P:Prop), Tr x (Tr x P) -> Tr x P.
+  Parameter TrMono : forall x (P Q:Prop), (P->Q)->Tr x P->Tr x Q.
+End SublogicFamily.
+
+Module Type Type_sig. Parameter T : Type. End Type_sig.
+Module Type Elt_sig (T:Type_sig). Parameter x : T.T. End Elt_sig.
+
+Module InstSublogicFamily (L:SublogicFamily) (X:Elt_sig L) <: Sublogic.
+  Import X.
+  Definition Tr := L.Tr x.
+  Definition TrI := L.TrI x.
+  Definition TrP := @L.TrP x.
+  Definition TrMono := @L.TrMono x.
+End InstSublogicFamily.
 
 Module Type ConsistentSublogic.
 Include Sublogic.
 Parameter TrCons : ~ Tr False.
 End ConsistentSublogic.
 
+(** Sublogics are monads *)
 Module AlternativeFormulations.
 
   Module Type LogicMonad.
@@ -62,7 +82,6 @@ Admitted.
   (* monad bind *)
   Parameter TrB : forall (P Q:Prop), Tr P -> (P -> Tr Q) -> Tr Q.
   Parameter Tr_ind : forall (P Q:Prop) {i:isL Q}, (P -> Q) -> Tr P -> Q.
-  Parameter TrE : forall P, isL P -> Tr P -> P.
 
   (** The set of L-propositions: introduction rules *)
   Parameter Tr_isL : forall P, isL (Tr P).
@@ -128,7 +147,7 @@ Module BuildLogic (L:Sublogic) <: SublogicTheory.
 Include L.
 
 (** Derived sublogic concepts:
-    - more elimination rules
+    - more elimination rules (bind of the monad)
     - the set of L-propositions *)
 
 Global Instance Tr_morph : Proper (iff==>iff) Tr.
@@ -153,10 +172,10 @@ intros.
 apply i; revert H0; apply TrMono; trivial.
 Qed.
 
-  Lemma TrE : forall P, isL P -> Tr P -> P.
-Proof (fun P Pf => Tr_ind (i:=Pf) (fun h => h)).
-
-(** The set of L-propositions: introduction rules *)
+(** The set of L-propositions: introduction rules.
+    L-props are closed under all connectives of negative
+    polarity.
+ *)
 
 Lemma Tr_isL : forall P, isL (Tr P).
 Proof TrP.
@@ -186,11 +205,14 @@ Qed.
 
 Global Hint Resolve Tr_isL T_isL and_isL fa_isL imp_isL iff_isL.
 
+(** Elimination rules for falsity *)
+
 Lemma rFF (Q:Prop) : Tr False -> Tr Q.
 apply TrMono; intros; contradiction.
 Qed.
 Lemma rFF' (Q:Prop) : Tr False -> isL Q -> Q.
-intros; apply TrE; trivial; apply rFF; trivial.
+intros.
+apply H0; apply rFF; trivial.
 Qed.
 
 End BuildLogic.
@@ -251,36 +273,28 @@ End ClassicSublogicThms.
 
 (** Friedman's A-translation *)
 
-Module Type Aprop. Parameter A:Prop. End Aprop.
-
-Module ASublogic.
-  (* First A is parameterized, but then the signatures do not match *)
-  Module Parameterized.
-    Definition Tr A P := P \/ A.
-    Definition TrI (A P:Prop) (p:P) : Tr A P := or_introl p.
-    Definition TrP (A P:Prop) (p:(P\/A)\/A) :=
-      match p with
-      | or_introl p => p
-      | or_intror a => or_intror a
-      end.
-    Definition TrMono (A P Q:Prop) (f:P->Q) (p:P\/A) :=
-      match p with
-      | or_introl p => or_introl (f p)
-      | or_intror a => or_intror a
-      end.
-  End Parameterized.
-  Module Instance (A:Aprop) <: Sublogic.
-    Import Parameterized A.
-    Definition Tr := Tr A.
-    Definition TrI := @TrI A.
-    Definition TrP := @TrP A.
-    Definition TrMono := @TrMono A.
-  End Instance.
+Module ASublogic <: SublogicFamily.
+  Definition T:=Prop.
+  Definition Tr A P := P \/ A.
+  Definition TrI (A P:Prop) (p:P) : Tr A P := or_introl p.
+  Definition TrP (A P:Prop) (p:(P\/A)\/A) :=
+    match p with
+    | or_introl p => p
+    | or_intror a => or_intror a
+    end.
+  Definition TrMono (A P Q:Prop) (f:P->Q) (p:P\/A) :=
+    match p with
+    | or_introl p => or_introl (f p)
+    | or_intror a => or_intror a
+    end.
 End ASublogic.
 
-Module ASublogicThms (A:Aprop).
-  Module Asl := ASublogic.Instance A.
-  Import A Asl.
+Module Type Aprop. Parameter x:Prop. End Aprop.
+
+Module ASublogicThms (A:Aprop) <: SublogicTheory.
+  Module Asl := InstSublogicFamily ASublogic A.
+  Import Asl.
+  Notation A := A.x.
   Include BuildLogic Asl.
 
 Lemma Aconsistency : isL False <-> ~A. 
@@ -297,6 +311,23 @@ firstorder.
 Qed.
 Global Hint Resolve or_isL.
 
+(* existential does need to be modified when one of the
+   instances is an L-prop. *)
+Lemma ex_isL_raw T (P:T->Prop):
+  (exists x, isL (P x)) -> isL(ex P).
+firstorder.
+Qed.
+
+(* A more usable rule (we can expect the foral x, isL (P x) assumption to be provable
+   automatically), but which requires T to be inhabited. *)
+Lemma ex_isL T (P:T->Prop) :
+  T -> (forall x, isL (P x)) -> isL (ex P).
+compute; intros.
+destruct H0; trivial.
+exists X; auto.
+Qed.
+Global Hint Resolve ex_isL.
+
 Lemma FF_a : Tr False <-> A.
 split.
  destruct 1;[contradiction|trivial].
@@ -308,17 +339,18 @@ End ASublogicThms.
 (* Example: if ~~exists x. P(x) is derivable, then so is exists x. P(x) *)
 Module AtransExample.
 Parameter (T:Type) (P : T->Prop).
-Module nnex. Definition A:=exists x, P x. End nnex.
+Module nnex. Definition x:=exists x, P x. End nnex.
 Module Atr := ASublogicThms nnex.
 Import nnex Atr.
 
-Lemma nnex_elim :
+Lemma markov_rule :
   ((Tr(exists x, P x) -> Tr False) -> Tr False) ->
   exists x, P x.
 intro.
 apply FF_a.
 apply H; intro.
 apply Tr_ind with (3:=H0); intros; trivial.
+ apply Atr.Tr_isL.
 apply FF_a.
 assumption.
 Qed.
@@ -326,28 +358,32 @@ End AtransExample.
 
 (** Peirce translation *)
 
-Module PeirceTrans.
-  Module Parameterized.
-    Definition Tr (R A:Prop) := (A->R)->A.
-    Definition TrI (R A:Prop) (a:A) : Tr R A := fun ar => a.
-    Definition TrP (R A:Prop) (tta:Tr R (Tr R A)) : Tr R A :=
-     fun ar => tta (fun ara => ar (ara ar)) ar. 
-    Definition TrMono (R A B:Prop) (f:A->B) (ta:Tr R A) : Tr R B :=
-     fun br => f (ta (fun a => br (f a))).
-    Definition TrCons (R:Prop) : ~ Tr R False :=
-     fun frf => frf (False_ind R).
-  End Parameterized.
-  Module Instance (R:Aprop) <: ConsistentSublogic.
-    Import Parameterized R.
-    Definition Tr := Tr A.
-    Definition TrI := @TrI A.
-    Definition TrP := @TrP A.
-    Definition TrMono := @TrMono A.
-    Definition TrCons := @TrCons A.
-  End Instance.
+Module PeirceTrans <: SublogicFamily.
+  Definition T := Prop.
+  Definition Tr (R A:Prop) := (A->R)->A.
+  Definition TrI (R A:Prop) (a:A) : Tr R A := fun ar => a.
+  Definition TrP (R A:Prop) (tta:Tr R (Tr R A)) : Tr R A :=
+   fun ar => tta (fun ara => ar (ara ar)) ar. 
+  Definition TrMono (R A B:Prop) (f:A->B) (ta:Tr R A) : Tr R B :=
+   fun br => f (ta (fun a => br (f a))).
+  Definition TrCons (R:Prop) : ~ Tr R False :=
+   fun frf => frf (False_ind R).
 End PeirceTrans.
 
 (** Intersection or cartesian product *)
+
+Module Inter (L:SublogicFamily) <: Sublogic.
+  Definition Tr P := forall x, L.Tr x P.
+  Definition TrI (P:Prop) (p:P) : Tr P := fun x => L.TrI x p.
+  Definition TrP (P:Prop) (ttp:Tr(Tr P)) : Tr P :=
+    fun x => L.TrP (L.TrMono (fun p => p x) (ttp x)).
+  Definition TrMono (P Q:Prop) (f:P->Q) (p:Tr P) : Tr Q :=
+    fun x => L.TrMono f (p x).
+  (* If a member of the family is consistent, then so is the intersection. *)
+  Lemma equiCons : Tr False <-> forall x, L.Tr x False.
+    reflexivity.
+  Qed.
+End Inter.
 
 Module Inter2 (L1 L2:Sublogic) <: Sublogic.
   Definition Tr P := L1.Tr P /\ L2.Tr P.
@@ -357,9 +393,14 @@ Module Inter2 (L1 L2:Sublogic) <: Sublogic.
          (L2.TrP (L2.TrMono (fun p => proj2 p) (proj2 ttp))).
   Definition TrMono (P Q:Prop) (f:P->Q) (p:Tr P) : Tr Q :=
     conj (L1.TrMono f (proj1 p)) (L2.TrMono f (proj2 p)).
+  (* If L1 or L2 is consistent, then so is L1/\L2. *)
   Lemma equiCons : Tr False <-> L1.Tr False /\ L2.Tr False.
     reflexivity.
   Qed.
+  Lemma isL_intro P : (L1.Tr P -> P) \/ (L2.Tr P -> P) -> (Tr P -> P).
+destruct 1; destruct 1; auto.
+Qed.
+
 End Inter2.
 
 (***************************************************************************)
@@ -482,8 +523,6 @@ Class sub_logic := mkSubLogic {
 (*  eq1 (P:Prop) (m:P2p P) : P2p_proj (P2pI m) = m;
   eq2 (P Q:Prop) (f:P->Q) (x:P) : P2p_mono f (P2pI x) = P2pI (f x)*)
 }.
-
-
 
 Parameter M : sub_logic.
 Existing Instance M.
@@ -809,6 +848,7 @@ Qed.
 
 End Atrans.
 
+(** Peirce's translation *)
 
 Section PeirceTrans.
 

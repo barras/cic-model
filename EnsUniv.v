@@ -435,27 +435,62 @@ constructor.
   apply B.eq_set_sym in H0.
   apply B.eq_elim with (injU x); trivial.
   apply lift_in; trivial.
- (* Here again we need choice *)
- elim (S.choice'_axiom x
-         (fun p y =>
-          B.eq_set (F (exist _ (injU(proj1_sig p)) (H2 _ (proj2_sig p)))) (injU y)));
-   intros.
-  apply B.in_reg with (injU (S.union (S.repl1 x x0))).
-   apply B.eq_set_sym.
-   apply B.eq_set_trans with (B.union (injU (S.repl1 x x0))).
-    apply B.union_morph.
-    apply repl1_equiv; trivial; intros.
-    apply B.eq_set_trans with (2:=H3 x1).
-    apply H; simpl; trivial.
+ (* We have F producing big sets in U, and we need a function producing
+    small sets to use functional replacement on small sets. We're stuck
+    again. Relational replacement does it, of course!
+  *)
+ destruct S.repl_ax with x
+         (fun x' y => exists h:injU x' \in I, F (exist (fun z=>z \in I) _ h) == injU y)
+   as (B,HB).
+  intros.
+  destruct H6.
+  assert (injU x' \in I).  
+   apply B.eq_elim with (injU x).
+   2:apply B.eq_set_sym; trivial.
+   apply lift_in.
+   apply S.in_reg with x0; trivial.
+  exists H7.
+  apply lift_eq in H5.
+  apply B.eq_set_trans with (2:=H5).
+  apply B.eq_set_trans with (2:=H6).
+  apply H; simpl.
+  apply lift_eq; apply S.eq_set_sym; trivial.
 
-    apply union_equiv.
-
-   apply U_intro.
-
-  apply U_elim.
-  apply H1.
-
+  intros.
+  destruct H4; destruct H5.
   apply down_eq.
-  apply B.eq_set_trans with (2:=H4).
-  apply B.eq_set_sym; trivial.
+  apply B.eq_set_trans with (1:=B.eq_set_sym _ _ H4).
+  apply B.eq_set_trans with (2:=H5).
+  apply H; simpl; apply B.eq_set_refl.
+
+  apply B.in_reg with (injU (S.union B)).
+  2:apply U_intro.
+  apply B.eq_set_sym.
+  apply B.eq_set_trans with (2:=union_equiv B).
+  apply B.union_morph.
+  apply B.eq_set_ax; split; intros.
+   apply B.repl1_ax in H3; trivial.
+   destruct H3.
+   destruct (U_elim _ (H1 x0)).
+   apply B.in_reg with (injU x1).
+    apply B.eq_set_sym; apply B.eq_set_trans with (F x0); trivial.
+
+    apply lift_in.
+    rewrite HB.
+    destruct (down_in_ex _ _ _ H0 (proj2_sig x0)).
+    exists x2; trivial.
+    exists (H2 _ H6).
+    apply B.eq_set_trans with (2:=H4).
+    apply H; simpl.
+    apply B.eq_set_sym; trivial.
+
+   apply down_in_ex with (1:=B.eq_set_refl _) in H3.
+   destruct H3.
+   rewrite HB in H4; clear HB.
+   destruct H4.
+   destruct H5.
+   rewrite B.repl1_ax; trivial.
+   exists (exist (fun z => z \in I) (injU x1) x2).
+   apply B.eq_set_trans with (1:=H3).
+   apply B.eq_set_sym; trivial.
 Qed.
