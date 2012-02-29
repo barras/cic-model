@@ -4,6 +4,7 @@ Require Export Setoid Morphisms.
 Reserved Notation "x \in y" (at level 60).
 Reserved Notation "x == y" (at level 70).
 
+(** Abstract term model of CC *)
 Module Type CC_Terms.
 
 Parameter X : Type.
@@ -50,6 +51,7 @@ Existing Instance app_ext.
 
 End CC_Terms.
 
+(** Abstract model of CC *)
 Module Type CC_Model.
 
 Include CC_Terms.
@@ -73,7 +75,7 @@ Parameter impredicative_prod : forall dom F,
 
 End CC_Model.
 
-(* Extension of CC_Model to ensure we can automatically derive
+(** Extension of CC_Model to ensure we can automatically derive
    the strong normalization model.
  *)
 Module Type CC_Daimon.
@@ -93,7 +95,7 @@ Existing Instance dec_ty_morph.
 
 End CC_Daimon.
 
-(* Model of ECC: CC + universe hierarchy *)
+(** Model of ECC: CC + universe hierarchy *)
 
 Module Type ECC_Model.
 
@@ -117,7 +119,7 @@ Module Type ECC_Model.
 
 End ECC_Model.
 
-(* A CC model where kinds form an element of the model. *)
+(** A CC model where kinds form an element of the model. *)
 
 Module Type CC_Model2.
 
