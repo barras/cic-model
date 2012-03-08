@@ -1,661 +1,8 @@
-Require Import ZF ZFpairs ZFsum ZFrelations ZFcoc ZFord ZFfix.
-Import IZF.
-
-Require Import ZFstable.
+Require Import ZF.
+Require Import ZFstable ZFpairs ZFsum ZFrelations ZFcoc ZFord ZFfix ZFlimit.
 Require Import ZFiso ZFfixrec.
 Require Import ZFind_w ZFspos.
 Require Import ZFlist.
-
-Section TRF.
-
-Hypothesis F:(set->set->set)->set->set->set.
-Hypothesis Fext : forall o o' f f' x x',
-  isOrd o ->
-  (forall o' o'' x x', o' \in o -> o'==o'' -> x==x' -> f o' x == f' o'' x') ->
-  o == o' ->
-  x == x' ->
-  F f o x == F f' o' x'.
-
-  Definition TR_rel o x y :=
-    isOrd o /\
-    forall (P:set->set->set->Prop),
-    Proper (eq_set ==> eq_set==>eq_set ==> iff) P ->
-    (forall o' f x, isOrd o' -> morph2 f ->
-     (forall n x, n \in o' -> P n x (f n x)) ->
-     P o' x (F f o' x)) ->
-    P o x y.
-
-  Instance TR_rel_morph : Proper (eq_set ==> eq_set ==> eq_set ==> iff) TR_rel.
-apply morph_impl_iff3; auto with *.
-do 5 red; unfold TR_rel; intros.
-destruct H2 as (xo,Hrec); split; intros.
- rewrite <- H; auto.
-
- cut (P x x0 x1).
-  do 4 red in H2.
-  apply -> H2; trivial.
- apply Hrec; auto.
-Qed.
-
-  Lemma TR_rel_intro : forall o x f,
-    isOrd o ->
-    morph2 f ->
-    (forall o' x, o' \in o -> TR_rel o' x (f o' x)) ->
-    TR_rel o x (F f o x).
-red; intros.
-split; intros; auto.
-apply H3; trivial; intros.
-apply H1; trivial.
-Qed.
-
-  Lemma TR_rel_inv : forall o x y,
-    TR_rel o x y -> TR_rel o x y /\
-    exists2 f,
-      morph2 f /\ (forall o' x, o' \in o -> TR_rel o' x (f o' x)) &
-      y == F f o x.
-intros o x y H.
-destruct H as (H,H0).
-apply H0; intros.
- apply morph_impl_iff3; auto with *.
- do 5 red; intros.
- destruct H4; split.
-  revert H4; apply TR_rel_morph; auto with *.
- destruct H5 as (f,(fm,eqf),eqF); exists f; [split|]; trivial.
-  intros.
-  rewrite <- H1 in H5; auto.
-
-  rewrite <- H3; rewrite eqF.
-  apply Fext; trivial.
-   apply H4.
-   intros; apply fm; auto.
-split; [split;trivial|].
- apply TR_rel_intro; intros; trivial.
- apply H3; trivial.
-
- exists f; auto with *.
- split; intros; auto.
- apply H3; auto.
-Qed.
-
-
-  Lemma TR_rel_fun : forall o x y,
-    TR_rel o x y -> forall y', TR_rel o x y' -> y == y'.
-intros o x y (xo,H).
-apply H; intros.
- apply morph_impl_iff3; auto with *.
- do 5 red; intros.
- rewrite <- H2; rewrite <- H0 in H4; rewrite <- H1 in H4; auto.
-apply TR_rel_inv in H3; destruct H3.
-destruct H4.
-destruct H4.
-rewrite H5.
-apply Fext; auto with *.
-intros.
-apply H2; trivial.
-rewrite <- H8; rewrite H9; auto.
-Qed.
-
-Require Import ZFrepl.
-
-  Lemma TR_rel_repl_rel :
-    forall o, repl_rel o (TR_rel o).
-split; intros.
- rewrite <- H0; rewrite <- H1; trivial.
-
- apply TR_rel_fun with o x; trivial.
-Qed.
-
-  Lemma TR_rel_ex : forall o, isOrd o -> forall x, exists y, TR_rel o x y.
-induction 1 using isOrd_ind; intros.
-assert (forall x z, z \in y -> uchoice_pred (fun y => TR_rel z x y)).
- intros.
- destruct H1 with z x0; trivial.
- split; intros.
-  rewrite <- H4; trivial.
- split; intros.
-  exists x1; trivial.
- apply TR_rel_fun with z x0; trivial.
-exists (F (fun z x => uchoice (fun y => TR_rel z x y)) y x).
-apply TR_rel_intro; intros; trivial.
- do 3 red; intros.
- apply uchoice_morph_raw; red; intros.
- apply TR_rel_morph; trivial.
-apply uchoice_def; auto.
-Qed.
-
-  Lemma TR_rel_choice_pred : forall o x, isOrd o ->
-    uchoice_pred (fun y => TR_rel o x y).
-split; intros.
- rewrite <- H0; trivial.
-split; intros.
- apply TR_rel_ex; trivial.
-apply TR_rel_fun with o x; trivial.
-Qed.
-
-  Definition TR o x := uchoice (fun y => TR_rel o x y).
-
-Instance TR_morph : morph2 TR.
-do 3 red; intros.
-unfold TR.
-apply uchoice_morph_raw; red; intros.
-apply TR_rel_morph; trivial.
-Qed.
-
-  Lemma TR_rel_i o x : isOrd o ->
-    TR_rel o x (TR o x).
-intros.
-specialize TR_rel_choice_pred with (1:=H) (x:=x); intro.
-apply uchoice_def in H0; trivial.
-Qed.
-
-  Lemma TR_rel_iff o x y : isOrd o ->
-    (TR_rel o x y <-> TR o x == y).
-split; intros.
- apply TR_rel_fun with (2:=H0).
- apply TR_rel_i; trivial.
-
- rewrite <- H0.
- apply TR_rel_i; trivial.
-Qed.
-
-  Lemma TR_eqn0 : forall o x, isOrd o ->
-     TR o x == F TR o x.
-intros.
-rewrite <- TR_rel_iff; trivial.
-apply TR_rel_intro; trivial with *.
-intros.
-apply TR_rel_i; eauto using isOrd_inv.
-Qed.
-
-End TRF.
-
-Existing Instance TR_morph.
-
-Section TR_irrel.
-
-Variable F : (set->set->set)->set->set->set.
-
-Variable T : set -> set.
-Variable Tcont : forall o z, isOrd o ->
-  (z \in T o <-> exists2 o', o' \in o & z \in T (osucc o')).
-
-Hypothesis Fext : forall o o' f f' x x',
-  isOrd o ->
-  (forall o' o'' x x', o' \in o -> o'==o'' -> x==x' -> f o' x == f' o'' x') ->
-  o == o' ->
-  x == x' ->
-  F f o x == F f' o' x'.
-
-Hypothesis Firr : forall o o' f f' x x',
-  morph2 f ->
-  morph2 f' ->
-  isOrd o ->
-  isOrd o' ->
-  (forall o1 o1' x x',
-   o1 \in o -> o1' \in o' -> o1 \incl o1' -> x \in T o1 -> x==x' ->
-   f o1 x == f' o1' x') ->
-  o \incl o' ->
-  x \in T o ->
-  x == x' ->
-  F f o x == F f' o' x'.
-
-Lemma TR_irrel : forall o o' x,
-  isOrd o ->
-  isOrd o' ->
-  o' \incl o ->
-  x \in T o' ->
-  TR F o x == TR F o' x.
-intros.
-revert o H H1 x H2; elim H0 using isOrd_ind; intros.
-rewrite Tcont in H5; trivial; destruct H5. 
-rewrite TR_eqn0; auto with *.
-rewrite TR_eqn0; auto with *.
-symmetry; apply Firr; intros; auto with *.
- symmetry.
- rewrite <- H11.
- eauto using isOrd_inv.
-
- rewrite Tcont; eauto.
-Qed.
-
-End TR_irrel.
-
-
-Section TRirr.
-
-Variable F : (set->set)->set->set.
-Hypothesis Fm : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) F.
-Variable T : set -> set.
-Variable Tcont : forall o z, isOrd o ->
-  (z \in T o <-> exists2 o', o' \in o & z \in T (osucc o')).
-Hypothesis Fext : forall o f f',
-  isOrd o ->
-  eq_fun (T o) f f' ->
-  eq_fun (T (osucc o)) (F f) (F f').
-
-Lemma Tmono o o': isOrd o -> isOrd o' -> o \incl o' -> T o \incl T o'.
-red; intros.
-rewrite Tcont in H2; auto.
-destruct H2.
-rewrite Tcont; trivial.
-exists x; auto.
-Qed.
-
-(*
-Definition iter f o x :=
-  let fx := replf o (fun o' => F (f o') x) in
-  union (subset fx (fun y =>
-    exists2 o', o' \in o &
-    forall o'', isOrd o'' -> o' \incl o'' -> o'' \in o ->
-    F (f o'') x == y)).
-
-Lemma ef o x f :
-  morph2 f ->
-  ext_fun o (fun o' => F (f o') x).
-do 2 red; intros.
-apply Fm; auto with *.
-Qed.
-Hint Resolve ef.
-
-Lemma iter_def : forall o o' x f,
-  isOrd o ->
-  o' \in o ->
-  x \in T (osucc o') ->
-  morph2 f ->
-  (forall x x' o o', isOrd o -> isOrd o' -> x \in T o -> x == x' -> o \incl o' ->
-  f o x == f o' x')->
-  iter f o x == F (f o') x.
-intros o o' x f oo o'o xty fm firr.
-assert (os : forall x, x \in o -> isOrd x) by eauto using isOrd_inv.
-unfold iter.
-apply eq_intro; intros.
- rewrite union_ax in H; destruct H.
- rewrite subset_ax in H0; destruct H0.
- destruct H1.
- rewrite H1 in H,H0; clear x0 H1.
- rewrite replf_ax in H0; auto.
- destruct H0.
- destruct H2.
- revert H; apply eq_elim.
- transitivity (F (f (osup2 o' x2)) x).
-  symmetry; apply H3; trivial.
-   apply isOrd_osup2; auto.
-   apply osup2_incl2; auto.
-   apply osup2_lt; auto.
-
-  apply Fext with (o:=o'); auto with *; trivial.
-  red; intros.
-  symmetry; apply firr; auto with *.
-   apply isOrd_osup2; auto.
-
-   rewrite <- H4; trivial.
-
-   apply osup2_incl1; auto.
-
- apply union_intro with (F (f o') x); trivial.
- apply subset_intro.
-  rewrite replf_ax; auto.
-  exists o'; auto with *.
-
-  exists o'; trivial; intros.
-  symmetry; apply (Fext o'); auto with *.
-  red; intros.
-  apply firr; auto with *.
-Qed.
-
-Let iter_ok :
-   forall (o o' : set) (f f' : set -> set -> set) (x x' : set),
-   (forall o' o'' x x' : set,
-    o' \in o -> o' == o'' -> x == x' -> f o' x == f' o'' x') ->
-   o == o' -> x == x' -> iter f o x == iter f' o' x'.
-intros.
-unfold iter.
-apply union_morph.
-apply subset_morph.
- apply replf_morph; auto.
- red; intros.
- apply Fm; auto.
- red; intros; apply H; auto.
-
- red; intros.
- apply ex2_morph; red; intros.
-  rewrite H0; reflexivity.
-
-  apply fa_morph; intros.
-  apply fa_morph; intros.
-  apply fa_morph; intros.
-  rewrite <- H0.
-  apply fa_morph; intros.
-  assert (F (f x1) x == F (f' x1) x').
-   apply Fm; auto.
-   red; intros; apply H; auto with *.
-  rewrite H3; reflexivity.
-Qed.
-
-Lemma iter_ext o o' f f' x x' :
-   morph2 f ->
-   morph2 f' ->
-   isOrd o ->
-   isOrd o' ->
-   (forall o'2 o'' x2 x'1 : set,
-    o'2 \in o ->
-    o'' \in o' ->
-    o'2 \incl o'' ->
-    x2 \in T o'2 ->
-    x2 == x'1 -> f o'2 x2 == f' o'' x'1) ->
-   o \incl o' ->
-   x \in T o ->
-   x == x' -> iter f o x == iter f' o' x'.
-intros fm fm'; intros.
-unfold iter; apply eq_intro; intros.
- rewrite union_ax in H5; destruct H5.
- rewrite subset_ax in H6; destruct H6.
- destruct H7.
- rewrite H7 in H5,H6; clear x0 H7.
- rewrite replf_ax in H6; auto.
- destruct H6.
- destruct H8.
- apply union_intro with x1; trivial.
- assert (os : forall x, x \in o -> isOrd x) by eauto using isOrd_inv.
- assert (os' : forall x, x \in o' -> isOrd x) by eauto using isOrd_inv.
- rewrite Tcont in H3; trivial.
- destruct H3.
- assert (forall z, osup2 x2 x3 \incl z -> z \in o' -> F (f x0) x == F (f' z) x').
-  intros.
-  transitivity (F (f (osup2 x2 x3)) x).
-   symmetry; rewrite <- H7; apply H9; auto.
-    apply isOrd_osup2; auto.
-    apply osup2_incl1; auto.
-    apply osup2_lt; auto.
- 
-   apply Fext with x3; auto with *.
-   red; intros.
-   apply H1; auto with *.
-    apply osup2_lt; auto.
-    revert H13; apply Tmono; auto with *.
-     apply isOrd_osup2; auto.
-     apply osup2_incl2; auto.
- apply subset_intro.
-  rewrite replf_ax; auto.
-  exists (osup2 x2 x3); auto.
-   apply osup2_lt; auto.
-  rewrite H7; apply H11; auto with *.
-  apply osup2_lt; auto.
-
-  exists (osup2 x2 x3); auto.
-   apply osup2_lt; auto.
-  intros.
-  rewrite H7; symmetry.
-  apply H11; auto.
-
- rewrite union_ax in H5; destruct H5.
- rewrite subset_ax in H6; destruct H6.
- destruct H7.
- rewrite H7 in H5,H6; clear x0 H7.
- rewrite replf_ax in H6; auto.
- destruct H6.
- destruct H8.
- apply union_intro with x1; trivial.
- assert (os : forall x, x \in o' -> isOrd x) by eauto using isOrd_inv.
- rewrite Tcont in H3; trivial.
- destruct H3.
- assert (forall z, x3 \incl z -> z \in o -> F (f z) x == F (f' x0) x').
-  intros.
-  transitivity (F (f' (osup2 x2 z0)) x').
-   apply Fext with x3; auto with *.
-   red; intros.
-   apply H1; auto with *.
-    apply osup2_lt; auto.
-    apply osup2_incl2; auto.
-
-    revert H13; apply Tmono; auto with *.
-
-   rewrite <- H7; apply H9; auto.
-    apply isOrd_osup2; auto.
-    apply osup2_incl1; auto.
-    apply osup2_lt; auto.
-
- apply subset_intro.
-  rewrite replf_ax; auto.
-  exists x3; trivial.
-  symmetry; rewrite H7.
-  auto with *.
-
-  exists x3; intros; auto.
-  rewrite H7.
-  auto with *.
-Qed.
-
-
-Lemma TR_irr : forall o o' x,
-  isOrd o ->
-  o' \in o ->
-  x \in T (osucc o') ->
-  TR iter o x == F (TR iter o') x.
-intros.
-rewrite TR_eqn0; auto with *.
-apply iter_def with (3:=H1); trivial.
- apply TR_morph.
-intros.
-rewrite <- H5.
-symmetry; apply TR_irrel with T; auto with *.
-apply iter_ext.
-Qed.
-*)
-
-
-
-
-
-
-
-(* Limit of a sequence of functions by retaining values that do not
-   change after some iteration stage *)
-Definition dom_fun (f:set->set->set) (o:set) (x:set) (o':set) :=
-  forall o'', o' \incl o'' -> o'' \in o -> f o'' x == f o' x.
-Definition sup_fun (f:set->set->set) (o:set) (x:set) :=
-  sup (subset o (dom_fun f o x)) (fun o' => f o' x).
-
-Definition iter (F:(set->set)->set->set) f o x := F (sup_fun f o) x.
-
-(*
-Section TRDom.
-
-Variable F : (set->set)->set->set.
-Variable T : set -> set.
-Variable Tcont : forall o z, isOrd o ->
-  (z \in T o <-> exists2 o', o' \in o & z \in T (osucc o')).
-*)
-
-Definition TRF := TR(iter F).
-
-Lemma iter_def : forall o o' x f,
-  isOrd o ->
-  o' \in o ->
-  x \in T (osucc o') ->
-  morph2 f ->
-  (forall x x' o o', isOrd o -> isOrd o' ->
-   x \in T o -> x == x' -> o \incl o' ->
-   f o x == f o' x')->
-  iter F f o x == F (f o') x.
-intros o o' x f oo o'o xty fm firr.
-assert (os : forall x, x \in o -> isOrd x) by eauto using isOrd_inv.
-unfold iter.
-red in Fext; apply Fext with o'; auto with *.
-red; intros.
-unfold sup_fun.
-rewrite eq_set_ax; intro z.
-rewrite sup_ax.
-2:do 2 red; intros; apply fm; auto with *.
-split; intros.
- destruct H1.
- rewrite subset_ax in H1; destruct H1.
- destruct H3.
- red in H4.
- revert H2; apply eq_elim.
- rewrite H3 in H1|-*.
- transitivity (f (osup2 x2 o') x0).
-  symmetry; apply H4; auto.
-   apply osup2_incl1; auto.
-
-   apply osup2_lt; auto.
-
- symmetry; apply firr; auto with *.
-  apply isOrd_osup2; auto.
-
-  rewrite <- H0; trivial.
-
-  apply osup2_incl2; auto.
-
- exists o'.
- 2:rewrite H0; trivial.
- apply subset_intro; trivial.
- red; intros.
- symmetry; apply firr; auto with *.
-Qed.
-
-
-Let iter_ok : forall o o' f f' x x',
-   isOrd o ->
-   (forall o' o'' x x' : set,
-    o' \in o -> o' == o'' -> x == x' -> f o' x == f' o'' x') ->
-   o == o' -> x == x' -> iter F f o x == iter F f' o' x'.
-intros.
-unfold iter.
-apply Fm; trivial.
-red; intros.
-unfold sup_fun.
-apply sup_morph.
- apply subset_morph; trivial.
- red; intros.
- unfold dom_fun.
- apply fa_morph; intro.
- rewrite H1.
- apply fa_morph; intro.
- apply fa_morph; intro.
- rewrite (H0 x2 x2 x0 y); auto with *.
-  2:rewrite H1; trivial.
- rewrite (H0 x1 x1 x0 y); auto with *.
-
- red; intros.
- apply subset_elim1 in H4; auto.
-Qed.
-
-Lemma iter_ext o o' f f' x x' :
-   morph2 f ->
-   morph2 f' ->
-   isOrd o ->
-   isOrd o' ->
-   (forall o'2 o'' x2 x'1 : set,
-    o'2 \in o ->
-    o'' \in o' ->
-    o'2 \incl o'' ->
-    x2 \in T o'2 ->
-    x2 == x'1 -> f o'2 x2 == f' o'' x'1) ->
-   o \incl o' ->
-   x \in T o ->
-   x == x' -> iter F f o x == iter F f' o' x'.
-intros fm fm'; intros.
-assert (os : forall x, x \in o -> isOrd x) by eauto using isOrd_inv.
-assert (os' : forall x, x \in o' -> isOrd x) by eauto using isOrd_inv.
-unfold iter.
-rewrite Tcont in H3; trivial; destruct H3 as (ox,oxlt,tyx).
-apply (Fext ox); auto.
-clear x x' tyx H4.
-intros x x' tyx eqx.
-unfold sup_fun.
-apply eq_set_ax; intros z.
-rewrite sup_ax.
-2:do 2 red; intros; apply fm; auto with *.
-rewrite sup_ax.
-2:do 2 red; intros; apply fm'; auto with *.
-split; destruct 1 as (od,ins,zin).
- rewrite subset_ax in ins; destruct ins as (odlt,(od',e,odom)).
- rewrite e in odlt, zin; clear od e; rename od' into od.
- assert (forall z, osup2 ox od \incl z -> z \in o' -> f od x == f' z x').
-  intros.
-  transitivity (f (osup2 ox od) x).
-   red in odom.
-   symmetry; apply odom; auto.
-    apply osup2_incl2; auto.
-    apply osup2_lt; auto.
- 
-   apply H1; auto with *.
-    apply osup2_lt; auto.
-
-    revert tyx; apply Tmono; auto with *.
-     apply isOrd_osup2; auto.
-     apply osup2_incl1; auto.
- exists (osup2 ox od).
-  apply subset_intro; auto.
-   apply osup2_lt; auto.
-
-   red; intros.
-   transitivity (f (osup2 ox od) x').
-    symmetry; apply H1; auto with *.
-     apply osup2_lt; auto.
-
-     rewrite <- eqx; revert tyx; apply Tmono; auto.
-      apply isOrd_osup2; auto.
-      apply osup2_incl1; auto.
-
-    apply H1; auto with *.
-     apply osup2_lt; auto.
-     apply osup2_lt; auto.
-
-     rewrite <- eqx; revert tyx; apply Tmono; auto.
-      apply isOrd_osup2; auto.
-      apply osup2_incl1; auto.
-
-   rewrite <- H3; auto with *.
-   apply osup2_lt; auto.
-
- rewrite subset_ax in ins; destruct ins as (odlt,(od',e,odom)).
- rewrite e in odlt, zin; clear od e; rename od' into od.
- assert (forall z, ox \incl z -> z \in o -> f z x == f' od x').
-  intros.
-  transitivity (f' (osup2 od z0) x').
-   apply H1; auto with *.
-    apply osup2_lt; auto.
-    apply osup2_incl2; auto.
-
-    revert tyx; apply Tmono; auto with *.
-
-   red in odom.
-   apply odom; auto.
-    apply osup2_incl1; auto.
-    apply osup2_lt; auto.
- exists ox.
-  apply subset_intro; trivial.
-  red; intros.
-  transitivity (f' o'' x').
-   apply H1; auto with *.
-   revert tyx; apply Tmono; auto.
-
-   symmetry; apply H1; auto with *.
-
-  rewrite H3; auto with *.
-Qed.
-
-Lemma TRF_indep : forall o o' x,
-  isOrd o ->
-  o' \in o ->
-  x \in T (osucc o') ->
-  TRF o x == F (TRF o') x.
-intros.
-unfold TRF. 
-rewrite TR_eqn0; auto with *.
-apply iter_def with (3:=H1); trivial.
- apply TR_morph.
-intros.
-rewrite <- H5.
-symmetry; apply TR_irrel with T; auto with *.
-apply iter_ext.
-Qed.
-
-End TRirr.
-
-
 
 (* --> ZFfix *)
 Lemma TI_op_mono o o' f f' :
@@ -709,6 +56,43 @@ do 2 red; intros.
 apply W_F_ext; auto with *.
 red; auto with *.
 Qed.
+(*
+is pos_nest_op X a W-type ?
+
+nest X = {x':A' | B'(x') -> X }
+F X (nest X) = { x:A | B(x) -> X & C(x) -> nest X}
+             = { x:A | B(x) -> X & { f:C(x) -> A' | (i:C x)-> B'(f i) -> X }
+             = { x:A | { f:C(x)->A' | B(x) -> X & {i:C x|B'(f i)} -> X } }
+  = { {x:A; f:C x-> A'} | (B(x) + {i:C x|B'(f i)}) -> X }
+
+A' = { x:A; C(x) ->A' }
+B'(x,f) = B x + {i:C x & B'(f i)}  <-- param non-uniforme!
+B'(_) = sup A B + (sup A C * B')
+
+Ex: tree, list  F(T,L) = 1+T*L
+ list T =  \mu L.F(T,L) = 1+T*\mu L.F(T,L)
+ Ft T = 1+T*list T
+ A=bool B=(0|1) C=(0|1)
+ A' = 1 + A'
+ B' = (0|1 + B' o snd)
+ A' = nat
+ B'(0) = 0
+ B'(S k) = 1+B'(k)
+ Ft T = {n:nat; n -> T }
+
+F X (nest X) = { x:A(X) ; B(X,x) -> nest X }
+  =  {x:A(X) ; f:B(X,x) -> A' ; {i:B(X,x);B'(f i)}->X}
+  = { {x:A(X); f:B(_,x) -> A' ; 
+
+
+
+list A = {n:N & n -> A }
+list A = W1 * W2->A
+1+A*list A = 1 + A*W1 * W2osnd -> A
+   = (1+W1) * (0|1+W2) -> A
+W1=1+W1
+W2(n) = 0|1+W2(n-1)
+*)
 
 (* F X Y  (iso)  { x:A(Y) & B(Y,x) -> X }
                  { x:A'(X) & B'(X,x) -> Y
@@ -1027,207 +411,6 @@ apply cmorph; intros.
    apply snd_morph; apply H.
    rewrite H0; rewrite H2; reflexivity.
 Qed.
-(*
-Lemma ext_gfo o f x :
-  ext_fun o (fun o' => g (f o') x).
-Admitted.
-Hint Resolve ext_gfo.
-
-Definition iter (F:(set->set)->set->set) Fsub o x :=
-  let fx := replf o (fun o' => F (Fsub o') x) in
-  union (subset fx (fun y =>
-    exists2 o', o' \in o &
-    forall o'', isOrd o'' -> o' \incl o'' -> o'' \in o ->
-    F (Fsub o'') x == y)).
-
-Lemma iter_def : forall o o' x f X,
-isOrd o ->
-o' \in o ->
-x \in F X (TI(fun Y=>F X Y) o') ->
-(forall x x' o o', isOrd o -> isOrd o' -> x \in TI(fun Y=>F X Y) o -> x == x' ->o \incl o' ->
-  f o x == f o' x')->
-iter g f o x == g (f o') x.
-intros o o' x f X oo o'o xty firr.
-assert (os : forall x, x \in o -> isOrd x) by eauto using isOrd_inv.
-unfold iter.
-apply eq_intro; intros.
- rewrite union_ax in H; destruct H.
- rewrite subset_ax in H0; destruct H0.
- destruct H1.
- rewrite H1 in H,H0; clear x0 H1.
- rewrite replf_ax in H0; auto.
- destruct H0.
- destruct H2.
- revert H; apply eq_elim.
- transitivity (g (f (osup2 o' x2)) x).
-  symmetry; apply H3; trivial.
-   apply isOrd_osup2; auto.
-   apply osup2_incl2; auto.
-   apply osup2_lt; auto.
-
-  apply gext' with (X:=X)(Y:=TI(fun Y=>F X Y)o'); auto with *.
-  red; intros.
-  symmetry; apply firr; auto with *.
-   apply isOrd_osup2; auto.
-
-   rewrite <- H4; revert H; apply TI_mono; auto with *.
-
-   apply osup2_incl1; auto.
-
- apply union_intro with (g (f o') x); trivial.
- apply subset_intro.
-  rewrite replf_ax; auto.
-  exists o'; auto with *.
-
-  exists o'; trivial; intros.
-  symmetry; apply gext' with (X:=X)(Y:=TI(fun Y=>F X Y) o'); auto with *.
-  red; intros.
-  apply firr; auto with *.
-Qed.
-
-Let iter_ok :
-   forall (o o' : set) (f f' : set -> set -> set) (x x' : set),
-   (forall o' o'' x x' : set,
-    o' \in o -> o' == o'' -> x == x' -> f o' x == f' o'' x') ->
-   o == o' -> x == x' -> iter g f o x == iter g f' o' x'.
-intros.
-unfold iter.
-apply union_morph.
-apply subset_morph.
- apply replf_morph; auto.
- red; intros.
- apply gm; auto.
- red; intros; apply H; auto.
-
- red; intros.
- apply ex2_morph; red; intros.
-  rewrite H0; reflexivity.
-
-  apply fa_morph; intros.
-  apply fa_morph; intros.
-  apply fa_morph; intros.
-  rewrite <- H0.
-  apply fa_morph; intros.
-  assert (g (f x1) x == g (f' x1) x').
-   apply gm; auto.
-   red; intros; apply H; auto with *.
-  rewrite H3; reflexivity.
-Qed.
-
-Lemma iter_ext X o o' f f' x x' :
-   isOrd o ->
-   isOrd o' ->
-   (forall o'2 o'' x2 x'1 : set,
-    o'2 \in o ->
-    o'' \in o' ->
-    o'2 \incl o'' ->
-    x2 \in TI (fun Y : set => F X Y) o'2 ->
-    x2 == x'1 -> f o'2 x2 == f' o'' x'1) ->
-   o \incl o' ->
-   x \in TI (fun Y : set => F X Y) o ->
-   x == x' -> iter g f o x == iter g f' o' x'.
-intros.
-unfold iter; apply eq_intro; intros.
- rewrite union_ax in H5; destruct H5.
- rewrite subset_ax in H6; destruct H6.
- destruct H7.
- rewrite H7 in H5,H6; clear x0 H7.
- rewrite replf_ax in H6; auto.
- destruct H6.
- destruct H8.
- apply union_intro with x1; trivial.
- assert (os : forall x, x \in o -> isOrd x) by eauto using isOrd_inv.
- assert (os' : forall x, x \in o' -> isOrd x) by eauto using isOrd_inv.
- apply TI_elim in H3;auto.
- destruct H3.
- assert (forall z, osup2 x2 x3 \incl z -> z \in o' -> g (f x0) x == g (f' z) x').
-  intros.
-  transitivity (g (f (osup2 x2 x3)) x).
-   symmetry; rewrite <- H7; apply H9; auto.
-    apply isOrd_osup2; auto.
-    apply osup2_incl1; auto.
-    apply osup2_lt; auto.
- 
-   apply gext' with (X:=X)(Y:=TI(fun Y=>F X Y) x3); auto with *.
-   red; intros.
-   apply H1; auto with *.
-    apply osup2_lt; auto.
-
-    revert H13; apply TI_mono; auto with *.
-     apply isOrd_osup2; auto.
-     apply osup2_incl2; auto.
- apply subset_intro.
-  rewrite replf_ax; auto.
-  exists (osup2 x2 x3); auto.
-   apply osup2_lt; auto.
-  rewrite H7; apply H11; auto with *.
-  apply osup2_lt; auto.
-
-  exists (osup2 x2 x3); auto.
-   apply osup2_lt; auto.
-  intros.
-  rewrite H7; symmetry.
-  apply H11; auto.
-
- rewrite union_ax in H5; destruct H5.
- rewrite subset_ax in H6; destruct H6.
- destruct H7.
- rewrite H7 in H5,H6; clear x0 H7.
- rewrite replf_ax in H6; auto.
- destruct H6.
- destruct H8.
- apply union_intro with x1; trivial.
- assert (os : forall x, x \in o' -> isOrd x) by eauto using isOrd_inv.
- apply TI_elim in H3;auto.
- destruct H3.
- assert (forall z, x3 \incl z -> z \in o -> g (f z) x == g (f' x0) x').
-  intros.
-  transitivity (g (f' (osup2 x2 z0)) x').
-   apply gext' with (X:=X)(Y:=TI(fun Y=>F X Y) x3); auto with *.
-   red; intros.
-   apply H1; auto with *.
-    apply osup2_lt; auto.
-    apply osup2_incl2; auto.
-
-    revert H13; apply TI_mono; auto with *.
-
-   rewrite <- H7; apply H9; auto.
-    apply isOrd_osup2; auto.
-    apply osup2_incl1; auto.
-    apply osup2_lt; auto.
-
- apply subset_intro.
-  rewrite replf_ax; auto.
-  exists x3; trivial.
-  symmetry; rewrite H7.
-  auto with *.
-
-  exists x3; intros; auto.
-  rewrite H7.
-  auto with *.
-Qed.
-
-
-
-Lemma TR_indep : forall X o o' x,
-  isOrd o ->
-  o' \in o ->
-  x \in F X (TI(fun Y=>F X Y) o') ->
-  TR (iter g) o x == g (TR (iter g) o') x.
-intros.
-rewrite TR_eqn0; auto with *.
-apply iter_def with (3:=H1); trivial.
-intros.
-rewrite <- H5.
-symmetry; apply TR_indep0 with (TI (fun Y => F X Y)); auto with *.
- intros.
- rewrite TI_mono_eq; auto.
- rewrite sup_ax; auto with *.
- do 2 red; intros; apply TI_morph; apply osucc_morph; trivial.
-
- apply iter_ext.
-Qed.
-*)
 
 Hint Resolve W_F_mono.
 
@@ -1584,7 +767,7 @@ Qed.
 
 
 Definition nest_pos (o:set) : positive :=
-  mkPositive (fun X => TI (fun Y => F X Y) o) (A'i o) B' (TR (iter g) o).
+  mkPositive (fun X => TI (fun Y => F X Y) o) (A'i o) B' (TRF g o).
 
 Lemma isPos_nest o :
   isOrd o ->
@@ -1620,493 +803,151 @@ Lemma giso X f o:
   isOrd o ->
   iso_fun (W_F (A'i o) B' X) (TI (fun Y=>F X Y) o) f ->
   iso_fun (W_F (W_F A C (A'i o)) B' X) (F X (TI (fun Y=>F X Y) o)) (g f).
-constructor; intros.
- admit.
-
- red; intros.
- rewrite Fdef.
- unfold g.
- assert (ftyp:=iso_typ H0).
- red in ftyp.
- assert (fst (fst x) \in A).
-  apply fst_typ_sigma in H1.
-  apply fst_typ_sigma in H1; trivial.
- apply couple_intro_sigma; trivial.
-  admit.
- apply couple_intro.
-  apply cc_arr_intro; intros.
-   admit.
-  assert (h := H1).
-  apply snd_typ_sigma with (y:=fst x) in h; auto with *.
-  2:admit.
-  apply cc_arr_elim with (1:=h).
-  apply B'nil with (osucc o); auto.
-  unfold A'i; rewrite TI_mono_succ; auto.
-  2:apply W_F_mono; auto with *.
-  apply fst_typ_sigma in H1; trivial.
-
-  apply cc_arr_intro; intros.
-   admit.
- apply ftyp.
- assert (cc_app (snd (fst x)) x0 \in (A'i o)).
-  apply fst_typ_sigma in H1.
-  apply snd_typ_sigma with (y:=fst (fst x)) in H1; auto with *.
-  apply cc_arr_elim with (1:=H1); trivial.
- apply couple_intro_sigma; trivial.
-  admit.
- apply cc_arr_intro; intros.
-  admit.
- assert (h := H1).
- apply snd_typ_sigma with (y:=fst x) in h; auto with *.
- 2:admit.
- apply cc_arr_elim with (1:=h).
- apply B'cons with (osucc o); auto.
- unfold A'i; rewrite TI_mono_succ; auto.
- 2:apply W_F_mono; auto with *.
- apply fst_typ_sigma in H1; trivial.
-
- unfold g in H3.
- apply couple_injection in H3; destruct H3.
- apply couple_injection in H4; destruct H4.
- apply cc_lam_inj in H4; destruct H4.
- apply cc_lam_inj in H5; destruct H5.
- rewrite WF_eta with (2:=H1). 2:admit.
- rewrite WF_eta with (2:=H2). 2:admit.
- unfold WFmap.
- assert (eqf : fst x == fst x').
-  admit.
- apply couple_morph; trivial.
- apply cc_lam_ext; intros.
-  admit.
-
-  red; intros.
-  rewrite <- H9.
-  rewrite B'_eqn with (o:=osucc o) in H8; auto.
-   destruct H8 as [(l,?,eqx0)|(i,?,(b',?,eqx0))]; rewrite eqx0.
-    apply H6; auto with *.
-
-    red in H7.
-    assert (r : i==i) by reflexivity.
-    specialize H7 with (1:=H8) (2:=r).
-    apply (iso_inj H0) in H7.
-    2:admit.
-    2:admit.
-    apply couple_injection in H7; destruct H7 as (_,?).
-    apply cc_lam_inj in H7; destruct H7.
-    apply H11; auto with *.
-
-   unfold A'i; rewrite TI_mono_succ; auto.
-   2:apply W_F_mono; auto with *.
-   apply fst_typ_sigma in H1; trivial.
-
- rewrite Fdef in H1.
- generalize (surj_pair _ _ _ (subset_elim1 _ _ _ H1)); intro.
- assert (fy_typ := fst_typ_sigma _ _ _ H1).
- apply snd_typ_sigma with (y:=fst y) in H1; auto with *.
- 2:admit.
- rewrite (surj_pair _ _ _ H1) in H2.
- assert (fsy_typ := fst_typ _ _ _ H1).
- apply snd_typ in H1.
- assert (invtyp := iso_typ (iso_fun_sym H0)).
- pose (a' := couple (fst y)
-            (cc_lam (C (fst y)) (fun i => 
-              fst (iso_inv (W_F (A'i o) B' X) f (cc_app (snd (snd y)) i))))).
- assert (a'typ : a' \in A'i (osucc o)).
-  unfold A'i; rewrite TI_mono_succ; auto with *.
-  2:apply W_F_mono; auto with *.
-  apply couple_intro_sigma; trivial.
-   admit.
-
-   apply cc_arr_intro; intros.
-    admit.
-   apply cc_arr_elim with (2:=H3) in H1.
-   apply invtyp in H1.
-   apply fst_typ_sigma in H1; trivial.   
- exists
-  (couple a'
-    (cc_lam (B' a')
-      (B'case (fun l => cc_app (fst (snd y)) l)
-              (fun i b' => cc_app (snd (iso_inv (W_F (A'i o) B' X) f (cc_app (snd (snd y)) i))) b')))).
-  apply couple_intro_sigma; trivial.
-   admit.
-
-   unfold A'i; rewrite <- TI_mono_succ; auto with *.
-   apply W_F_mono; auto with *.
-
-   apply cc_arr_intro; intros.
-    admit.
-   apply B'case_typ with a'; intros; trivial.
-    admit.
-
-    apply cc_arr_elim with (1:=fsy_typ); trivial.
-    unfold a' in H4; rewrite fst_def in H4; trivial.
-
-    unfold a' in H4; rewrite fst_def in H4.
-    apply cc_arr_elim with (2:=H4) in H1.
-    apply invtyp in H1.
-    apply snd_typ_sigma with (y:=fst (iso_inv (W_F (A'i o) B' X) f (cc_app (snd (snd y)) i))) in H1; auto with *.
-    2:admit.
-    apply cc_arr_elim with (1:=H1).
-    revert H5; apply eq_elim; apply B'm.
-    unfold a'; rewrite snd_def.
-    rewrite cc_beta_eq; auto with *.
-    admit.
-
-  transitivity (couple (fst y) (couple (fst (snd y)) (snd (snd y)))); [|auto with *].
-  unfold g; apply couple_morph.
-   rewrite fst_def.
-   unfold a'; rewrite fst_def; reflexivity.
-
-   apply couple_morph.
-    transitivity (cc_lam (B (fst y)) (fun b => cc_app (fst (snd y)) b)).
-    2:symmetry; apply cc_eta_eq with (1:=fsy_typ).
-    symmetry; apply cc_lam_ext; [|red; intros].
-     apply Bm.
-     rewrite fst_def.
-     unfold a'; rewrite fst_def; auto with *.
-
-     rewrite snd_def.
-     rewrite cc_beta_eq.
-     2:admit.
-      rewrite B'case_nil.
-      rewrite <- H4; auto with *.
-
-      apply B'nil with (osucc o); auto.
-      unfold a'; rewrite fst_def; trivial.
-      rewrite <- H4; trivial.
-
-assert (fm : morph1 f).
- admit.
-    transitivity (cc_lam (C (fst y)) (fun i => cc_app (snd (snd y)) i)).
-    2:symmetry; apply cc_eta_eq with (1:=H1).
-    symmetry; apply cc_lam_ext; [|red; intros].
-     unfold a'; do 2 rewrite fst_def; reflexivity.
-
-     transitivity (f (iso_inv (W_F (A'i o) B' X) f (cc_app (snd (snd y)) x'))).
-      rewrite iso_inv_eq with (1:=H0).
-       rewrite H4; reflexivity.
-
-       apply cc_arr_elim with (1:=H1); trivial.
-       rewrite <- H4; trivial.
-
-      apply fm.
-      rewrite H4 in H3.
-      assert (h:=H1); apply cc_arr_elim with (2:=H3) in h.
-      apply invtyp in h.
-      generalize (surj_pair _ _ _ (subset_elim1 _ _ _ h)); intro.
-      rewrite H5; apply couple_morph.
-       rewrite fst_def.
-       unfold a'; rewrite snd_def.
-       rewrite cc_beta_eq; auto with *.
-       admit.
-
-       apply snd_typ_sigma with
-        (y:=fst (iso_inv (W_F (A'i o) B' X) f (cc_app (snd (snd y)) x')))in h; auto with *.
-       2:admit.
-       rewrite (cc_eta_eq _ _ _ h).
-       apply cc_lam_ext; [|red;intros].
-        apply B'm.
-        rewrite fst_def.
-        unfold a'; rewrite snd_def.
-        rewrite cc_beta_eq; auto with *.
-        admit.
-
-        rewrite snd_def.
-        rewrite cc_beta_eq; auto with *.
-         2:admit.
-         rewrite B'case_cons.
-         rewrite <- H7; reflexivity.
-
-         apply B'cons with (osucc o); auto.
-          unfold a'; rewrite fst_def; trivial.
-
-          rewrite <- H7; revert H6; apply eq_elim.
-          apply B'm.
-          unfold a'; rewrite snd_def.
-          rewrite cc_beta_eq; auto with *.
-          admit.
-Qed.
-
-Lemma nest_recursor X o :
-    isOrd o ->
-    recursor o (fun o' => W_F (A'i o') B' X)
-      (fun o f => iso_fun (W_F (A'i o) B' X) (TI (fun Y =>  F X Y) o) (cc_app f))
-      (fun o f => cc_lam (W_F (A'i (osucc o)) B' X) (g (cc_app f))).
-constructor; intros.
- admit.
-
- unfold W_F.
-apply eq_intro; intros.
- assert (h := fst_typ_sigma _ _ _ H1).
- apply TI_elim in h; auto with *.
- 2:admit.
- destruct h.
- rewrite sup_ax;[|admit].
- exists x; trivial.
- rewrite (surj_pair _ _ _ (subset_elim1 _ _ _ H1)).
- apply couple_intro_sigma.
-  admit.
-
-  unfold A'i; rewrite TI_mono_succ; auto with *.
-   apply W_F_mono; auto with *.
-   apply isOrd_inv with o0; trivial.
-
-   apply snd_typ_sigma with (y:=fst z) in H1; auto with *.
-   admit.
-
- rewrite sup_ax in H1;[|admit].
- destruct H1.
- rewrite (surj_pair _ _ _ (subset_elim1 _ _ _ H2)).
- apply couple_intro_sigma.
-  admit.
-
-  apply fst_typ_sigma in H2.
-  revert H2; apply TI_mono; eauto using isOrd_inv.
-   apply W_F_mono; auto with *.
-   red; intros.
-   apply le_lt_trans with x; trivial.
-
-  apply snd_typ_sigma with (y:=fst z) in H2; auto with *.
-  admit.
-
- (* Q m *)
- admit.
-
- (* Q cont *)
- constructor; intros.
-  admit.
-
-  admit.
-
-  admit. (* directed ord! *)
-
-  apply TI_elim in H4; auto with *.
-  2:admit.
-  destruct H4.
-  rewrite <- TI_mono_succ in H5; auto with *.
-   2:do 2 red; intros; apply Fmono; auto with *.
-   2:apply isOrd_inv with o0; trivial.
-  destruct (iso_surj (H3 _ H4)) with y; trivial.
-  exists x0; trivial.
-  admit.
-
- (* body m *)
- admit.
-
- (* body typ *)
- split.
-  apply ZFfunext.is_cc_fun_lam.
-  admit.
-
-  apply giso in H3; trivial.
-  revert H3; apply iso_fun_morph.
-   admit.
-
-   rewrite TI_mono_succ; auto with *.
-   do 2 red; intros.
-   apply Fmono; auto with *.
-
-   red; intros.
-   rewrite <- H4.
-   rewrite cc_beta_eq; auto with *.
-    admit.
-
-    clear x' H4; revert x H3.
-    admit.
-
- (* body irrel *)
- do 2 red; intros.
- rewrite cc_beta_eq; auto.
-  2:admit.
- rewrite cc_beta_eq; auto with *.
-  2:admit.
-  unfold g.
-  apply couple_morph; auto with *.
-  apply couple_morph; auto with *.
-  apply cc_lam_ext; [|red; intros]; auto with *.
-  red in H4.
-  rewrite <- H4.
-   apply cc_app_morph; auto with *.
-   apply couple_morph.
-    rewrite H7; reflexivity.
-    apply cc_lam_ext.
-     apply B'm; rewrite H7; reflexivity.
-     red; intros.
-     rewrite H7; rewrite H9; reflexivity.
-
-   rewrite H7 in H6.
-   apply couple_intro_sigma.
-    admit.
-
-    apply fst_typ_sigma in H5.
-    unfold A'i in H5; rewrite TI_mono_succ in H5; auto with *.
-    2:apply W_F_mono; auto with *.
-    2:apply H2.
-    apply snd_typ_sigma with (y:=fst (fst x)) in H5; auto with *.
-    apply cc_arr_elim with (1:=H5); trivial.
-
-    apply cc_arr_intro; intros.
-     admit.
-    assert (h:=H5).
-    apply snd_typ_sigma with (y:=fst x) in H5; auto with *.
-    2:admit.
-    apply cc_arr_elim with (1:=H5).
-    apply B'cons with (osucc o0); trivial.
-     apply isOrd_succ; apply H2.
-
-     apply fst_typ_sigma in h; trivial.
-
- admit.
-Qed.
-
-Lemma giso_it X o:
-  isOrd o ->
-  iso_fun (W_F (A'i o) B' X) (TI (fun Y=>F X Y) o)
-    (cc_app (REC (fun o f => cc_lam (W_F (A'i (osucc o)) B' X)  (g (cc_app f))) o)).
-intro.
-apply REC_typing with (1:=H) (2:=nest_recursor X o H); intro.
-Qed.
-
-Parameter X_:set.
-Definition nest_pos (o:set) : positive :=
-mkPositive (fun X => TI (fun Y => F X Y) o) (A'i o) B'
-  (iso_inv (W_F (A'i o) B' X_) (cc_app (REC (fun o f => cc_lam (W_F (A'i (osucc o)) B' X_)  (g (cc_app f))) o))).
-
-Lemma isPos_nest o :
-  isOrd o ->
-  isPositive (nest_pos o).
-constructor.
- do 2 red; intros.
- simpl.
- apply TI_op_mono; auto with *; apply Fmono_morph;
-   do 2 red; intros; apply Fmono; auto with *.
-
- do 2 red; intros; simpl.
- apply B'm; trivial.
-
- simpl; intros.
- replace X_ with X.
- 2:admit.
- apply iso_fun_sym.
- apply giso_it; trivial.
-Qed.
-
-
-Fixpoint iso' (a':A') : (B' a' -> X) -> N X :=
-  match a' return (B' a' -> X)->N X with CA' x f => fun b' =>
-  let fb (b:B x) := b' (B'nil (CA' x f) b) in
-  let fc (i:C x) :=
-    iso' (f i) (fun b'':B'(f i) => b' (B'cons (CA' x f) i b'')) in
-  CN _ (mkF _ _ x fb fc)
-  end.
-
-
-
-  Hypothesis ord : set.
-  Hypothesis oord : isOrd ord.
-
-(* X -> \mu Y. F(X,Y) *)
-Definition pos_nest_op X := TI (fun Y => F X Y) ord.
-
-  (* ord is beyond the closure ordinal of Y -> F(X,Y) *)
-  Hypothesis ord_clos : forall X, pos_nest_op X == F X (pos_nest_op X).
-
-(*
-is pos_nest_op X a W-type ?
-
-nest X = {x':A' | B'(x') -> X }
-F X (nest X) = { x:A | B(x) -> X & C(x) -> nest X}
-             = { x:A | B(x) -> X & { f:C(x) -> A' | (i:C x)-> B'(f i) -> X }
-             = { x:A | { f:C(x)->A' | B(x) -> X & {i:C x|B'(f i)} -> X } }
-  = { {x:A; f:C x-> A'} | (B(x) + {i:C x|B'(f i)}) -> X }
-
-A' = { x:A; C(x) ->A' }
-B'(x,f) = B x + {i:C x & B'(f i)}  <-- param non-uniforme!
-B'(_) = sup A B + (sup A C * B')
-
-Ex: tree, list  F(T,L) = 1+T*L
- list T =  \mu L.F(T,L) = 1+T*\mu L.F(T,L)
- Ft T = 1+T*list T
- A=bool B=(0|1) C=(0|1)
- A' = 1 + A'
- B' = (0|1 + B' o snd)
- A' = nat
- B'(0) = 0
- B'(S k) = 1+B'(k)
- Ft T = {n:nat; n -> T }
-
-F X (nest X) = { x:A(X) ; B(X,x) -> nest X }
-  =  {x:A(X) ; f:B(X,x) -> A' ; {i:B(X,x);B'(f i)}->X}
-  = { {x:A(X); f:B(_,x) -> A' ; 
-
-
 *)
 
-
-
-Definition g f  t (* A * B->X * C->TI F o *) :=
-                     let trec i (* C(fst t) *):= f (cc_app (snd (snd t)) i) in
-                     let x' (*A'*):=
-                         couple (fst t) (cc_lam (C (fst t)) (fun i => fst(trec i))) in
-                     let f' (* B'->X*) b' :=
-B'case (fun l (* B x' *) => cc_app (fst (snd t)) l)
-      (fun i b'' => cc_app (snd (trec i)) b'') b' in
-                     couple x' (cc_lam (B' x') f').
-
-
-Definition nest_iso := TI_iso pos_nest_op g.
-
-
-(*
-Definition pos_nest F o :=
-  mkPositive (pos_nest_op F o)
-    (TI (fun Y => w1 (F Y))) (fun x => TI (fun Y => w2 (F Y) x))
-    (fun c => TI_iso (fun Y => pos_oper (F Y) X)
-       (fun f => 
-
-list A = {n:N & n -> A }
-list A = W1 * W2->A
-1+A*list A = 1 + A*W1 * W2osnd -> A
-   = (1+W1) * (0|1+W2) -> A
-W1=1+W1
-W2(n) = 0|1+W2(n-1)
-
-
-\mu X.1+AX = \mu X. 1+A * (0|1 -> X) 
-List B ->f A
-
-
-pos_oper (F Y)  empty (fun _=>empty) (fun _=>empty).
-
-Lemma isPos_nest F o :
-  Proper (eq_set==>eqpos) F ->
-  isOrd o ->
-  (* Parameter occurs positively if the constructors of nested type (Y) *)
-  (forall Y, isPositive (F Y)) ->
-  (* The nested operator is monotonic *)
-  (forall X, Proper (incl_set ==> incl_set) (fun Y => pos_oper (F Y) X)) ->
-  isPositive (pos_nest F o).
-unfold pos_nest, pos_nest_op; intros Fm oo FposParam FmonoNested.
-split; simpl; intros.
- do 3 red; intros.
- admit.
-
- red; intros.
- assert (Fpos' := fun Y => pos_stable (F Y) (FposParam Y)).
- red in Fpos'.
- transitivity (TI (fun Y => inter (replf X (fun x => pos_oper (F Y) x))) o).
-(* 
-TI (Y -> F Y X) o =
-U(o'<o) F (TI F_X o') X =
-U(o'<o)  w1(TI F_X o') * (w2(TI F_X o') -> X)
-(if w1,w2 cont)
-w1(
-
-*)
-
-red; intros.
-apply TI_stable in H.
-
-*)
-*)
 End NestedInductive.
+
+
+Section VariableSeparation.
+
+Variable F : set -> set -> set.
+Hypothesis Fmono : Proper (incl_set==>incl_set==>incl_set) F.
+
+(* W-type in X *)
+Variable A : set -> set.
+Variable B : set -> set -> set.
+Variable fX : set -> set -> set.
+
+Let pX Y := mkPositive (fun X => F X Y) (A Y) (B Y) (fX Y).
+
+Hypothesis FposX : forall Y, isPositive (pX Y).
+
+(* W-type in Y *)
+Variable A' : set -> set.
+Variable B' : set -> set -> set.
+Variable fY : set -> set -> set.
+
+Let pY X := mkPositive (fun Y => F X Y) (A' X) (B' X) (fY X).
+
+Hypothesis FposY : forall X, isPositive (pY X).
+
+(* 
+F(X,Y) = A(Y) * (B(Y)->X) = A'(X) * (B'(X)->Y)
+F(X,1) = A(1) * (B(1)->X) = A'(X)
+-->
+F(X,Y) = A(1) * (B(1)->X) * (B'(1)->Y) ?
+ *)
+
+Definition A0 := A (singl empty).
+Definition B0 := B (singl empty).
+
+
+Definition iso1 X p :=
+  couple p (cc_lam (B' X p) (fun _ => empty)).
+
+Lemma iso_fun1 X :
+  iso_fun (A' X) (W_F (A' X) (B' X) (singl empty)) (iso1 X).
+constructor; intros.
+ admit.
+
+ red; intros.
+ unfold iso1.
+ apply W_F_intro; intros; auto with *.
+  do 2 red; intros; apply (w2m (pY X)); auto with *.
+  apply singl_intro.
+
+ apply couple_injection in H1; destruct H1; trivial.
+
+ apply W_F_elim in H.
+ 2:apply (w2m (pY X)); trivial.
+ destruct H as (?,(?,?)).
+ exists (fst y); trivial.
+ unfold iso1.
+ apply (@transitivity) with (3:=symmetry H1); auto with *.
+ apply couple_morph; auto with *.
+ apply cc_lam_ext; auto with *.
+ red; intros.
+ rewrite <- H3; symmetry; apply singl_elim; auto.
+Qed.
+
+Definition iso2 X Y :=
+  comp_iso (iso_inv (F X Y) (wf (pY X))) (wf (pX Y)).
+
+Lemma iso_fun2 X Y :
+  iso_fun (W_F (A' X) (B' X) Y) (W_F (A Y) (B Y) X) (iso2 X Y).
+eapply iso_fun_trans.
+ apply (iso_fun_sym (w_iso _ (FposY X) Y)).
+ apply (w_iso _ (FposX Y) X).
+Qed.
+
+
+
+Lemma if1 X :
+  {f:_ | iso_fun (A' X) (W_F A0 B0 X) f }.
+econstructor.
+eapply iso_fun_trans.
+ apply iso_fun1.
+
+ apply iso_fun2.
+Defined.
+
+(* coe :  A0 --> A' (singl empty) *)
+Definition coe i := iso_inv (A' (singl empty)) (proj1_sig (if1(singl empty)))
+   (couple i (cc_lam (B0 i) (fun _ => empty))).
+Definition C0 i := B' (singl empty) (coe i).
+
+(*
+Lemma iso_fun1 : forall X,
+  iso_fun (A' X) (W_F (A (singl empty)) (B (singl empty)) X)
+*)
+
+Lemma Fdef : forall X Y,
+  {f:_|
+  iso_fun (F X Y) (sigma A0 (fun x => prodcart (cc_arr (B0 x) X) (cc_arr (C0 x) Y))) f}. 
+intros.
+econstructor.
+eapply iso_fun_trans.
+ apply (w_iso _ (FposY X)).
+ simpl.
+eapply iso_fun_trans.
+ unfold W_F.
+ apply sigma_iso_fun_morph with (4:=proj2_sig (if1 X)).
+Focus 5.
+eapply iso_fun_trans.
+ apply iso_fun_sym.
+ apply iso_sigma_sigma.
+Focus 3.
+ apply eq_iso_fun.
+  apply sigma_ext;[reflexivity|].
+  intros.
+  rewrite sigma_nodep.
+  apply sigma_ext; intros.
+   apply cc_arr_morph; auto with *.
+   apply (w2m _ (FposX (singl empty))); trivial.
+
+assert (C0m : ext_fun A0 C0) by admit.
+   rewrite <- (C0m _ _ H H0).
+   apply cc_arr_morph.
+    reflexivity.
+    reflexivity.
+ instantiate (1:=fun x=>x); reflexivity.
+Unfocus.
+Focus 4.
+simpl; intros.
+unfold C0.
+Show Existentials.
+(*
+[X : set
+ Y : set
+ x : set |- set -> set] 
+iso_fun (B X x -> Y) (B' (singl empty) (coe (fst x')) -> Y1) ?
+*)
+
+apply eq_iso_fun with (f:=fun x=>x); auto with *.
+apply cc_arr_morph; auto with *.
+unfold C0.
+generalize (w2m _ (FposY (singl empty))).
+simpl.
+Abort.
+
+End VariableSeparation.
