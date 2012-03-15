@@ -1,5 +1,4 @@
 Require Import ZF ZFrelations ZFnats ZFord ZFcoc.
-Import IZF.
 
 Definition incl_fam A X Y :=
   forall a, a \in A -> X a \incl Y a.

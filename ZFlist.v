@@ -1,5 +1,4 @@
 Require Import ZF ZFpairs ZFnats.
-Import IZF.
 Require Import ZFrepl ZFord ZFfix.
 
 Section ListDefs.
@@ -88,7 +87,43 @@ rewrite replf_ax; trivial.
 exists l; auto with *.
 Qed.
 
- 
+  (* LIST_case is f when l is Nil, or g when l is Cons *)
+  Definition LIST_case l f g :=
+    union2 (cond_set (l == Nil) f)
+           (cond_set (l == Cons (fst l) (snd l)) g).
+
+  Global Instance LIST_case_morph : Proper (eq_set==>eq_set==>eq_set==>eq_set) LIST_case.
+do 4 red; intros; unfold LIST_case.
+apply union2_morph.
+ rewrite H; rewrite H0; reflexivity.
+
+ rewrite H; rewrite H1; reflexivity.
+Qed.
+
+  Lemma LIST_case_Nil f g : LIST_case Nil f g == f.
+unfold LIST_case.
+rewrite eq_set_ax; intros z.
+rewrite union2_ax.
+rewrite cond_set_ax.
+rewrite cond_set_ax.
+intuition.
+apply discr_mt_pair in H1; contradiction.
+Qed.
+
+  Lemma LIST_case_Cons x l f g : LIST_case (Cons x l) f g == g.
+unfold LIST_case.
+rewrite eq_set_ax; intros z.
+rewrite union2_ax.
+rewrite cond_set_ax.
+rewrite cond_set_ax.
+intuition.
+ symmetry in H1; apply discr_mt_pair in H1; contradiction.
+
+ right; split; trivial.
+ unfold Cons; rewrite fst_def; rewrite snd_def; reflexivity.
+Qed.
+
+
   Definition Lstn n := TI LISTf (nat2ordset n).
 
   Lemma Lstn_incl_succ : forall k, Lstn k \incl Lstn (S k).

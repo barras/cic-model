@@ -1,6 +1,5 @@
 Require Import Classical.
 Require Import ZFnats.
-Import IZF.
 
 Definition isOrd x :=
   forall P : set -> Prop,

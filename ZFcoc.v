@@ -1,365 +1,8 @@
 
-Require Import Setoid.
-Require Export ZF ZFpairs ZFrelations ZFstable.
-Import IZF.
+Require Export basic ZF ZFpairs ZFrelations ZFstable.
+Require Import ZFgrothendieck.
 
-(* CC *)
-
-(* Lambda: Aczel's encoding of functions *)
-
-Definition cc_lam (x:set) (y:set->set) : set :=
-  union (replf x (fun x' => replf (y x') (fun y' => couple x' y'))).
-
-Instance cc_lam_morph : Proper (eq_set ==> (eq_set ==> eq_set) ==> eq_set) cc_lam.
-unfold cc_lam; do 3 red; intros.
-apply union_morph; apply replf_morph; trivial.
-red; intros.
-apply replf_morph.
- apply H0; trivial.
-
- red; intros; apply couple_morph; trivial.
-Qed.
-
-Lemma cc_lam_fun1 : forall x x',
-  ext_fun x (fun y' => couple x' y').
-Proof.
-do 2 red; intros.
-rewrite H0; reflexivity.
-Qed.
-
-Lemma cc_lam_fun2 : forall x y,
-  ext_fun x y ->
-  ext_fun x
-    (fun x' => replf (y x') (fun y' => couple x' y')).
-Proof.
-do 2 red; intros.
-apply replf_morph; auto.
-red; intros.
-rewrite H1; rewrite H3; reflexivity.
-Qed.
-Hint Resolve cc_lam_fun1 cc_lam_fun2.
-
-Lemma cc_lam_ext :
-  forall x1 x2 f1 f2,
-  x1 == x2 ->
-  eq_fun x1 f1 f2 ->
-  cc_lam x1 f1 == cc_lam x2 f2.
-unfold cc_lam in |- *; intros.
-assert (ext_fun x1 f1).
- apply eq_fun_ext in H0; trivial.
-assert (ext_fun x2 f2).
- do 2 red; intros.
- rewrite <-H in H2.
- rewrite <- (H0 x x'); trivial.
- symmetry; apply H0; trivial; try reflexivity.
-apply union_morph.
-apply replf_morph; auto.
-red; intros.
-apply replf_morph; auto.
-red; intros.
-rewrite H4; rewrite H6; reflexivity.
-Qed.
-
-Lemma cc_impredicative_lam : forall dom F,
-  ext_fun dom F ->
-  (forall x, x \in dom -> F x == empty) ->
-  cc_lam dom F == empty.
-Proof.
-unfold cc_lam in |- *; intros.
-apply empty_ext.
-red in |- *; intros.
-elim union_elim with (1 := H1); clear H1; intros.
-elim replf_elim with (2 := H2); clear H2; auto; intros.
-rewrite H3 in H1; clear H3 x0.
-elim replf_elim with (2 := H1); clear H1; intros; trivial.
-apply empty_ax with x0.
-setoid_replace empty with (F x1); auto.
-symmetry; auto.
-Qed.
-
-(* Application *)
-
-Definition cc_app (x y:set) : set :=
-  rel_image (subset x (fun p => fst p == y)).
-
-Instance cc_app_morph : morph2 cc_app.
-do 3 red; unfold cc_app in |- *; intros.
-apply rel_image_morph.
-apply subset_morph; trivial.
-red; intros.
-rewrite H0.
-reflexivity.
-Qed.
-
-(* The empty set behaves correctly w.r.t. function application *)
-Lemma cc_app_empty : forall x, cc_app empty x == empty.
-intro.
-apply empty_ext; red; intros.
-unfold cc_app, rel_image in H.
-apply subset_elim1 in H.
-apply union_elim in H; destruct H.
-apply union_elim in H0; destruct H0.
-apply subset_elim1 in H1.
-apply empty_ax in H1; trivial.
-Qed.
-
-
-(* Beta conversion *)
-
-Lemma cc_beta_eq:
-  forall dom F x,
-  ext_fun dom F ->
-  x \in dom ->
-  cc_app (cc_lam dom F) x == F x.
-Proof.
-intros.
-unfold cc_app, cc_lam in |- *.
-unfold rel_image, rel_app in |- *.
-apply eq_intro; intros.
- elim subset_elim2 with (1:=H1); clear H1; intros.
- destruct H2.
- specialize subset_elim1 with (1:=H2); intro.
- elim subset_elim2 with (1:=H2); clear H2; intro.
- elim union_elim with (1:=H3); clear H3; intros.
- elim replf_elim with (2:=H3); clear H3; intros; auto.
- rewrite <- H1 in H2, H4 |-.
- rewrite H6 in H2; clear H6 x3.
- elim replf_elim with (2:=H2); clear H2; intros; trivial.
- apply couple_injection in H6; destruct H6.
- rewrite <- H4 in H5; rewrite fst_def in H5.
- rewrite H7; rewrite H5 in H6.
- setoid_replace (F x) with (F x4); auto.
-
- apply subset_intro.
-  apply union_intro with (pair x z).
-   apply pair_intro2.
-   apply union_intro with (couple x z).
-    unfold couple.
-    apply pair_intro2.
-
-    apply subset_intro.
-     apply union_intro
-       with (replf (F x) (fun y' => couple x y')).
-      apply replf_intro with z; trivial; reflexivity.
-      apply replf_intro with x; auto; reflexivity.
-
-     apply fst_def.
-
-  exists x.
-  apply subset_intro.
-   apply union_intro
-     with (replf (F x) (fun y' => couple x y')).
-    apply replf_intro with z; trivial; reflexivity.
-    apply replf_intro with x; auto; reflexivity.
-
-   apply fst_def.
-Qed.
-
-(* Typing: dependent products *)
-
-Definition cc_prod (x:set) (y:set->set) : set :=
-  replf (dep_func x y)
-    (fun f => cc_lam x (fun x' => app f x')).
-
-Instance cc_prod_morph : Proper (eq_set ==> (eq_set ==> eq_set) ==> eq_set) cc_prod.
-unfold cc_prod; do 3 red; intros.
-apply replf_morph.
- apply dep_func_ext; trivial.
- red; auto.
-
- red; intros.
- apply cc_lam_morph; trivial.
- red; intros; apply app_morph; trivial.
-Qed.
-
-Definition cc_arr A B := cc_prod A (fun _ => B).
-
-Instance cc_arr_morph : morph2 cc_arr.
-do 3 red; intros.
-apply cc_prod_morph; trivial.
-red; trivial.
-Qed.
-
-Lemma cc_prod_fun1 : forall A x,
-  ext_fun A (fun f => cc_lam x (fun x' => app f x')).
-Proof.
-do 2 red; intros.
-apply cc_lam_ext; try reflexivity; red; intros.
-apply app_morph; trivial.
-Qed.
-Hint Resolve cc_prod_fun1.
-
-
-Lemma cc_prod_ext :
-  forall x1 x2 f1 f2,
-  x1 == x2 ->
-  eq_fun x1 f1 f2 ->
-  cc_prod x1 f1 == cc_prod x2 f2.
-Proof.
-unfold cc_prod in |- *; intros.
-apply replf_morph; intros; trivial.
- apply dep_func_ext; trivial.
-
- red; intros.
- apply cc_lam_ext; auto.
- red; intros.
- apply app_morph; trivial.
-Qed.
-
-Lemma cc_prod_intro : forall dom f F,
-  ext_fun dom f ->
-  ext_fun dom F ->
-  (forall x, x \in dom -> f x \in F x) ->
-  cc_lam dom f \in cc_prod dom F.
-unfold cc_prod in |- *.
-intros.
-assert (forall x, x \in dom -> f x \in union (dep_image dom F)).
- intros.
- apply union_intro with (F x); auto.
- unfold dep_image.
- apply replf_intro with x; auto.
- reflexivity.
-apply replf_intro with (lam dom f); trivial.
- apply dep_func_intro; trivial.
-
- apply cc_lam_ext; intros.
-  reflexivity.
-
-  red; intros.
-  rewrite beta_eq; auto.
-  rewrite <- H4; trivial.
-Qed.
-
-Lemma cc_prod_elim : forall dom f x F,
-  f \in cc_prod dom F ->
-  x \in dom ->
-  cc_app f x \in F x.
-intros.
-unfold cc_prod in H.
-elim replf_elim with (2 := H); clear H; intros; auto.
-rewrite H1; clear H1.
-rewrite cc_beta_eq; auto.
- apply dep_func_elim with dom; trivial.
-
- do 2 red; intros.
- rewrite H2; reflexivity.
-Qed.
-
-Lemma cc_app_typ f v A B B' :
-  f \in cc_prod A B ->
-  B' == B v ->
-  v \in A ->
-  cc_app f v \in B'.
-intros.
-rewrite H0; apply cc_prod_elim with (1:=H); trivial.
-Qed.
-
-Lemma cc_arr_intro : forall A B F,
-  ext_fun A F ->
-  (forall x, x \in A -> F x \in B) ->
-  cc_lam A F \in cc_arr A B.
-unfold cc_arr; intros.
-apply cc_prod_intro; trivial.
-Qed.
-
-Lemma cc_arr_elim : forall f x A B,
-  f \in cc_arr A B -> 
-  x \in A ->
-  cc_app f x \in B.
-intros.
-apply cc_prod_elim with (1:=H); trivial.
-Qed.
-
-(* Eta: *)
-Lemma cc_eta_eq: forall dom F f,
-  f \in cc_prod dom F ->
-  f == cc_lam dom (fun x => cc_app f x).
-unfold cc_prod.
-intros.
-rewrite replf_ax in H.
- destruct H.
- rewrite H0.
- apply cc_lam_ext; auto with *.
- red; intros.
- rewrite H0.
- rewrite cc_beta_eq.
-  apply app_morph; auto with *.
-
-  red; red; intros.
-  apply app_morph; auto with *.
-
-  rewrite <- H2; auto.
-
- red; red; intros.
- apply cc_lam_ext; auto with *.
- red; intros.
- apply app_morph; auto.
-Qed.
-
-Lemma cc_prod_covariant : forall dom dom' F G,
-  ext_fun dom' G ->
-  dom == dom' ->
-  (forall x, x \in dom -> F x \incl G x) ->
-  cc_prod dom F \incl cc_prod dom' G.
-red; intros.
-setoid_replace (cc_prod dom' G) with (cc_prod dom G).
- specialize cc_eta_eq with (1:=H2); intro.
- rewrite H3.
- apply cc_prod_intro; trivial.
-  red; red; intros.
-  rewrite H5; auto with *.
-
-  red; red; intros.
-  rewrite H0 in H4; apply H; trivial.
-
-  intros.
-  apply H1; trivial.
-  apply cc_prod_elim with (1:=H2); trivial.
-
- apply cc_prod_ext; trivial.
- symmetry; trivial.
-Qed.
-
-Lemma cc_prod_stable : forall dom F,
-  (forall y y' x x', y == y' -> x \in dom -> x == x' -> F y x == F y' x') ->
-  (forall x, x \in dom -> stable (fun y => F y x)) ->
-  stable (fun y => cc_prod dom (F y)).
-intros dom F Fm Fs.
-assert (Hm : morph1 (fun y => cc_prod dom (F y))).
- do 2 red; intros.
- apply cc_prod_ext; auto with *.
- red; intros; apply Fm; auto.
-red; red ;intros.
-destruct inter_wit with (2:=H) as (w,H0); trivial.
-assert (forall x, x \in X -> z \in cc_prod dom (F x)).
- intros.
- apply inter_elim with (1:=H).
- rewrite replf_ax; auto.
- exists x; auto with *.
-clear H.
-assert (z \in cc_prod dom (F w)) by auto.
-rewrite (cc_eta_eq _ _ _ H).
-apply cc_prod_intro.
- red; red; intros; apply cc_app_morph; auto with *.
-
- red; red; intros; apply Fm; auto with *.
-
- intros.
- apply Fs; trivial.
- apply inter_intro.
-  intros.
-  rewrite replf_ax in H3; auto.
-  2:red;red;intros;apply Fm; auto with *.
-  destruct H3.
-  rewrite H4; apply H1 in H3.
-  apply cc_prod_elim with (1:=H3); trivial.
-
-  exists (F w x); rewrite replf_ax.
-  2:red;red;intros; apply Fm; auto with *.
-  eauto with *.
-Qed.
-
-(* impredicativity *)
+(** * Impredicativity of props *)
 
 Definition prf_trm := empty.
 Definition props := power (singl prf_trm).
@@ -384,120 +27,19 @@ specialize power_elim with (1 := H) (2 := H2); intro.
 apply singl_elim; trivial.
 Qed.
 
-(* Classical propositions: we also have a model for classical logic *)
-
-Definition cl_props := subset props (fun P => ~~empty \in P -> empty \in P).
-
-Lemma cc_cl_impredicative_prod : forall dom F,
-  ext_fun dom F ->
-  (forall x, x \in dom -> F x \in cl_props) ->
-  cc_prod dom F \in cl_props.
-Proof.
-intros dom F eF H.
-unfold cl_props in H|- *; intros.
-apply subset_intro.
- apply cc_impredicative_prod; intros.
- apply H in H0.
- apply subset_elim1 in H0; trivial.
-
- intros.
- rewrite <- (cc_impredicative_lam dom (fun x => empty)); auto with *.
- apply cc_prod_intro; auto with *.
- intros.
- specialize H with (1:=H1).
- rewrite subset_ax in H.
- destruct H as (Fxp,(Fx',eqFx,clFx)).
- rewrite <- eqFx in clFx; clear Fx' eqFx.
- apply clFx.
- intro nFx; apply H0; clear H0; intro; apply nFx; clear nFx.
- rewrite <- cc_app_empty with (x:=x).
- apply cc_prod_elim with (1:=H); trivial.
-Qed.
-
-Lemma cl_props_classical P :
-  P \in cl_props ->
-  cc_arr (cc_arr P empty) empty \incl P.
-red; intros.
-unfold cl_props in H; rewrite subset_ax in H.
-destruct H as (Pty,(P',eqP,clP)).
-rewrite <- eqP in clP; clear P' eqP.
-assert (z == empty).
- assert (cc_arr (cc_arr P empty) empty \in props).
-  apply cc_impredicative_prod; intros.
-  apply power_intro; intros.
-  apply empty_ax in H1; contradiction.
- specialize power_elim with (1:=H) (2:=H0); intro.
- apply singl_elim in H1; trivial.
-rewrite H; apply clP.
-intro nP.
-assert (cc_lam P (fun x => x) \in cc_arr P empty).
- apply cc_arr_intro; auto with *.
-  do 2 red; auto.
-
-  intros.
-  elim nP.
-  specialize power_elim with (1:=Pty) (2:=H1); intro.
-  apply singl_elim in H2; rewrite H2 in H1; trivial.
-specialize cc_arr_elim with (1:=H0) (2:=H1); intro.
-apply empty_ax in H2; contradiction.
-Qed.
-
-
-(* Auxiliary stuff for strong normalization proof: every type
-   contains the empty set. 
- *)
-
-(* The operator that adds the empty set to a type. *)
-Definition cc_dec x := union2 (singl empty) x.
-
-Instance cc_dec_morph : morph1 cc_dec.
-unfold cc_dec; do 2 red; intros.
-rewrite H; reflexivity.
-Qed.
-
-Lemma cc_dec_ax : forall x z,
-  z \in cc_dec x <-> z == empty \/ z \in x.
-unfold cc_dec; intros.
-split; intros.
- apply union2_elim in H; destruct H; auto.
- apply singl_elim in H; auto.
-
- destruct H.
-  apply union2_intro1; rewrite H; apply singl_intro.
-
-  apply union2_intro2; trivial.
-Qed.
-
-
-Lemma cc_dec_prop :
-    forall P, P \in cc_dec props -> cc_dec P \in props.
-intros.
-rewrite cc_dec_ax in H.
-apply power_intro; intros.
-rewrite cc_dec_ax in H0.
-destruct H0;[rewrite H0;apply singl_intro|].
-destruct H; [rewrite H in H0; apply empty_ax in H0;contradiction|].
-apply power_elim with (1:=H); trivial.
-Qed.
-
-
-Lemma cc_dec_cl_prop :
-    forall P, P \in cc_dec cl_props -> cc_dec P \in cl_props.
-intros.
-apply subset_intro.
-apply cc_dec_prop.
-rewrite cc_dec_ax in H|-*; destruct H; auto.
-apply subset_elim1 in H; auto.
-
-intros _.
-rewrite cc_dec_ax; auto with *.
-Qed.
-
-
-(* mapping (meta-level) propositions to props *)
+(** * mapping (meta-level) propositions to props back and forth *)
 
 Definition P2p (P:Prop) := cond_set P (singl prf_trm).
 Definition p2P p := prf_trm \in p.
+
+Instance P2p_morph : Proper (iff ==> eq_set) P2p.
+do 2 red; intros; unfold P2p.
+apply cond_set_morph; auto with *.
+Qed.
+
+Instance p2P_morph : Proper (eq_set ==> iff) p2P.
+do 2 red; intros; apply in_set_morph; auto with *.
+Qed.
 
 Lemma P2p_typ : forall P, P2p P \in props.
 unfold P2p; intros.
@@ -565,55 +107,174 @@ apply eq_intro; intros.
   rewrite cond_set_ax in H2; destruct H2; trivial.
 Qed.
 
-(* Proof that Grothendieck universes are closed by cc_prod *)
+Lemma cc_prod_forall A B :
+   ext_fun A B ->
+   (forall x, x \in A -> B x \in props) ->
+   cc_prod A B == P2p (forall x, x \in A -> p2P (B x)).
+intros.
+rewrite P2p_forall.
+ apply cc_prod_ext; auto with *.
+ red; intros.
+ rewrite p2P2p; auto.
+ apply H0; rewrite <- H2; trivial.
 
-Require Import ZFgrothendieck.
+ intros.
+ apply in_set_morph; auto with *.
+Qed.
+
+Lemma cc_arr_imp A B :
+   B \in props ->
+   cc_arr A B == P2p ((exists x, x \in A) -> p2P B).
+intros; unfold cc_arr; rewrite cc_prod_forall; intros; auto.
+apply P2p_morph.
+split; intros; eauto with *.
+destruct H1; eauto.
+Qed.
+
+(** * Classical propositions: we also have a model for classical logic *)
+
+Definition cl_props := subset props (fun P => ~~p2P P -> p2P P).
+
+Lemma cc_cl_impredicative_prod : forall dom F,
+  ext_fun dom F ->
+  (forall x, x \in dom -> F x \in cl_props) ->
+  cc_prod dom F \in cl_props.
+Proof.
+intros dom F eF H.
+rewrite cc_prod_forall; intros; trivial.
+ apply subset_intro; intros.
+  apply P2p_typ.
+
+  rewrite P2p2P in H0|-*; intros.
+  specialize H with (1:=H1).
+  apply subset_elim2 in H; destruct H.
+  rewrite H; apply H2.
+  intro nx; apply H0; intro h; apply nx.
+  rewrite <- H; auto.
+
+ specialize H with (1:=H0); apply subset_elim1 in H; trivial.
+Qed.
+
+Lemma cl_props_classical P :
+  P \in cl_props ->
+  cc_arr (cc_arr P empty) empty \incl P.
+red; intros.
+unfold cl_props in H; rewrite subset_ax in H.
+destruct H as (Pty,(P',eqP,clP)).
+unfold p2P in clP.
+rewrite <- eqP in clP; clear P' eqP.
+assert (z == empty).
+ assert (cc_arr (cc_arr P empty) empty \in props).
+  apply cc_impredicative_prod; intros.
+  apply power_intro; intros.
+  apply empty_ax in H1; contradiction.
+ specialize power_elim with (1:=H) (2:=H0); intro.
+ apply singl_elim in H1; trivial.
+rewrite H; apply clP.
+intro nP.
+assert (cc_lam P (fun x => x) \in cc_arr P empty).
+ apply cc_arr_intro; auto with *.
+  do 2 red; auto.
+
+  intros.
+  elim nP.
+  specialize power_elim with (1:=Pty) (2:=H1); intro.
+  apply singl_elim in H2; rewrite H2 in H1; trivial.
+specialize cc_arr_elim with (1:=H0) (2:=H1); intro.
+apply empty_ax in H2; contradiction.
+Qed.
+
+
+(** Auxiliary stuff for strong normalization proof: every type
+   contains the empty set. 
+ *)
+
+(* The operator that adds the empty set to a type. *)
+Definition cc_dec x := union2 (singl empty) x.
+
+Instance cc_dec_morph : morph1 cc_dec.
+unfold cc_dec; do 2 red; intros.
+rewrite H; reflexivity.
+Qed.
+
+Lemma cc_dec_ax : forall x z,
+  z \in cc_dec x <-> z == empty \/ z \in x.
+unfold cc_dec; intros.
+split; intros.
+ apply union2_elim in H; destruct H; auto.
+ apply singl_elim in H; auto.
+
+ destruct H.
+  apply union2_intro1; rewrite H; apply singl_intro.
+
+  apply union2_intro2; trivial.
+Qed.
+
+
+Lemma cc_dec_prop :
+    forall P, P \in cc_dec props -> cc_dec P \in props.
+intros.
+rewrite cc_dec_ax in H.
+apply power_intro; intros.
+rewrite cc_dec_ax in H0.
+destruct H0;[rewrite H0;apply singl_intro|].
+destruct H; [rewrite H in H0; apply empty_ax in H0;contradiction|].
+apply power_elim with (1:=H); trivial.
+Qed.
+
+
+Lemma cc_dec_cl_prop :
+    forall P, P \in cc_dec cl_props -> cc_dec P \in cl_props.
+intros.
+apply subset_intro.
+apply cc_dec_prop.
+rewrite cc_dec_ax in H|-*; destruct H; auto.
+apply subset_elim1 in H; auto.
+
+intros _.
+red; rewrite cc_dec_ax; left; reflexivity.
+Qed.
+
+
+(** #<a name="EquivTTColl"/># *)
+(** * Correspondance between ZF universes and (Coq + TTColl) universes *)
 
 Section Universe.
 
-  Hypothesis U : set. (* A grothendieck universe... *)
+ (* A grothendieck universe... *)
+  Hypothesis U : set.
   Hypothesis Ugrot : grot_univ U.
 
-  Lemma G_cc_prod A B :
-    ext_fun A B ->
-    A \in U ->
-    (forall x, x \in A -> B x \in U) ->
-    cc_prod A B \in U.
-intros.
-unfold cc_prod.
-apply G_replf; auto with *.
- apply G_dep_func; intros; auto with *.
+(*
+Section Equiv_TTRepl.
 
- intros.
- unfold cc_lam.
- apply G_union; trivial.
- apply G_replf; trivial.
-  apply cc_lam_fun2.
-  do 2 red; intros; apply app_morph; auto with *.
+  Hypothesis cc_set : set.
+  Hypothesis cc_eq_set : set -> set -> Prop.
+  Hypothesis cc_eq_set_morph : Proper (eq_set==>eq_set==>iff) cc_eq_set.
+  Hypothesis cc_set_incl_U : cc_set \incl U.
 
-  intros.
-  assert (app x x0 \in U).
-   unfold app.
-   apply G_union; trivial.
-   apply G_subset; trivial.
-   unfold rel_image.
-   apply G_subset; trivial.
-   apply G_union; trivial.
-   apply G_union; trivial.
-   apply G_trans with (2:=H2); trivial.
-   apply G_dep_func; intros; auto with *.
-  apply G_replf; intros; trivial.
-  apply G_couple; trivial.
-   apply G_trans with A; trivial.
+Lemma cc_ttrepl A R :
+  Proper (eq_set ==> eq_set ==> iff) R ->
+  (* A : Ti *)
+  A \in U ->
+  (* type of R + existence assumption *)
+  (forall x, x \in A -> exists2 y, y \in cc_set & R x y) ->
+  (forall x y y', x \in A -> R x y -> (R x y' <-> cc_eq_set y y')) ->
+  (* exists f:A->set, *)
+  exists2 f, f \in cc_arr A cc_set &
+    (* forall x:A, R x (f i) *)
+    forall x, x \in A -> R x (cc_app f x).
 
-   apply G_trans with (app x x0); trivial.
-Qed.
+(forall x in A, exists y \in A, exists g:y->cc_set, R x (cc_sup y g))
 
-(* Correspondance between ZF universes and (Coq + TTColl) universes *)
+R' x y := (z \in y <-> R x z)  (y = ens de cc_set -> \incl U)
 
-Section Equiv_ZF_CICchoice.
+End Equiv_TTRepl.
+*)
 
-(* We assume now that U is a *ZF* universe (not just IZF),
+Section Equiv_ZF_CIC_TTColl.
+
+(** We assume now that U is a *ZF* universe (not just IZF),
    so it is closed by collection. *)
 
   Hypothesis coll_axU : forall A (R:set->set->Prop), 
@@ -623,12 +284,12 @@ Section Equiv_ZF_CICchoice.
     exists2 B, B \in U & forall x, in_set x A -> (exists2 y, y \in U & R x y) ->
        exists2 y, in_set y B & y \in U /\ R x y.
 
-  (* The inductive type of sets (cf Ens.set) and its elimination rule *)
+  (** The inductive type of sets (cf Ens.set) and its elimination rule *)
   Hypothesis cc_set : set.
 
 Section SetInU.
 
-  (* Here we assume the elimination rule of the Ens.set inductive type *)
+  (** Here we assume the elimination rule of the Ens.set inductive type *)
   Hypothesis cc_set_ind :
     forall P : set -> Prop,
     (forall y X f, morph1 f ->
@@ -647,29 +308,16 @@ red; intros.
 apply cc_set_ind with (2:=H); intros.
 rewrite H1; clear H1 y.
 apply G_couple; trivial.
-unfold cc_lam.
-apply G_union; trivial.
-apply G_replf; trivial.
- do 2 red; intros.
- apply replf_morph.
-  apply H0; trivial.
-  red; intros.
-  apply couple_morph; trivial.
-
- intros.
- apply G_replf; intros; auto.
- apply G_couple; trivial.
-  apply G_trans with X; trivial.
-  apply G_trans with (f x); auto.
+apply G_cc_lam; auto.
 Qed.
 
 End SetInU.
 
-  (* All we need to know about cc_set is that it's included in U, so the ttcoll
+  (** All we need to know about cc_set is that it's included in U, so the ttcoll
      axiom is really an instance of collection for universe U. *)
   Hypothesis cc_set_incl_U : cc_set \incl U.
 
-(* We prove that the model will validate TTColl (Ens.ttcoll).
+(** We prove that the model will validate TTColl (Ens.ttcoll).
    This formulation heavily uses the reification of propositions of the model
    as Coq's Prop elements. *)
 Lemma cc_ttcoll A R :
@@ -712,6 +360,6 @@ destruct coll_axU with (A:=A) (R:=fun x y => y \in cc_set /\ R x y) as (B,HB);
     unfold B'; rewrite inter2_def; auto.
 Qed.
 
-End Equiv_ZF_CICchoice.
+End Equiv_ZF_CIC_TTColl.
 
 End Universe.

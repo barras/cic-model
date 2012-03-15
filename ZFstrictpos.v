@@ -1,9 +1,8 @@
 Require Import ZF ZFpairs ZFsum ZFrelations ZFcoc ZFord ZFfix.
-Import IZF.
 
 Require Import ZFstable.
 
-(* Here we define the (semantic) notion of strictly positiveness.
+(** Here we define the (semantic) notion of strictly positiveness.
    We then show that it fulfills all the requirements for the existence
    of a fixpoint:
    - monotonicity
@@ -299,42 +298,7 @@ induction 1; simpl; intros; auto with *.
  apply H1; trivial.
  apply cc_app_morph; trivial.
 Qed.
-(*
-Lemma pos_to_w2_morph : forall x y,
-   eq_pos x y ->
-   forall x0 y0, x0 \in pos_to_w1 x -> x0 == y0 -> pos_to_w2 x x0 == pos_to_w2 y y0.
-induction 1; simpl; intros; auto with *.
- apply sum_case_ext with (pos_to_w1 p1) (pos_to_w1 q1); auto.
 
- apply sum_morph.
-  apply IHeq_pos1.
-   apply fst_typ in H1; trivial.
-   apply fst_morph; trivial.
-  apply IHeq_pos2.
-   apply snd_typ in H1; trivial.
-   apply snd_morph; trivial.
-
- apply H1.
-  apply fst_typ_sigma in H2; trivial.
-
-  apply fst_morph; trivial.
-
-  apply snd_typ_sigma with (y:=fst x0) in H2; auto with *.
-  do 2 red; intros.
-  apply pos_to_w1_morph.
-  transitivity (p2 x'); auto with *.
-  symmetry; apply H0; auto with *.
-  rewrite <- H5; trivial.
-
-  apply snd_morph; trivial.
-
- apply sigma_ext; intros; auto.
- apply H1; trivial.
-  apply cc_prod_elim with (1:=H2); trivial.
-
-  apply cc_app_morph; trivial.
-Qed.
-*)
 Lemma pos_to_w2_morph' :
   forall p, eq_pos p p -> ext_fun (pos_to_w1 p) (pos_to_w2 p).
 do 2 red; intros.
@@ -405,8 +369,7 @@ Lemma W_F_sum_commut A1 A2 B1 B2 X:
   ext_fun A1 B1 ->
   ext_fun A2 B2 ->
   sigma (sum A1 A2)
-    (sum_case (fun x => cc_prod (B1 x) (fun _ => X))
-              (fun x => cc_prod (B2 x) (fun _ => X))) ==
+    (sum_case (fun x => cc_arr (B1 x) X) (fun x => cc_arr (B2 x) X)) ==
   W_F (sum A1 A2) (sum_case B1 B2) X.
 unfold W_F; intros.
 apply sigma_ext; intros; auto with *.
@@ -448,8 +411,8 @@ intros.
 unfold W_F, trad_prodcart.
 eapply iso_fun_trans.
  apply prodcart_iso_fun_morph; [apply H1|apply H2].
-assert (m1 : ext_fun A1 (fun x => cc_prod (B1 x) (fun _ => Y))) by auto.
-assert (m1' : ext_fun A2 (fun x => cc_prod (B2 x) (fun _ => Y))) by auto.
+assert (m1 : ext_fun A1 (fun x => cc_arr (B1 x) Y)) by auto with *.
+assert (m1' : ext_fun A2 (fun x => cc_arr (B2 x) Y)) by auto.
 assert (m2: ext_fun (prodcart A1 A2) (fun x => sum (B1 (fst x)) (B2 (snd x)))).
  do 2 red; intros.
  apply sum_morph.
@@ -991,140 +954,6 @@ Lemma trad_pos_w_typ : forall X Y f p,
 intros.
 apply trad_pos_w_morph_gen with (1:=H)(2:=H0)(3:=H1).
 Qed.
-(*
-Lemma trad_pos_w_typ :
-  forall X Y f p,
-  eq_pos p p -> morph1 f -> typ_fun f X Y ->
-  typ_fun (trad_pos_w f p) (pos_oper p X) (W_F (pos_to_w1 p) (pos_to_w2 p) Y).
-intros X Y f p eqp ef tyf.
-assert (posw2m := pos_to_w2_morph').
-red.
-elim eqp using pos_rect; simpl; intros.
- (* Cst *)
- unfold trad_cst.
- apply sigma_1r_iso_typ; intros; auto.
- apply cc_prod_intro; intros; auto with *.
- apply empty_ax in H1; contradiction.
-
- (* Rec *)
- unfold trad_reccall, comp_iso.
- apply couple_intro_sigma; auto.
-  apply singl_intro.
-
-  apply cc_prod_intro; intros; auto with *.
-
- (* Sum *)
- unfold trad_sum.
- eapply comp_iso_typ with (3:=H3).
-  apply sum_isomap_typ with (1:=H1) (2:=H2).
-
-  rewrite <- W_F_sum_commut; auto.
-  apply sum_sigma_iso_typ; auto.
-
- (* ConsRecArg *)
- unfold trad_prodcart.
- eapply comp_iso_typ with (3:=H3).
-  apply sigma_isomap_typ_prod; [eexact H1|eexact H2].
- eapply comp_iso_typ.
-  apply prodcart_sigma_iso_typ; auto.
-
-  apply sigma_isomap_typ; intros.
-  3:red; auto.
-   do 2 red; intros; apply prodcart_morph; (apply cc_prod_ext;[|red; reflexivity]).
-    apply fst_morph in H5.
-    apply pos_to_w2_morph; trivial.
-
-    apply snd_morph in H5.
-    apply pos_to_w2_morph; trivial.
-
-   do 2 red; intros; apply cc_prod_ext;[|red; reflexivity].
-   apply sum_morph; apply pos_to_w2_morph; trivial.
-    apply fst_morph; trivial.
-    apply snd_morph; trivial.
-
-   red; intros.
-   apply eq_elim with
-     (cc_prod (sum (pos_to_w2 p1 (fst x0)) (pos_to_w2 p2 (snd x0)))
-        (sum_case (fun _ => Y) (fun _ => Y))).
-    apply cc_prod_ext; auto with *.
-    red; intros.
-    apply sum_case_ind with (6:=H6); auto with *.
-     do 2 red; intros.
-     rewrite H8; reflexivity.
-
-     do 2 red; reflexivity.
-     do 2 red; reflexivity.
-   apply prodcart_cc_prod_iso_typ; trivial.
-
- (* ConsNonRecArg *)
- unfold trad_sigma.
- eapply comp_iso_typ with (3:=H1); clear x H1.
-  apply sigma_isomap_typ
-    with (3:=fun _ h=>h)(B':=fun x => W_F (pos_to_w1 (p0 x)) (pos_to_w2 (p0 x)) Y); intros.
-   do 2 red; intros; apply pos_oper_morph; auto with *.
-
-   do 2 red; intros; apply W_F_ext; auto with *.
-    apply pos_to_w1_morph; auto with *.
-    red; intros; apply pos_to_w2_morph; auto with *.
-
-   red; apply (H0 x H1); auto with *.
-
-  apply sigma_isoassoc_typ.
-   do 2 red; intros; apply pos_to_w1_morph; auto with *.
-   red; intros; apply cc_prod_ext;[|red;reflexivity].
-   apply pos_to_w2_morph; auto with *.
-
- (* Param *)
- unfold trad_cc_prod.
- eapply comp_iso_typ with (3:=H1); clear x H1.
-  apply cc_prod_isomap_typ
-    with (4:=fun a h=>h) (B':=fun x => W_F (pos_to_w1 (p0 x)) (pos_to_w2 (p0 x)) Y).
-   do 2 red; intros; apply W_F_ext; auto with *.
-    apply pos_to_w1_morph; auto.
-
-    red; intros.
-    apply pos_to_w2_morph; auto.
-
-   do 2 red; trivial.
-
-   red; intros.
-   apply trad_pos_w_morph; auto.
-
-   intros.
-   red; apply H0; trivial.
-
- eapply comp_iso_typ.
-  apply cc_prod_sigma_iso_typ.
-   do 2 red; intros; apply pos_to_w1_morph; auto.
-
-   red; intros; apply cc_prod_ext;[|red; reflexivity].
-   apply pos_to_w2_morph; auto.
-
-  apply sigma_isomap_typ.
-   do 2 red; intros.
-   apply cc_prod_ext; intros; auto with *.
-   red; intros.
-   apply cc_prod_ext;[|red;reflexivity].
-   apply pos_to_w2_morph; auto.
-   apply cc_app_morph; trivial.
-
-   do 2 red; intros.
-   apply cc_prod_ext; [|red;reflexivity].
-   apply sigma_ext; intros; auto with *.
-   apply pos_to_w2_morph; auto.
-   apply cc_app_morph; trivial.
-
-   red; trivial.
-
-   intros.
-   apply cc_prod_isocurry_typ.
-    do 2 red; intros.
-    apply pos_to_w2_morph; auto with *.
-    apply cc_app_morph; auto with *.
-
-    red; reflexivity.
-Qed.
-*)
 
 Lemma trad_w_iso_fun :
   forall X Y f p,
@@ -1178,60 +1007,6 @@ elim eqp using pos_rect; simpl; intros.
 
   apply H0; auto with *. 
 Qed.
-(*
-Lemma trad_w_iso_fun :
-  forall X Y f p,
-  morph1 f ->
-  eq_pos p p -> iso_fun X Y f ->
-  iso_fun (pos_oper p X) (W_F (pos_to_w1 p) (pos_to_w2 p) Y) (trad_pos_w f p).
-intros X Y f p fm eqp isof.
-assert (tyf := iso_typ isof).
-elim eqp using pos_rect; simpl; intros.
- (* Cst *)
- apply iso_cst.
-
- (* Rec *)
- apply iso_reccall; trivial.
-
- (* Sum *)
- apply iso_sum; trivial.
-  apply pos_to_w2_morph'; trivial.
-  apply pos_to_w2_morph'; trivial.
-
- (* ConsRecArg *)
- apply iso_prodcart; trivial.
-  apply pos_to_w2_morph'; trivial.
-  apply pos_to_w2_morph'; trivial.
-
- (* ConsNonRecArg *)
- apply iso_arg_norec with (B:=fun x => pos_to_w2 (p0 x)); intros.
-  do 2 red; intros.
-  apply pos_oper_morph; auto with *.
-
-  do 2 red; intros; apply pos_to_w1_morph; auto with *.
-
-  red; intros; apply pos_to_w2_morph; auto with *.
-
-  red; intros.
-  apply trad_pos_w_morph; auto with *.
-
-  apply H0; auto with *. 
-
- (* Param *)
- apply iso_param with (B:=fun x => pos_to_w2 (p0 x)); intros.
-  do 2 red; intros.
-  apply pos_oper_morph; auto with *.
-
-  do 2 red; intros; apply pos_to_w1_morph; auto with *.
-
-  red; intros; apply pos_to_w2_morph; auto with *.
-
-  red; intros.
-  apply trad_pos_w_morph; auto with *.
-
-  apply H0; auto with *. 
-Qed.
-*)
 
 Lemma trad_w_iso_id :
   forall X p,
@@ -1353,18 +1128,6 @@ Qed.
        pos_universe (P_Param A p).
 
 
-  Lemma G_sum X Y : X \in U -> Y \in U -> sum X Y \in U.
-unfold sum; intros.
-apply G_subset; trivial.
-apply G_prodcart; trivial.
- unfold ZFnats.succ, ZFnats.zero.
- assert (empty \in U) by (apply G_trans with omega; auto; apply zero_omega).
- eauto 10 using G_union2, G_singl.
-
- apply G_union2; trivial.
-Qed.
-
-
   Lemma pos_univ_oper_ok p X :
     eq_pos p p -> pos_universe p -> X \in U -> pos_oper p X \in U.
 intros.
@@ -1459,10 +1222,10 @@ unfold IND, INDi.
 apply G_TI; trivial.
  apply pos_oper_morph; trivial.
 
- apply W_o_o; trivial.
+ unfold IND_clos_ord; apply W_o_o; trivial.
  apply pos_to_w2_morph'; trivial.
 
- apply G_W_ord; trivial.
+ unfold IND_clos_ord; apply G_W_ord; trivial.
   apply pos_to_w2_morph'; trivial.
 
   apply G_posw1; trivial.

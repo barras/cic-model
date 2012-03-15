@@ -2,7 +2,6 @@ Require Import Models.
 Require Import GenModelSN.
 Require Import ZF.
 Require Import ZFind_nat.
-Import IZF.
 
 Require Import SN_CC.
 

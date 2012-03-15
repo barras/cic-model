@@ -1,6 +1,5 @@
 
 Require Import ZF.
-Import IZF.
 
 Instance repl_mono_raw :
   Proper (incl_set ==> (eq_set ==> eq_set ==> iff) ==> incl_set) repl.

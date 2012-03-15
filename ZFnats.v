@@ -1,6 +1,5 @@
 
 Require Export ZF.
-Import IZF.
 
 (* natural numbers *)
 

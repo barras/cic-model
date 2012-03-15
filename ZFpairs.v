@@ -1,6 +1,5 @@
 
 Require Export ZF.
-Import IZF.
 
 (* ordered pairs *)
 
@@ -248,6 +247,30 @@ apply subset_ext; intros.
   apply fst_typ with (1:=H4).
 Qed.
 
+Lemma sigma_nodep : forall A B,
+  prodcart A B == sigma A (fun _ => B).
+intros.
+apply eq_intro; intros.
+ generalize (fst_typ _ _ _ H); intro.
+ generalize (snd_typ _ _ _ H); intro.
+ apply subset_intro; trivial.
+ rewrite (surj_pair _ _ _ H).
+ apply couple_intro; trivial.
+ apply union_intro with B; trivial.
+ apply replf_intro with (fst z); auto with *.
+ do 2 red; reflexivity.
+
+ apply subset_elim1 in H.
+ generalize (fst_typ _ _ _ H); intro.
+ generalize (snd_typ _ _ _ H); intro.
+ rewrite (surj_pair _ _ _ H).
+ apply couple_intro; trivial.
+ apply union_elim in H1; destruct H1.
+ rewrite replf_ax in H2; auto with *.
+ 2:do 2 red; reflexivity.
+ destruct H2.
+ rewrite <- H3; trivial.
+Qed.
 
 Lemma couple_intro_sigma :
   forall x y A B, 

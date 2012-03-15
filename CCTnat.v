@@ -2,8 +2,6 @@ Require Import Explicit_sub.
 Require Import FOTheory.
 Require Import basic1.
 
-Import IZF.
-
 Import BuildModel.
 Import T J R.
 Import CCM.

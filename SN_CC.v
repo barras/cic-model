@@ -2,12 +2,13 @@ Require Export Relations Wellfounded Compare_dec.
 Require Import Sat.
 Require Import ZF ZFcoc.
 Require Import ZFlambda.
-Import IZF.
+
+(** Another strong normalization proof of the Calculus of Constructions *)
 
 Set Implicit Arguments.
 
 (***********************************************************************)
-(* Proving the SN requirements *)
+(** * Proving the SN requirements *)
 
 Module CCSN.
 
@@ -140,7 +141,7 @@ Qed.
 End CCSN.
 Import CCSN.
 
-(* Building the CC model *)
+(** * Building the CC abstract SN model *)
 
 Require Import Models.
 Module SN_CC_Model <: CC_Model.
@@ -240,7 +241,7 @@ End SN_CC_Model.
 Import SN_CC_Model.
 
 (***********************************************************************)
-(* Building the SN addon *)
+(** Building the SN addon *)
 
 Module SN_CC_addon.
 
@@ -277,6 +278,11 @@ Proof sn_proof_of_false.
 End SN_CC_addon.
 
 (***********************************************************************)
+(*
+----
+*)
+
+(** * Mapping semantic entities to the syntactic ones. *)
 
 Require GenModelSN TypeJudge.
 
@@ -286,7 +292,7 @@ Module Lc := Lambda.
 
 Module SN := GenModelSN.MakeModel SN_CC_Model SN_CC_addon.
 
-
+(** Terms *)
 Fixpoint int_trm t :=
   match t with
   | Tm.Srt Tm.prop => SN.prop
@@ -419,7 +425,7 @@ Qed.
 
 Hint Resolve int_not_kind Ty.eq_typ_not_kind.
 
-(* Soundness of the typing rules *)
+(** Soundness of the typing rules *)
 
 Lemma int_sound : forall e M M' T,
   Ty.eq_typ e M M' T ->
@@ -530,6 +536,11 @@ apply int_sound in H; destruct H; auto.
 Qed.
 
 (***********)
+(*
+----
+*)
+
+(** The main theorem: strong normalization of CC *)
 
 Lemma strong_normalization : forall e M M' T,
   Ty.eq_typ e M M' T ->

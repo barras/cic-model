@@ -29,7 +29,7 @@ src-html:: $(DOCVO)
 	$(MAKE) html
 html::
 	mkdir -p html
-	$(COQDOC) -html -d html -g $(ALLV) template/*.v
+	$(COQDOC) -html -d html -g --coqlib http://coq.inria.fr/stdlib $(ALLV) template/*.v
 	mv html/index.html html/coqindex.html
 	cp coqdoc.css html
 	cp sets.html html/index.html

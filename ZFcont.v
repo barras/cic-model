@@ -1,6 +1,6 @@
 Require Export basic.
-Require Import ZF ZFsum ZFfix ZFnats ZFord ZFstable ZFrank ZFrelations.
-Import IZF ZFrepl.
+Require Import ZF ZFpairs ZFsum ZFfix ZFnats ZFord ZFstable ZFrank ZFrelations.
+Import ZFrepl.
 
 (* Continuity *)
 
@@ -38,6 +38,47 @@ apply eq_intro; intros.
  rewrite sup_ax in H1; auto.
  destruct H1.
  apply sum_mono with (F x) (G x); auto.
+Qed.
+
+  Lemma sigma_cont dom A f :
+    morph2 f ->
+    sigma A (fun x => sup dom (f x)) == sup dom (fun i => sigma A (fun x => f x i)).
+intros.
+assert (Hm : ext_fun dom (fun i => sigma A (fun x => f x i))).
+ do 2 red; intros.
+ apply sigma_morph; auto with *.
+ red; intros; apply H; trivial.
+apply eq_intro; intros.
+ rewrite sup_ax; trivial.
+ assert (snd z \in sup dom (f (fst z))).
+  apply snd_typ_sigma with (2:=H0); auto with *.
+  do 2 red; intros.
+  apply sup_morph; auto with *.
+  red; intros; apply H; trivial.
+ rewrite sup_ax in H1.
+ 2:do 2 red; intros; apply H;auto with *.
+ destruct H1.
+ exists x; trivial.
+ rewrite surj_pair with (1:=subset_elim1 _ _ _ H0).
+ apply couple_intro_sigma; trivial.
+  do 2 red; intros; apply H; auto with *.
+ apply fst_typ_sigma in H0; trivial.
+
+ rewrite sup_ax in H0; trivial.
+ destruct H0.
+ rewrite surj_pair with (1:=subset_elim1 _ _ _ H1).
+ apply couple_intro_sigma; trivial.
+  do 2 red; intros.
+  apply sup_morph; auto with *.
+  red; intros; apply H; trivial.
+
+  apply fst_typ_sigma in H1; trivial.
+
+  rewrite sup_ax.
+  2:do 2 red; intros; apply H; auto with *.
+  exists x; trivial.
+  apply snd_typ_sigma with (2:=H1); auto with *.
+  do 2 red; intros; apply H; auto with *.
 Qed.
 
 Section ProductContinuity.

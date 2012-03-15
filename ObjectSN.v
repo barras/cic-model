@@ -7,7 +7,7 @@ Module Lc := Lambda.
 Module MakeObject (M: CC_Model).
 Import M.
 
-(* Valuations *)
+(** Valuations *)
 Module Xeq.
   Definition t := X.
   Definition eq := eqX.
@@ -29,7 +29,7 @@ Existing Instance V.lams_morph.
 (* Term valuations *)
 Module I := Lambda.I.
 
-(* Terms *)
+(** Terms *)
 
 Record inftrm := {
   iint : val -> X;
@@ -155,7 +155,9 @@ Qed.
 
 Definition cst (x:X) (t:Lc.term)
   (H0 : Lc.liftable (fun _ => t)) (H1 : Lc.substitutive (fun _ => t)) : trm.
+(* begin show *)
 left; exists (fun _ => x) (fun _ => t); trivial.
+(* end show *)
  do 2 red; reflexivity.
  do 2 red; reflexivity.
 Defined.
@@ -166,7 +168,9 @@ Definition prop : trm :=
   @cst props (Lc.K) (fun _ _ => eq_refl _) (fun _ _ _ => eq_refl _).
 
 Definition Ref (n:nat) : trm.
+(* begin show*)
 left; exists (fun i => i n) (fun j => j n).
+(*end show*)
  do 2 red; simpl; auto.
  do 2 red; simpl; auto.
  red; reflexivity.
@@ -174,17 +178,19 @@ left; exists (fun i => i n) (fun j => j n).
 Defined.
 
 Definition App (u v:trm) : trm.
+(*begin show*)
 left; exists (fun i => app (int i u) (int i v))
              (fun j => Lc.App (tm j u) (tm j v)). 
+(*end show*)
  do 2 red; simpl; intros.
  rewrite H; reflexivity.
-
+(**)
  do 2 red; simpl; intros.
  rewrite H; reflexivity.
-
+(**)
  red; simpl; intros.
  do 2 rewrite <- tm_liftable; trivial.
-
+(**)
  red; simpl; intros.
  do 2 rewrite <- tm_substitutive; trivial.
 Defined.
@@ -194,22 +200,24 @@ Definition CAbs t m :=
   Lc.App2 Lc.K (Lc.Abs m) t.
 
 Definition Abs (A M:trm) : trm.
+(*begin show*)
 left; exists (fun i => lam (int i A) (fun x => int (V.cons x i) M))
              (fun j => CAbs (tm j A) (tm (Lc.ilift j) M)).
+(*end show *)
  do 2 red; simpl; intros.
  apply lam_ext.
   rewrite H; reflexivity.
-
+(**)
   red; intros.
   rewrite H; rewrite H1; reflexivity.
-
+(**)
  do 2 red; intros.
  rewrite H; trivial.
-
+(**)
  red; simpl; intros.
  rewrite Lc.ilift_binder_lift; trivial.
  do 2 rewrite <- tm_liftable; trivial.
-
+(**)
  red; simpl; intros.
  rewrite Lc.ilift_binder; trivial.
  do 2 rewrite <- tm_substitutive; trivial.
@@ -220,23 +228,24 @@ Definition CProd a b :=
   Lc.App2 Lc.K a (Lc.Abs b).
 
 Definition Prod (A B:trm) : trm.
-left;
-  exists (fun i => prod (int i A) (fun x => int (V.cons x i) B))
-         (fun j => CProd (tm j A) (tm (Lc.ilift j) B)).
+(*begin show*)
+left; exists (fun i => prod (int i A) (fun x => int (V.cons x i) B))
+             (fun j => CProd (tm j A) (tm (Lc.ilift j) B)).
+(*end show*)
 do 2 red; simpl; intros.
  apply prod_ext.
   rewrite H; reflexivity.
-
+(**)
   red; intros.
   rewrite H; rewrite H1; reflexivity.
-
+(**)
  do 2 red; intros.
  rewrite H; trivial.
-
+(**)
  red; simpl; intros.
  do 2 rewrite <- tm_liftable; trivial.
  rewrite Lc.ilift_binder_lift; trivial.
-
+(**)
  red; simpl; intros.
  do 2 rewrite <- tm_substitutive; trivial.
  rewrite Lc.ilift_binder; trivial.
@@ -248,21 +257,23 @@ reflexivity.
 Qed.
 
 Definition lift_rec (n m:nat) (t:trm) : trm.
+(*begin show*)
 destruct t as [t|]; [left|exact kind].
 exists (fun i => iint t (V.lams m (V.shift n) i))
        (fun j => itm t (I.lams m (I.shift n) j)).
+(*end show*)
  do 2 red; intros.
  rewrite H; reflexivity.
-
+(**)
  do 2 red; intros.
  rewrite H; reflexivity.
-
+(**)
  red; intros.
  rewrite <- itm_lift.
  apply itm_morph; do 2 red; intros.
  unfold I.lams.
  destruct (le_gt_dec m a); trivial.
-
+(**)
  red; intros.
  rewrite <- itm_subst.
  apply itm_morph; do 2 red; intros.
@@ -346,15 +357,17 @@ split; red; intros.
 Qed.
 
 Definition subst_rec (arg:trm) (m:nat) (t:trm) : trm.
+(*begin show*)
 destruct t as [body|]; [left|right].
 exists (fun i => iint body (V.lams m (V.cons (int (V.shift m i) arg)) i))
        (fun j => itm body (I.lams m (I.cons (tm (I.shift m j) arg)) j)).
+(*end show*)
  do 2 red; intros.
  rewrite H; reflexivity.
-
+(**)
  do 2 red; intros.
  rewrite H; reflexivity.
-
+(**)
  red; intros.
  rewrite <- itm_lift.
  apply itm_morph; do 2 red; intros.
@@ -363,7 +376,7 @@ exists (fun i => iint body (V.lams m (V.cons (int (V.shift m i) arg)) i))
  destruct (a-m); simpl; auto.
  rewrite <- tm_liftable.
  reflexivity.
-
+(**)
  red; intros.
  rewrite <- itm_subst.
  apply itm_morph; do 2 red; intros.
@@ -757,7 +770,7 @@ Qed.
 
 
 
-(* "Untyped" reduction: tools for proving simulation and strong normalization *)
+(** "Untyped" reduction: tools for proving simulation and strong normalization *)
 
 Definition red_term M N :=
   forall j, Lc.redp (tm j M) (tm j N).
@@ -854,7 +867,7 @@ eapply t_trans.
   rewrite Lc.lift0; trivial.
 Qed.
 
-(* "Untyped" conversion: can be used to make equality more
+(** "Untyped" conversion: can be used to make equality more
    intensional: assume we have plus and plus' that perform the
    addition, but with different algorithms. Then we won't
    have conv_term plus plus', while eq_typ e plus plus' will
@@ -935,7 +948,7 @@ apply H0 with (tm j y) j; trivial.
 Qed.
 
 
-(* Iterated products *)
+(** Iterated products *)
 
 Fixpoint prod_list (e:list trm) (U:trm) :=
   match e with

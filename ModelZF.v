@@ -2,7 +2,10 @@ Require Import basic.
 Require Import Sublogic.
 Require Import Models GenModelSyntax.
 Require Import ZF ZFcoc.
-Import IZF.
+
+(** Set-theoretical model of the Calculus of Constructions in IZF *)
+
+(** * Instantiation of the abstract model of CC *)
 
 Module CCM <: CC_Model.
 
@@ -80,12 +83,15 @@ Proof cc_beta_eq.
 
 End CCM.
 
+(** * Instantiating the generic model construction *)
+
 Module BuildModel := MakeModel(CCM).
 
 Require Import Term Env.
 Require Import TypeJudge.
 Load "template/Library.v".
 
+(** Consistency of CC *)
 Lemma cc_consistency : forall M M', ~ eq_typ nil M M' FALSE.
 Proof.
 unfold FALSE; red in |- *; intros.
@@ -104,7 +110,7 @@ setoid_replace (CCM.prod CCM.props (fun x => x)) with empty in H0.
  apply empty_ax with (1:=H3).
 Qed.
 
-
+(*begin hide*)
 Module TypChoice (C : Choice_Sig CoqSublogicThms IZF).
 
 Import C.
@@ -164,3 +170,4 @@ destruct H.
 Qed.
 
 End TypChoice.
+(*end hide*)

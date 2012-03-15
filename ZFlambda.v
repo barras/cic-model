@@ -1,6 +1,5 @@
 Require Import Lambda.
 Require Import ZF ZFpairs ZFnats ZFord.
-Import IZF.
 Require Import Sat.
 Require Import Setoid Compare_dec Wf_nat.
 

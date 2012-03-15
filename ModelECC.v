@@ -15,7 +15,7 @@ intros.
 rewrite <- H0; trivial.
 Qed.
 
-(* interpretation *)
+(** * Interpretation *)
 
 Fixpoint int (i:nat->X) (t:term) {struct t} : X :=
   match t with
@@ -143,7 +143,7 @@ transitivity (int (ins_map 0 (int (del_map 0 0 i) n) i) t).
 Qed.
 
 
-(* Semantical judgements *)
+(** * Semantical judgements *)
 
 Definition int_env (e:env) (i:nat->X) : Prop :=
   forall t n, item_lift t e n -> i n \in int i t.
@@ -195,7 +195,7 @@ unfold eq_judge in |- *; intros.
 transitivity (int i U); auto.
 Qed.
 
-(* Typing rules *)
+(** * Typing rules and soundness *)
 
 Lemma judge_prop : forall e, judge e (Srt prop) (Srt (kind 0)).
 red;red;simpl;intros.
@@ -462,10 +462,9 @@ Qed.
 End MakeModel.
 
 
-(* Now we show that we have a model in Tarski-Grothendieck *)
+(** Now we show that we have a model in Tarski-Grothendieck *)
 
 Require Import ZF ZFcoc ModelZF ZFecc.
-Import IZF.
 
 Module ECC <: ECC_Model.
 

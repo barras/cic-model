@@ -2,6 +2,9 @@
 Require Import basic.
 Require Import Models List.
 
+(** A general model construction of a model of CC given an
+    abstract model. *)
+
 Module MakeModel(M : CC_Model).
 Import M.
 
@@ -23,7 +26,7 @@ apply H; trivial.
 reflexivity.
 Qed.
 
-(* Valuations *)
+(** Valuations *)
 Module Xeq.
   Definition t := X.
   Definition eq := eqX.
@@ -43,7 +46,7 @@ Existing Instance cons_morph.
 Existing Instance cons_morph'.
 
 
-(* Terms *)
+(** Terms *)
 
 Module T.
 
@@ -106,7 +109,9 @@ destruct T as [(T,Tm)|]; simpl; trivial.
 Qed.
 
 Definition cst (x:X) : term.
+(*begin show*)
 left; exists (fun _ => x).
+(*end show*)
 do 2 red; reflexivity.
 Defined.
 
@@ -117,12 +122,16 @@ Definition kind : term := None.
 Hint Unfold eq_val.
 
 Definition Ref (n:nat) : term.
+(*begin show*)
 left; exists (fun i => i n).
+(*end show*)
 do 2 red; simpl; auto.
 Defined.
 
 Definition App (u v:term) : term.
+(*begin show*)
 left; exists (fun i => app (int u i) (int v i)).
+(*end show*)
 do 2 red; simpl; intros.
 rewrite H; reflexivity.
 Defined.
@@ -134,11 +143,13 @@ rewrite H; rewrite H0; rewrite H1; reflexivity.
 Qed.
 
 Definition Abs (A M:term) : term.
+(*begin show*)
 left; exists (fun i => lam (int A i) (fun x => int M (V.cons x i))).
+(*end show*)
 do 2 red; simpl; intros.
 apply lam_ext.
  rewrite H; reflexivity.
-
+(**)
  red; intros.
  rewrite H; rewrite H1; reflexivity.
 Defined.
@@ -153,11 +164,13 @@ apply lam_ext.
 Qed.
 
 Definition Prod (A B:term) : term.
+(*begin show*)
 left; exists (fun i => prod (int A i) (fun x => int B (V.cons x i))).
+(*end show*)
 do 2 red; simpl; intros.
 apply prod_ext.
  rewrite H; reflexivity.
-
+(**)
  red; intros.
  rewrite H; rewrite H1; reflexivity.
 Defined.
@@ -175,8 +188,10 @@ Qed.
 Section Lift.
 
 Definition lift_rec (n m:nat) (t:term) : term.
+(*begin show*)
 destruct t as [(t,tm)|]; [left|exact kind].
 exists (fun i => t (V.lams m (V.shift n) i)).
+(*end show*)
  do 2 red; intros.
  rewrite H; reflexivity.
 Defined.
@@ -298,8 +313,10 @@ End Lift.
 Section Substitution.
 
 Definition subst_rec (arg:term) (m:nat) (t:term) : term.
+(*begin show*)
 destruct t as [(body,bm)|]; [left|right].
 exists (fun i => body (V.lams m (V.cons (int arg (V.shift m i))) i)).
+(*end show*)
  do 2 red; intros.
  rewrite H; reflexivity.
 Defined.
@@ -379,7 +396,7 @@ End Substitution.
 End T.
 Import T.
 
-(* Environments *)
+(** Environments *)
 Definition env := list term.
 
 Definition val_ok (e:env) (i:val) :=
@@ -417,7 +434,7 @@ destruct T as [(T,Tm)|]; simpl in *; trivial.
 Qed.
 
 
-(* Judgements *)
+(** Judgements *)
 Module J.
 Definition typ (e:env) (M T:term) :=
   forall i, val_ok e i -> el T i (int M i).
@@ -470,7 +487,7 @@ Qed.
 End J.
 Import J.
 
-(* Equality rules *)
+(** Equality rules *)
 Module R.
 
 Lemma refl : forall e M, eq_typ e M M.
@@ -546,6 +563,7 @@ apply H.
 apply vcons_add_var0; simpl; auto.
 Qed.
 
+(** Typing rules *)
 
 Lemma typ_prop : forall e, typ e prop kind.
 red; simpl; trivial.
@@ -681,7 +699,7 @@ assumption.
 Qed.
 
 
-(* Subtyping *)
+(** Subtyping *)
 Lemma sub_refl : forall e M M',
   eq_typ e M M' -> sub_typ e M M'.
 red; intros.

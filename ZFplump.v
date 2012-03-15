@@ -1,6 +1,5 @@
 Require Export basic ZF.
 Require Import ZFnats.
-Import IZF.
 
 (* Directed set (finite union) *)
 Definition isDir o := forall x y,

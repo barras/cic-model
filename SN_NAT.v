@@ -2,44 +2,46 @@
 (* Nat *)
 Set Implicit Arguments.
 
+(** In this file, we build a strong normalization model of the
+    Calculus of Constructions extended with natural numbers and
+    the usual recursor.
+ *)
+
 Require Import ZF ZFcoc ZFind_nat.
-Import IZF.
 
 Require Import basic Can Sat SATnat SN_CC_Real.
 Module Lc:=Lambda.
 Import CCSN SN.
 
+(** * Nat and its constructors *)
 
 Definition Zero : trm.
+(*begin show*)
 left; exists (fun _ => ZERO) (fun _ => ZE).
+(*end show*)
  do 2 red; reflexivity.
-
  do 2 red; reflexivity.
-
  red; reflexivity.
-
  red; reflexivity.
 Defined.
 
 Definition Succ : trm.
+(*begin show*)
 left; exists (fun _ => lam (mkTY NAT cNAT) SUCC) (fun _ => SU).
+(*end show*)
  do 2 red; reflexivity.
-
  do 2 red; reflexivity.
-
  red; reflexivity.
-
  red; reflexivity.
 Defined.
 
 Definition Nat : trm.
+(*begin show*)
 left; exists (fun _ => mkTY NAT cNAT) (fun _ => Lc.K).
+(*end show*)
  do 2 red; reflexivity.
-
  do 2 red; reflexivity.
-
  red; reflexivity.
-
  red; reflexivity.
 Defined.
 
@@ -70,6 +72,7 @@ split; destruct 1; split; trivial.
  rewrite RedNat_eq; trivial.
 Qed.
 
+(** Typing rules of constructors *)
 Lemma typ_0 : forall e, typ e Zero Nat.
 intros.
 apply typ_common;[exact I|intros].
@@ -138,6 +141,8 @@ Qed.
 
 Require Import ZFord.
 Require Import ZFrepl.
+
+(** * The recursor *)
 
 Definition NREC f g n y :=
   forall P,
@@ -260,7 +265,7 @@ split; intros.
    apply gm; auto with *.
 Qed.
 
-
+(** Recursor at the level of sets *)
 Definition NATREC f g n := uchoice (NREC f g n).
 
 Instance NATREC_morph :
@@ -325,7 +330,6 @@ elim H0 using NAT_ind; intros.
   apply NREC_choice; trivial.
 Qed.
 
-
 Lemma NATREC_typ P f g n :
   morph1 P ->
   morph2 g ->
@@ -342,29 +346,33 @@ elim H1 using NAT_ind; intros.
  rewrite NATREC_S; auto.
 Qed.
 
+(** Recursor *)
 Definition NatRec (f g n:trm) : trm.
+(*begin show*)
 left; exists (fun i => NATREC (int i f) (fun n y => app (app (int i g) n) y) (int i n))
              (fun j => Lc.App2 (tm j n) (tm j f) (tm j g)).
+(*end show*)
  do 2 red; intros.
  apply NATREC_morph.
   rewrite H; reflexivity.
-
+(**)
   do 2 red; intros.
   rewrite H; rewrite H0; rewrite H1; reflexivity.
-
+(**)
   rewrite H; reflexivity.
-
+(**)
  do 2 red; intros.
  rewrite H; auto.
-
+(**)
  red; intros; simpl.
  repeat rewrite tm_liftable; trivial.
-
+(**)
  red; intros; simpl.
  repeat rewrite tm_substitutive; trivial.
 Defined.
 
 
+(** Typing rule of the eliminator *)
 Lemma typ_Nrect : forall e n f g P,
   typ e n Nat ->
   typ e f (App P Zero) ->
@@ -472,6 +480,9 @@ revert ty; apply eq_elim.
 unfold prod; rewrite El_def.
 reflexivity.
 Qed.
+
+(** beta-reduction on the realizers simulates the reduction of
+    the eliminator *)
 
 Lemma red_iota_simulated_0 : forall f g,
   red_term (NatRec f g Zero) f.

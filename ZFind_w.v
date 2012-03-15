@@ -587,6 +587,13 @@ apply Ffix_post; eauto.
 apply Wf_stable.
 Qed.
 
+  Lemma W_clos : W == TI Wf W_ord.
+apply incl_eq.
+ red; intros; apply W_post; trivial.
+
+ apply Wi_W; trivial.
+Qed.
+
   Lemma W_eqn : W == Wf W.
 apply Ffix_eqn; eauto.
 apply Wf_stable.

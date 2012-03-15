@@ -1,8 +1,7 @@
 
 Require Import ZFpairs.
-Import IZF.
 
-(* relations *)
+(** * Relations *)
 
 Definition is_relation x :=
   forall p, p \in x -> p == couple (fst p) (snd p).
@@ -89,7 +88,7 @@ apply subset_intro.
    rewrite snd_def; trivial.
 Qed.
 
-(* - relation typing *)
+(** Relation typing *)
 
 Definition rel A B := power (prodcart A B).
 
@@ -224,7 +223,7 @@ elim (H x (fst x0) y (snd x0)); intros; auto.
  rewrite <- H2; symmetry  in |- *; apply snd_def.
 Qed.
 
-(* functions *)
+(** * Functions *)
 
 Definition is_function f :=
   is_relation f /\
@@ -250,14 +249,6 @@ apply subset_morph.
   rewrite H0; trivial.
 Qed.
 
-(*
-Lemma repl_fun : forall dom f, repl_rel dom (fun a b => app f a == b).
-Proof.
-split; intros.
- rewrite <- H0; rewrite <- H1; trivial.
- rewrite <- H0; trivial.
-Qed.
-*)
 
 Lemma app_defined : forall f x y,
   is_function f -> rel_app f x y -> app f x == y.
@@ -282,7 +273,7 @@ elim rel_image_ex with (1 := H0); intros.
  rewrite (app_defined f x x0); trivial.
 Qed.
 
-(* typing *)
+(** Typing *)
 
 Definition func A B :=
   subset (rel A B)
@@ -482,7 +473,6 @@ apply app_defined.
   reflexivity.
 Qed.
 
-(* using replacement axiom *)
 Definition lam A F := replf A (fun x => couple x (F x)).
 
 Lemma fun_elt_is_ext : forall A f,
@@ -574,7 +564,8 @@ apply app_defined.
 Qed.
 
 
-(* dependent typing *)
+(** Dependent typing *)
+
 Definition dep_image (A:set) (B:set->set) := replf A B.
 
 Lemma dep_image_ext :
@@ -728,4 +719,349 @@ unfold dep_func in |- *; intros.
 elim subset_elim2 with (1 := H); intros.
 rewrite H1.
 auto.
+Qed.
+
+(** * Aczel's encoding of functions *)
+
+(** Characterizing functions *)
+
+Definition is_cc_fun A f :=
+  forall c, c \in f -> c == couple (fst c) (snd c) /\ fst c \in A.
+
+Instance is_cc_fun_morph : Proper (eq_set ==> eq_set ==> iff) is_cc_fun.
+apply morph_impl_iff2; auto with *.
+do 5 red; intros.
+rewrite <- H; rewrite <- H0 in H2; auto.
+Qed.
+
+(** Function constructor *)
+
+Definition cc_lam (x:set) (y:set->set) : set :=
+  sup x (fun x' => replf (y x') (fun y' => couple x' y')).
+
+Instance cc_lam_morph : Proper (eq_set ==> (eq_set ==> eq_set) ==> eq_set) cc_lam.
+unfold cc_lam; do 3 red; intros.
+apply sup_morph; trivial.
+red; intros.
+apply replf_morph.
+ apply H0; trivial.
+
+ red; intros; apply couple_morph; trivial.
+Qed.
+
+Lemma cc_lam_def dom f z :
+  ext_fun dom f ->
+  (z \in cc_lam dom f <->
+   exists2 x, x \in dom & exists2 y, y \in f x & z == couple x y).
+unfold cc_lam; intros.
+rewrite sup_ax.
+ apply ex2_morph; red; intros; auto with *.
+ rewrite replf_ax; auto with *.
+ do 2 red; intros; apply couple_morph; auto with *.
+
+ do 2 red; intros; apply replf_morph; auto.
+ red; intros; apply couple_morph; auto with *.
+Qed.
+
+Lemma is_cc_fun_lam A F :
+  ext_fun A F ->
+  is_cc_fun A (cc_lam A F).
+red; intros.
+rewrite cc_lam_def in H0; trivial; destruct H0 as (x,?,(y,_,?)).
+rewrite H1; rewrite fst_def; rewrite snd_def; auto with *.
+Qed.
+
+Lemma cc_lam_ext :
+  forall x1 x2 f1 f2,
+  x1 == x2 ->
+  eq_fun x1 f1 f2 ->
+  cc_lam x1 f1 == cc_lam x2 f2.
+intros.
+assert (ext_fun x1 f1).
+ apply eq_fun_ext in H0; trivial.
+assert (ext_fun x2 f2).
+ do 2 red; intros.
+ rewrite <-H in H2.
+ rewrite <- (H0 x x'); trivial.
+ symmetry; apply H0; trivial; try reflexivity.
+rewrite eq_set_ax; intros z.
+do 2 (rewrite cc_lam_def; trivial).
+split; (destruct 1 as (x,?,h); destruct h as (y,?,?); exists x;[|exists y]); trivial.
+ rewrite <- H; trivial.
+ revert H4; apply eq_elim; apply H0; auto with *.
+ rewrite H; auto.
+ revert H4; apply eq_elim; symmetry; apply H0; auto with *.
+ rewrite H; trivial.
+Qed.
+
+Lemma cc_impredicative_lam : forall dom F,
+  ext_fun dom F ->
+  (forall x, x \in dom -> F x == empty) ->
+  cc_lam dom F == empty.
+Proof.
+intros.
+apply empty_ext; red in |- *; intros.
+rewrite cc_lam_def in H1; trivial; destruct H1 as (z,?,(y,?,?)).
+rewrite H0 in H2; trivial.
+apply empty_ax with y; trivial.
+Qed.
+
+(** Application *)
+
+Definition cc_app (x y:set) : set :=
+  rel_image (subset x (fun p => fst p == y)).
+
+Instance cc_app_morph : morph2 cc_app.
+do 3 red; unfold cc_app in |- *; intros.
+apply rel_image_morph.
+apply subset_morph; trivial.
+red; intros.
+rewrite H0.
+reflexivity.
+Qed.
+
+Lemma couple_in_app : forall x z f,
+  couple x z \in f <-> z \in cc_app f x.
+unfold cc_app, rel_image; split; intros.
+ apply subset_intro.
+  apply union_intro with (pair x z).
+   apply pair_intro2.
+
+   apply union_intro with (couple x z).
+    apply pair_intro2.
+
+    apply subset_intro; trivial.
+    apply fst_def.
+
+  exists x.
+  red; apply subset_intro; trivial.
+  apply fst_def.
+
+ rewrite subset_ax in H; destruct H.
+ destruct H0.
+ destruct H1.
+ red in H1.
+ rewrite subset_ax in H1; destruct H1.
+ destruct H2.
+ rewrite <- H0 in H1.
+ rewrite <- H2 in H3; rewrite fst_def in H3.
+ rewrite H3 in H1; trivial.
+Qed.
+
+Lemma cc_app_empty : forall x, cc_app empty x == empty.
+intro.
+apply empty_ext; red; intros.
+rewrite <- couple_in_app in H.
+apply empty_ax in H; trivial.
+Qed.
+
+(** Beta reduction *)
+
+Lemma cc_beta_eq : forall dom F x,
+  ext_fun dom F ->
+  x \in dom ->
+  cc_app (cc_lam dom F) x == F x.
+Proof.
+intros.
+apply eq_intro; intros.
+ rewrite <- couple_in_app in H1.
+ rewrite cc_lam_def in H1; trivial.
+ destruct H1 as (x',?,(y,?,?)).
+ apply couple_injection in H3; destruct H3.
+ rewrite H4; revert H2; apply eq_elim; apply H; auto with *.
+
+ rewrite <- couple_in_app.
+ rewrite cc_lam_def; eauto with *.
+Qed.
+
+(** Eta reduction *)
+
+Lemma cc_eta_eq' : forall dom f,
+  is_cc_fun dom f ->
+  f == cc_lam dom (fun x => cc_app f x).
+unfold is_cc_fun.
+intros.
+assert (am : ext_fun dom (fun x => cc_app f x)).
+ do 2 red; intros; apply cc_app_morph; auto with *.
+apply eq_intro; intros.
+ specialize H with (1:=H0); destruct H.
+ rewrite cc_lam_def; trivial.
+ exists (fst z); trivial.
+ exists (snd z); trivial.
+ rewrite <- couple_in_app; rewrite <- H; trivial.
+
+ rewrite cc_lam_def in H0; trivial.
+ destruct H0 as (x,?,(y,?,?)).
+ rewrite H2; apply couple_in_app; trivial.
+Qed.
+
+(** Typing: dependent products *)
+
+Definition cc_prod (x:set) (y:set->set) : set :=
+  replf (dep_func x y)
+    (fun f => cc_lam x (fun x' => app f x')).
+
+Lemma cc_prod_ext :
+  forall x1 x2 f1 f2,
+  x1 == x2 ->
+  eq_fun x1 f1 f2 ->
+  cc_prod x1 f1 == cc_prod x2 f2.
+Proof.
+unfold cc_prod in |- *; intros.
+apply replf_morph; intros; trivial.
+ apply dep_func_ext; trivial.
+
+ red; intros.
+ apply cc_lam_ext; auto.
+ red; intros.
+ apply app_morph; trivial.
+Qed.
+
+Instance cc_prod_morph : Proper (eq_set ==> (eq_set ==> eq_set) ==> eq_set) cc_prod.
+do 3 red; intros; apply cc_prod_ext; trivial.
+red; intros; apply H0; trivial.
+Qed.
+
+Lemma cc_prod_fun1 : forall A x,
+  ext_fun A (fun f => cc_lam x (fun x' => app f x')).
+Proof.
+do 2 red; intros.
+apply cc_lam_ext; try reflexivity; red; intros.
+apply app_morph; trivial.
+Qed.
+Hint Resolve cc_prod_fun1.
+
+Lemma cc_prod_is_cc_fun : forall A B f,
+  f \in cc_prod A B -> is_cc_fun A f.
+intros.
+unfold cc_prod in H.
+rewrite replf_ax in H; auto.
+destruct H.
+rewrite H0.
+apply is_cc_fun_lam; auto.
+do 2 red; intros; apply app_morph; auto with *.
+Qed.
+Hint Resolve cc_prod_is_cc_fun.
+
+
+Definition cc_arr A B := cc_prod A (fun _ => B).
+
+Instance cc_arr_morph : morph2 cc_arr.
+do 3 red; intros.
+apply cc_prod_morph; trivial.
+red; trivial.
+Qed.
+
+
+Lemma cc_prod_intro : forall dom f F,
+  ext_fun dom f ->
+  ext_fun dom F ->
+  (forall x, x \in dom -> f x \in F x) ->
+  cc_lam dom f \in cc_prod dom F.
+unfold cc_prod in |- *.
+intros.
+assert (forall x, x \in dom -> f x \in union (dep_image dom F)).
+ intros.
+ apply union_intro with (F x); auto.
+ unfold dep_image.
+ apply replf_intro with x; auto.
+ reflexivity.
+apply replf_intro with (lam dom f); trivial.
+ apply dep_func_intro; trivial.
+
+ apply cc_lam_ext; intros.
+  reflexivity.
+
+  red; intros.
+  rewrite beta_eq; auto.
+  rewrite <- H4; trivial.
+Qed.
+
+Lemma cc_prod_elim : forall dom f x F,
+  f \in cc_prod dom F ->
+  x \in dom ->
+  cc_app f x \in F x.
+intros.
+unfold cc_prod in H.
+elim replf_elim with (2 := H); clear H; intros; auto.
+rewrite H1; clear H1.
+rewrite cc_beta_eq; auto.
+ apply dep_func_elim with dom; trivial.
+
+ do 2 red; intros.
+ rewrite H2; reflexivity.
+Qed.
+
+Lemma cc_app_typ f v A B B' :
+  f \in cc_prod A B ->
+  B' == B v ->
+  v \in A ->
+  cc_app f v \in B'.
+intros.
+rewrite H0; apply cc_prod_elim with (1:=H); trivial.
+Qed.
+
+Lemma cc_arr_intro : forall A B F,
+  ext_fun A F ->
+  (forall x, x \in A -> F x \in B) ->
+  cc_lam A F \in cc_arr A B.
+unfold cc_arr; intros.
+apply cc_prod_intro; auto.
+do 2 red; reflexivity.
+Qed.
+
+Lemma cc_arr_elim : forall f x A B,
+  f \in cc_arr A B -> 
+  x \in A ->
+  cc_app f x \in B.
+intros.
+apply cc_prod_elim with (1:=H); trivial.
+Qed.
+
+
+(* Eta reduction : *)
+Lemma cc_eta_eq: forall dom F f,
+  f \in cc_prod dom F ->
+  f == cc_lam dom (fun x => cc_app f x).
+intros.
+apply cc_eta_eq'; eauto.
+Qed.
+
+Lemma cc_prod_covariant : forall dom dom' F G,
+  ext_fun dom' G ->
+  dom == dom' ->
+  (forall x, x \in dom -> F x \incl G x) ->
+  cc_prod dom F \incl cc_prod dom' G.
+red; intros.
+setoid_replace (cc_prod dom' G) with (cc_prod dom G).
+ specialize cc_eta_eq with (1:=H2); intro.
+ rewrite H3.
+ apply cc_prod_intro; trivial.
+  red; red; intros.
+  rewrite H5; auto with *.
+
+  red; red; intros.
+  rewrite H0 in H4; apply H; trivial.
+
+  intros.
+  apply H1; trivial.
+  apply cc_prod_elim with (1:=H2); trivial.
+
+ apply cc_prod_ext; trivial.
+ symmetry; trivial.
+Qed.
+
+Lemma cc_prod_intro' : forall (dom dom': set) (f F : set -> set),
+       ext_fun dom f ->
+       ext_fun dom' F ->
+       dom == dom' ->
+       (forall x : set, x \in dom -> f x \in F x) ->
+       cc_lam dom f \in cc_prod dom' F.
+intros.
+cut (cc_lam dom f \in cc_prod dom F).
+ apply cc_prod_covariant; auto with *.
+apply cc_prod_intro; intros; auto.
+do 2 red; intros.
+apply H0; trivial.
+rewrite <- H1; trivial.
 Qed.

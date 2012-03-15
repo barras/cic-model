@@ -1,6 +1,5 @@
 
 Require Import ZFnats ZFord ZFrank ZFgrothendieck.
-Import IZF.
 
 (* An inaccesible cardinal yields a Grothendieck universe *)
 Section VN_Inaccessible.

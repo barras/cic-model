@@ -1,3 +1,6 @@
+
+(** General purpose definitions that could make it to the standard library *)
+
 Set Implicit Arguments.
 Require Export Compare_dec.
 Require Export List.
@@ -10,7 +13,7 @@ Export ProperNotations.
 Scheme Acc_indd := Induction for Acc Sort Prop.
 
 (**********************************************************************************)
-(* Setoid and morphisms stuff *)
+(** Setoid and morphisms stuff *)
 
 Lemma impl_morph A A' B B' :
   (A <-> A') ->
@@ -79,6 +82,19 @@ split; intros.
  exists x1.
   destruct (H x1); auto.
   destruct (H0 x1); auto.
+Qed.
+
+Lemma ex2_morph' : forall A (P P' Q Q':A->Prop),
+  (forall x, P x <-> P' x) ->
+  (forall x, P x -> (Q x <-> Q' x)) ->
+  (ex2 P Q <-> ex2 P' Q').
+split; intros (x,Px, Qx); exists x.
+ rewrite <- H; trivial.
+ rewrite <- H0; trivial.
+
+ rewrite H; trivial.
+ rewrite H0; trivial.
+ rewrite H; trivial.
 Qed.
 
 Lemma iff_morph : Proper (iff ==> iff ==> iff) iff.
@@ -187,7 +203,7 @@ red; rewrite H2.  succeeds
 
 
 (******************************************************************)
-(* Relations additional properties *)
+(** Relations additional properties *)
 
 Definition prod_eq A B R1 R2 (p1 p2:A*B) :=
   R1 (fst p1) (fst p2) /\ R2 (snd p1) (snd p2).

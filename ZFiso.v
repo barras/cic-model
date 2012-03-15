@@ -1,7 +1,11 @@
-Require Import basic ZF ZFpairs ZFsum ZFrelations ZFcoc.
-Import IZF.
+Require Import basic ZF ZFpairs ZFsum ZFrelations.
+Require Import ZFcont.
+Require Import ZFord ZFfix ZFfunext ZFfixrec.
+Require Import ZFfixfun.
 
 Set Implicit Arguments.
+
+(** * Isomorphisms *)
 
 Record iso_fun X Y f : Prop := {
   iso_funm : ext_fun X f;
@@ -69,6 +73,8 @@ Lemma id_iso_fun : forall X, iso_fun X X (fun x => x).
 intros.
 apply eq_iso_fun; auto with *.
 Qed.
+
+(** Inverse and symmetry *)
 
 Definition iso_inv X f y := union (subset X (fun x => f x == y)).
 
@@ -164,6 +170,8 @@ constructor; intros.
   apply iso_inv_eq2 with (1:=H); trivial.
 Qed.
 
+(** Composition and transitivity *)
+
 Lemma iso_fun_trans_eq : forall X Y Z f g h,
   (forall x, x \in X -> g (f x) == h x) ->
   iso_fun X Y f ->
@@ -229,6 +237,7 @@ Lemma comp_iso_typ X Y Z f g :
 unfold typ_fun, comp_iso; auto.
 Qed.
 
+(** Other properties of isomorphisms *)
 
 (* Alternative introduction rule (when inverse is easy to express) *)
 
@@ -254,7 +263,41 @@ constructor; trivial.
   apply H1 with y; auto with *.
 Qed.
 
-(* Disjoint sum *)
+
+Lemma iso_fun_inj X1 X2 Y f :
+  iso_fun X1 Y f ->
+  iso_fun X2 Y f ->
+  X1 \incl X2 ->
+  X1 == X2.
+intros.
+apply eq_intro; intros; auto.
+assert (tyz1 := iso_typ H0 H2).
+assert (tyz2 := iso_inv_typ H tyz1).
+assert (eqz1 := iso_inv_eq H tyz1).
+apply (iso_inj H0) in eqz1; auto.
+rewrite <- eqz1; trivial.
+Qed.
+
+Lemma iso_fun_narrow X1 X2 Y1 Y2 f x :
+  iso_fun X1 Y1 f ->
+  iso_fun X2 Y2 f ->
+  X1 \incl X2 ->
+  x \in X2 ->
+  f x \in Y1 ->
+  x \in X1.
+intros.
+assert (ty1 := iso_inv_typ H H3).
+assert (ty2 := iso_typ H ty1).
+assert (eq1 := iso_inv_eq H H3).
+apply (iso_inj H0) in eq1; trivial.
+ rewrite <- eq1; trivial.
+
+ apply H1.
+ apply (iso_inv_typ H); trivial.
+Qed.
+
+
+(** * Disjoint sum *)
 
 Definition sum_isomap f g :=
   sum_case (fun x => inl (f x)) (fun y => inr (g y)).
@@ -523,7 +566,7 @@ constructor; intros.
     rewrite H1; rewrite H3; reflexivity.
 Qed.
 
-(* Dependent pairs *)
+(** * Dependent pairs *)
 
 Definition sigma_isomap f g :=
   fun p => couple (f (fst p)) (g (fst p) (snd p)).
@@ -653,6 +696,8 @@ Lemma sigma_iso_fun_1_l' : forall x F,
   iso_fun (F x) (sigma (singl x) F) (couple x).
 intros.
 constructor; intros; auto with *.
+ do 2 red; intros; apply couple_morph; auto with *.
+
  red; intros.
  apply couple_intro_sigma; auto.
  apply singl_intro.
@@ -982,31 +1027,7 @@ constructor; intros.
    rewrite <- surj_pair with (1:=subset_elim1 _ _ _ H); auto with *.
 Qed.
 
-(* Cartesian product *)
-
-(* --> ZFpairs *)
-Lemma sigma_nodep : forall A B,
-  prodcart A B == sigma A (fun _ => B).
-intros.
-apply eq_intro; intros.
- generalize (fst_typ _ _ _ H); intro.
- generalize (snd_typ _ _ _ H); intro.
- apply subset_intro; trivial.
- rewrite (surj_pair _ _ _ H).
- apply couple_intro; trivial.
- apply union_intro with B; trivial.
- apply replf_intro with (fst z); auto with *.
-
- apply subset_elim1 in H.
- generalize (fst_typ _ _ _ H); intro.
- generalize (snd_typ _ _ _ H); intro.
- rewrite (surj_pair _ _ _ H).
- apply couple_intro; trivial.
- apply union_elim in H1; destruct H1.
- rewrite replf_ax in H2; auto with *.
- destruct H2.
- rewrite <- H3; trivial.
-Qed.
+(** * Cartesian product *)
 
 Lemma prodcart_iso_fun_morph : forall X X' Y Y' f g,
   iso_fun X X' f -> iso_fun Y Y' g ->
@@ -1180,7 +1201,7 @@ constructor; intros.
   rewrite <- surj_pair with (1:=subset_elim1 _ _ _ H1); reflexivity.
 Qed.
 
-(* Dependent product *)
+(** * Dependent product *)
 
 Definition cc_prod_isomap A' f g :=
   fun fct => cc_lam A' (fun x' => g (f x') (cc_app fct (f x'))).
@@ -1922,24 +1943,7 @@ constructor; intros.
 Qed.
 
 
-(* Other properties of isomorphisms *)
-
-Lemma iso_fun_inj X1 X2 Y f :
-  iso_fun X1 Y f ->
-  iso_fun X2 Y f ->
-  X1 \incl X2 ->
-  X1 == X2.
-intros.
-apply eq_intro; intros; auto.
-assert (tyz1 := iso_typ H0 H2).
-assert (tyz2 := iso_inv_typ H tyz1).
-assert (eqz1 := iso_inv_eq H tyz1).
-apply (iso_inj H0) in eqz1; auto.
-rewrite <- eqz1; trivial.
-Qed.
-
-
-Require Import ZFord ZFfix ZFfunext ZFfixrec.
+(** * Transfinite iteration *)
 
 Section TI_iso.
 
@@ -2007,7 +2011,9 @@ Qed.
   Hypothesis Fmono : Proper (incl_set ==> incl_set) F.
   Hypothesis Gmono : Proper (incl_set ==> incl_set) G.
   Hypothesis gext : forall X f f', eq_fun X f f' -> eq_fun (F X) (g f) (g f').
-  Hypothesis isog : forall X Y f, iso_fun X Y f -> iso_fun (F X) (G Y) (g f).
+(*  Hypothesis isog : forall X Y f, iso_fun X Y f -> iso_fun (F X) (G Y) (g f).*)
+  Hypothesis isog' : forall o f, isOrd o ->
+    iso_fun (TI F o) (TI G o) f -> iso_fun (F (TI F o)) (G (TI G o)) (g f).
   Hypothesis oord : isOrd o.
 
   Let Fm := Fmono_morph _ Fmono.
@@ -2054,7 +2060,7 @@ constructor; intros.
   rewrite TI_mono_succ; auto with *.
   apply is_cc_fun_lam; auto.
 
-  apply isog in H2.
+  apply isog' in H2; trivial.
   revert H2; apply iso_fun_morph.
    symmetry; apply TI_mono_succ; eauto using isOrd_inv.
    symmetry; apply TI_mono_succ; eauto using isOrd_inv.
@@ -2097,9 +2103,50 @@ split; intros.
  revert H; apply TI_incl; auto.
 Qed.
 
+  Lemma TI_iso_irrel o' o'' :
+    isOrd o' ->
+    isOrd o'' ->
+    o' \incl o'' ->
+    o'' \incl o ->
+    eq_fun (TI F o') (TI_iso F g o') (TI_iso F g o'').
+red; intros.
+unfold TI_iso at 2; rewrite <- H4.
+apply REC_ord_irrel with (2:=TI_iso_recursor); auto with *.
+Qed.
+
+  Lemma TI_iso_fixpoint :
+    TI F o == F (TI F o) <-> TI G o == G (TI G o).
+assert (iso1 := proj1 TI_iso_fun).
+assert (iso2 := isog' oord iso1).
+assert (same_iso : eq_fun (TI F o) (TI_iso F g o) (g (TI_iso F g o))).
+ red; intros.
+ transitivity (TI_iso F g o x').
+  unfold TI_iso; rewrite H0; auto with *.
+ rewrite H0 in H.
+ apply TI_iso_fun; trivial.
+assert (iso1' : iso_fun (TI F o) (TI G o) (g (TI_iso F g o))).
+ revert iso1; apply iso_fun_morph; auto with *.
+clear iso1.
+split; intros.
+ apply iso_fun_sym in iso1'.
+ apply iso_fun_inj with (TI F o) (iso_inv (TI F o) (g (TI_iso F g o))); trivial.
+  apply iso_fun_sym.
+  generalize iso2; apply iso_fun_morph; auto with *.
+  apply iso_funm in iso2; trivial.
+
+  rewrite <- TI_mono_succ; auto.
+  apply TI_incl; auto.
+
+ apply iso_fun_inj with (TI G o) (g (TI_iso F g o)); trivial.
+  apply iso_change_rhs with (G (TI G o)); auto with *.
+
+  rewrite <- TI_mono_succ; auto.
+  apply TI_incl; auto.
+Qed.
+
+
 End TI_iso.
 
-Require Import ZFfixfun.
 
 Section TIF_iso.
 
@@ -2196,47 +2243,6 @@ Qed.
               (fun p => g (fun x y => cc_app f (couple x y)) (fst p) (snd p))) o)
       (couple a x).
 
-Require Import ZFcont.
-  Lemma sigma_cont' dom f :
-    morph2 f ->
-    sigma A (fun x => sup dom (f x)) == sup dom (fun i => sigma A (fun x => f x i)).
-intros.
-assert (Hm : ext_fun dom (fun i => sigma A (fun x => f x i))).
- do 2 red; intros.
- apply sigma_morph; auto with *.
- red; intros; apply H; trivial.
-apply eq_intro; intros.
- rewrite sup_ax; trivial.
- assert (snd z \in sup dom (f (fst z))).
-  apply snd_typ_sigma with (2:=H0); auto with *.
-  do 2 red; intros.
-  apply sup_morph; auto with *.
-  red; intros; apply H; trivial.
- rewrite sup_ax in H1.
- 2:do 2 red; intros; apply H;auto with *.
- destruct H1.
- exists x; trivial.
- rewrite surj_pair with (1:=subset_elim1 _ _ _ H0).
- apply couple_intro_sigma; trivial.
-  do 2 red; intros; apply H; auto with *.
- apply fst_typ_sigma in H0; trivial.
-
- rewrite sup_ax in H0; trivial.
- destruct H0.
- rewrite surj_pair with (1:=subset_elim1 _ _ _ H1).
- apply couple_intro_sigma; trivial.
-  do 2 red; intros.
-  apply sup_morph; auto with *.
-  red; intros; apply H; trivial.
-
-  apply fst_typ_sigma in H1; trivial.
-
-  rewrite sup_ax.
-  2:do 2 red; intros; apply H; auto with *.
-  exists x; trivial.
-  apply snd_typ_sigma with (2:=H1); auto with *.
-  do 2 red; intros; apply H; auto with *.
-Qed.
 
   Variable g : (set -> set -> set) -> set -> set -> set.
   Hypothesis gm : Proper ((eq_set==>eq_set==>eq_set)==>eq_set==>eq_set==>eq_set) g.
@@ -2261,7 +2267,7 @@ constructor; intros.
  do 2 red; intros; apply sigma_morph; auto with *.
  red; intros; apply TIF_morph; auto with *.
 
- rewrite <- sigma_cont'.
+ rewrite <- sigma_cont.
  2:do 3 red; intros; apply TIF_morph; auto with *.
  2:apply osucc_morph; trivial.
  apply sigma_ext; intros; auto with *.

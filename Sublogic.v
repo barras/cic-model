@@ -414,34 +414,50 @@ Record prop_ := mkP { holds : Prop; isprop : isL holds }.
 Definition prop := prop_.
 
 Definition TT : prop.
+(*begin show*)
 exists True; auto.
+(*end show*)
 Defined.
 Definition FF : prop.
+(*begin show*)
 exists (Tr False); trivial.
+(*end show*)
 Defined.
 Definition Imp (P Q:prop) : prop.
+(*begin show*)
 exists (holds P->holds Q).
+(*end show*)
 apply imp_isL; apply isprop.
 Defined.
 Definition Not p := Imp p FF.
 Definition And (P Q:prop) : prop.
+(*begin show*)
 exists (holds P /\ holds Q).
+(*end show*)
 apply and_isL; apply isprop.
 Defined.
 Definition Or (P Q:prop) : prop.
+(*begin show*)
 exists (Tr(holds P \/ holds Q)).
+(*end show*)
 trivial.
 Defined.
 Definition Forall {A} (P:A->prop) : prop.
+(*begin show*)
 exists (forall x, holds (P x)).
+(*end show*)
 apply fa_isL; intros x; apply isprop.
 Defined.
 Definition Exist {A} (P:A->prop) : prop.
+(*begin show*)
 exists (Tr(exists x, holds (P x))).
+(*end show*)
 trivial.
 Defined.
 Definition Ex2 {A} (P Q:A->prop) : prop.
+(*begin show*)
 exists (Tr(exists2 x, holds (P x) & holds (Q x))).
+(*end show*)
 trivial.
 Defined.
  
@@ -494,10 +510,11 @@ Qed.
 
 End SublogicToHOLogic.
 
-(***************************************************************************)
-(** * 4. The same ideas but using records and typeclasses *)
+(* begin hide *)
 
 Module TypeClasses.
+(***************************************************************************)
+(** * 4. The same ideas but using records and typeclasses *)
 
 Class sub_logic0 := mkSubLogic0 {
   Tr : Prop -> Prop;
@@ -873,3 +890,4 @@ Qed.
 End PeirceTrans.
 
 End TypeClasses.
+(* end hide *)

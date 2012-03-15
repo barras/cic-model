@@ -2,7 +2,6 @@ Require Export TheoryInTerm.
 
 Import BuildModel.
 Import CCM.
-Import IZF.
 Import T J.
 
 Definition esub := {f : val->val | Proper (eq_val ==> eq_val) f}.

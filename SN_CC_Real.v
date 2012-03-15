@@ -1,7 +1,6 @@
 Require Import Sat.
 Require Import ZF ZFcoc ZFlambda.
 Require GenRealSN.
-Import IZF.
 
 Set Implicit Arguments.
 

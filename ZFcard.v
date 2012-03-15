@@ -1,5 +1,4 @@
 Require Import ZF.
-Import IZF.
 
 (* Cardinal ordering *)
 

@@ -92,16 +92,22 @@ reflexivity.
 Qed.
 
 Definition TT : prop.
+(*begin show*)
 exists L.TT.
+(*end show*)
 intros _; apply L.rTT.
 Defined.
 
 Definition FF : prop.
+(*begin show*)
 exists L.FF; auto.
+(*end show*)
 Defined.
 
 Definition Imp (P Q:prop) : prop.
+(*begin show*)
 exists (L.Imp (nnf P) (nnf Q)).
+(*end show*)
 repeat rewrite L.rImp; intros.
 apply nnh.
 firstorder.
@@ -109,13 +115,17 @@ Defined.
 Definition Not P := Imp P FF.
 
 Definition And (P Q:prop) : prop.
+(*begin show*)
 exists (L.And (nnf P) (nnf Q)).
+(*end show*)
 rewrite L.rAnd.
 split; apply nnh; firstorder.
 Defined.
 
 Definition Forall {A} (P:A -> prop) : prop.
+(*begin show*)
 exists (L.Forall(fun x=> nnf(P x))).
+(*end show*)
 rewrite L.rForall.
 intros; apply nnh; firstorder.
 Defined.
@@ -125,7 +135,9 @@ Defined.
    intuitionistic tautology.
  *)
 Definition Or (P Q:prop) : prop.
+(*begin show*)
 exists (L.Not (L.Not (L.Or (nnf P) (nnf Q)))).
+(*end show*)
 repeat rewrite L.rNot; firstorder.
 Defined.
 
@@ -134,7 +146,9 @@ Defined.
    intuitionistic tautology.
  *)
 Definition Exist {A} (P:A->prop) : prop.
+(*begin show*)
 exists (L.Not (L.Not (L.Exist(fun x => nnf (P x))))).
+(*end show*)
 repeat rewrite L.rNot; firstorder.
 Defined.
 
@@ -325,12 +339,16 @@ Definition TT : prop := Prop_inj (fun _ => L.TT) (fun _ _ => L.rTT).
 Definition FF : prop := Prop_inj (fun A => A) (fun _ a => a).
 
 Definition Atom (P:L.prop) : prop.
+(*begin show*)
 exists (fun A => L.Or P A).
+(*end show*)
 intros; apply L.rOrI; auto.
 Defined.
 
 Definition Imp (P Q:prop) : prop.
+(*begin show*)
 exists (fun A => L.Imp (Atr P A) (Atr Q A)).
+(*end show*)
 intros.
 rewrite L.rImp; intros.
 apply Aimpl; trivial.
@@ -338,17 +356,23 @@ Defined.
 Definition Not P := Imp P FF.
 
 Definition And (P Q:prop) : prop.
+(*begin show*)
 exists (fun A => L.And (Atr P A) (Atr Q A)).
+(*end show*)
 intros; rewrite L.rAnd; split; apply Aimpl; trivial.
 Defined.
 
 Definition Forall {B} (P:B -> prop) : prop.
+(*begin show*)
 exists (fun A => L.Forall(fun x => Atr (P x) A)).
+(*end show*)
 intros; rewrite L.rForall; intros; apply Aimpl; trivial.
 Defined.
 
 Definition Or (P Q:prop) : prop.
+(*begin show*)
 exists (fun A => L.Or (Atr P A) (Atr Q A)).
+(*end show*)
 intros; apply L.rOrI; left; apply Aimpl; trivial.
 Defined.
 
@@ -358,7 +382,9 @@ Defined.
     Either we can provide an t:B, or we put an extra disjunction.
  *)
 Definition Exist {B} (P:B->prop) : prop.
+(*begin show*)
 exists (fun A => L.Or (L.Exist(fun x => Atr (P x) A)) A).
+(*end show*)
 intros; apply L.rOrI; auto.
 Defined.
 

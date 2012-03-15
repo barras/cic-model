@@ -28,6 +28,60 @@ Definition elts (x:set) : idx x -> set :=
   | sup X f => f
   end.
 
+(** Statement of useful axioms (independently of the logic used):
+    - TTRepl
+    - TTColl
+    They are both consequence of [choice] *)
+
+(** TTColl *)
+Definition ttcoll (E:set->set->Prop) := forall (X:Tlo) (R:X->set->Prop),
+  (forall i, Proper (E==>iff) (R i)) ->
+  exists Y:Tlo, exists g:Y->set,
+    forall i, (exists w, R i w) -> exists j:Y, R i (g j).
+
+Lemma ttcoll_mono (E E':set->set->Prop) :
+  (forall x y, E x y -> E' x y) ->
+  ttcoll E -> ttcoll E'.
+unfold ttcoll; intros.
+apply H0; intros; auto.
+do 2 red; intros.
+apply H1; auto.
+Qed.
+
+(** TTColl is a consequence of choice *)
+
+Record ttcoll_dom (X:Tlo) (R:X->set->Prop) : Tlo := mkCi {
+  cd_i:X;
+  cd_dom : exists y, R cd_i y
+}.
+
+(** We show that all instances of [ttcoll] are a consequence of [choice]. *)
+Lemma ttcoll_from_choice E :
+  (forall (X:Tlo), choice X set) -> ttcoll E.
+red; intros choice_ax X R _Rm; clear _Rm. (* We don't need that R is a morphism *)
+destruct (choice_ax (ttcoll_dom X R) (fun i y => R (cd_i _ _ i) y)) as (f,Hf).
+ intros; apply (cd_dom _ _ x).
+
+ exists (ttcoll_dom X R).
+ exists f.
+ intros.
+ exists (mkCi _ _ i H).
+ apply (Hf (mkCi _ _ i H)).
+Qed.
+
+(** TTRepl *)
+Definition ttrepl (E:set->set->Prop) :=
+  forall X:Tlo, unique_choice X set E.
+
+(** We show that all instances of [ttrepl] are a consequence of [choice]. *)
+Lemma ttrepl_from_choice E :
+  (forall X:Tlo, choice X set) -> ttrepl E.
+red; red; intros choice_ax X R Rex _Runiq; clear _Runiq. (* unicity not needed *)
+apply choice_ax; trivial.
+Qed.
+
+(** Equality and membership *)
+
 Fixpoint eq_set (x y:set) {struct x} :=
   (forall i, Tr(exists j, eq_set (elts x i) (elts y j))) /\
   (forall j, Tr(exists i, eq_set (elts x i) (elts y j))).
@@ -479,19 +533,8 @@ Qed.
 
 (** Relational replacement *)
 
-(** We only use the following instance of unique choice for
-   replacement: *)
-Definition ttrepl :=
-  forall X:Tlo, unique_choice X set eq_set.
-
-(** We show it is a consequence of [choice]. *)
-Lemma ttrepl_axiom_from_choice :
-  (forall X:Tlo, choice X set) -> ttrepl.
-red; red; intros choice_ax X R Rex _Runiq. (* unicity not needed *)
-apply choice_ax; trivial.
-Qed.
-
-Axiom ttrepl_ax : ttrepl.
+(** We only use the following instance of TTRepl for replacement: *)
+Axiom ttrepl_ax : ttrepl eq_set.
 
 Section NotClassical.
 
@@ -560,36 +603,8 @@ End NotClassical.
 
 (** Collection *)
 
-(* The type-theoretical collection axiom (TTColl) is a consequence of
-   [choice], but it is sufficient to prove collection.
- *)
-
-Definition ttcoll := forall (X:Tlo) (R:X->set->Prop),
-  (forall i, Proper (eq_set==>iff) (R i)) ->
-  exists Y, exists g:Y->set,
-    forall i, (exists w, R i w) -> exists j:Y, R i (g j).
-
-(** TTColl is a consequence of choice *)
-
-Record ttcoll_dom (X:Tlo) (R:X->set->Prop) : Tlo := mkCi {
-  cd_i:X;
-  cd_dom : exists y, R cd_i y
-}.
-Lemma ttcoll_axiom_from_choice :
-  (forall (X:Tlo), choice X set) -> ttcoll.
-red; intros choice_ax X R _Rm. (* We don't need that R is a morphism *)
-destruct (choice_ax (ttcoll_dom X R) (fun i y => R (cd_i _ _ i) y)) as (f,Hf).
- intros; apply (cd_dom _ _ x).
-
- exists (ttcoll_dom X R).
- exists f.
- intros.
- exists (mkCi _ _ i H).
- apply (Hf (mkCi _ _ i H)).
-Qed.
-
 (** TTColl is stronger than TTRepl *)
-Lemma ttrepl_from_ttcoll : ttcoll -> ttrepl.
+Lemma ttrepl_from_ttcoll : ttcoll eq_set -> ttrepl eq_set.
 red; red; intros ttcoll_ax X R Rex Runiq.
 destruct (ttcoll_ax X R) as (Y,(g,HB)).
  do 2 red; intros.
@@ -624,7 +639,7 @@ apply Runiq with y; trivial.
 Qed.
 
 (** We now show that TTColl implies (set-theoretical) collection *)
-Axiom ttcoll_axiom : ttcoll.
+Axiom ttcoll_axiom : ttcoll eq_set.
 
 (* ttcoll rephrased on sets: *)
 Lemma ttcoll_set A (R:set->set->Prop) :
@@ -665,10 +680,10 @@ Qed.
 Lemma collection_ax' : forall A (R:set->set->Prop), 
     Proper (eq_set==>eq_set==>iff) R ->
     (forall x, x \in A -> Tr(exists y, R x y)) ->
-    Tr(exists B, forall x, x \in A -> Tr(exists2 y, y \in B & R x y)).
+    exists B, forall x, x \in A -> Tr(exists2 y, y \in B & R x y).
 intros.
 destruct (collection_ax A R H) as (B,HB); trivial.
-Texists B; auto.
+exists B; auto.
 Qed.
 
 (** Comparison of replacement and collection *)
@@ -698,7 +713,7 @@ split; intros.
  apply eq_set_trans with y0; trivial.
 Qed.
 
-Lemma repl_ax_from_collection : forall a (R:set->set->Prop),
+Lemma repl_from_collection : forall a (R:set->set->Prop),
     (forall x x' y y', x \in a -> R x y -> R x' y' -> x == x' -> y == y') ->
     exists b, forall x, x \in b <->
                  Tr(exists2 y, y \in a & exists2 x', x == x' & R y x').
@@ -730,7 +745,7 @@ exists (subset B (fun y => exists2 x, x \in a & R x y)); split; intros.
 Qed.
 
 (** ttrepl_needed_for_replacement proof not completed *)
-Lemma ttrepl_needed_for_replacement : ttrepl.
+Lemma ttrepl_needed_for_replacement : ttrepl eq_set.
 red; red; intros.
 (* Note quite: we need a set [a] with an injection from X to elements of a *)
 assert (exists2 a, X = idx a & forall i i', elts a i == elts a i' -> i=i') by admit.
@@ -749,7 +764,7 @@ assert (R'fun : forall x x' y y', x \in a -> R' x y -> R' x' y' -> x == x' -> y 
  apply elinj in H9.
  apply H0 with i'; trivial.
  subst i'; trivial.
-destruct (repl_ax_from_collection a R' R'fun).
+destruct (repl_from_collection a R' R'fun).
 exists (fun y => union (subset x (fun z => R y z))).
 intro.
 destruct H with x0.
@@ -853,8 +868,9 @@ Texists infinite.
   apply infinity_ax2; trivial.
 Qed.
 
+(* Better use intuit_repl_ax ? *)
 Definition repl_ex :=
-  fun a R Rm => TrI(repl_ax_from_collection a R Rm).
+  fun a R Rm => TrI(repl_from_collection a R Rm).
 
 Definition coll_ex :=
   fun a R Rm => TrI(collection_ax a R Rm).
@@ -1288,7 +1304,7 @@ Import Ens.
     If we could avoid EM, we would have that ttrepl
     gives Coq the strength of ZF
  *)
-Lemma ttcoll_from_ttrepl_em : (forall P,P\/~P) -> ttrepl -> ttcoll.
+Lemma ttcoll_from_ttrepl_em : (forall P,P\/~P) -> ttrepl eq_set -> ttcoll eq_set.
 intros EM ttrepl_ax X R Rm.
 pose (P i v := exists2 x, x \in v & R i x).
 destruct (@ttrepl_ax (ttcoll_dom X R)

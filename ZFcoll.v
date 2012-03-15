@@ -1,5 +1,4 @@
 Require Import ZF.
-Import IZF.
 Require Import Setoid.
 
 Parameter repl1 : forall (x:set) (F:{y|in_set y x}->set), set.

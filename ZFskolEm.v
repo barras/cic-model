@@ -969,4 +969,6 @@ End ZF.
 Let IZFRpack := (IZF_R.repl_mono,IZF_R.repl_ax,IZF_R.wf_ax).
 Let ZFpack := (ZF.repl_mono,ZF.repl_ax,ZF.coll_ax).
 Print Assumptions IZFRpack. (* TTcoll *)
-Print Assumptions ZFpack. (* choice *)
+Print Assumptions ZFpack. (* TTColl (with classical equality on sets) *)
+(* Eval cbv beta delta - [ ZF.Z.eq_set Proper respectful iff ] iota in ZF.Z.ttcoll.
+ *)

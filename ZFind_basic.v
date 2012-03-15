@@ -1,5 +1,4 @@
 Require Import ZF ZFnats.
-Import IZF.
 
 (***************************************************************************)
 (* Elementary inductive types: *)

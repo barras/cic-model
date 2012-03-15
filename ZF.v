@@ -6,7 +6,8 @@ Require Export ZFdef.
 (** We assume the existence of a model of IZF: *)
 Require ZFskolEm.
 Module IZF : IZF_R_sig CoqSublogicThms := ZFskolEm.IZF_R.
-Import IZF.
+(*Import IZF.*)
+Include IZF.
 
 Notation morph1 := (Proper (eq_set ==> eq_set)).
 Notation morph2 := (Proper (eq_set ==> eq_set ==> eq_set)).
@@ -64,7 +65,7 @@ apply eq_intro; auto.
 Qed.
 
 
-(** Extentional equivalences *)
+(** Extensional equivalences *)
 
 Definition eq_fun dom F G :=
   forall x x', x \in dom -> x == x' -> F x == G x'.
@@ -94,6 +95,12 @@ red; intros.
 transitivity G; trivial.
 symmetry; trivial.
 Qed.
+
+Lemma morph_is_ext : forall F X, morph1 F -> ext_fun X F.
+red; red; intros.
+apply H; trivial.
+Qed.
+Hint Resolve morph_is_ext.
 
 Definition eq_pred dom (P Q : set -> Prop) :=
   forall x, x \in dom -> (P x <-> Q x).
@@ -737,6 +744,13 @@ elim union_elim with (1:=H); intros.
 elim pair_elim with (1:=H1); intro x0_eq; rewrite <- x0_eq; auto.
 Qed.
 
+Lemma union2_ax x y z : z \in union2 x y <-> z \in x \/ z \in y.
+split; intros.
+ apply union2_elim in H; trivial.
+
+ destruct H; [apply union2_intro1|apply union2_intro2]; auto.
+Qed.
+
 Lemma union2_mono : forall A A' B B',
   A \incl A' -> B \incl B' -> union2 A B \incl union2 A' B'.
 red; intros.
@@ -939,6 +953,10 @@ Qed.
 
 Definition inter2 x y := inter (pair x y).
 
+Instance inter2_morph: morph2 inter2.
+do 3 red; intros; apply inter_morph; apply pair_morph; trivial.
+Qed.
+
 Lemma inter2_def : forall x y z,
   z \in inter2 x y <-> z \in x /\ z \in y.
 unfold inter2.
@@ -958,4 +976,14 @@ Qed.
 Lemma inter2_incl2 : forall x y, inter2 x y \incl y.
 red; intros.
 rewrite inter2_def in H; destruct H; trivial.
+Qed.
+
+Lemma incl_inter2 x y: x \incl y -> inter2 x y == x.
+intros; apply eq_intro; intro z; rewrite inter2_def; auto.
+destruct 1; trivial.
+Qed.
+
+Lemma inter2_comm x y :
+  inter2 x y == inter2 y x.
+apply eq_intro; intro z; do 2 rewrite inter2_def; destruct 1; auto.
 Qed.

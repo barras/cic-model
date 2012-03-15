@@ -1,7 +1,6 @@
 Require Export ZFrepl.
 Require Export ZFnats.
 Require Export ZFind_basic.
-Import IZF.
 
 
 Definition NREC f g n y :=

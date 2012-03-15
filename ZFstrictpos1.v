@@ -1,9 +1,8 @@
 Require Import ZF ZFpairs ZFsum ZFrelations ZFcoc ZFord.
-Import IZF.
 Require Import ZFind_basic.
 Require Import ZFstrictpos.
 
-(* Inductive family.
+(** Inductive family.
    The strategy is to first remove dependencies, reuse the fixpoint
    construction for inductive types, and then checking dependencies
    a posteriori.
@@ -239,7 +238,7 @@ induction eqp; simpl; intros; auto with *.
 Qed.
 *)
 
-(* Erasing dependencies *)
+(** Erasing dependencies *)
 Fixpoint tr_pos p :=
   match p with
   | DP_Cst A => P_Cst A
@@ -256,7 +255,7 @@ do 2 red; intros.
 induction H; simpl; intros; constructor; auto with *.
 Qed.
 
-(* Checking dependencies *)
+(** Checking dependencies *)
   Inductive instance p a : dpositive -> set -> Prop :=
   | I_Cst A : forall x, x \in A -> instance p a (DP_Cst A) x
   | I_EqInst j : forall z, a == j -> z == empty -> instance p a (DP_EqInst j) z
@@ -553,7 +552,7 @@ Qed.
     DIND p a == dpos_oper p (DIND p) a.
 intros.
 assert (isOrd (IND_clos_ord (tr_pos p))).
- apply ZFind_w.W_o_o.
+ unfold IND_clos_ord; apply ZFind_w.W_o_o.
  apply pos_to_w2_morph'; trivial.
 unfold DIND, IND.
 fold (DINDi p (IND_clos_ord (tr_pos p))).
@@ -584,7 +583,7 @@ destruct H3.
 revert H4; apply dpos_oper_mono; auto with *.
  apply DINDi_morph; auto with *.
 
- apply DINDi_morph; auto with *.
+ unfold DIND; apply DINDi_morph; auto with *.
 Qed.
 
 End InductiveFamily.

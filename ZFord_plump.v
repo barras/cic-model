@@ -1,6 +1,5 @@
 Require Export basic ZF.
 Require Import ZFnats.
-Import IZF.
 
 (* This file is the same as ZFord, but defines regular plump
    ordinals (whereas ZFord defines directed plump ordinals).

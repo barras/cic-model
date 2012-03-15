@@ -1,5 +1,4 @@
 Require Import ZF ZFnats ZFord ZFstable ZFfix.
-Import IZF.
 
   (* Von Neumann universes *)
   Definition VN := TI power.

@@ -6,7 +6,7 @@ Require ObjectSN.
 
 Module Lc := Lambda.
 
-(* Equiping the model with saturated sets *)
+(** Equiping the model with saturated sets *)
 Module Type SN_addon (M : CC_Model).
   Import M.
 
@@ -27,19 +27,19 @@ Module Type SN_addon (M : CC_Model).
 
 End SN_addon.
 
-(* Now the abstract strong normalization proof. *)
+(** Now the abstract strong normalization proof. *)
 
 Module MakeModel(M : CC_Model) (SN : SN_addon M).
 Import M.
 Import SN.
 
-(* We use the generic model construction upon the
+(** We use the generic model construction upon the
    abstract model
  *)
 Include ObjectSN.MakeObject(M).
 
 
-(* Dealing with top sorts *)
+(** Dealing with top sorts *)
 
 Fixpoint cst_fun (i:val) (e:list trm) (x:X) : X :=
   match e with
@@ -143,7 +143,7 @@ unfold non_empty; split; intros.
 Qed.
 
 
-(* Semantic typing relation.
+(** Semantic typing relation.
    Handles the case of kind: a type that contains all "non-empty" types
    and that is included in no type.
  *)
@@ -223,7 +223,7 @@ intros i j M [f|] (_,(_,sat)); trivial.
 apply sat_sn in sat; trivial.
 Qed.
 
-(* Environments *)
+(** Environments *)
 Definition env := list trm.
 
 Definition val_ok (e:env) (i:val) (j:Lc.intt) :=
@@ -264,7 +264,7 @@ apply vcons_add_var; trivial.
 apply varSAT.
 Qed.
 
-(* Judgements *)
+(** Judgements *)
 
 Definition wf (e:env) :=
   exists i, exists j, val_ok e i j.
@@ -285,7 +285,7 @@ unfold eq_typ; split; simpl; intros.
  rewrite H; rewrite H0; eauto.
 Qed.
 
-(* Strong normalization *)
+(** Strong normalization *)
 
 (* This lemma shows that the abstract model construction entails
    strong normalization.
@@ -334,7 +334,7 @@ destruct H.
 Qed.
 
 
-(* Context formation rules *)
+(** Context formation rules *)
 
 Lemma wf_nil : wf List.nil.
 red.
@@ -356,7 +356,7 @@ exists (V.cons x i); exists (I.cons daimon j).
 apply vcons_add_var0; trivial.
 Qed.
 
-(* Equality rules *)
+(** Equality rules *)
 
 Lemma refl : forall e M, eq_typ e M M.
 red; simpl; reflexivity.
@@ -437,7 +437,7 @@ apply H with (j:=I.cons daimon j).
 apply vcons_add_var0; auto.
 Qed.
 
-(* Typing rules *)
+(** Typing rules *)
 
 Lemma typ_prop : forall e, typ e prop kind.
 red; simpl; intros.

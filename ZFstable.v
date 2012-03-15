@@ -1,12 +1,5 @@
 
 Require Import ZFsum ZFpairs ZFrelations ZFnats ZFord ZFfix.
-Import IZF.
-
-Lemma morph_is_ext : forall F X, morph1 F -> ext_fun X F.
-red; red; intros.
-apply H; trivial.
-Qed.
-Hint Resolve morph_is_ext.
 
 (* Extentionality *)
 Lemma cst_is_ext : forall X o, ext_fun o (fun _ => X).
@@ -359,6 +352,47 @@ apply inter_intro; eauto.
 intros.
 apply app_typ with A; auto.
 Qed.
+
+
+Lemma cc_prod_stable : forall dom F,
+  (forall y y' x x', y == y' -> x \in dom -> x == x' -> F y x == F y' x') ->
+  (forall x, x \in dom -> stable (fun y => F y x)) ->
+  stable (fun y => cc_prod dom (F y)).
+intros dom F Fm Fs.
+assert (Hm : morph1 (fun y => cc_prod dom (F y))).
+ do 2 red; intros.
+ apply cc_prod_ext; auto with *.
+ red; intros; apply Fm; auto.
+red; red ;intros.
+destruct inter_wit with (2:=H) as (w,H0); trivial.
+assert (forall x, x \in X -> z \in cc_prod dom (F x)).
+ intros.
+ apply inter_elim with (1:=H).
+ rewrite replf_ax; auto.
+ exists x; auto with *.
+clear H.
+assert (z \in cc_prod dom (F w)) by auto.
+rewrite (cc_eta_eq _ _ _ H).
+apply cc_prod_intro.
+ red; red; intros; apply cc_app_morph; auto with *.
+
+ red; red; intros; apply Fm; auto with *.
+
+ intros.
+ apply Fs; trivial.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H3; auto.
+  2:red;red;intros;apply Fm; auto with *.
+  destruct H3.
+  rewrite H4; apply H1 in H3.
+  apply cc_prod_elim with (1:=H3); trivial.
+
+  exists (F w x); rewrite replf_ax.
+  2:red;red;intros; apply Fm; auto with *.
+  eauto with *.
+Qed.
+
 
 (* Stability of ordinal-indexed families *)
 

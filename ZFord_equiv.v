@@ -4,7 +4,6 @@
 
 Require ZFord ZFplump ZFordcl.
 Import ZFnats.
-Import IZF.
 
 Lemma isOrd_eqv1 : forall x,
   ZFplump.isOrd x -> ZFordcl.isOrd x.

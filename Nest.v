@@ -99,3 +99,8 @@ Inductive Box (T:Type) : Prop := box (x:T).
 Inductive NST : Set :=
   CST : Box {X:Type & X->NST} -> NST.
 
+(*
+ - { }
+ - { 0 }
+ - prop
+ -

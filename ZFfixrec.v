@@ -1,5 +1,4 @@
 Require Import ZF ZFrelations ZFnats ZFord ZFfix.
-Import IZF.
 
 Require Import ZFstable.
 Require Import ZFfunext.
@@ -196,70 +195,6 @@ Existing Instance REC_morph.
   directed o F ->
   sup o F \in U o.
 *)
-
-(* Building a function by recursion over an ordinal. The step function is given
-   the ordinal (to determine the domain of the function used for recursive calls)
-   but the result shouldn't depend on it. This is called "stage irrelevance". *)
-
-Section RecGen.
-  Variable ord : set.
-  Variable oord : isOrd ord.
-
-Let oordlt := fun o olt => isOrd_inv _ o oord olt.
-
-  Variable P : set -> set -> Prop. 
-  Hypothesis Pm : Proper (eq_set ==> eq_set ==> iff) P.
-(*
-  Hypothesis Pcont : forall o f,
-    isOrd o ->
-    o \incl ord ->
-    (forall o', o' \in o -> P (osucc o') f) ->
-    P o f.
-*)
-  Hypothesis Pcont' : forall o f,
-    morph1 f ->
-    isOrd o ->
-    o \incl ord ->
-    (forall o', o' \in o -> P (osucc o') (f o')) ->
-(* directed... *)
-    P o (sup o f).
-
-  Variable F : set -> set -> set.
-
-  Hypothesis Fm : morph2 F.
-
-  Hypothesis Ftyp : forall o f,
-    isOrd o -> o \incl ord ->
-    P o f ->
-    P (osucc o) (F o f).
-(*
-  Variable compat : set -> set -> set -> Prop.
-  Hypothesis compat_morph : Proper (eq_set ==> eq_set ==> eq_set ==> iff) compat.
-
-  Definition stage_irrelevance :=
-    forall o o' f g,
-    o' \incl ord ->
-    o \incl o' ->
-    P o f -> P o' g ->
-    compat o f g ->
-    compat (osucc o) (F o f) (F o' g).
-
-  Hypothesis Firrel : stage_irrelevance.
-*)
-
-  Lemma REC_inv_gen : forall z, isOrd z -> z \incl ord -> P z (REC F z).
-induction 1 using isOrd_ind; intros.
-rewrite REC_eq; trivial.
-apply Pcont'; trivial.
- do 2 red; intros.
- apply Fm; trivial.
- apply REC_morph; trivial.
-
- intros.
- apply Ftyp; auto.
- apply isOrd_inv with y; trivial.
-Qed.
-End RecGen.
 
 Section Recursor.
 
@@ -617,6 +552,22 @@ Qed.
 apply REC_wt.
 Qed.
 
+  Lemma REC_ord_irrel o o' x:
+    isOrd o ->
+    isOrd o' ->
+    o \incl o' ->
+    o' \incl ord ->
+    x \in T o ->
+    cc_app (REC F o) x == cc_app (REC F o') x.
+intros.
+apply finc_ext; intros; trivial.
+ apply REC_inv; eauto using isOrd_inv.
+
+ apply fincr_cont; intros; trivial.
+ apply REC_inv; eauto using isOrd_inv.
+Qed.
+
+
   Lemma REC_ind : forall P x,
     Proper (eq_set==>eq_set==>eq_set==>iff) P ->
     (forall o x, isOrd o -> o \incl ord ->
@@ -729,6 +680,71 @@ Qed.
 End REC_Eqn.
 
 End Recursor.
+
+
+(* Building a function by recursion over an ordinal. The step function is given
+   the ordinal (to determine the domain of the function used for recursive calls)
+   but the result shouldn't depend on it. This is called "stage irrelevance". *)
+
+Section RecGen.
+  Variable ord : set.
+  Variable oord : isOrd ord.
+
+Let oordlt := fun o olt => isOrd_inv _ o oord olt.
+
+  Variable P : set -> set -> Prop. 
+  Hypothesis Pm : Proper (eq_set ==> eq_set ==> iff) P.
+(*
+  Hypothesis Pcont : forall o f,
+    isOrd o ->
+    o \incl ord ->
+    (forall o', o' \in o -> P (osucc o') f) ->
+    P o f.
+*)
+  Hypothesis Pcont' : forall o f,
+    morph1 f ->
+    isOrd o ->
+    o \incl ord ->
+    (forall o', o' \in o -> P (osucc o') (f o')) ->
+(* directed... *)
+    P o (sup o f).
+
+  Variable F : set -> set -> set.
+
+  Hypothesis Fm : morph2 F.
+
+  Hypothesis Ftyp : forall o f,
+    isOrd o -> o \incl ord ->
+    P o f ->
+    P (osucc o) (F o f).
+(*
+  Variable compat : set -> set -> set -> Prop.
+  Hypothesis compat_morph : Proper (eq_set ==> eq_set ==> eq_set ==> iff) compat.
+
+  Definition stage_irrelevance :=
+    forall o o' f g,
+    o' \incl ord ->
+    o \incl o' ->
+    P o f -> P o' g ->
+    compat o f g ->
+    compat (osucc o) (F o f) (F o' g).
+
+  Hypothesis Firrel : stage_irrelevance.
+*)
+
+  Lemma REC_inv_gen : forall z, isOrd z -> z \incl ord -> P z (REC F z).
+induction 1 using isOrd_ind; intros.
+rewrite REC_eq; trivial.
+apply Pcont'; trivial.
+ do 2 red; intros.
+ apply Fm; trivial.
+ apply REC_morph; trivial.
+
+ intros.
+ apply Ftyp; auto.
+ apply isOrd_inv with y; trivial.
+Qed.
+End RecGen.
 
 
 Section HigherRecursor.

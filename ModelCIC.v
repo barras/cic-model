@@ -1,14 +1,14 @@
 Require Import List Bool Models.
-Require Import ZFfunext ZFfixrec ZFecc ZFind_nat.
 Require ModelZF.
 Import ZFgrothendieck.
-Import ZF ZFsum ZFnats ZFord ZFfix IZF.
+Import ZF ZFsum ZFnats ZFrelations ZFord ZFfix.
+Require Import ZFfunext ZFfixrec ZFecc ZFind_nat.
 
 Import ModelZF.CCM.
 Import ModelZF.BuildModel.
 Import T R J.
 
-(* Derived rules of the basic judgements *)
+(** Derived rules of the basic judgements *)
 
 Lemma eq_typ_betar : forall e N T M,
   typ e N T ->
@@ -39,14 +39,14 @@ case_eq (nth_error e n); intros.
 Qed.
 
 
-(* Subtyping *)
+(** Subtyping *)
 
 Definition sub_typ_covariant : forall e U1 U2 V1 V2,
   eq_typ e U1 U2 ->
   sub_typ (U1::e) V1 V2 ->
   sub_typ e (Prod U1 V1) (Prod U2 V2).
 unfold sub_typ; simpl; intros.
-apply ZFcoc.cc_prod_covariant with (4:=H2).
+apply cc_prod_covariant with (4:=H2).
  red; red; intros.
  rewrite H4; auto with *.
 
@@ -57,7 +57,7 @@ apply ZFcoc.cc_prod_covariant with (4:=H2).
  apply vcons_add_var; trivial.
 Qed.
 
-(* Universes *)
+(** Universes *)
 
 Definition type (n:nat) := cst (ecc n).
 
@@ -92,7 +92,7 @@ Lemma typ_prod2 : forall e n T U,
   typ e (Prod T U) (type n).
 Proof.
 unfold typ, Prod; simpl; red; intros e n T U ty_T ty_U i is_val.
-apply cc_prod_univ.
+apply G_cc_prod.
  apply ecc_grot.
 
  red; red; intros.
@@ -106,7 +106,7 @@ apply cc_prod_univ.
 Qed.
 
 
-(* Ordinals *)
+(** Ordinals *)
 
 Definition Ord (o:set) := cst o.
 
@@ -122,22 +122,26 @@ Qed.
 
 
 Definition OSucc : term -> term.
+(*begin show*)
 intros o; left; exists (fun i => osucc (int o i)).
+(*end show*)
 do 2 red; intros.
 rewrite H; reflexivity.
 Defined.
 
 
 
-(* Nat *)
+(** Nat *)
 
 Definition Nat := cst NAT.
 
 Definition Nati (o:set) := cst (NATi o).
 
 Definition NatI : term -> term.
+(*begin show*)
 intros o.
 left; exists (fun i => NATi (int o i)).
+(*end show*)
 do 2 red; intros.
 apply NATi_morph.
 rewrite H; reflexivity.
@@ -178,9 +182,11 @@ Qed.
 (* Successor *)
 
 Definition SuccI : term -> term.
+(*begin show*)
 intros o.
 apply (Abs (NatI o)).
 left; exists (fun i => SUCC (i 0)).
+(*end show*)
 do 2 red; intros.
 unfold SUCC.
 unfold eqX.
@@ -235,15 +241,17 @@ Qed.
 (* Case analysis *)
 
 Definition Natcase (fZ fS n : term) : term.
+(*begin show*)
 left; exists (fun i => NATCASE (int fZ i) (fun k => int fS (V.cons k i)) (int n i)).
+(*end show*)
 do 2 red; intros.
 red.
 apply NATCASE_morph.
  rewrite H; reflexivity.
-
+(**)
  red; intros.
  rewrite H; rewrite H0; reflexivity.
-
+(**)
  rewrite H; reflexivity.
 Defined.
 
@@ -339,7 +347,7 @@ apply typ_natcase with o O; trivial.
 Qed.
 
 (********************************************************************************)
-(* Occurrences *)
+(** Occurrences *)
 
 
   (* Non-occurrence : interp do not depend on variables in set [f] *)
@@ -372,7 +380,7 @@ Qed.
 
 
 (********************************************************************************)
-(* Judgements with variance *)
+(** Judgements with variance *)
 
 Module Beq.
 Definition t := bool.
@@ -484,17 +492,17 @@ destruct 1 as (?&?&?); split;[idtac|split]; trivial.
  destruct (ords e n); trivial.
 Qed.
 
-(* Function Extension judgment *)
+(** Function Extension judgment *)
 Definition fx_extends e dom M :=
   forall i i', val_mono e i i' ->
   fcompat (int dom i) (int M i) (int M i').
 
-(* Covariance judgment *)
+(** Covariance judgment *)
 Definition fx_sub e M :=
   forall i i', val_mono e i i' ->
   int M i \incl int M i'.
 
-(* Invariance *)
+(** Invariance *)
 Definition fx_equals e M :=
   forall i i', val_mono e i i' -> int M i == int M i'.
 
@@ -561,6 +569,7 @@ destruct T as [(T,Tm)|]; simpl in H4|-*; auto.
 
  elim H1; trivial.
 Qed.
+
   (* Covariance *)
 
   Lemma fx_equals_sub : forall e M, fx_equals e M -> fx_sub e M.
@@ -584,7 +593,7 @@ Lemma fx_sub_prod : forall e T U,
   fx_sub e (Prod T U).
 red; simpl; intros.
 specialize (H _ _ H1).
-apply ZFcoc.cc_prod_covariant; intros; auto.
+apply cc_prod_covariant; intros; auto.
  red; red; intros.
  rewrite H3; reflexivity.
 
@@ -695,24 +704,26 @@ Qed.
 
 
 (*****************************************************************************)
-(* Recursor (without case analysis) *)
+(** Recursor (without case analysis) *)
 
 (* NatFix O M is a fixpoint of domain Nati O with body M *)
 Definition NatFix (O M:term) : term.
+(*begin show*)
 left.
 exists (fun i =>
   NATREC (fun o' f => int M (V.cons f (V.cons o' i))) (int O i)).
+(*end show*)
 red; red; intros.
 apply NATREC_morph.
  do 2 red; intros.
  rewrite H; rewrite H0; rewrite H1; reflexivity.
-  
+(**)  
  rewrite H.
  reflexivity.
 Defined.
 
 
-(* Typing rules of NatFix *)
+(** Typing rules of NatFix *)
 
 Section NatFixRules.
 
@@ -840,8 +851,8 @@ Qed.
 Lemma nat_fix_eqn : forall i,
   val_ok e i ->
   NATREC (F i) (int O i) ==
-  ZFcoc.cc_lam (NATi (int O i))
-    (fun x => ZFcoc.cc_app (F i (int O i) (NATREC (F i) (int O i))) x).
+  cc_lam (NATi (int O i))
+    (fun x => cc_app (F i (int O i) (NATREC (F i) (int O i))) x).
 intros.
 assert (oi : isOrd (int O i)).
  apply ty_O in H.
@@ -911,8 +922,6 @@ rewrite beta_eq.
 
  apply H; trivial.
 Qed.
-
-Import ZFcoc.
 
 Lemma nat_fix_extend :
   fx_sub E O ->
@@ -1082,9 +1091,7 @@ apply typ_nat_fix with (infty:=infty); trivial.
 Qed.
 
 (****************************************************************************************)
-(* More judgments *)
-
-(* Compound judgements : typing + variance *)
+(** Compound judgements : typing + variance *)
 
 Definition typ_ext e M A B :=
   fx_extends e A M /\ typ (tenv e) M (Prod A B).
@@ -1312,6 +1319,11 @@ Qed.
 
 
 (************************************************************************)
+(** Two examples of derived principles:
+    - the standard recursor for Nat
+    - subtraction with size information
+*)
+
 Section Example.
 
 Definition nat_ind_typ :=
@@ -1361,7 +1373,7 @@ apply typ_nat_fix'' with (osucc omega) (App (Ref 4) (Ref 0)); auto.
   eapply eq_typ_morph;[reflexivity| |reflexivity].
   simpl; do 2 red; simpl; intros.
   unfold V.lams, V.shift; simpl.
-  apply ZFcoc.cc_app_morph; apply H0.
+  apply cc_app_morph; apply H0.
 
  (* ord *)
  red; simpl; intros.
@@ -1428,7 +1440,7 @@ apply typ_nat_fix'' with (osucc omega) (App (Ref 4) (Ref 0)); auto.
 
      apply sub_refl.
      red; intros; simpl.
-     apply ZFcoc.cc_app_morph; [reflexivity|].
+     apply cc_app_morph; [reflexivity|].
      assert (i 1 \in NATi (i 4)).
       generalize (H0 1 _ (eq_refl _)); simpl.
       unfold V.lams, V.shift; simpl.

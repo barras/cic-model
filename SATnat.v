@@ -1,10 +1,9 @@
 Set Implicit Arguments.
 Require Import basic Can Sat.
 Require Import ZF ZFind_nat.
-Import IZF.
 Module Lc:=Lambda.
 
-(* Saturated sets constructions related to natural numbers *)
+(** Saturated sets constructions related to natural numbers *)
 
 Record family := mkFam {
   fam :> set -> SAT;
@@ -12,7 +11,9 @@ Record family := mkFam {
 }.
 
 Definition dflt_family : family.
+(*begin show*)
 exists (fun _ => snSAT).
+(*end show*)
 reflexivity.
 Defined.
 
@@ -37,6 +38,7 @@ apply H.
 apply interSAT_elim with (1:=H0).
 Qed.
 
+(** Denotation of the intersection of (F(n)) expressions when n:Nat *)
 Definition piNAT F :=
   interSAT (fun p:{n|n \in NAT} => F (proj1_sig p)).
 
@@ -80,6 +82,7 @@ split; intros.
  exact dflt_family.
 Qed.
 
+(** Functional applying constructors of Nat to A *)
 
 Definition fNAT (A:family) (k:set) :=
   piFAM(fun P =>
@@ -104,7 +107,9 @@ apply prodSAT_morph.
 Qed.
 
 Definition fNATf (A:family) : family.
+(*begin show*)
 exists (fNAT A).
+(*end show*)
 intros.
 apply fNAT_morph; trivial.
 exact (fam_mrph A).
@@ -148,18 +153,20 @@ apply prodSAT_mono; auto with *.
 apply H.
 Qed.
 
-(* Realizability relation of NAT: fixpoint of fNAT *)
+(** Realizability relation of Nat: fixpoint of fNAT *)
 
 Definition cNAT : family.
+(*begin show*)
 exists (fun n =>
   interSAT (fun P:{P:family|forall k, inclSAT (fNAT P k) (P k)} =>
     proj1_sig P n)).
+(*end show*)
 intros.
 apply interSAT_morph.
 split; intros.
  exists x0.
  apply (fam_mrph (proj1_sig x0)); trivial.
-
+(**)
  exists y0.
  apply (fam_mrph (proj1_sig y0)); trivial.
 Defined.
@@ -191,9 +198,9 @@ split.
  apply cNAT_post.
 Qed.
 
-(* Constructors *)
+(** * Constructors *)
 
-(* interp of 0 *)
+(** Interp of 0 *)
 Definition ZE := Lc.Abs (Lc.Abs (Lc.Ref 1)).
 
 Lemma fNAT_ZE : forall A, inSAT ZE (fNAT A ZERO).
@@ -214,7 +221,7 @@ rewrite cNAT_eq.
 apply fNAT_ZE.
 Qed.
 
-(* interp of successor *)
+(** Interp of successor *)
 Definition SU := Lc.Abs (Lc.Abs (Lc.Abs
     (Lc.App2 (Lc.Ref 0) (Lc.Ref 2) (Lc.App2 (Lc.Ref 2) (Lc.Ref 1) (Lc.Ref 0))))).
 
@@ -256,7 +263,7 @@ apply fNAT_SU; trivial.
 rewrite <- cNAT_eq; trivial.
 Qed.
 
-(* Pattern-matching *)
+(** Pattern-matching *)
 
 Definition NCASE f g n :=
   Lc.App2 n f (Lc.Abs (Lc.Abs (Lc.App (Lc.lift 2 g) (Lc.Ref 1)))).
@@ -358,9 +365,9 @@ do 2 rewrite Lc.lift0.
 apply prodSAT_elim with (2:=H4); auto.
 Qed.
 
-(* Structural fixpoint: *)
+(** Structural fixpoint: *)
 
-(* NATFIX m n --> m (NATFIX m) n when n is a constructor.
+(** NATFIX m n --> m (NATFIX m) n when n is a constructor.
    let G m := "\n. (match n with | 0 => m | S _ => m end) m n"
    let G m := \n. n m (\_.\_.m) m n
     G m -/-> ; G m 0 --> m 0 ; G m (S k) --> m (S k)
@@ -368,11 +375,17 @@ Qed.
      --> (\x. m (G x)) (\x. m (G x)) n
      --> m (G (\x. m (G x))) n == m (NATFIX m) n
  *)
+
+(** Guard the self-application of m (which would produce a non-strongly
+    normalizing term) by a natural number.
+ *)
 Definition G m :=
  Lc.Abs (Lc.App2 (Lc.App2 (Lc.Ref 0) (Lc.lift 1 m) (Lc.Abs (Lc.Abs (Lc.lift 3 m)))) (Lc.lift 1 m) (Lc.Ref 0)).
 Definition NATFIX m :=
   G (Lc.Abs (Lc.App  (Lc.lift 1 m) (G (Lc.Ref 0)))).
 
+(** (G m n) reduces to (m m n) when n is a constructor. Note that
+    n need not be closed. *)
 Lemma G_sim : forall m n,
   n = ZE \/ (exists t1 t2, n = Lc.Abs (Lc.Abs (Lc.App2 (Lc.Ref 0) t1 t2))) ->
   Lc.redp (Lc.App (G m) n) (Lc.App2 m m n).

@@ -3,7 +3,6 @@ Require Export GenModel.
 Require Export ZFcoc.
 Require Export ModelZF.
 Require Export List.
-Import IZF.
 
 Module BuildModel := GenModel.MakeModel(CCM).
 Import BuildModel.

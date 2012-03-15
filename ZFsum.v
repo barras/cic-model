@@ -1,6 +1,5 @@
 Require Import ZFnats.
 Require Import ZFpairs.
-Import IZF.
 
 Definition inl x := couple zero x.
 Definition inr y := couple (succ zero) y.

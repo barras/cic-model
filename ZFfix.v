@@ -1,6 +1,9 @@
 Require Import ZF ZFrelations ZFnats ZFord.
-Import IZF.
 
+(** Transfinite iteration of a monotonic operator
+ *)
+
+(** * Elementary properties *)
 Section IterMonotone.
 
   Variable F : set -> set.
@@ -82,10 +85,14 @@ apply Fmono with (TI F x); auto.
 Qed.
 
 
+(** * Case of a bounded monotonic operator 
+ *)
 Section BoundedOperator.
 
 Variable A : set.
 Hypothesis Ftyp : forall X, X \incl A -> F X \incl A.
+
+(** The union of all stages. We will show it is a fixpoint. *)
 
 Definition Ffix := subset A (fun a => exists2 o, isOrd o & a \in TI F o).
 
@@ -131,60 +138,60 @@ split; intros.
   exists x; trivial.
 Qed.
 
-Definition fsub a :=
-  subset Ffix (fun b => forall X, X \incl Ffix -> a \in F X -> b \in X).
+(***)
+(*
+Definition frules a :=
+  subset (power Ffix)
+   (fun X => a \in F X /\ forall Y, Y \incl X -> a \in F Y -> X \incl Y).
 
-Instance fsub_morph : morph1 fsub.
-unfold fsub; do 2 red; intros.
-apply subset_morph; auto with *.
-red; intros.
-apply fa_morph; intro X.
-rewrite H; reflexivity.
-Qed.
+Instance frules_morph : morph1 frules.
+Admitted.
 
+(*
 Lemma fsub_elim : forall x y o,
   isOrd o ->
   y \in TI F o ->
-  x \in fsub y ->
-  exists2 o', lt o' o & x \in TI F o'.
+  x \in frules y ->
+  exists2 o', lt o' o & x \incl TI F o'.
 intros.
-unfold fsub in H1; rewrite subset_ax in H1.
+unfold frules in H1; rewrite subset_ax in H1.
 destruct H1 as (?,(x',?,?)).
 apply TI_elim in H0; trivial.
 destruct H0.
 exists x0; trivial.
+destruct H3.
+rewrite H2 in H1|-*;clear x H2; rename x' into x.
+transitivity (inter2 x (TI F x0)).
+2:apply inter2_incl2.
+apply H5.
+ apply inter2_incl1.
+
+ 
+
+rewrite H2; apply H5; trivial.
+red; intros.
+
+
 rewrite H2; apply H3; trivial.
 apply TI_Ffix.
 apply isOrd_inv with o; trivial.
 Qed.
-
-Lemma Ffix_fsub_inv : forall x y,
-  x \in Ffix ->
-  y \in fsub x ->
-  y \in Ffix.
-intros.
-rewrite Ffix_def in H|-*.
-destruct H.
-apply fsub_elim with (2:=H1) in H0; trivial.
-destruct H0.
-exists x1; eauto using isOrd_inv.
-Qed.
-
+*)
 
 Section Iter.
 
 Variable G : (set -> set) -> set -> set.
 Hypothesis Gm : forall x x' g g',
   x \in Ffix ->
-  eq_fun (fsub x) g g' ->
+  eq_fun (frules x) g g' ->
   x == x' -> G g x == G g' x'.
 
 Definition Ffix_rel a y :=
   forall R:set->set->Prop,
   Proper (eq_set ==> eq_set ==> iff) R ->
   (forall x g,
-   ext_fun (fsub x) g ->
-   (forall y, y \in fsub x -> R y (g y)) ->
+   ext_fun (frules x) g ->
+   (forall y, y \in frules x -> R y (g y)) ->
    R x (G g x)) ->
   R a y.
 
@@ -197,8 +204,8 @@ Qed.
 
 
   Lemma Ffix_rel_intro : forall x g,
-    ext_fun (fsub x) g ->
-    (forall y, y \in fsub x -> Ffix_rel y (g y)) ->
+    ext_fun (frules x) g ->
+    (forall y, y \in frules x -> Ffix_rel y (g y)) ->
     Ffix_rel x (G g x).
 red; intros.
 apply H2; trivial; intros.
@@ -209,8 +216,8 @@ Qed.
     x \in Ffix ->
     Ffix_rel x o ->
     exists2 g,
-      ext_fun (fsub x) g /\
-      (forall y, y \in fsub x -> Ffix_rel y (g y)) &
+      ext_fun (frules x) g /\
+      (forall y, y \in frules x -> Ffix_rel y (g y)) &
       o == G g x.
 intros x o xA Fr.
 apply (@proj2 (Ffix_rel x o)).
@@ -308,6 +315,183 @@ revert H0; apply TI_Ffix; trivial.
 Qed.
 
   Definition Fix_rec a := uchoice (fun o => Ffix_rel a o).
+*)
+
+(***)
+
+(** Subterms of [a] *)
+Definition fsub a :=
+  subset Ffix (fun b => forall X, X \incl Ffix -> a \in F X -> b \in X).
+
+Instance fsub_morph : morph1 fsub.
+unfold fsub; do 2 red; intros.
+apply subset_morph; auto with *.
+red; intros.
+apply fa_morph; intro X.
+rewrite H; reflexivity.
+Qed.
+
+Lemma fsub_elim : forall x y o,
+  isOrd o ->
+  y \in TI F o ->
+  x \in fsub y ->
+  exists2 o', lt o' o & x \in TI F o'.
+intros.
+unfold fsub in H1; rewrite subset_ax in H1.
+destruct H1 as (?,(x',?,?)).
+apply TI_elim in H0; trivial.
+destruct H0.
+exists x0; trivial.
+rewrite H2; apply H3; trivial.
+apply TI_Ffix.
+apply isOrd_inv with o; trivial.
+Qed.
+
+Lemma Ffix_fsub_inv : forall x y,
+  x \in Ffix ->
+  y \in fsub x ->
+  y \in Ffix.
+intros.
+apply subset_elim1 in H0; trivial.
+Qed.
+
+(** Functions defined by recursion on subterms *)
+Section Iter.
+
+Variable G : (set -> set) -> set -> set.
+Hypothesis Gm : forall x x' g g',
+  x \in Ffix ->
+  eq_fun (fsub x) g g' ->
+  x == x' -> G g x == G g' x'.
+
+Definition Ffix_rel a y :=
+  forall R:set->set->Prop,
+  Proper (eq_set ==> eq_set ==> iff) R ->
+  (forall x g,
+   ext_fun (fsub x) g ->
+   (forall y, y \in fsub x -> R y (g y)) ->
+   R x (G g x)) ->
+  R a y.
+
+  Instance Ffix_rel_morph :
+    Proper (eq_set ==> eq_set ==> iff) Ffix_rel.
+apply morph_impl_iff2; auto with *.
+do 5 red; intros.
+rewrite <- H; rewrite <- H0; apply H1; trivial.
+Qed.
+
+
+  Lemma Ffix_rel_intro : forall x g,
+    ext_fun (fsub x) g ->
+    (forall y, y \in fsub x -> Ffix_rel y (g y)) ->
+    Ffix_rel x (G g x).
+red; intros.
+apply H2; trivial; intros.
+apply H0; trivial.
+Qed.
+
+  Lemma Ffix_rel_inv : forall x o,
+    x \in Ffix ->
+    Ffix_rel x o ->
+    exists2 g,
+      ext_fun (fsub x) g /\
+      (forall y, y \in fsub x -> Ffix_rel y (g y)) &
+      o == G g x.
+intros x o xA Fr.
+apply (@proj2 (Ffix_rel x o)).
+revert xA.
+apply Fr; intros.
+ apply morph_impl_iff2; auto with *.
+ do 4 red; intros.
+ rewrite <- H in xA.
+ destruct (H1 xA) as (?,(g,(?,?),?)); clear H1.
+ split;[|exists g].
+  rewrite <- H; rewrite <- H0; trivial.
+
+  split; intros.
+   red; red; intros; apply H3; trivial.
+   rewrite H; trivial.
+
+   rewrite <- H in H1; auto.
+
+  rewrite <- H0; rewrite H5.
+  apply Gm; auto with *.
+
+ split.
+  apply Ffix_rel_intro; auto.
+  intros.
+  apply H0; trivial.
+  apply subset_elim1 in H1; trivial.
+
+  exists g.
+   split; intros; trivial.
+   apply H0; trivial.
+   apply subset_elim1 in H1; trivial.
+
+  apply Gm; auto with *.
+Qed.
+
+  Lemma Ffix_rel_fun :
+    forall x y, Ffix_rel x y ->
+    forall y', Ffix_rel x y' -> x \in Ffix -> y == y'.
+intros x y H.
+apply H; intros.
+ apply morph_impl_iff2; auto with *.
+ do 4 red; intros.
+ rewrite <- H1; rewrite <- H0 in H3,H4; auto.
+apply Ffix_rel_inv in H2; trivial.
+destruct H2 as (g',(eg',Hg),eqy').
+rewrite eqy'; clear y' eqy'.
+apply Gm; auto with *.
+red; intros.
+rewrite <- (eg' _ _ H2 H4); auto.
+apply H1; auto.
+apply subset_elim1 in H2; trivial.
+Qed.
+
+Require Import ZFrepl.
+
+  Lemma Ffix_rel_def : forall o a, isOrd o -> a \in TI F o -> exists y, Ffix_rel a y.
+intros o a oo; revert a; apply isOrd_ind with (2:=oo); intros.
+clear o oo H0.
+apply TI_elim in H2; trivial.
+destruct H2.
+assert (xo : isOrd x).
+ apply isOrd_inv with y; trivial.
+assert (forall z, z \in fsub a -> uchoice_pred (fun o => Ffix_rel z o)).
+ intros.
+ destruct H1 with x z; auto.
+  apply subset_elim2 in H3; destruct H3.
+  rewrite H3; apply H4; trivial.
+  apply TI_Ffix; trivial.
+
+  split; intros.
+   rewrite <- H5; trivial.
+  split; intros.
+   exists x0; trivial.
+  apply Ffix_rel_fun with z; trivial.
+  apply subset_elim1 in H3; trivial.
+exists (G (fun b => uchoice (fun o => Ffix_rel b o)) a).
+apply Ffix_rel_intro; trivial.
+ red; red; intros.
+ apply uchoice_morph_raw.
+ apply Ffix_rel_morph; trivial.
+intros.
+apply uchoice_def; auto.
+Qed.
+
+  Lemma Ffix_rel_choice_pred : forall o a, isOrd o -> a \in TI F o ->
+    uchoice_pred (fun o => Ffix_rel a o).
+split; intros.
+ rewrite <- H1; trivial.
+split; intros.
+ apply Ffix_rel_def with o; trivial.
+apply Ffix_rel_fun with a; trivial.
+revert H0; apply TI_Ffix; trivial.
+Qed.
+
+(** The recursion operator *)
+  Definition Fix_rec a := uchoice (fun o => Ffix_rel a o).
 
   Lemma Fr_eqn : forall a o,
     isOrd o ->
@@ -331,12 +515,11 @@ assert (x' \in TI F o).
 generalize (uchoice_def _ (Ffix_rel_choice_pred _ _ H H6)); intro.
 specialize H3 with (1:=H4).
 rewrite <- Ffix_rel_fun with (1:=H3) (2:=H7).
-2:apply Ffix_fsub_inv with a; trivial.
-2:revert H0; apply TI_Ffix; trivial.
+2:apply subset_elim1 in H4; trivial.
 rewrite <- H5 in H4.
 apply H1; trivial.
 Qed.
-
+(*
   Lemma Fix_rec_typ U1 U2 a :
     Ffix \incl U1 ->
     (forall x g, ext_fun (fsub x) g -> x \in U1 -> (forall y, y \in fsub x -> g y \in U2) -> G g x \in U2) ->
@@ -359,6 +542,28 @@ apply H0.
  apply fsub_elim with (o:=y) in H5; trivial.
  destruct H5.
  apply H3 with x0; trivial.
+Qed.
+*)
+  Lemma Fix_rec_typ U2 a :
+    (forall x g, ext_fun (fsub x) g -> x \in Ffix -> (forall y, y \in fsub x -> g y \in U2) -> G g x \in U2) ->
+    a \in Ffix ->
+    Fix_rec a \in U2.
+intros.
+rewrite Ffix_def in H0; destruct H0.
+revert a H1.
+induction H0 using isOrd_ind; intros.
+rewrite Fr_eqn with (2:=H3); trivial.
+apply H.
+ do 2 red; intros; apply uchoice_morph_raw.
+ red; intros.
+ apply Ffix_rel_morph; trivial.
+
+ apply TI_Ffix with y; trivial.
+
+ intros.
+ apply fsub_elim with (o:=y) in H4; trivial.
+ destruct H4.
+ apply H2 with x0; trivial.
 Qed.
 
 End Iter.
@@ -400,6 +605,7 @@ Qed.
 
 Hint Resolve F_a_ord.
 
+(** We need stability to prove that Ffix is a fixpoint *)
   Hypothesis Fstab : forall X,
     X \incl power A ->
     inter (replf X F) \incl F (inter X).
@@ -411,7 +617,7 @@ Hint Resolve F_a_ord.
     (forall y, y \in fsub a -> y \in TI F o) ->
     a \in F (TI F o).
 intros.
-assert (inter (replf (subset (power A) (fun X => a \in F X)) (fun X => X))
+assert (inter (replf (subset (power Ffix) (fun X => a \in F X)) (fun X => X))
         \incl TI F o).
  red; intros.
  apply H2.
@@ -421,8 +627,7 @@ assert (inter (replf (subset (power A) (fun X => a \in F X)) (fun X => X))
   2:red;red;auto.
   exists Ffix; auto with *.
   apply subset_intro; auto with *.
-   apply power_intro; intros.
-   apply Ffix_inA; trivial.
+   apply power_intro; trivial.
 
    apply TI_elim in H0; auto.
    destruct H0.
@@ -436,7 +641,7 @@ assert (inter (replf (subset (power A) (fun X => a \in F X)) (fun X => X))
   2:red;red;auto.
   exists X; auto with *.
   apply subset_intro; trivial.
-  apply power_intro; intros; apply Ffix_inA; auto.
+  apply power_intro; trivial.
 apply (Fmono _ _ H3).
 apply Fstab.
  red; intros.
@@ -444,6 +649,7 @@ apply Fstab.
  2:red;red;auto.
  destruct H4.
  rewrite H5; apply subset_elim1 in H4; trivial.
+ revert H4; apply power_mono; apply Ffix_inA.
 apply inter_intro; intros.
  rewrite replf_ax in H4.
  2:red;red;auto.
@@ -467,8 +673,7 @@ apply inter_intro; intros.
  2:red;red;trivial.
  exists (TI F x); auto with *.
  apply subset_intro; trivial.
- apply power_intro; intros; apply Ffix_inA.
- revert H5; apply TI_Ffix.
+ apply power_intro; apply TI_Ffix.
  apply isOrd_inv with w; trivial.
 Qed.
 
@@ -500,6 +705,7 @@ apply F_intro with y; trivial.
 apply F_a_ord; rewrite Ffix_def; exists y; trivial.
 Qed.
 
+(** The closure ordinal *)
   Definition Ffix_ord :=
     osup Ffix (fun a => osucc (Fix_rec F_a a)).
 
@@ -520,6 +726,7 @@ apply TI_intro with (Fix_rec F_a a); auto.
  apply F_a_tot; trivial.
 Qed.
 
+(** We prove it is a fixpoint *)
   Lemma Ffix_eqn : Ffix == F Ffix.
 apply eq_intro; intros.
 rewrite Ffix_def in H; destruct H.
@@ -600,6 +807,7 @@ End BoundIndep.
 
 End IterMonotone.
 
+(** * Construction of the fixpoint "from above" *)
 
 Section KnasterTarski.
 

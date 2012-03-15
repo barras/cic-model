@@ -128,7 +128,9 @@ do 3 red; trivial.
 Qed.
 
   Definition prodSAT (X Y:SAT) : SAT.
+(*begin show*)
 exists (Arr (proj1_sig X) (proj1_sig Y)).
+(*end show*)
 apply is_cand_Arr; apply proj2_sig.
 Defined.
 

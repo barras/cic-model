@@ -1,8 +1,7 @@
 Require Import ZF.
-Require Import ZFpairs ZFrelations ZFrepl ZFwf ZFord ZFfix.
+Require Import ZFpairs ZFsum ZFrelations ZFrepl ZFwf ZFord ZFfix.
 Require Import ZFstable.
 Require Import ZFlist.
-Import IZF.
 
 Record grot_univ (U:set) : Prop := {
   G_trans : forall x y, y \in x -> x \in U -> y \in U;
@@ -134,6 +133,29 @@ apply G_union.
 apply G_pair; trivial.
 Qed.
 
+Lemma G_sup A B :
+  ext_fun A B ->
+  A \in U ->
+  (forall x, x \in A -> B x \in U) ->
+  sup A B \in U.
+intros.
+apply G_union; trivial.
+apply G_replf; trivial.
+Qed.
+
+Lemma G_nat x : x \in U -> ZFnats.N \incl U.
+red; intros.
+elim H0 using ZFnats.N_ind; intros.
+ rewrite <- H2; trivial.
+
+ apply G_incl with x; trivial.
+ red; intros.
+ apply empty_ax in H1; contradiction.
+
+ apply G_union2; trivial.
+ apply G_singl; trivial.
+Qed.
+
 Lemma G_prodcart : forall A B, A \in U -> B \in U -> prodcart A B \in U.
 intros.
 unfold prodcart.
@@ -150,6 +172,30 @@ apply G_pair; trivial.
  apply G_singl; trivial.
 
  apply G_pair; trivial.
+Qed.
+
+  Lemma G_sum X Y : X \in U -> Y \in U -> sum X Y \in U.
+unfold sum; intros.
+apply G_subset; trivial.
+apply G_prodcart; trivial.
+ apply G_nat with X; trivial.
+ do 2 apply ZFnats.succ_typ; apply ZFnats.zero_typ.
+
+ apply G_union2; trivial.
+Qed.
+
+Lemma G_sumcase A B f g a :
+  morph1 f ->
+  morph1 g ->
+  a \in sum A B ->
+  (forall a, a \in A -> f a \in U) ->
+  (forall a, a \in B -> g a \in U) ->
+  sum_case f g a \in U.
+intros.
+apply sum_case_ind with (6:=H1); intros; auto.
+apply morph_impl_iff1; auto with *.
+do 3 red; intros.
+rewrite <- H4; trivial.
 Qed.
 
 Lemma G_rel : forall A B, A \in U -> B \in U -> rel A B \in U.
@@ -176,20 +222,19 @@ unfold dep_func.
 apply G_subset; intros; trivial.
 apply G_func; trivial.
 unfold dep_image.
-apply G_union_repl; trivial; intros.
- apply repl_rel_fun; trivial.
-
- rewrite H3; auto.
-Qed.
-
-  Lemma G_sup A B :
-    ext_fun A B ->
-    A \in U ->
-    (forall x, x \in A -> B x \in U) ->
-    sup A B \in U.
-intros.
 apply G_union; trivial.
 apply G_replf; trivial.
+Qed.
+
+Lemma G_app f x :
+  f \in U -> x \in U -> app f x \in U.
+unfold app; intros.
+apply G_union.
+apply G_subset.
+unfold rel_image.
+apply G_subset.
+apply G_union; trivial.
+apply G_union; trivial.
 Qed.
 
   Lemma G_sigma A B :
@@ -201,6 +246,56 @@ intros.
 apply G_subset; trivial.
 apply G_prodcart; trivial.
 apply G_sup; trivial.
+Qed.
+
+  Lemma G_cc_lam A F :
+    ext_fun A F ->
+    A \in U ->
+    (forall x, x \in A -> F x \in U) ->
+    cc_lam A F \in U.
+intros.
+unfold cc_lam.
+apply G_sup; intros; trivial.
+ do 2 red; intros; apply replf_morph; auto.
+ red; intros; apply couple_morph; trivial.
+apply G_replf; intros; auto.
+ do 2 red; intros; apply couple_morph; auto with *.
+
+ apply G_couple; trivial.
+  apply G_trans with A; trivial.
+
+  apply G_trans with (F x); auto.
+Qed.
+
+  Lemma G_cc_app f x :
+    f \in U -> x \in U -> cc_app f x \in U.
+unfold cc_app; intros.
+unfold rel_image.
+apply G_subset.
+apply G_union.
+apply G_union.
+apply G_subset; trivial.
+Qed.
+
+  Lemma G_cc_prod A B :
+    ext_fun A B ->
+    A \in U ->
+    (forall x, x \in A -> B x \in U) ->
+    cc_prod A B \in U.
+intros.
+unfold cc_prod.
+apply G_replf; auto with *.
+ apply G_dep_func; intros; auto with *.
+
+ intros.
+ apply G_cc_lam; intros; auto.
+  do 2 red; intros; apply app_morph; auto with *.
+
+  apply G_app.
+   apply G_trans with (dep_func A B); trivial.
+   apply G_dep_func; trivial.
+
+   apply G_trans with A; trivial.
 Qed.
 
   Lemma G_TR F o :
@@ -264,25 +359,6 @@ intros.
 unfold Ffix.
 apply G_subset; trivial.
 Qed.
-(*
-  Lemma G_Ffix_ord F A : A \in U -> Ffix_ord F A \in U.
-intros.
-unfold Ffix_ord.
-apply G_osup; intros; trivial.
- do 2 red; intros; apply osucc_morph.
- admit.
-
- apply isOrd_succ.
- apply F_a_ord; auto.
-
- apply G_Ffix; trivial.
- apply G_Wdom; trivial.
-
- unfold osucc; apply G_subset; trivial; apply G_power; trivial.
- unfold Fix_rec.
- admit.
-Qed.
-*)
 
 Section NonTrivial.
 
@@ -381,6 +457,63 @@ apply osup_univ; trivial; intros.
  apply G_osup2; eauto using G_trans.
 
  apply G_N.
+Qed.
+
+  Lemma G_Ffix_ord F A :
+    Proper (incl_set ==> incl_set) F ->
+    (forall X, X \incl A -> F X \incl A) ->
+    A \in U ->
+    Ffix_ord F A \in U.
+intros.
+unfold Ffix_ord.
+apply G_osup; intros; trivial.
+ do 2 red; intros; apply osucc_morph.
+ unfold Fix_rec.
+ apply uchoice_morph_raw.
+ red; intros.
+ apply Ffix_rel_morph; trivial.
+
+ apply isOrd_succ.
+ apply F_a_ord; auto.
+
+ apply G_Ffix; trivial.
+
+ unfold osucc; apply G_subset; trivial; apply G_power; trivial.
+ apply subset_elim1 with (P:=isOrd).
+ apply Fix_rec_typ; auto; intros.
+  apply F_a_morph; trivial.
+
+  unfold F_a.
+  apply subset_intro.
+   apply G_osup.
+    do 2 red; intros.
+    apply osucc_morph; apply H3; trivial.
+
+    intros.
+    apply isOrd_succ.
+    apply H5 in H6.
+    apply subset_elim2 in H6; destruct H6.
+    rewrite H6; trivial.
+
+    unfold fsub.
+    apply G_subset; trivial.
+    apply G_Ffix; trivial.
+
+    intros.
+    unfold osucc.
+    apply G_subset; trivial.
+    apply G_power; trivial.
+    apply H5 in H6.
+    apply subset_elim1 in H6; trivial.
+
+   apply isOrd_osup.
+    do 2 red; intros; apply osucc_morph; apply H3; trivial.
+
+    intros.
+    apply isOrd_succ.
+    apply H5 in H6.
+    apply subset_elim2 in H6; destruct H6.
+    rewrite H6; trivial.
 Qed.
 
 End Infinite.

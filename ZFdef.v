@@ -185,7 +185,9 @@ Parameter
 End ZF_sig.
 
 (************************************************************************)
-(* ----- *)
+(*
+ -----
+ *)
 
 Module Type Choice_Sig (L:SublogicTheory) (S:SetTheory).
 Import S.
