@@ -822,7 +822,7 @@ intros.
 elim H using isOrd_ind; intros.
 constructor; intros.
  do 2 red; intros.
- apply TR_morph; auto with *.
+ apply TRF_morph; auto with *.
 
  red; intros.
  assert (yo := isOrd_inv y).

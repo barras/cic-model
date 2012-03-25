@@ -46,10 +46,18 @@ body { padding: 0px 0px;
     margin-left: 30px;
     padding:10px }
 
-#main .section { background-color:#90bdff;
+#main h1.section { background-color:#90bdff;
                  padding: 10px;
                  font-size : 175%;
                  line-height: 100% }
+
+h2.section { background-color: #90bdff;
+             padding: 10px;
+             font-size : 130% }
+
+h3.section { background-color: #90bdff;
+             padding: 10px; 
+             font-size : 115% }
 
 #main .doc { margin: 5px;
              font-family: sans-serif;

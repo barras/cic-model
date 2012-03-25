@@ -44,9 +44,10 @@ Definition vnil : val := V.nil props.
 Import V.
 Existing Instance cons_morph.
 Existing Instance cons_morph'.
+Hint Unfold eq_val.
 
 
-(** Terms *)
+(** * Pseudo-Terms *)
 
 Module T.
 
@@ -60,42 +61,44 @@ Definition eq_term (x y:term) :=
   | _, _ => False
   end.
 
-Instance eq_term_refl : Reflexive eq_term.
+Global Instance eq_term_refl : Reflexive eq_term.
 red; intros.
 destruct x; simpl; trivial.
 destruct s; trivial.
 Qed.
 
-Instance eq_term_sym : Symmetric eq_term.
+Global Instance eq_term_sym : Symmetric eq_term.
 red; intros.
 destruct x; destruct y; simpl in *; auto.
 symmetry; trivial.
 Qed.
 
-Instance eq_term_trans : Transitive eq_term.
+Global Instance eq_term_trans : Transitive eq_term.
 red; intros.
 destruct x; destruct y; try contradiction; destruct z; simpl in *; auto.
 transitivity (proj1_sig s0); trivial.
 Qed.
 
+(** Denotation as value *)
 Definition int (t:term) (i:val) : X :=
   match t with
   | Some f => proj1_sig f (fun k => i k)
   | None => props
   end.
 
-Instance int_morph : Proper (eq_term ==> eq_val ==> eqX) int.
+Global Instance int_morph : Proper (eq_term ==> eq_val ==> eqX) int.
 unfold int; do 3 red; intros.
 destruct x; destruct y; simpl in *; (contradiction||reflexivity||auto).
 Qed.
 
+(** Denotation as type *)
 Definition el (t:term) (i:val) (x:X) :=
   match t with
   | Some _ => x \in int t i
   | None => True
   end.
 
-Instance el_morph : Proper (eq_term ==> eq_val ==> eqX ==> iff) el.
+Global Instance el_morph : Proper (eq_term ==> eq_val ==> eqX ==> iff) el.
 apply morph_impl_iff3; auto with *.
 unfold el; do 5 red; intros.
  destruct y; trivial; destruct x; (contradiction||simpl in *).
@@ -108,6 +111,7 @@ Lemma in_int_el : forall i x T,
 destruct T as [(T,Tm)|]; simpl; trivial.
 Qed.
 
+(** Injecting sets into the model *)
 Definition cst (x:X) : term.
 (*begin show*)
 left; exists (fun _ => x).
@@ -115,11 +119,10 @@ left; exists (fun _ => x).
 do 2 red; reflexivity.
 Defined.
 
+(** Syntax of the Calculus of Constructions *)
 Definition prop := cst props.
 
 Definition kind : term := None.
-
-Hint Unfold eq_val.
 
 Definition Ref (n:nat) : term.
 (*begin show*)
@@ -136,7 +139,7 @@ do 2 red; simpl; intros.
 rewrite H; reflexivity.
 Defined.
 
-Instance App_morph : Proper (eq_term ==> eq_term ==> eq_term) App.
+Global Instance App_morph : Proper (eq_term ==> eq_term ==> eq_term) App.
 unfold App; do 3 red; simpl; intros.
 red; intros.
 rewrite H; rewrite H0; rewrite H1; reflexivity.
@@ -154,7 +157,7 @@ apply lam_ext.
  rewrite H; rewrite H1; reflexivity.
 Defined.
 
-Instance Abs_morph : Proper (eq_term ==> eq_term ==> eq_term) Abs.
+Global Instance Abs_morph : Proper (eq_term ==> eq_term ==> eq_term) Abs.
 unfold Abs; do 5 red; simpl; intros.
 apply lam_ext.
  apply int_morph; auto.
@@ -175,7 +178,7 @@ apply prod_ext.
  rewrite H; rewrite H1; reflexivity.
 Defined.
 
-Instance Prod_morph : Proper (eq_term ==> eq_term ==> eq_term) Prod.
+Global Instance Prod_morph : Proper (eq_term ==> eq_term ==> eq_term) Prod.
 unfold Prod; do 5 red; simpl; intros.
 apply prod_ext.
  apply int_morph; auto.
@@ -184,7 +187,7 @@ apply prod_ext.
  rewrite H0; rewrite H1; rewrite H3; reflexivity.
 Qed.
 
-
+(** Relocations *)
 Section Lift.
 
 Definition lift_rec (n m:nat) (t:term) : term.
@@ -196,7 +199,7 @@ exists (fun i => t (V.lams m (V.shift n) i)).
  rewrite H; reflexivity.
 Defined.
 
-Instance lift_rec_morph n k : Proper (eq_term ==> eq_term) (lift_rec n k).
+Global Instance lift_rec_morph n k : Proper (eq_term ==> eq_term) (lift_rec n k).
 do 3 red; intros.
 destruct x as [(x,xm)|]; destruct y as [(y,ym)|]; simpl in H|-*; try contradiction; trivial.
 red; intros.
@@ -224,7 +227,7 @@ Qed.
 
 Definition lift n := lift_rec n 0.
 
-Instance lift_morph : forall k, Proper (eq_term ==> eq_term) (lift k).
+Global Instance lift_morph : forall k, Proper (eq_term ==> eq_term) (lift k).
 do 3 red; simpl; intros.
 destruct x as [(x,xm)|]; destruct y as [(y,ym)|];
   simpl in *; (contradiction||trivial).
@@ -310,6 +313,7 @@ Qed.
 
 End Lift.
 
+(** Substitution *)
 Section Substitution.
 
 Definition subst_rec (arg:term) (m:nat) (t:term) : term.
@@ -321,7 +325,7 @@ exists (fun i => body (V.lams m (V.cons (int arg (V.shift m i))) i)).
  rewrite H; reflexivity.
 Defined.
 
-Instance subst_rec_morph : Proper (eq_term ==> eq ==> eq_term ==> eq_term) subst_rec.
+Global Instance subst_rec_morph : Proper (eq_term ==> eq ==> eq_term ==> eq_term) subst_rec.
 do 4 red; intros.
 destruct x1 as [(x1,x1m)|]; destruct y1 as [(y1,y1m)|]; simpl in H1|-*; try contradiction; trivial.
 red; intros.
@@ -336,7 +340,7 @@ Qed.
 
 Definition subst arg := subst_rec arg 0.
 
-Instance subst_morph : Proper (eq_term ==> eq_term ==> eq_term) subst.
+Global Instance subst_morph : Proper (eq_term ==> eq_term ==> eq_term) subst.
 do 3 red; simpl; intros.
 destruct x0 as [(x0,xm0)|]; destruct y0 as [(y0,ym0)|];
   simpl in *; (contradiction||trivial).
@@ -396,7 +400,7 @@ End Substitution.
 End T.
 Import T.
 
-(** Environments *)
+(** * Environments *)
 Definition env := list term.
 
 Definition val_ok (e:env) (i:val) :=
@@ -434,27 +438,34 @@ destruct T as [(T,Tm)|]; simpl in *; trivial.
 Qed.
 
 
-(** Judgements *)
+(** * Judgements *)
+
 Module J.
+
+(** Typing *)
 Definition typ (e:env) (M T:term) :=
   forall i, val_ok e i -> el T i (int M i).
+(** Equality *)
 Definition eq_typ (e:env) (M M':term) :=
   forall i, val_ok e i -> int M i == int M' i.
+(** Subtyping *)
 Definition sub_typ (e:env) (M M':term) :=
   forall i x, val_ok e i -> x \in int M i -> x \in int M' i.
+(** Alternative equality (with kind=kind) *)
 Definition eq_typ' e M M' :=
   eq_typ e M M' /\ match M,M' with None,None => True|Some _,Some _=>True|_,_=>False end.
+(** Subtyping as inclusion of values *)
 Definition sub_typ' (e:env) (M M':term) :=
   forall i x, val_ok e i -> el M i x -> el M' i x.
 
-Instance typ_morph : forall e, Proper (eq_term ==> eq_term ==> iff) (typ e).
+Global Instance typ_morph : forall e, Proper (eq_term ==> eq_term ==> iff) (typ e).
 intros.
 apply morph_impl_iff2; auto with *.
 unfold typ; do 4 red; intros.
 rewrite <- H; rewrite <- H0; auto.
 Qed.
 
-Instance eq_typ_morph : forall e, Proper (eq_term ==> eq_term ==> iff) (eq_typ e).
+Global Instance eq_typ_morph : forall e, Proper (eq_term ==> eq_term ==> iff) (eq_typ e).
 intros.
 apply morph_impl_iff2; auto with *.
 unfold eq_typ; do 4 red; intros.
@@ -470,14 +481,14 @@ unfold eq_typ'; split; simpl; intros.
  rewrite H; rewrite H0; auto.
 Qed.
 *)
-Instance sub_typ_morph : forall e, Proper (eq_term ==> eq_term ==> iff) (sub_typ e).
+Global Instance sub_typ_morph : forall e, Proper (eq_term ==> eq_term ==> iff) (sub_typ e).
 intros.
 apply morph_impl_iff2; auto with *.
 unfold sub_typ; do 4 red; intros.
 rewrite <- H in H3; rewrite <- H0; auto.
 Qed.
 
-Instance sub_typ'_morph : forall e, Proper (eq_term ==> eq_term ==> iff) (sub_typ' e).
+Global Instance sub_typ'_morph : forall e, Proper (eq_term ==> eq_term ==> iff) (sub_typ' e).
 intros.
 apply morph_impl_iff2; auto with *.
 unfold sub_typ'; do 4 red; intros.
@@ -487,8 +498,11 @@ Qed.
 End J.
 Import J.
 
-(** Equality rules *)
+(** * Inference rules *)
+
 Module R.
+
+(** Equality rules *)
 
 Lemma refl : forall e M, eq_typ e M M.
 red; simpl; reflexivity.
@@ -503,7 +517,7 @@ unfold eq_typ; intros.
 transitivity (int M' i); auto.
 Qed.
 
-Instance eq_typ_equiv : forall e, Equivalence (eq_typ e).
+Global Instance eq_typ_equiv : forall e, Equivalence (eq_typ e).
 split.
  exact (refl e).
  exact (sym e).
@@ -652,7 +666,7 @@ destruct T' as [(T',T'm)|]; simpl in *; trivial.
 rewrite <- H0; auto.
 Qed.
 
-(* Weakening *)
+(** Weakening *)
 
 Lemma weakening : forall e M T A,
   typ e M T ->
@@ -741,7 +755,6 @@ Lemma sub_trans' : forall e M1 M2 M3,
 unfold sub_typ'; auto.
 Qed.
 
-(* subsumption: generalizes typ_conv *)
 Lemma typ_subsumption' : forall e M T T',
   typ e M T ->
   sub_typ' e T T' ->
@@ -753,8 +766,22 @@ Qed.
 End R.
 
 Hint Resolve in_int_el.
-Existing Instance lift_rec_morph.
-Existing Instance subst_rec_morph.
+
+(** Consistency *)
+
+Lemma abstract_consistency M FF :
+  FF \in props ->
+  (forall x, ~ x \in FF) ->
+  ~ typ List.nil M (Prod prop (Ref 0)).
+unfold typ; red; intros.
+assert (val_ok List.nil (V.nil props)).
+ red; simpl; intros.
+ destruct n; discriminate H2.
+specialize H1 with (1:=H2); simpl in H1.
+apply H0 with (app (int M (V.nil props)) FF).
+apply prod_elim with (2:=H1) (3:=H).
+red; auto.
+Qed.
 
 End MakeModel.
 

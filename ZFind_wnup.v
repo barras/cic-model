@@ -415,7 +415,7 @@ Lemma tr_iso_it a o :
 intros oo; revert a; elim oo using isOrd_ind; intros.
 constructor; intros.
  do 2 red; intros.
- unfold TRF; apply TR_morph; auto with *.
+ unfold TRF; apply TRF_morph; auto with *.
 
  red; intros.
  rewrite subset_ax in H3; destruct H3.
@@ -798,7 +798,7 @@ Qed.
 
 End W_Simulation.
 
-
+(** Support for definitions by case *)
 (* --> ? *)
 Definition if_prop P x y :=
   union2 (cond_set P x) (cond_set (~P) y).

@@ -42,17 +42,6 @@ Qed.
 Definition piNAT F :=
   interSAT (fun p:{n|n \in NAT} => F (proj1_sig p)).
 
-Lemma piNAT_ax0 t F :
-  inSAT t (piNAT F) <-> forall n, n \in NAT -> inSAT t (F n).
-split; intros.
- apply interSAT_elim with (x:=exist (fun n=>n \in NAT) n H0) in H; trivial.
-
- apply interSAT_intro; intros.
-  exists ZERO; apply ZERO_typ.
-
-  destruct x; auto.
-Qed.
-
 Lemma piNAT_ax t F :
   inSAT t (piNAT F) <-> sn t /\ forall n, n \in NAT -> inSAT t (F n).
 split; intros.
@@ -232,18 +221,18 @@ Lemma fNAT_SU : forall (A:family) n t,
   inSAT (Lc.App SU t) (fNAT A (SUCC n)).
 intros A n t tyn H H0.
 unfold SU.
-apply inSAT_exp.
- apply sat_sn in H; trivial.
+apply inSAT_exp;[right|].
+ apply sat_sn in H0; trivial.
 unfold Lc.subst; simpl Lc.subst_rec.
 rewrite fNAT_def; intros.
 eapply inSAT_context.
  intros.
- apply inSAT_exp.
+ apply inSAT_exp; [right|].
   apply sat_sn in H1; trivial.
   eexact H3.
 unfold Lc.subst; simpl Lc.subst_rec.
 apply inSAT_exp.
- apply sat_sn in H2; trivial.
+ right; apply sat_sn in H2; trivial.
 unfold Lc.subst; simpl Lc.subst_rec.
 repeat rewrite Lc.simpl_subst; auto.
 repeat rewrite Lc.lift0.
@@ -441,7 +430,7 @@ Lemma G_sat A k m t X :
 intros.
 unfold G.
 apply inSAT_exp; intros.
- apply sat_sn in H0; trivial.
+ right; apply sat_sn in H0; trivial.
 unfold Lc.subst; simpl Lc.subst_rec.
 repeat rewrite Lc.simpl_subst; auto.
 repeat rewrite Lc.lift0.
@@ -612,16 +601,14 @@ apply cNAT_pre in tty.
 apply G_sat with (2:=tty); trivial.
 eapply inSAT_context; intros.
  apply inSAT_exp.
- 2:unfold Lc.subst; simpl Lc.subst_rec.
- 2:repeat rewrite Lc.simpl_subst; auto.
- 2:rewrite Lc.lift0.
- 2:change (inSAT (Lc.App m (NATFIX m)) S).
- 2:eexact H6.
- apply sat_sn in H6.
- unfold NATFIX in H6.
- apply sn_G_inv.
- apply subterm_sn with (1:=H6).
- constructor.
+  left; simpl.
+  apply Bool.orb_true_r.
+
+  unfold Lc.subst; simpl Lc.subst_rec.
+  repeat rewrite Lc.simpl_subst; auto.
+  rewrite Lc.lift0.
+  change (inSAT (Lc.App m (NATFIX m)) S).
+  eexact H6.
 
 apply Xmono with (osucc z); eauto using isOrd_inv.
  red; intros.

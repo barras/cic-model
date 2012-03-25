@@ -1,20 +1,15 @@
 Require Import Lambda.
 
+(** A somehow abstract interface to work with reducibility candidates
+    or saturated sets.
+ *)
+
 Set Implicit Arguments.
 
-Definition indexed_relation A A' B (R:B->B->Prop) (f:A->B) (g:A'->B) :=
-  (forall x, exists y, R (f x) (g y)) /\
-  (forall y, exists x, R (f x) (g y)).
-
-Lemma indexed_relation_id : forall A B (R:B->B->Prop) (F F':A->B),
-  (forall x, R (F x) (F' x)) ->
-  indexed_relation R F F'.
-split; intros; eauto.
-Qed.
-
-(* Theory of saturated sets *)
+(** * Theory of saturated sets *)
 
 Module Type SAT.
+  (** The type of "saturated sets" and basic relations: equality and membership *)
   Parameter SAT : Type.
   Parameter eqSAT : SAT -> SAT -> Prop.
   Parameter inSAT : term -> SAT -> Prop.
@@ -24,24 +19,30 @@ Module Type SAT.
 
   Parameter inSAT_morph : Proper ((@eq term) ==> eqSAT ==> iff) inSAT.
 
+  (** Essential properties of saturated sets :
+      - they are sets of SN terms
+      - they are closed by head expansion
+   *)
   Parameter sat_sn : forall t S, inSAT t S -> sn t.
-  Parameter daimon : term.
-  Parameter varSAT : forall S, inSAT daimon S.
-
   Parameter inSAT_exp : forall S u m,
-    sn u ->
+    boccur 0 m = true \/ sn u ->
     inSAT (subst u m) S ->
     inSAT (App (Abs m) u) S.
 
+  (** A term that belongs to all saturated sets (e.g. variables) *)
+  Parameter daimon : term.
+  Parameter varSAT : forall S, inSAT daimon S.
+
+  (** Closure properties are preserved by head contexts *)
   Parameter inSAT_context : forall u u' v,
     (forall S, inSAT u S -> inSAT u' S) ->
     forall S, inSAT (App u v) S -> inSAT (App u' v) S.
 
-  (* sn *)
+  (** The set of strongly normalizing terms *)
   Parameter snSAT : SAT.
   Parameter snSAT_intro : forall t, sn t -> inSAT t snSAT.
 
-  (* arrow *)
+  (** Non-depenent products *)
   Parameter prodSAT : SAT -> SAT -> SAT.
   Parameter prodSAT_morph : Proper (eqSAT ==> eqSAT ==> eqSAT) prodSAT.
   Parameter prodSAT_intro : forall A B m,
@@ -52,7 +53,7 @@ Module Type SAT.
     inSAT v A ->
     inSAT (App u v) B.
 
-  (* intersection *)
+  (** Intersection *)
   Parameter interSAT : forall A:Type, (A -> SAT) -> SAT.
   Parameter interSAT_morph : forall A A' (F:A->SAT) (G:A'->SAT),
     indexed_relation eqSAT F G ->
@@ -70,7 +71,8 @@ Module Type SAT.
 
 End SAT.
 
-(* Instantiating this signature with Girard's reducibility candidates *)
+(** * Instantiating this signature with Girard's reducibility candidates *)
+
 Require Import Can.
 
 Module SatSet <: SAT.
@@ -104,7 +106,7 @@ apply var_in_cand with (1:=i).
 Qed.
 
   Lemma inSAT_exp : forall S u m,
-    sn u ->
+    boccur 0 m = true \/ sn u ->
     inSAT (subst u m) S ->
     inSAT (App (Abs m) u) S.
 destruct S; simpl; intros.
@@ -198,6 +200,8 @@ End SatSet.
 
 Export SatSet.
 
+(** Derived facts *)
+
 Instance eqSAT_equiv : Equivalence eqSAT.
 split; red; intros.
  rewrite eqSAT_def; reflexivity.
@@ -243,8 +247,8 @@ destruct S; simpl; intros.
 apply (sat1_in_cand 0 x); trivial.
 Qed.
 
-(* Dependent product *)
-(* The realizability relation of a dependent product.
+(** Dependent product *)
+(** The realizability relation of a dependent product.
    It is the intersection of all reducibility candidates {x}_F -> {f(x)}_G(x)
    when x ranges A. *)
 Definition piSAT0 A B (F:A->SAT) (G:A->B->SAT) (f:A->B) :=

@@ -88,15 +88,22 @@ inversion_clear H2; auto.
 inversion H3.
 Qed.
 
-  Lemma cand_sat :
-   forall X, is_cand X ->
-   forall u, sn u ->
-   forall m, X (subst u m) ->
-   X (App (Abs m) u).
+
+  Lemma cand_sat X m u :
+    is_cand X ->
+    boccur 0 m=true \/ sn u ->
+    X (subst u m) ->
+    X (App (Abs m) u).
 Proof.
+intros.
+assert (snu : sn u).
+ destruct H0; trivial.
+ apply (incl_sn _ H) in H1.
+ apply sn_subst_inv_l in H1; trivial.
+clear H0; revert m H1.
 (* induction on (sn u) *)
-simple induction 2.
-clear u H0; intros u _ IHu; unfold transp in *.
+elim snu.
+clear u snu; intros u _ IHu; unfold transp in *.
 (* induction on (sn m) *)
 intros m m_in_X.
 generalize m_in_X.
@@ -449,7 +456,7 @@ apply (clos_exp Y); intros; auto with coc.
 
  apply clos_red with (App (Abs m) u); auto with coc.
  apply (cand_sat Y); auto with coc.
- apply (incl_sn X); auto with coc.
+ right; apply (incl_sn X); auto with coc.
 Qed.
 
 
@@ -516,7 +523,7 @@ apply (clos_exp (Y u')); intros; auto with coc.
 
  apply clos_red with (App (Abs m) u); auto with coc.
  apply (cand_sat (Y u')); auto with coc.
- apply (incl_sn X); auto with coc.
+ right; apply (incl_sn X); auto with coc.
 Qed.
 
 
@@ -574,31 +581,31 @@ red in H3.
 apply H3; auto with *.
 Qed.
 
-  Lemma cand_sat1 :
-   forall X, is_cand X ->
-   forall u v, sn u ->
-   forall m, X (App (subst u m) v) ->
-   X (App2 (Abs m) u v).
+  Lemma cand_sat1 X m u v :
+    is_cand X ->
+    boccur 0 m = true \/ sn u ->
+    X (App (subst u m) v) ->
+    X (App2 (Abs m) u v).
 intros.
 apply cand_context with (X:=X) (u:=subst u m); intros; auto.
 apply cand_sat with (X:=X0); trivial.
 Qed.
 
-  Lemma cand_sat2 :
-   forall X, is_cand X ->
-   forall u v w, sn u ->
-   forall m, X (App2 (subst u m) v w) ->
-   X (App (App2 (Abs m) u v) w).
+  Lemma cand_sat2 X m u v w :
+    is_cand X ->
+    boccur 0 m = true \/ sn u ->
+    X (App2 (subst u m) v w) ->
+    X (App2 (App (Abs m) u) v w).
 intros.
 apply cand_context with (X:=X) (u:=App (subst u m) v); intros; auto.
 apply cand_sat1 with (X:=X0); trivial.
 Qed.
 
-  Lemma cand_sat3 :
-   forall X, is_cand X ->
-   forall u v w x, sn u ->
-   forall m, X (App2 (App (subst u m) v) w x) ->
-   X (App2 (App2 (Abs m) u v) w x).
+  Lemma cand_sat3 X m u v w x :
+    is_cand X ->
+    boccur 0 m = true \/ sn u ->
+    X (App2 (App (subst u m) v) w x) ->
+    X (App2 (App2 (Abs m) u v) w x).
 intros.
 apply cand_context with (X:=X) (u:=App2 (subst u m) v w); intros; auto.
 apply cand_sat2 with (X:=X0); trivial.

@@ -93,14 +93,15 @@ Definition iso'' (w:W_F X) : N X := iso' (fA' w) (fB' w).
 
 
 (* Mixing with inductive types in Prop *)
-
+(*
 Inductive Box (T:Type) : Prop := box (x:T).
 
 Inductive NST : Set :=
   CST : Box {X:Type & X->NST} -> NST.
-
+*)
 (*
  - { }
  - { 0 }
  - prop
  -
+*)

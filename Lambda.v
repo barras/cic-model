@@ -1,14 +1,8 @@
 
-Require Export Setoid Morphisms.
-Require Import Arith.
-Require Export Compare_dec.
-Require Export Relations.
+Require Import Omega.
+Require Export basic.
 
-(* Lambda terms with constants *)
-
-
-Hint Resolve t_step rt_step rt_refl: core.
-Hint Unfold transp: core.
+(** Pure lambda terms *)
 
 Section Terms.
 
@@ -58,6 +52,13 @@ Section Terms.
   | occ_app_l : forall A B, occur n A -> occur n (App A B)
   | occ_app_r : forall A B, occur n B -> occur n (App A B)
   | occ_abs : forall M, occur (S n) M -> occur n (Abs M).
+
+  Fixpoint boccur (n:nat) (t:term) :=
+    match t with
+    | Ref i => if eq_nat_dec n i then true else false
+    | App u v => orb (boccur n u) (boccur n v)
+    | Abs m => boccur (S n) m
+    end.
 
 End Terms.
 
@@ -633,6 +634,22 @@ Qed.
 
 (* One or more steps *)
 
+  Lemma sn_redp t : sn t -> Acc (transp _ redp) t.
+induction 1 ; constructor; intros.
+clear H; revert H0; induction H1; intros; auto.
+apply IHclos_trans2; intros.
+apply Acc_inv with y; auto.
+red; apply t_step; trivial.
+Qed.
+
+  Lemma redp_red_redp x y z :
+    redp x y -> red y z -> redp x z.
+intros.
+revert x H; induction H0; intros; auto.
+apply t_trans with P; auto.
+apply IHred; trivial.
+Qed.
+
   Lemma redp_lift_rec : forall n M M',
     redp M M' -> forall k, redp (lift_rec n M k) (lift_rec n M' k).
 unfold redp.
@@ -662,6 +679,49 @@ induction 1.
 Qed.
 
   Hint Resolve redp_abs redp_app_l redp_app_r : coc.
+
+  Lemma redp_app_l' :
+    forall M1 N1 M2 N2, redp M1 N1 -> red M2 N2 -> redp (App M1 M2) (App N1 N2).
+intros.
+apply redp_red_redp with (App N1 M2).
+ apply redp_app_l; trivial.
+
+ apply red_red_app; auto with *.
+Qed.
+
+  Lemma redp_app_r' :
+    forall M1 N1 M2 N2, red M1 N1 -> redp M2 N2 -> redp (App M1 M2) (App N1 N2).
+intros.
+apply redp_red_redp with (App M1 N2).
+ apply redp_app_r; trivial.
+
+ apply red_red_app; auto with *.
+Qed.
+
+Lemma red1_subst_l_occur :
+   forall t u,
+   red1 t u -> forall a k, boccur k a = true -> redp (subst_rec t a k) (subst_rec u a k).
+induction a; simpl; intros.
+ destruct (lt_eq_lt_dec k n) as [[?|?]|?].
+  destruct (eq_nat_dec k n);[omega|discriminate].
+
+  apply t_step.
+  apply red1_lift; trivial.
+
+  destruct (eq_nat_dec k n);[omega|discriminate].
+
+ apply redp_abs; auto.
+
+ specialize IHa1 with (k:=k).
+ destruct (boccur k a1); simpl in H0.
+
+
+ apply redp_app_l'; auto.
+ apply red1_subst_l; trivial.
+
+ apply redp_app_r'; auto.
+ apply red1_subst_l; trivial.
+Qed.
 
   Lemma redp_K : forall M T, redp (App2 K M T) M.
 unfold K; intros.
@@ -781,6 +841,20 @@ destruct H1; subst y; auto with coc.
 apply H0; trivial.
 Qed.
 
+  Lemma sn_subst_inv_l u m k :
+    sn (subst_rec u m k) ->
+    boccur k m = true ->
+    sn u.
+cut (forall t, sn t -> forall u m k, t = subst_rec u m k -> boccur k m = true -> sn u); eauto.
+clear u m k; intros t snt.
+apply sn_redp in snt.
+elim snt; intros.
+constructor; intros.
+red in H3.
+apply H0 with (y:=subst_rec y m k) (2:=reflexivity _); trivial.
+red.
+rewrite H1; apply red1_subst_l_occur; trivial.
+Qed.
 
   Lemma sn_K2_reduced1 :
     forall A, sn A ->

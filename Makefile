@@ -14,7 +14,8 @@ COQINCLUDES=-I .
 ALLV=$(shell ls *.v)
 ALLVO=$(ALLV:.v=.vo)
 #COCVO = ModelHF.vo ModelZF.vo ModelECC.vo ZFindtypes.vo EnsUniv.vo ZF1.vo
-ALLHTML = $(ALLV:.v=.html)
+ALLHTML = $(ALLV:%.v=html/%.html)
+ALLHTMLFULL = $(ALLV:%.v=html/full/%.html)
 
 all:: coq
 
@@ -28,11 +29,14 @@ DOCVO=$(DOCV:.v=.vo)
 src-html:: $(DOCVO)
 	$(MAKE) html
 html::
-	mkdir -p html
-	$(COQDOC) -html -d html -g --coqlib http://coq.inria.fr/stdlib $(ALLV) template/*.v
+	mkdir -p html/full
+	$(COQDOC) -utf8 -html -d html -g --coqlib http://coq.inria.fr/stdlib template/coqdoc.v $(ALLV)
+	$(COQDOC) -utf8 -html -d html/full --coqlib http://coq.inria.fr/stdlib template/coqdoc.v $(ALLV)
 	mv html/index.html html/coqindex.html
-	cp coqdoc.css html
-	cp sets.html html/index.html
+	/bin/cp template/html/*.* html/
+	/bin/cp template/html/full/*.* html/full/
+	/bin/cp html/coqdoc.css html/full/
+	perl -pi -e "s/(<div id=\"header\">)/\1<script src=\"headings.js\"><\/script>/" $(ALLHTML) $(ALLHTMLFULL)
 
 Ens0.v: Ens.v
 	cp Ens.v Ens0.v

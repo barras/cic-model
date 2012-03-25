@@ -12,6 +12,17 @@ Require Export ZF.
 Definition isDir o := forall x y,
   lt x o -> lt y o -> exists2 z, lt z o & x \incl z /\ y \incl z.
 
+Global Instance isDir_morph : Proper (eq_set==>iff) isDir.
+do 2 red; intros; unfold isDir.
+apply fa_morph; intros x0.
+apply fa_morph; intros y0.
+rewrite H.
+apply fa_morph; intros _.
+apply fa_morph; intros _.
+apply ex2_morph; red; intros; auto with *.
+rewrite H; reflexivity.
+Qed.
+
 (** Directed plump ordinals.
 
    Plumpness is the property that
@@ -23,14 +34,214 @@ Definition isDir o := forall x y,
 
    Even if plumpness is not monotonic, it can be defined by recursion
    over the rank (since the rank of x is smaller than that of x). So
-   we could go by first defining well-founded sets (or transitive well-
-   founded sets), then transfinite recursion, and finally define
-   plumpness.
-
-   Here, we do it more quickly by using Coq's accessibility predicate,
-   and the plump property below by well-founded induction. 
+   we go by first defining well-founded sets (cf ZFwf.v), then
+   well-founded, and finally define plumpness.
  *)
 
+(** Not resorting to higher-order: *)
+
+(** Any property could replace directedness *)
+Local Notation Q:=isDir.
+Local Notation Qm:=isDir_morph.
+
+Let plump_set f ub :=
+   subset (power ub)
+     (fun x =>
+      (forall y, y \in ub -> y \in x -> y \in f y) /\
+      (forall z y, y \in ub -> z \in f y -> z \incl y -> y \in x -> z \in x) /\
+      Q x).
+
+Definition plumps := WFR plump_set.
+
+Let plumps_m :
+  Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) plump_set.
+do 3 red; intros; unfold plump_set.
+apply subset_morph.
+ apply power_morph; trivial.
+
+ red; intros.
+ apply and_iff_morphism.
+  apply fa_morph; intros yy.
+  rewrite <- H0.
+  rewrite (H _ _ (reflexivity _)); reflexivity.
+
+  apply and_iff_morphism; auto with *.
+  apply fa_morph; intros zz.
+  apply fa_morph; intros yy.
+  rewrite H0; rewrite (H _ _ (reflexivity _)); reflexivity.
+Qed.
+
+Lemma plump_eqn ub x :
+  isWf ub ->
+  (x \in plumps ub <->
+   x \incl ub /\
+   (forall y, y \in ub -> y \in x -> y \in plumps y) /\
+   (forall z y, y \in ub -> z \in plumps y -> z \incl y -> y \in x -> z \in x) /\
+   Q x).
+intro.
+revert x; induction H using isWf_ind; intros.
+unfold plumps at 1; rewrite WFR_eqn; fold plumps; trivial.
+ unfold plump_set; rewrite subset_ax.
+ rewrite power_ax.
+ apply and_iff_morphism; auto with *.
+ split; intros.
+  destruct H1 as (x',?,(?,(?,?))).
+  split; [|split]; intros; try rewrite H1 in *; eauto.
+
+  exists x; auto with *.
+
+ apply plumps_m.
+
+ intros; apply subset_morph; auto with *.
+  red; intros.
+  apply and_iff_morphism.
+   apply fa_morph; intros y.
+   apply fa_morph; intros h.
+   rewrite (H1 _ _ h (reflexivity _)); reflexivity.
+
+   apply and_iff_morphism; auto with *.
+   apply fa_morph; intros z.
+   apply fa_morph; intros y.
+   apply fa_morph; intros h.
+   rewrite (H1 _ _ h (reflexivity _)); reflexivity.
+Qed.
+
+Instance plumps_morph : morph1 plumps.
+do 2 red; intros; unfold plumps.
+apply WFR_morph; trivial.
+apply plumps_m.
+Qed.
+
+Lemma plump_bound : forall ub1 ub2 x,
+ isWf ub1 ->
+ isWf ub2 ->
+ x \incl ub2 ->
+ x \in plumps ub1 -> x \in plumps ub2.
+intros.
+rewrite plump_eqn in H2|-*; trivial.
+destruct H2 as (?,(?,(?,?))).
+eauto 10.
+Qed.
+
+Definition isOrd x := isWf x /\ x \in plumps x.
+
+Lemma isOrd_wf o : isOrd o -> isWf o.
+destruct 1; trivial.
+Qed.
+Hint Resolve isOrd_wf.
+
+Global Instance isWf_morph : Proper (eq_set==>iff) isWf.
+Admitted.
+
+Lemma isOrd_ext : forall x y, x == y -> isOrd x -> isOrd y.
+destruct 2.
+unfold isOrd; rewrite H in H0,H1; auto.
+Qed.
+
+Instance isOrd_morph : Proper (eq_set ==> iff) isOrd.
+do 2 red; split; intros.
+ apply isOrd_ext with x; trivial.
+
+ symmetry in H.
+ apply isOrd_ext with y; trivial.
+Qed.
+
+Lemma isOrd_inv : forall x y,
+  isOrd x -> lt y x -> isOrd y.
+intros.
+destruct H.
+split.
+ apply isWf_inv with x; trivial.
+
+ rewrite plump_eqn in H1; trivial.
+ destruct H1 as (_,(?,_)); auto.
+Qed.
+
+Lemma isOrd_plump : forall z, isOrd z ->
+ forall x y, isOrd x -> x \incl y -> y \in z -> x \in z.
+destruct 1; intros.
+rewrite plump_eqn in H0; trivial.
+destruct H0 as (_,(_,(?,_))).
+apply H0 with y; auto with *.
+destruct H1.
+apply plump_bound with x; auto with *.
+apply isWf_inv with z; trivial.
+Qed.
+
+Lemma isOrd_dir : forall z, isOrd z -> Q z.
+destruct 1; intros.
+rewrite plump_eqn in H0; trivial.
+destruct H0 as (_,(_,(_,?))); trivial.
+Qed.
+
+Lemma isOrd_intro : forall x,
+  (forall a b, isOrd a -> a \incl b -> b \in x -> a \in x) ->
+  Q x ->
+  (forall y, y \in x -> isOrd y) ->
+  isOrd x.
+intros.
+assert (wfx : isWf x).
+ apply isWf_intro; intros; apply isOrd_wf; apply H1; trivial.
+split; trivial.
+rewrite plump_eqn; trivial.
+split; [|split;[|split]]; intros; auto with *.
+ apply H1; trivial.
+
+ apply H with y; trivial.
+ assert (wfy : isWf y).
+  apply isWf_inv with x; trivial.
+ assert (wfz : isWf z).
+  apply isWf_intro; intros; apply isWf_inv with y; auto.
+ split; trivial.
+ apply plump_bound with y; auto with *.
+Qed.
+
+Lemma isOrd_trans : forall x y z,
+  isOrd x -> lt z y -> lt y x -> lt z x.
+unfold lt.
+intros.
+assert (isWf x) by auto.
+revert H y z H0 H1.
+induction H2 using isWf_ind; intros.
+apply isOrd_plump with y; auto.
+ apply isOrd_inv with y; trivial.
+ apply isOrd_inv with a; trivial.
+
+ red; intros.
+ apply H with z; trivial.
+ apply isOrd_inv with a; trivial.
+Qed.
+
+Lemma isOrd_ind : forall x (P:set->Prop),
+  (forall y, isOrd y ->
+   y \incl x ->
+   (forall z, lt z y -> P z) -> P y) ->
+  isOrd x -> P x.
+intros.
+assert (isWf x).
+ destruct H0; trivial.
+cut (forall x', x' == x -> P x'); auto with *.
+revert H0 H .
+induction H1 using isWf_ind; simpl; intros.
+apply H2; intros; auto with *.
+ rewrite H3; trivial.
+
+ rewrite H3; reflexivity.
+
+ rewrite H3 in H4; clear x' H3.
+ apply H with z; auto with *.
+  apply isOrd_inv with a; trivial.
+
+  intros; apply H2; trivial.
+  red; intros; apply isOrd_trans with z; auto.
+  red; auto.
+Qed.
+
+Module HigherOrder.
+
+(** Here, we do it slightly more quickly by using Coq's accessibility
+   predicate, and the plump property below by well-founded induction.
+ *)
 Fixpoint plump ub (p:Acc in_set ub) x : Prop :=
   (forall y (q: y \in ub), y \in x -> plump y (Acc_inv p _ q) y) /\
   (forall z y (q: y \in ub), plump y (Acc_inv p _ q) z ->
@@ -211,6 +422,7 @@ red; intros.
 apply isOrd_trans with z; auto.
 apply H6; trivial.
 Qed.
+End HigherOrder.
 
 (** * Basic theory of ordinals *)
 
@@ -1260,22 +1472,25 @@ Qed.
 End TransfiniteIteration.
 Hint Resolve TI_fun_ext.
 
-Lemma isOrd_wf o : isOrd o -> isWf o.
-induction 1 using isOrd_ind; intros; apply isWf_intro; auto.
-Qed.
-Hint Resolve isOrd_wf.
-
-Lemma isWf_inter2 : forall x y, isWf x -> isWf y -> isWf (inter2 x y).
-unfold inter2; intros.
-unfold inter.
-apply isWf_subset.
-apply isWf_union.
-apply isWf_pair; trivial.
-Qed.
 
 (** * Supremum of directed ordinals *)
 
 (** ** Binary supremum *)
+(*
+  Definition osup2 x y0 :=
+    cc_app (WFR (fun f x => cc_lam (osucc y0) (fun y =>
+              union2 (union2 x y) (sup x (fun x' => replf y (fun y' => cc_app (f x') y'))))) x) y0.
+
+  Lemma osup2_def : forall x y, isOrd x ->
+  osup2 x y ==
+  union2 (union2 x y) (sup x (fun x' => replf y (fun y' => osup2 x' y'))).
+intros.
+unfold osup2 at 1; rewrite WFR_eqn; intros; auto.
+ rewrite cc_beta_eq; auto with *. 2:admit.
+ 2:apply lt_osucc; auto.
+*)
+
+
   Definition osup2_rel x y z :=
     forall P,
     Proper (eq_set ==> eq_set ==> eq_set ==> iff) P ->
@@ -1359,6 +1574,7 @@ apply H; intros.
  rewrite <- H6; rewrite <- H8; auto.
 Qed.
 
+(** osup2 defined on well-founded sets *)
   Lemma uchoice_pred_osup2 : forall x y, isWf x -> uchoice_pred (osup2_rel x y).
 intros x y wfx; revert y; induction wfx using isWf_ind; intros.
 split; intros.
@@ -1454,7 +1670,6 @@ red; intros.
 rewrite osup2_ax; auto.
 Qed.
 
-
 Lemma osup2_mono x x' y y' :
   isWf x' -> x \incl x' -> y \incl y' ->
   osup2 x y \incl osup2 x' y'.
@@ -1475,17 +1690,18 @@ assert (wfi := isWf_inv).
 rewrite osup2_ax in H1,H2; trivial.
 destruct H1 as [?|[?|(x1,?,(x2,?,?))]];
   destruct H2 as [?|[?|(y1,?,(y2,?,?))]].
+ (* case 1. *)
  destruct (H x0 y0); trivial.
  exists x1; trivial.
  apply osup2_incl1; trivial.
-
+ (* case 2. *)
  exists (osup2 x0 y0).
   rewrite osup2_ax; trivial; right; right; eauto with *.
 
   split.
    apply osup2_incl1; eauto.
    apply osup2_incl2; eauto.
-
+ (* case 3. *)
  destruct (H x0 y1); trivial.
  destruct H6.
  exists (osup2 x1 y2).
@@ -1496,18 +1712,18 @@ destruct H1 as [?|[?|(x1,?,(x2,?,?))]];
    apply osup2_incl1; eauto.
 
    rewrite H4; apply osup2_mono; eauto with *.
-
+ (* case 4. *)
  exists (osup2 y0 x0).
   rewrite osup2_ax; trivial; right; right; eauto with *.
 
   split.
    apply osup2_incl2; eauto.
    apply osup2_incl1; eauto.
-
+ (* case 5. *)
  destruct (H0 x0 y0); trivial.
  exists x1; trivial.
  apply osup2_incl2; trivial.
-
+ (* case 6. *)
  destruct (H0 x0 y2); trivial.
  destruct H6.
  exists (osup2 y1 x1).
@@ -1518,7 +1734,7 @@ destruct H1 as [?|[?|(x1,?,(x2,?,?))]];
    apply osup2_incl2; eauto.
 
    rewrite H4; apply osup2_mono; eauto with *.
-
+ (* case 7. *)
  destruct (H x1 y0); trivial.
  destruct H6.
  exists (osup2 x3 x2).
@@ -1528,7 +1744,7 @@ destruct H1 as [?|[?|(x1,?,(x2,?,?))]];
    rewrite H4; apply osup2_mono; eauto with *.
 
    transitivity x3; trivial; apply osup2_incl1; eauto.
-
+ (* case 8. *)
  destruct (H0 x2 y0); trivial.
  destruct H6.
  exists (osup2 x1 x3).
@@ -1538,7 +1754,7 @@ destruct H1 as [?|[?|(x1,?,(x2,?,?))]];
    rewrite H4; apply osup2_mono; eauto with *.
 
    transitivity x3; trivial; apply osup2_incl2; eauto.
-
+ (* case 9. *)
  destruct (H x1 y1); trivial.
  destruct H8.
  destruct (H0 x2 y2); trivial.
@@ -1551,7 +1767,6 @@ destruct H1 as [?|[?|(x1,?,(x2,?,?))]];
 
    rewrite H6; apply osup2_mono; eauto with *.
 Qed.
-
 
 Lemma osup2_proof : forall x, isOrd x -> forall y, isOrd y ->
   isOrd (osup2 x y) /\
@@ -1663,7 +1878,6 @@ split.
 
     rewrite (osup2_ax x y); auto; right; right; eauto with *.
 Qed.
-
 
 Lemma isOrd_osup2 : forall x y,
   isOrd x ->

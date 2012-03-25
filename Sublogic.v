@@ -233,7 +233,7 @@ End BuildConsistentSublogic.
 (***************************************************************************)
 (** * 2.Examples of sublogic modules *)
 
-(** Coq's intuitionistic logic *)
+(** ** Coq's intuitionistic logic *)
 Module CoqSublogic <: ConsistentSublogic.
 Definition Tr P:Prop := P.
 Definition TrI (P:Prop) (p:P) : Tr P := p.
@@ -244,7 +244,7 @@ End CoqSublogic.
 
 Module CoqSublogicThms := BuildConsistentSublogic CoqSublogic.
 
-(** Classical logic through negated translation *)
+(** ** Classical logic through negated translation *)
 Module ClassicSublogic <: ConsistentSublogic.
 Definition Tr (P:Prop) := ~~P.
 Definition TrI (P:Prop) (p:P) : Tr P := fun np => np p.
@@ -261,7 +261,7 @@ Module ClassicSublogicThms.
   Lemma nnpp (P:Prop) : ((P->False)->False) -> Tr P.
 Proof (fun h => h).
 
-  (* excluded-middle: note that P need not be classical, which makes the
+  (** excluded-middle: note that P need not be classical, which makes the
      positive case stronger. *)
   Lemma classic : forall P, Tr(P \/ (Tr P -> False)).
 intros P nem.
@@ -271,7 +271,7 @@ apply nem; left; assumption.
 Qed.
 End ClassicSublogicThms.
 
-(** Friedman's A-translation *)
+(** ** Friedman's A-translation *)
 
 Module ASublogic <: SublogicFamily.
   Definition T:=Prop.
@@ -305,21 +305,22 @@ Lemma atom_isL (P:Prop) : (A->P) -> isL P.
 firstorder.
 Qed.
 
-(* or does not need to be modified *)
+(** or does not need to be modified *)
 Lemma or_isL P Q : isL P \/ isL Q -> isL (P\/Q).
 firstorder.
 Qed.
 Global Hint Resolve or_isL.
 
-(* existential does need to be modified when one of the
+(** existential does need to be modified when one of the
    instances is an L-prop. *)
 Lemma ex_isL_raw T (P:T->Prop):
   (exists x, isL (P x)) -> isL(ex P).
 firstorder.
 Qed.
 
-(* A more usable rule (we can expect the foral x, isL (P x) assumption to be provable
-   automatically), but which requires T to be inhabited. *)
+(** A more usable rule (we can expect the forall x, isL (P x)
+   assumption to be provable automatically), but which requires T to
+   be inhabited. *)
 Lemma ex_isL T (P:T->Prop) :
   T -> (forall x, isL (P x)) -> isL (ex P).
 compute; intros.
@@ -336,7 +337,7 @@ Qed.
 
 End ASublogicThms.
 
-(* Example: if ~~exists x. P(x) is derivable, then so is exists x. P(x) *)
+(** Example: if ~~exists x. P(x) is derivable, then so is exists x. P(x) *)
 Module AtransExample.
 Parameter (T:Type) (P : T->Prop).
 Module nnex. Definition x:=exists x, P x. End nnex.
@@ -356,7 +357,7 @@ assumption.
 Qed.
 End AtransExample.
 
-(** Peirce translation *)
+(** ** Peirce translation *)
 
 Module PeirceTrans <: SublogicFamily.
   Definition T := Prop.
@@ -370,7 +371,19 @@ Module PeirceTrans <: SublogicFamily.
    fun frf => frf (False_ind R).
 End PeirceTrans.
 
-(** Intersection or cartesian product *)
+Module PeirceSublogicThms (A:Aprop) <: SublogicTheory.
+  Module Psl := InstSublogicFamily PeirceTrans A.
+  Import Psl.
+  Notation A := A.x.
+  Include BuildLogic Psl.
+
+Lemma Pconsistency : isL False.
+firstorder.
+Qed.
+
+End PeirceSublogicThms.
+
+(** ** Intersection and cartesian product *)
 
 Module Inter (L:SublogicFamily) <: Sublogic.
   Definition Tr P := forall x, L.Tr x P.

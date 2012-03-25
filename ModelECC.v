@@ -4,6 +4,12 @@ Require Import TypeECC.
 Require Import Models.
 Require Import Max.
 
+(** Model construction for ECC, in the standard style:
+    - syntax first
+    - define the interpretation function
+    - prove the soundness of the interpretation
+ *)
+
 Module MakeModel (M : ECC_Model).
 Import M M.CC.
 
@@ -59,7 +65,7 @@ induction x0; simpl in |- *; intros.
    red in |- *; destruct i; simpl in |- *; auto.
 Qed.
 
-(* thinning *)
+(** thinning *)
 
 Lemma int_lift :
   forall n t k i,
@@ -92,7 +98,7 @@ induction t; simpl in |- *; auto.
    reflexivity.
 Qed.
 
-(* substitution *)
+(** substitution *)
 
 Lemma int_subst :
   forall n t k i,

@@ -2,7 +2,7 @@
 (** General purpose definitions that could make it to the standard library *)
 
 Set Implicit Arguments.
-Require Export Compare_dec.
+Require Export Peano_dec Compare_dec.
 Require Export List.
 Require Export Relations Relation_Operators Transitive_Closure.
 Require Import Wellfounded.
@@ -10,7 +10,22 @@ Require Export Coq.Program.Basics.
 Require Export Setoid Morphisms Morphisms_Prop.
 Export ProperNotations.
 
+Hint Resolve t_step rt_step rt_refl: core.
+Hint Unfold transp: core.
+
 Scheme Acc_indd := Induction for Acc Sort Prop.
+
+
+Definition indexed_relation A A' B (R:B->B->Prop) (f:A->B) (g:A'->B) :=
+  (forall x, exists y, R (f x) (g y)) /\
+  (forall y, exists x, R (f x) (g y)).
+
+Lemma indexed_relation_id : forall A B (R:B->B->Prop) (F F':A->B),
+  (forall x, R (F x) (F' x)) ->
+  indexed_relation R F F'.
+split; intros; eauto.
+Qed.
+
 
 (**********************************************************************************)
 (** Setoid and morphisms stuff *)
