@@ -36,17 +36,17 @@ Qed.
 Definition El T := fst T.
 
 (* Accessing the realizability relation.
-   inSAT t (Red T x), means that t is a realizer of x in type T. It
+   inSAT t (Real T x), means that t is a realizer of x in type T. It
    implicitely requires x \in El T. 
  *)
-Definition Red T x := sSAT (cc_app (snd T) x) .
+Definition Real T x := sSAT (cc_app (snd T) x) .
 
 Instance El_morph : morph1 El.
 Proof fst_morph.
 
-Instance Red_morph : Proper (eq_set==>eq_set==>eqSAT) Red.
+Instance Real_morph : Proper (eq_set==>eq_set==>eqSAT) Real.
 do 3 red; intros.
-unfold Red.
+unfold Real.
 apply sSAT_morph.
 rewrite H; rewrite H0; reflexivity.
 Qed.
@@ -56,12 +56,12 @@ unfold El,mkTY; intros.
 apply fst_def.
 Qed.
 
-Lemma Red_def : forall x X R,
+Lemma Real_def : forall x X R,
   (forall x x', x \in X -> x == x' -> eqSAT (R x) (R x')) ->
   x \in X ->
-  eqSAT (Red (mkTY X R) x) (R x).
+  eqSAT (Real (mkTY X R) x) (R x).
 intros.
-unfold Red, mkTY.
+unfold Real, mkTY.
 rewrite snd_def.
 rewrite cc_beta_eq; auto.
  apply iSAT_id.
@@ -80,7 +80,7 @@ Qed.
  *)
 Definition piSAT A (F:set->set) (f:set->set) :=
   interSAT (fun p:{x|x \in El A} =>
-    prodSAT (Red A (proj1_sig p)) (Red (F (proj1_sig p)) (f (proj1_sig p)))).
+    prodSAT (Real A (proj1_sig p)) (Real (F (proj1_sig p)) (f (proj1_sig p)))).
 
 Lemma piSAT_morph : forall A B F F' f f',
   A == B ->
@@ -92,20 +92,20 @@ apply interSAT_morph_subset; simpl; intros; auto with *.
  rewrite H; reflexivity.
 
  apply prodSAT_morph; auto with *.
-  apply Red_morph; auto with *.
+  apply Real_morph; auto with *.
 
-  apply Red_morph; auto with *.
+  apply Real_morph; auto with *.
 Qed.
 
 Definition prod A F :=
   mkTY (cc_prod (El A) (fun x => El (F x))) (fun f => piSAT A F (cc_app f)).
 
-Lemma Red_prod : forall dom f F,
+Lemma Real_prod : forall dom f F,
     eq_fun (El dom) F F ->
     f \in El (prod dom F) ->
-    eqSAT (Red (prod dom F) f) (piSAT dom F (cc_app f)).
+    eqSAT (Real (prod dom F) f) (piSAT dom F (cc_app f)).
 unfold prod; intros.
-rewrite El_def in H0; rewrite Red_def; trivial.
+rewrite El_def in H0; rewrite Real_def; trivial.
  reflexivity.
 
  do 2 red; intros.
@@ -165,9 +165,9 @@ Lemma El_mkProp : forall S, El (mkProp S) == singl empty.
 unfold mkProp; intros; rewrite El_def; auto with *.
 Qed.
 
-Lemma Red_mkProp S x : x == empty -> eqSAT (Red (mkProp S) x) S.
+Lemma Real_mkProp S x : x == empty -> eqSAT (Real (mkProp S) x) S.
 unfold mkProp; intros.
-rewrite Red_def; auto with *.
+rewrite Real_def; auto with *.
 rewrite H; apply singl_intro.
 Qed.
 
@@ -185,10 +185,10 @@ unfold props; rewrite El_def.
 rewrite replSAT_ax; eauto with *.
 Qed.
 
-  Lemma Red_sort : forall x, x \in El props -> eqSAT (Red props x) snSAT.
+  Lemma Real_sort : forall x, x \in El props -> eqSAT (Real props x) snSAT.
 intros.
 rewrite El_props_def in H; destruct H as (S,H).
-unfold props; rewrite Red_def; auto with *.
+unfold props; rewrite Real_def; auto with *.
 rewrite replSAT_ax; eauto with *.
 Qed.
 
@@ -409,14 +409,14 @@ assert (forall S, inSAT (Lc.App prf (Lc.Abs (Lc.Ref 0))) S).
    rewrite El_props_def.
    exists S; reflexivity.
   split; trivial.
-  rewrite Red_sort; auto.
+  rewrite Real_sort; auto.
   apply Lc.sn_abs; auto.
  assert (H2 := @prod_elim props (int(V.nil props) M) (mkProp S) (fun P=>P) prf (Lc.Abs (Lc.Ref 0))).
  destruct H2; trivial.
   red; auto.
 
   split; trivial.
- rewrite Red_mkProp in H3; trivial.
+ rewrite Real_mkProp in H3; trivial.
  unfold inX, prod in H.
  rewrite El_def in H.
  apply singl_elim.

@@ -11,21 +11,21 @@ Module Lc := Lambda.
 Module Type RealSN_addon (M : CC_Model).
   Import M.
 
-  Parameter Red : X -> X -> SAT.
-  Parameter Red_morph: Proper (eqX ==> eqX ==> eqSAT) Red.
+  Parameter Real : X -> X -> SAT.
+  Parameter Real_morph: Proper (eqX ==> eqX ==> eqSAT) Real.
 
-  Parameter Red_sort : forall P, P \in props -> eqSAT (Red props P) snSAT.
+  Parameter Real_sort : forall P, P \in props -> eqSAT (Real props P) snSAT.
 
   Definition piSAT A F f :=
     interSAT (fun p:{x|x \in A} =>
-      prodSAT (Red A (proj1_sig p)) (Red (F (proj1_sig p)) (f (proj1_sig p)))).
+      prodSAT (Real A (proj1_sig p)) (Real (F (proj1_sig p)) (f (proj1_sig p)))).
 
-  Parameter Red_prod : forall dom f F,
+  Parameter Real_prod : forall dom f F,
     eq_fun dom F F ->
     f \in prod dom F ->
-    eqSAT (Red (prod dom F) f) (piSAT dom F (app f)).
+    eqSAT (Real (prod dom F) f) (piSAT dom F (app f)).
 
-  Existing Instance Red_morph.
+  Existing Instance Real_morph.
 
 (* No empty types (False is inhabited) *)
 
@@ -47,15 +47,15 @@ Import MM.
    of the value and term interpretation requirements.
    [x,t] \real T reads "t is a realizer of x as a value of type T".
  *)
-Notation "[ x , t ] \real A" := (x \in A  /\ inSAT t (Red A x)) (at level 60).
+Notation "[ x , t ] \real A" := (x \in A  /\ inSAT t (Real A x)) (at level 60).
 
 Lemma piSAT_intro : forall A B f t,
   Lc.sn t -> (* if A is empty *)
-  (forall x u, x \in A -> inSAT u (Red A x) -> inSAT (Lc.App t u) (Red (B x) (f x))) ->
+  (forall x u, x \in A -> inSAT u (Real A x) -> inSAT (Lc.App t u) (Real (B x) (f x))) ->
   inSAT t (piSAT A B f).
 unfold piSAT; intros.
 apply interSAT_intro' with (P:=fun x=>x \in A)
-   (F:=fun x => prodSAT (Red A x) (Red (B x) (f x))); trivial; intros.
+   (F:=fun x => prodSAT (Real A x) (Real (B x) (f x))); trivial; intros.
 intros ? ?.
 apply H0; trivial.
 Qed.
@@ -63,8 +63,8 @@ Qed.
 Lemma piSAT_elim : forall A B f x t u,
   inSAT t (piSAT A B f) ->
   x \in A ->
-  inSAT u (Red A x) ->
-  inSAT (Lc.App t u) (Red (B x) (f x)).
+  inSAT u (Real A x) ->
+  inSAT (Lc.App t u) (Real (B x) (f x)).
 intros.
 apply interSAT_elim with (x:=exist (fun x => x \in A) x H0) in H; simpl proj1_sig in H.
 apply H; trivial.
@@ -85,7 +85,7 @@ assert (lam dom f \in prod dom F).
  split; trivial.
  apply varSAT.
 split; trivial.
-rewrite Red_prod; trivial.
+rewrite Real_prod; trivial.
 apply piSAT_intro; intros; trivial.
 rewrite beta_eq; trivial.
 apply H2; auto.
@@ -105,7 +105,7 @@ apply prod_intro_sn; intros; trivial.
  destruct H2 with (1:=H3).
  split; trivial.
  destruct H3.
- apply prodSAT_elim with (Red dom x); trivial.
+ apply prodSAT_elim with (Real dom x); trivial.
  apply prodSAT_intro; intros.
  apply H2; auto.
 Qed.
@@ -119,7 +119,7 @@ destruct 2; destruct 1.
 split.
  apply prod_elim with (2:=H0); trivial.
 
- rewrite Red_prod in H1; trivial.
+ rewrite Real_prod in H1; trivial.
  apply interSAT_elim with (x:=exist (fun x => x \in dom) x H2) in H1; simpl proj1_sig in H1.
  apply prodSAT_elim with (1:=H1); trivial.
 Qed.
@@ -226,7 +226,7 @@ exists List.nil; exists prop; simpl prod_list.
   apply impredicative_prod; intros; auto.
   red; auto.
  split; trivial.
- simpl; rewrite Red_sort; trivial.
+ simpl; rewrite Real_sort; trivial.
  apply Lc.sn_K.
 Qed.
 
@@ -825,7 +825,7 @@ destruct is_srt; subst s2; simpl in *.
    apply ty_U in H1.
    destruct H1 as (_,(?,_)); trivial.
  split; simpl; trivial.
- rewrite Red_sort; trivial.
+ rewrite Real_sort; trivial.
  apply typs_sn with (1:=ty_T) (2:=is_val).
 Qed.
 

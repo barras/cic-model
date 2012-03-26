@@ -19,9 +19,9 @@ Parameter eqT : foterm -> foterm -> Prop.
 
 Import Sat.
 
-Lemma inSAT_Red : forall x t S,
+Lemma inSAT_Real : forall x t S,
   inSAT t S ->
-  inSAT t (Red (mkTY x S)).
+  inSAT t (Real (mkTY x S)).
 intros.
 destruct S; simpl in *.
 split.
@@ -40,8 +40,8 @@ split.
    exists t; auto with *.
 Qed.
 
-Lemma inSAT_Red_rev : forall x t S,
-  inSAT t (Red (mkTY x S)) ->
+Lemma inSAT_Real_rev : forall x t S,
+  inSAT t (Real (mkTY x S)) ->
   inSAT t S.
 intros.
 destruct S; simpl in *.
@@ -155,7 +155,7 @@ split.
   apply singl_intro.
 
   simpl int.
-  apply inSAT_Red.
+  apply inSAT_Real.
   apply ZE_inSAT.
 Qed.
 
@@ -174,7 +174,7 @@ split.
 
   simpl int.
   unfold prod, sn_prod.
-  apply inSAT_Red.
+  apply inSAT_Real.
   unfold piSAT.
   simpl tm.
   unfold SU.
@@ -184,7 +184,7 @@ split.
    exists empty.
    unfold El, mkTY; rewrite ZFpairs.fst_def.
    apply singl_intro.
-  apply inSAT_Red.
+  apply inSAT_Real.
 unfold natSAT.
 apply interSAT_intro; intros.
  exact snSAT.
@@ -199,7 +199,7 @@ do 3 rewrite Lambda.lift0.
 apply prodSAT_elim with (1:=H2).
 apply prodSAT_elim with (prodSAT x0 x0); trivial.
 apply prodSAT_elim with (2:=H1).
-apply inSAT_Red_rev in H0.
+apply inSAT_Real_rev in H0.
 apply interSAT_elim with (1:=H0).
 Qed.
 
@@ -247,7 +247,7 @@ split.
  unfold inX, El, mkTY in n_ty; rewrite ZFpairs.fst_def in n_ty.
  apply singl_elim in n_ty.
  simpl int in H.
- apply inSAT_Red_rev in H.
+ apply inSAT_Real_rev in H.
  specialize (H1 _ _ H3).
  destruct H1 as (_,(f_ty,H1)). 
  simpl in f_ty.
@@ -255,37 +255,37 @@ split.
  destruct H2 as (_,(_,H2)). 
  simpl int in H2.
  unfold prod, sn_prod in H2.
- apply inSAT_Red_rev in H2.
+ apply inSAT_Real_rev in H2.
  unfold piSAT at 1 in H2.
  destruct H.
- specialize (H4 (Red (app (int i P) (int i n)))).
+ specialize (H4 (Real (app (int i P) (int i n)))).
  simpl int.
  apply prodSAT_elim with
-   (prodSAT (Red (app (int i P) (int i n))) (Red (app (int i P) (int i n)))).
- apply prodSAT_elim with (Red (app (int i P) (int i n))).
+   (prodSAT (Real (app (int i P) (int i n))) (Real (app (int i P) (int i n)))).
+ apply prodSAT_elim with (Real (app (int i P) (int i n))).
   trivial.
 
   revert H1; apply inSAT_morph; auto.
-  apply Red_morph.
+  apply Real_morph.
   rewrite n_ty; reflexivity.
 
  apply prodSAT_elim with natSAT.
  2:apply ZE_inSAT.
  revert H2; apply prodSAT_mono.
   red; red; intros.
-  apply inSAT_Red; trivial.
+  apply inSAT_Real; trivial.
 
   red; intros.
   generalize (fun h => interSAT_elim H2 (exist _ (int i n) h)); clear H2; intro H2.
   simpl proj1_sig in H2.
   lapply H2.
    clear H2; intros H2.
-   apply inSAT_Red_rev in H2.
+   apply inSAT_Real_rev in H2.
    unfold piSAT in H2.
    revert H2; apply prodSAT_mono.
     red; red; intros u.
     apply inSAT_morph; trivial.
-    apply Red_morph.
+    apply Real_morph.
     rewrite int_cons_lift_eq; auto with *.
 
     red; intros.
@@ -293,7 +293,7 @@ split.
     simpl proj1_sig in H2.
     lapply H2.
      apply inSAT_morph; auto.
-     apply Red_morph.
+     apply Real_morph.
      rewrite split_lift.
      do 2 rewrite int_cons_lift_eq.
      rewrite beta_eq; auto with *.

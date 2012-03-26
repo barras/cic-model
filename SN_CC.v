@@ -14,14 +14,14 @@ Module CCSN.
 
 Definition mkTY x S := couple x (iSAT S).
 Definition El T := fst T.
-Definition Red T := sSAT (snd T) .
+Definition Real T := sSAT (snd T) .
 
 Definition piSAT A (F:set->SAT) :=
-  prodSAT (Red A) (interSAT (fun p:{y|y \in El A} => F (proj1_sig p))).
+  prodSAT (Real A) (interSAT (fun p:{y|y \in El A} => F (proj1_sig p))).
 
 Definition sn_prod A F :=
   mkTY (cc_prod (El A) (fun x => El (F x)))
-       (piSAT A (fun x => Red (F x))).
+       (piSAT A (fun x => Real (F x))).
 
 Definition sn_lam A F := cc_lam (El A) F.
 
@@ -103,7 +103,7 @@ unfold sn_props, mkTY, El; intros.
 rewrite fst_def.
 rewrite replSAT_ax; trivial.
 unfold sn_prod, mkTY.
-exists (piSAT dom (fun x : set => Red (F x))).
+exists (piSAT dom (fun x : set => Real (F x))).
 apply couple_morph; try reflexivity.
 apply cc_impredicative_prod_non_empty; intros.
  do 2 red; intros.
@@ -195,7 +195,7 @@ apply couple_morph.
   apply fst_morph; apply H0; trivial.
 
  apply iSAT_morph.
- unfold piSAT, Red.
+ unfold piSAT, Real.
  apply prodSAT_morph.
   apply sSAT_morph; apply snd_morph; trivial.
 
@@ -245,26 +245,26 @@ Import SN_CC_Model.
 
 Module SN_CC_addon.
 
-  Definition Red : X -> SAT := Red.
+  Definition Real : X -> SAT := Real.
 
-  Lemma Red_morph : Proper (eqX ==> eqSAT) Red.
+  Lemma Real_morph : Proper (eqX ==> eqSAT) Real.
 do 2 red; intros.
 apply sSAT_morph.
 apply snd_morph; trivial.
 Qed.
 
-  Lemma Red_sort : eqSAT (Red props) snSAT.
-unfold Red, CCSN.Red, props, sn_props, mkTY.
+  Lemma Real_sort : eqSAT (Real props) snSAT.
+unfold Real, CCSN.Real, props, sn_props, mkTY.
 rewrite snd_def.
 rewrite iSAT_id.
 reflexivity.
 Qed.
 
-  Lemma Red_prod : forall A B,
-    eqSAT (Red (prod A B))
-     (prodSAT (Red A)
-        (interSAT (fun p:{y|y\in A} => Red (B (proj1_sig p))))).
-unfold Red, CCSN.Red, prod, sn_prod, piSAT, mkTY; intros.
+  Lemma Real_prod : forall A B,
+    eqSAT (Real (prod A B))
+     (prodSAT (Real A)
+        (interSAT (fun p:{y|y\in A} => Real (B (proj1_sig p))))).
+unfold Real, CCSN.Real, prod, sn_prod, piSAT, mkTY; intros.
 rewrite snd_def.
 rewrite iSAT_id.
 reflexivity.

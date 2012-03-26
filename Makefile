@@ -21,7 +21,7 @@ all:: coq
 
 coq:: $(ALLVO)
 
-DOCV=$(shell sed -n -e "s|.*HREF=\"\([^\./\"]\+\)\.html\".*|\1.v|p" sets.html)
+DOCV=$(shell sed -n -e "s|.*HREF=\"\([^\./\"]\+\)\.html\".*|\1.v|p" template/html/sets.html)
 DOCVO=$(DOCV:.v=.vo)
 
 .PHONY: html

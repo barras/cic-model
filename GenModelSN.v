@@ -6,24 +6,25 @@ Require ObjectSN.
 
 Module Lc := Lambda.
 
-(** Equiping the model with saturated sets *)
+(** Extending the CC_Model signature to form an abstract strong
+    normalization model for CC. Types are equipped with saturated sets *)
 Module Type SN_addon (M : CC_Model).
   Import M.
 
-  Parameter Red : X -> SAT.
-  Parameter Red_morph : Proper (eqX ==> eqSAT) Red.
+  Parameter Real : X -> SAT.
+  Parameter Real_morph : Proper (eqX ==> eqSAT) Real.
 
-  Parameter Red_sort : eqSAT (Red props) snSAT.
+  Parameter Real_sort : eqSAT (Real props) snSAT.
 
-  Parameter Red_prod : forall A B,
-    eqSAT (Red (prod A B))
-     (prodSAT (Red A)
-        (interSAT (fun p:{y|y\in A} => Red (B (proj1_sig p))))).
+  Parameter Real_prod : forall A B,
+    eqSAT (Real (prod A B))
+     (prodSAT (Real A)
+        (interSAT (fun p:{y|y\in A} => Real (B (proj1_sig p))))).
 
   Parameter daemon : X.
   Parameter daemon_false : daemon \in prod props (fun P => P).
 
-  Existing Instance Red_morph.
+  Existing Instance Real_morph.
 
 End SN_addon.
 
@@ -151,7 +152,7 @@ Definition in_int (i:val) (j:Lc.intt) (M T:trm) :=
   M <> kind /\
   match T with
   | None => non_empty M /\ Lc.sn (tm j M)
-  | _ => int i M \in int i T /\ inSAT (tm j M) (Red (int i T))
+  | _ => int i M \in int i T /\ inSAT (tm j M) (Real (int i T))
   end.
 
 Instance in_int_morph : Proper
@@ -172,14 +173,14 @@ Lemma in_int_not_kind : forall i j M T,
   in_int i j M T ->
   T <> kind ->
   int i M \in int i T /\
-  inSAT (tm j M) (Red (int i T)).
+  inSAT (tm j M) (Real (int i T)).
 destruct T; intros in_T not_tops;[|elim not_tops; reflexivity].
 destruct in_T as (mem,sat); trivial.
 Qed.
 
 Lemma in_int_intro : forall i j M T,
   int i M \in int i T ->
-  inSAT (tm j M) (Red (int i T)) ->
+  inSAT (tm j M) (Real (int i T)) ->
   M <> kind ->
   T <> kind ->
   in_int i j M T.
@@ -191,7 +192,7 @@ Qed.
 
 Lemma in_int_var0 : forall i j x t T,
   x \in int i T ->
-  inSAT t (Red (int i T)) ->
+  inSAT t (Real (int i T)) ->
   T <> kind ->
   in_int (V.cons x i) (I.cons t j) (Ref 0) (lift 1 T).
 intros.
@@ -233,7 +234,7 @@ Definition val_ok (e:env) (i:val) (j:Lc.intt) :=
 Lemma vcons_add_var : forall e T i j x t,
   val_ok e i j ->
   x \in int i T ->
-  inSAT t (Red (int i T)) ->
+  inSAT t (Real (int i T)) ->
   T <> kind ->
   val_ok (T::e) (V.cons x i) (I.cons t j).
 unfold val_ok; simpl; intros.
@@ -468,7 +469,7 @@ destruct ty_v.
 apply in_int_not_kind in ty_u; try discriminate.
 destruct ty_u.
 simpl in *.
-rewrite Red_prod in H2.
+rewrite Real_prod in H2.
 apply prod_elim with (x:=int i v) in H1; trivial.
  apply in_int_intro; simpl; trivial; try discriminate.
   rewrite <- int_subst_eq; trivial.
@@ -507,12 +508,12 @@ apply in_int_intro; simpl; try discriminate.
   apply in_int_not_kind in is_val; trivial.
   destruct is_val; trivial.
 
- rewrite Red_prod.
+ rewrite Real_prod.
  destruct (typs_non_empty ty_T is_val) as (wit,in_T).
  apply KSAT_intro.
   destruct ty_T as [ty_T|ty_T]; apply ty_T in is_val;
     destruct is_val as (_,(_,satT)); simpl in satT; trivial.
-  rewrite Red_sort in satT; trivial.
+  rewrite Real_sort in satT; trivial.
 
   apply prodSAT_intro; intros.
   apply interSAT_intro; intros.
@@ -586,7 +587,7 @@ split;[discriminate|destruct is_srt; subst s2; split;simpl].
 
  (* sat *)
  destruct in_U as (_,(_,satU)).
- rewrite Red_sort in satU|-*; simpl.
+ rewrite Real_sort in satU|-*; simpl.
  rewrite tm_subst_cons in satU.
  apply Lc.sn_subst in satU.
  apply KSAT_intro with (A:=snSAT); auto.

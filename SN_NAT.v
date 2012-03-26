@@ -1,15 +1,12 @@
 
-(* Nat *)
-Set Implicit Arguments.
-
 (** In this file, we build a strong normalization model of the
     Calculus of Constructions extended with natural numbers and
     the usual recursor.
  *)
 
-Require Import ZF ZFcoc ZFind_nat.
-
+Set Implicit Arguments.
 Require Import basic Can Sat SATnat SN_CC_Real.
+Require Import ZF ZFcoc ZFind_nat.
 Module Lc:=Lambda.
 Import CCSN SN.
 
@@ -49,27 +46,27 @@ Lemma ElNat_eq i : El (int i Nat) == NAT.
 simpl; apply El_def.
 Qed.
 
-Lemma RedNat_eq i n :
+Lemma RealNat_eq i n :
   n \in NAT ->
-  eqSAT (Red (int i Nat) n) (cNAT n).
+  eqSAT (Real (int i Nat) n) (cNAT n).
 intros.
 simpl int.
-rewrite Red_def; intros; trivial.
+rewrite Real_def; intros; trivial.
  reflexivity.
 
  apply interSAT_morph_subset; simpl; intros; auto with *.
  intros; apply fam_mrph; trivial.
 Qed.
 
-  Notation "[ x , t ] \real A" := (x \in El A  /\ inSAT t (Red A x)) (at level 60).
+  Notation "[ x , t ] \real A" := (x \in El A  /\ inSAT t (Real A x)) (at level 60).
 
 Lemma realNat_def : forall i n t,
   [n,t] \real int i Nat <-> n \in NAT /\ inSAT t (cNAT n).
 intros.
 rewrite ElNat_eq.
 split; destruct 1; split; trivial.
- rewrite RedNat_eq in H0; trivial.
- rewrite RedNat_eq; trivial.
+ rewrite RealNat_eq in H0; trivial.
+ rewrite RealNat_eq; trivial.
 Qed.
 
 (** Typing rules of constructors *)
@@ -110,7 +107,7 @@ apply prod_intro_sn.
 
   rewrite int_cons_lift_eq.
   rewrite ElNat_eq in H.
-  rewrite RedNat_eq in H0|-*; auto. 
+  rewrite RealNat_eq in H0|-*; auto. 
    apply cNAT_SU; trivial.
 
    apply SUCC_typ; trivial.
@@ -421,7 +418,7 @@ split.
  simpl tm.
  destruct H as (H,rn).
  unfold inX in H; rewrite ElNat_eq in H.
- rewrite RedNat_eq in rn; trivial.
+ rewrite RealNat_eq in rn; trivial.
  rewrite cNAT_eq in rn.
  rewrite fNAT_def in rn.
  destruct H0 as (_,rf).
@@ -429,16 +426,16 @@ split.
  unfold inX,prod in ty; rewrite El_def in ty.
  assert (rn' := fun F Fm => rn (mkFam F Fm)).
  clear rn; simpl (fam (mkFam _ _)) in rn'.
- simpl Red.
- apply rn' with (F:=fun x => Red (app (int i P) x) (NATREC (int i f) gg x)); intros.
-  apply Red_morph.
+ simpl Real.
+ apply rn' with (F:=fun x => Real (app (int i P) x) (NATREC (int i f) gg x)); intros.
+  apply Real_morph.
    rewrite H1; reflexivity.
 
    apply NATREC_morph; auto with *.
 
   rewrite NATREC_0; trivial.
 
-  rewrite Red_prod in rg.
+  rewrite Real_prod in rg.
    rewrite piNAT_ax.
     split; intros.
     apply sat_sn in rg; trivial.
@@ -446,9 +443,9 @@ split.
    intros m satm.
    apply piSAT_elim with (x:=n0)(u:=m) in rg.
    2:unfold inX;rewrite ElNat_eq; trivial.
-   2:rewrite RedNat_eq; trivial.
+   2:rewrite RealNat_eq; trivial.
    rewrite intProd_eq in rg.
-   rewrite Red_prod in rg.
+   rewrite Real_prod in rg.
     intros y saty.
     apply piSAT_elim with (x:=NATREC (int i f) gg n0)(u:=y) in rg.
      simpl int in rg.
