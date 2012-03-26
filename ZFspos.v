@@ -143,8 +143,8 @@ apply TI_stable.
 Qed.
 
   Lemma INDi_mono : forall p o o',
-    isPositive p -> isOrd o -> isOrd o' -> o \incl o' ->
-    INDi p o \incl INDi p o'.
+    isPositive p -> isOrd o -> isOrd o' -> o ⊆ o' ->
+    INDi p o ⊆ INDi p o'.
 intros.
 apply TI_mono; auto with *.
 apply H.
@@ -169,7 +169,7 @@ Qed.
   Let Wff_mono : Proper (incl_set ==> incl_set) Wff.
 apply Wf_mono; trivial.
 Qed.
-  Let Wff_typ : forall X, X \incl Wd -> Wff X \incl Wd.
+  Let Wff_typ : forall X, X ⊆ Wd -> Wff X ⊆ Wd.
 intros.
 apply Wf_typ; trivial.
 Qed.
@@ -233,7 +233,7 @@ Qed.
 
   Lemma INDi_IND : forall o,
     isOrd o ->
-    INDi p o \incl IND.
+    INDi p o ⊆ IND.
 induction 1 using isOrd_ind; intros.
 unfold INDi.
 rewrite TI_eq; auto.
@@ -324,7 +324,7 @@ Definition trad_sum f g :=
 Lemma cc_prod_sum_case_commut A1 A2 B1 B2 Y x x':
   ext_fun A1 B1 ->
   ext_fun A2 B2 ->
-  x \in sum A1 A2 ->
+  x ∈ sum A1 A2 ->
   x == x' ->
   sum_case (fun x => cc_arr (B1 x) Y) (fun x => cc_arr (B2 x) Y) x ==
   cc_arr (sum_case B1 B2 x') Y.
@@ -494,7 +494,7 @@ Lemma iso_arg_norec : forall P X A B Y f,
   ext_fun P A ->
   ext_fun2 P A B ->
   ext_fun2 P X f ->
-  (forall x, x \in P -> iso_fun (X x) (W_F (A x) (B x) Y) (f x)) ->
+  (forall x, x ∈ P -> iso_fun (X x) (W_F (A x) (B x) Y) (f x)) ->
   iso_fun (sigma P X)
    (W_F (sigma P A) (fun p => B (fst p) (snd p)) Y)
    (trad_sigma f).
@@ -522,7 +522,7 @@ Qed.
 
 Lemma isPos_consnonrec A F :
   Proper (eq_set ==> eqpos) F ->
-  (forall x, x \in A -> isPositive (F x)) ->
+  (forall x, x ∈ A -> isPositive (F x)) ->
   isPositive (pos_norec A F).
 constructor; simpl.
  do 2 red; intros; apply sigma_mono; intros; auto with *.
@@ -558,7 +558,7 @@ Lemma iso_param : forall P X A B Y f,
   ext_fun P A ->
   ext_fun2 P A B ->
   ext_fun2 P X f ->
-  (forall x, x \in P -> iso_fun (X x) (W_F (A x) (B x) Y) (f x)) ->
+  (forall x, x ∈ P -> iso_fun (X x) (W_F (A x) (B x) Y) (f x)) ->
   iso_fun (cc_prod P X)
    (W_F (cc_prod P A) (fun p => sigma P (fun x => B x (cc_app p x))) Y)
    (trad_cc_prod P B f).
@@ -630,7 +630,7 @@ Definition pos_param A F :=
 
 Lemma isPos_param A F :
   Proper (eq_set ==> eqpos) F ->
-  (forall x, x \in A -> isPositive (F x)) ->
+  (forall x, x ∈ A -> isPositive (F x)) ->
   isPositive (pos_param A F).
 unfold pos_param; constructor; simpl.
  do 2 red; intros; apply cc_prod_covariant; intros; auto with *.
@@ -659,9 +659,9 @@ Section InductiveUniverse.
 
   Variable U : set.
   Hypothesis Ugrot : grot_univ U.
-  Hypothesis Unontriv : omega \in U.
+  Hypothesis Unontriv : omega ∈ U.
 
-  Let Unonmt : empty \in U.
+  Let Unonmt : empty ∈ U.
 apply G_trans with omega; trivial.
 apply zero_omega.
 Qed.
@@ -671,16 +671,16 @@ Qed.
      We also need the invariant that w1 and w2 also belong to the universe U
    *)
   Record pos_universe p := {
-    G_pos_oper : forall X, X \in U -> pos_oper p X \in U;
-    G_w1 : w1 p \in U;
-    G_w2 : forall x, x \in w1 p -> w2 p x \in U
+    G_pos_oper : forall X, X ∈ U -> pos_oper p X ∈ U;
+    G_w1 : w1 p ∈ U;
+    G_w2 : forall x, x ∈ w1 p -> w2 p x ∈ U
   }.
 
   Variable p : positive.
   Hypothesis p_ok : isPositive p.
   Hypothesis p_univ : pos_universe p.
 
-  Lemma G_IND : IND p \in U.
+  Lemma G_IND : IND p ∈ U.
 unfold IND, INDi.
 apply G_TI; trivial.
  apply Fmono_morph; apply p_ok.
@@ -696,7 +696,7 @@ apply G_TI; trivial.
  apply p_univ.
 Qed.
 
-  Lemma G_INDi o : isOrd o -> INDi p o \in U.
+  Lemma G_INDi o : isOrd o -> INDi p o ∈ U.
 intros.
 apply G_incl with (IND p); trivial.
  apply G_IND; trivial.
@@ -704,7 +704,7 @@ apply G_incl with (IND p); trivial.
  apply INDi_IND; trivial.
 Qed.
 
-  Lemma pos_univ_cst A : A \in U -> pos_universe (pos_cst A).
+  Lemma pos_univ_cst A : A ∈ U -> pos_universe (pos_cst A).
 split; simpl; intros; trivial.
 Qed.
 
@@ -747,7 +747,7 @@ Qed.
 
   Lemma pos_univ_norec A p' :
     Proper (eq_set==>eqpos) p' ->
-    A \in U -> (forall x, x \in A -> pos_universe (p' x)) ->
+    A ∈ U -> (forall x, x ∈ A -> pos_universe (p' x)) ->
        pos_universe (pos_norec A p').
 split; simpl; intros.
  apply G_sigma; intros; trivial.
@@ -770,7 +770,7 @@ Qed.
 
   Lemma pos_univ_param A p' :
     Proper (eq_set==>eqpos) p' ->
-    A \in U -> (forall x, x \in A -> pos_universe (p' x)) ->
+    A ∈ U -> (forall x, x ∈ A -> pos_universe (p' x)) ->
        pos_universe (pos_param A p').
 split; simpl; intros.
  apply G_cc_prod; intros; trivial.

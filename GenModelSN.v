@@ -19,10 +19,10 @@ Module Type SN_addon (M : CC_Model).
   Parameter Real_prod : forall A B,
     eqSAT (Real (prod A B))
      (prodSAT (Real A)
-        (interSAT (fun p:{y|y\in A} => Real (B (proj1_sig p))))).
+        (interSAT (fun p:{y|y∈ A} => Real (B (proj1_sig p))))).
 
   Parameter daemon : X.
-  Parameter daemon_false : daemon \in prod props (fun P => P).
+  Parameter daemon_false : daemon ∈ prod props (fun P => P).
 
   Existing Instance Real_morph.
 
@@ -62,9 +62,9 @@ apply lam_ext; intros.
 Qed.
 
 Lemma wit_prod : forall x U,
-  (forall i, x \in int i U) ->
+  (forall i, x ∈ int i U) ->
   forall e i,
-  cst_fun i e x \in int i (prod_list e U).
+  cst_fun i e x ∈ int i (prod_list e U).
 induction e; simpl; intros; auto.
 apply prod_intro; intros; auto.
  red; intros.
@@ -79,7 +79,7 @@ Qed.
    This would allow kind variables. *)
 Definition non_empty T :=
   exists e, exists2 U, eq_trm T (prod_list e U) &
-    exists x, forall i, x \in int i U.
+    exists x, forall i, x ∈ int i U.
 
 Instance non_empty_morph : Proper (eq_trm ==> iff) non_empty.
 unfold non_empty; do 2 red; intros.
@@ -109,7 +109,7 @@ Qed.
 
 Lemma non_empty_witness : forall i T,
   non_empty T ->
-  exists x, x \in int i T.
+  exists x, x ∈ int i T.
 intros.
 destruct H as (e,(U,eq_U,(wit,in_U))).
 exists (cst_fun i e wit).
@@ -152,7 +152,7 @@ Definition in_int (i:val) (j:Lc.intt) (M T:trm) :=
   M <> kind /\
   match T with
   | None => non_empty M /\ Lc.sn (tm j M)
-  | _ => int i M \in int i T /\ inSAT (tm j M) (Real (int i T))
+  | _ => int i M ∈ int i T /\ inSAT (tm j M) (Real (int i T))
   end.
 
 Instance in_int_morph : Proper
@@ -172,14 +172,14 @@ Qed.
 Lemma in_int_not_kind : forall i j M T,
   in_int i j M T ->
   T <> kind ->
-  int i M \in int i T /\
+  int i M ∈ int i T /\
   inSAT (tm j M) (Real (int i T)).
 destruct T; intros in_T not_tops;[|elim not_tops; reflexivity].
 destruct in_T as (mem,sat); trivial.
 Qed.
 
 Lemma in_int_intro : forall i j M T,
-  int i M \in int i T ->
+  int i M ∈ int i T ->
   inSAT (tm j M) (Real (int i T)) ->
   M <> kind ->
   T <> kind ->
@@ -191,7 +191,7 @@ Qed.
 
 
 Lemma in_int_var0 : forall i j x t T,
-  x \in int i T ->
+  x ∈ int i T ->
   inSAT t (Real (int i T)) ->
   T <> kind ->
   in_int (V.cons x i) (I.cons t j) (Ref 0) (lift 1 T).
@@ -233,7 +233,7 @@ Definition val_ok (e:env) (i:val) (j:Lc.intt) :=
 
 Lemma vcons_add_var : forall e T i j x t,
   val_ok e i j ->
-  x \in int i T ->
+  x ∈ int i T ->
   inSAT t (Real (int i T)) ->
   T <> kind ->
   val_ok (T::e) (V.cons x i) (I.cons t j).
@@ -246,7 +246,7 @@ destruct n; simpl in *.
 Qed.
 
 Lemma add_var_eq_fun : forall T U U' i,
-  (forall x, x \in int i T -> int (V.cons x i) U == int (V.cons x i) U') -> 
+  (forall x, x ∈ int i T -> int (V.cons x i) U == int (V.cons x i) U') -> 
   eq_fun (int i T)
     (fun x => int (V.cons x i) U)
     (fun x => int (V.cons x i) U').
@@ -257,7 +257,7 @@ Qed.
 
 Lemma vcons_add_var0 : forall e T i j x,
   val_ok e i j ->
-  x \in int i T ->
+  x ∈ int i T ->
   T <> kind ->
   val_ok (T::e) (V.cons x i) (I.cons daimon j).
 intros.
@@ -321,7 +321,7 @@ Qed.
 Lemma typs_non_empty : forall e T i j,
   typs e T ->
   val_ok e i j ->
-  exists x, x \in int i T.
+  exists x, x ∈ int i T.
 intros.
 destruct H.
  apply H in H0.
@@ -427,7 +427,7 @@ unfold eq_typ, typ, App, Abs; simpl; intros.
 assert (eq_fun (int i T)
   (fun x => int (V.cons x i) M) (fun x => int (V.cons x i) M)).
  apply add_var_eq_fun with (T:=T); intros; trivial; reflexivity.
-assert (int i N \in int i T).
+assert (int i N ∈ int i T).
  apply H1 in H3.
  apply in_int_not_kind in H3; trivial.
  destruct H3; trivial.
@@ -477,7 +477,7 @@ apply prod_elim with (x:=int i v) in H1; trivial.
   rewrite <- int_subst_eq.
   apply prodSAT_elim with (v:=tm j v) in H2; trivial.
   apply interSAT_elim with
-   (x:=exist (fun z=>z\in int i V) (int i v) H) in H2; trivial.
+   (x:=exist (fun z=>z∈ int i V) (int i v) H) in H2; trivial.
 
   destruct Ur as [Ur|]; simpl; try discriminate; trivial.
 

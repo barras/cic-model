@@ -5,7 +5,7 @@ Parameter repl1 : forall (x:set) (F:{y|in_set y x}->set), set.
 
 Parameter repl1_ax : forall x F z,
   (forall z z', proj1_sig z == proj1_sig z' -> F z == F z') ->
-  (z \in repl1 x F <-> exists y, z == F y).
+  (z ∈ repl1 x F <-> exists y, z == F y).
 
 Parameter repl1_morph : forall x y F G,
   x == y ->
@@ -22,9 +22,9 @@ Parameter repl1_morph : forall x y F G,
 (** Relation is required to be functional only on A *)
 Definition rep_bnd A R :=
   Proper (eq_set ==> eq_set ==> iff) R ->
-  (forall x, x \in A -> exists y, R x y) ->
-  (forall x y y', x \in A -> R x y -> R x y' -> y == y') ->
-  exists B, forall y, (y \in B <-> exists x, x \in A /\ R x y).
+  (forall x, x ∈ A -> exists y, R x y) ->
+  (forall x y y', x ∈ A -> R x y -> R x y' -> y == y') ->
+  exists B, forall y, (y ∈ B <-> exists x, x ∈ A /\ R x y).
 
 (** Weaker statement (the constraint on R is tighter): the
     relation should be functional on the full class of sets. *)
@@ -32,7 +32,7 @@ Definition rep_ubnd A R :=
   Proper (eq_set ==> eq_set ==> iff) R ->
   (forall x, exists y, R x y) ->
   (forall x y y', R x y -> R x y' -> y == y') ->
-  exists B, forall y, (y \in B <-> exists x, x \in A /\ R x y).
+  exists B, forall y, (y ∈ B <-> exists x, x ∈ A /\ R x y).
 
 (** The bounded version is stronger. *)
 Lemma rep_bnd_ubnd : forall A R, rep_bnd A R -> rep_ubnd A R.
@@ -44,11 +44,11 @@ Qed.
    "decided" (in Prop), either because we are in classical logic, or
    because it can be decided. *)
 Lemma rep_ubnd_bnd_dec :
-  forall A, (forall x, x \in A \/ ~ x \in A) ->
+  forall A, (forall x, x ∈ A \/ ~ x ∈ A) ->
   (forall R, rep_ubnd A R) -> (forall R, rep_bnd A R).
 red; intros.
-destruct (H0 (fun x y => (x \in A /\ R x y) \/
-                         (~ x \in A /\ y == empty))).
+destruct (H0 (fun x y => (x ∈ A /\ R x y) \/
+                         (~ x ∈ A /\ y == empty))).
  do 3 red; intros.
  rewrite H4; rewrite H5; reflexivity.
 
@@ -95,8 +95,8 @@ Qed.
 Definition rep_gen A R :=
   Proper (eq_set ==> eq_set ==> iff) R ->
   exists B, forall y,
-    (y \in B <->
-     exists x, x \in A /\ R x y /\ (forall y', R x y' -> y==y')).
+    (y ∈ B <->
+     exists x, x ∈ A /\ R x y /\ (forall y', R x y' -> y==y')).
 
 Lemma rep_bnd_gen :
   (forall A R, rep_bnd A R) <-> (forall A R, rep_gen A R).
@@ -210,14 +210,14 @@ Qed.
 (** The bounded version *)
 Definition coll_bnd A R :=
   Proper (eq_set ==> eq_set ==> iff) R ->
-  (forall x, x \in A -> exists y, R x y) ->
-  exists B, forall x, x \in A -> exists y, y \in B /\ R x y.
+  (forall x, x ∈ A -> exists y, R x y) ->
+  exists B, forall x, x ∈ A -> exists y, y ∈ B /\ R x y.
 
 (** The unbounded version *)
 Definition coll_ubnd A R :=
   Proper (eq_set ==> eq_set ==> iff) R ->
   (forall x, exists y, R x y) ->
-  exists B, forall x, x \in A -> exists y, y \in B /\ R x y.
+  exists B, forall x, x ∈ A -> exists y, y ∈ B /\ R x y.
 
 (** The same relationship between these statements hold for collection: *)
 Lemma coll_bnd_ubnd : forall A R, coll_bnd A R -> coll_ubnd A R.
@@ -226,10 +226,10 @@ apply H; trivial.
 Qed.
 
 Lemma coll_ubnd_bnd_dec :
-  forall A, (forall x, x \in A \/ ~ x \in A) ->
+  forall A, (forall x, x ∈ A \/ ~ x ∈ A) ->
   (forall R, coll_ubnd A R) -> (forall R, coll_bnd A R).
 red; intros.
-destruct (H0 (fun x y => R x y \/ (~ x \in A /\ y == empty))).
+destruct (H0 (fun x y => R x y \/ (~ x ∈ A /\ y == empty))).
  do 3 red; intros.
  rewrite H3; rewrite H4; reflexivity.
 
@@ -253,7 +253,7 @@ Qed.
 (** The "general" version, equivalent to the bounded one. *)
 Definition coll_gen A R :=
   Proper (eq_set ==> eq_set ==> iff) R ->
-  exists B, forall x, x \in A -> (exists y, R x y) -> exists y, y \in B /\ R x y.
+  exists B, forall x, x ∈ A -> (exists y, R x y) -> exists y, y ∈ B /\ R x y.
 
 Lemma coll_bnd_gen :
   (forall A R, coll_bnd A R) <-> (forall A R, coll_gen A R).
@@ -280,7 +280,7 @@ Qed.
 Lemma coll_repl_bnd : forall A R, coll_bnd A R -> rep_bnd A R.
 red; intros.
 destruct H; auto.
-exists (subset x (fun x' => exists x, x \in A /\ R x x')); intros.
+exists (subset x (fun x' => exists x, x ∈ A /\ R x x')); intros.
 split; intros.
  specialize subset_elim2 with (1:=H3); intros.
  destruct H4.
@@ -302,7 +302,7 @@ Qed.
 Lemma coll_repl_ubnd : forall A R, coll_ubnd A R -> rep_ubnd A R.
 red; intros.
 destruct H; auto.
-exists (subset x (fun x' => exists x, x \in A /\ R x x')); intros.
+exists (subset x (fun x' => exists x, x ∈ A /\ R x x')); intros.
 split; intros.
  specialize subset_elim2 with (1:=H3); intros.
  destruct H4.
@@ -330,10 +330,10 @@ Instance rk_morph : morph1 rk.
 Admitted.
 
 Parameter rk_def : forall x z,
-  z \in rk x <-> exists y, y \in x /\ z \in power (rk y).
+  z ∈ rk x <-> exists y, y ∈ x /\ z ∈ power (rk y).
 
 Lemma rk_trans : forall x y z,
-  z \in y -> y \in rk x -> z \in rk x.
+  z ∈ y -> y ∈ rk x -> z ∈ rk x.
 intros x.
 pattern x; apply wf_ax; trivial; clear x; intros.
 rewrite rk_def in H1|-*.
@@ -345,7 +345,7 @@ apply H with z; auto.
 Qed.
 
 Lemma rk_sub : forall x y y',
-  y \in rk x -> y' \incl y -> y' \in rk x.
+  y ∈ rk x -> y' ⊆ y -> y' ∈ rk x.
 intros x.
 pattern x; apply wf_ax; trivial; clear x; intros.
 rewrite rk_def in H0|-*.
@@ -355,7 +355,7 @@ rewrite power_ax in H2|-*; intros; auto.
 Qed.
 
 Lemma rk_mono : forall x x',
-  x \in x' -> rk x \in rk x'.
+  x ∈ x' -> rk x ∈ rk x'.
 intros.
 rewrite (rk_def x').
 exists x; split; trivial.
@@ -363,7 +363,7 @@ apply power_intro; trivial.
 Qed.
 
 
-Lemma rk_compl : forall x z, z \in rk x -> rk z \in rk x. 
+Lemma rk_compl : forall x z, z ∈ rk x -> rk z ∈ rk x. 
 intros x.
 pattern x; apply wf_ax; trivial; clear x; intros.
 rewrite rk_def in *.
@@ -372,7 +372,7 @@ exists x0; split; trivial.
 rewrite power_ax in *; intros.
 rewrite rk_def in H2; destruct H2; destruct H2.
 specialize H1 with (1:=H2).
-assert (rk x1 \in rk x0) by auto.
+assert (rk x1 ∈ rk x0) by auto.
 apply rk_sub with (rk x1); trivial.
 rewrite power_ax in H3; auto.
 Qed.
@@ -390,7 +390,7 @@ apply eq_intro; intros.
 Qed.
 
 Lemma rk_intro :
-  forall x, x \in power (rk x).
+  forall x, x ∈ power (rk x).
 intros.
 pattern x; apply wf_ax; trivial; clear x; intros.
 rewrite power_ax; intros.
@@ -412,10 +412,10 @@ apply eq_intro; intros.
 Qed.
 
 Lemma rk_induc :
-  forall P:set->Prop, (forall x, (forall y, y \in rk x -> P y) -> P x) ->
+  forall P:set->Prop, (forall x, (forall y, y ∈ rk x -> P y) -> P x) ->
   forall x, P x.
 intros.
-cut (forall y, rk y \incl rk x -> P y).
+cut (forall y, rk y ⊆ rk x -> P y).
  intros.
  apply H0.
  red; trivial.
@@ -435,25 +435,25 @@ Qed.
 
 Hypothesis EM : forall P, P \/ ~P.
 
-Lemma rk_total : forall x y, rk x \in rk y \/ rk y \incl rk x.
+Lemma rk_total : forall x y, rk x ∈ rk y \/ rk y ⊆ rk x.
 intros x y.
 revert x.
 pattern y; apply wf_ax; trivial; clear y; intros y Hy x.
-destruct (EM (exists y', y' \in rk y /\ rk x \incl y')).
+destruct (EM (exists y', y' ∈ rk y /\ rk x ⊆ y')).
  left.
  destruct H; destruct H.
  apply rk_sub with x0; trivial.
 
  right; red; intros.
  rewrite rk_def in H0; destruct H0; destruct H0.
- assert (exists w, w \in rk x /\ ~ w \in rk x0).
-  destruct (EM (exists w, w \in rk x /\ ~ w \in rk x0)); trivial.
-  assert (~ rk x \incl rk x0).
+ assert (exists w, w ∈ rk x /\ ~ w ∈ rk x0).
+  destruct (EM (exists w, w ∈ rk x /\ ~ w ∈ rk x0)); trivial.
+  assert (~ rk x ⊆ rk x0).
    red; intros; apply H.
    exists (rk x0); split; trivial.
    apply rk_mono; trivial.
   elim H3; red; intros.
-  destruct (EM (z0 \in rk x0)); trivial.
+  destruct (EM (z0 ∈ rk x0)); trivial.
   elim H2.
   exists z0; split; trivial.
  destruct H2; destruct H2.
@@ -470,7 +470,7 @@ Qed.
 Definition lst_rk (P:set->Prop) (y:set) :=
   P y /\
   (exists w, y == rk w) /\
-  (forall x, (exists w, x == rk w) -> P x -> y \incl rk x).
+  (forall x, (exists w, x == rk w) -> P x -> y ⊆ rk x).
 
 Instance lst_rk_morph : Proper ((eq_set ==> iff) ==> eq_set ==> iff) lst_rk.
 apply morph_impl_iff2; auto with *.
@@ -517,7 +517,7 @@ intros P Pm.
 destruct 1.
 revert H.
 pattern x; apply rk_induc; clear x; intros.
-destruct (EM (exists z, z \in rk x /\ P (rk z))).
+destruct (EM (exists z, z ∈ rk x /\ P (rk z))).
  destruct H1.
  destruct H1; eauto.
 
@@ -540,7 +540,7 @@ Qed.
 Lemma repl_coll_ubnd :
   (forall A R, rep_ubnd A R) -> (forall A R, coll_ubnd A R).
 red; intros.
-pose (P := fun x y => exists z, z \in y /\ R x z).
+pose (P := fun x y => exists z, z ∈ y /\ R x z).
 assert (Pm : Proper (eq_set ==> eq_set ==> impl) P).
  do 4 red; intros.
  destruct H4.
@@ -580,13 +580,13 @@ Qed.
 Lemma repl_coll_bnd :
   (forall A R, rep_bnd A R) -> (forall A R, coll_bnd A R).
 red; intros.
-pose (P := fun x y => exists z, z \in y /\ R x z).
+pose (P := fun x y => exists z, z ∈ y /\ R x z).
 assert (Pm : Proper (eq_set ==> eq_set ==> impl) P).
  do 4 red; intros.
  destruct H4.
  exists x1.
  rewrite <- H2; rewrite <- H3; trivial.
-assert (Pwit : forall x, x \in A -> exists y, P x (rk y)). 
+assert (Pwit : forall x, x ∈ A -> exists y, P x (rk y)). 
  intros.
  destruct (H1 x H2).
  exists (singl x0); exists x0; split; trivial.

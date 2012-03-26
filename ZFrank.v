@@ -10,7 +10,7 @@ Qed.
 
   Lemma VN_def : forall x z,
     isOrd x ->
-    (z \in VN x <-> exists2 y, y \in x & z \incl VN y).
+    (z ∈ VN x <-> exists2 y, y ∈ x & z ⊆ VN y).
 split; intros.
  apply TI_elim in H0; auto with *.
  destruct H0.
@@ -25,9 +25,9 @@ Qed.
 
   Lemma VN_trans : forall o x y,
     isOrd o ->
-    x \in VN o ->
-    y \in x ->
-    y \in VN o.
+    x ∈ VN o ->
+    y ∈ x ->
+    y ∈ VN o.
 intros.
 rewrite VN_def in H0; trivial.
 destruct H0.
@@ -38,9 +38,9 @@ Qed.
 
   Lemma VN_incl : forall o x y,
     isOrd o ->
-    y \incl x ->
-    x \in VN o ->
-    y \in VN o.
+    y ⊆ x ->
+    x ∈ VN o ->
+    y ∈ VN o.
 intros.
 rewrite VN_def in H1|-*; auto with *.
 destruct H1.
@@ -50,7 +50,7 @@ Qed.
 
 Lemma VN_mono : forall o x,
   isOrd o ->
-  lt x o -> VN x \in VN o.
+  lt x o -> VN x ∈ VN o.
 intros.
 rewrite (VN_def o); trivial.
 exists x; auto with *.
@@ -59,8 +59,8 @@ Qed.
 Lemma VN_mono_le : forall o o',
   isOrd o ->
   isOrd o' ->
-  o \incl o' ->
-  VN o \incl VN o'.
+  o ⊆ o' ->
+  VN o ⊆ VN o'.
 red; intros.
 rewrite VN_def in H2|-*; trivial.
 destruct H2.
@@ -75,7 +75,7 @@ apply TI_stable.
  apply power_stable.
 Qed.
  
-Lemma VN_compl : forall x z, isOrd x -> isOrd z -> z \in VN x -> VN z \in VN x. 
+Lemma VN_compl : forall x z, isOrd x -> isOrd z -> z ∈ VN x -> VN z ∈ VN x. 
 intros x z xo; revert z.
 induction xo using isOrd_ind; intros.
 rewrite VN_def in H2|-*; auto with *.
@@ -88,7 +88,7 @@ apply VN_incl with (VN x1); eauto using isOrd_inv.
 Qed.
 
 Lemma VN_intro :
-  forall x, isOrd x -> x \incl VN x.
+  forall x, isOrd x -> x ⊆ VN x.
 induction 1 using isOrd_ind; red; intros.
 rewrite VN_def; trivial.
 eauto.
@@ -102,7 +102,7 @@ apply power_mono.
 Qed.
 
 
-  Lemma VN_ord_inv : forall o x, isOrd o -> isOrd x -> x \in VN o -> lt x o.
+  Lemma VN_ord_inv : forall o x, isOrd o -> isOrd x -> x ∈ VN o -> lt x o.
 intros o x xo; revert x.
 induction xo using isOrd_ind; intros.
 rewrite VN_def in H2; trivial; destruct H2.
@@ -113,14 +113,14 @@ apply isOrd_inv with x; trivial.
 Qed.
 
 
-  Lemma VN_subset : forall o x P, isOrd o -> x \in VN o -> subset x P \in VN o.
+  Lemma VN_subset : forall o x P, isOrd o -> x ∈ VN o -> subset x P ∈ VN o.
 intros.
 apply VN_incl with x; trivial.
 red; intros.
 apply subset_elim1 in H1; trivial.
 Qed.
 
-  Lemma VN_union : forall o x, isOrd o -> x \in VN o -> union x \in VN o.
+  Lemma VN_union : forall o x, isOrd o -> x ∈ VN o -> union x ∈ VN o.
 intros.
 rewrite VN_def in H0|-*; trivial.
 destruct H0.
@@ -132,8 +132,8 @@ Qed.
 
   Lemma VNsucc_power : forall o x,
     isOrd o ->
-    x \in VN o ->
-    power x \in VN (osucc o).
+    x ∈ VN o ->
+    power x ∈ VN (osucc o).
 intros.
 rewrite <- VN_succ; trivial.
 apply power_intro; intros.
@@ -142,7 +142,7 @@ red; eauto using power_elim.
 Qed.
 
   Lemma VNsucc_pair : forall o x y, isOrd o ->
-    x \in VN o -> y \in VN o -> pair x y \in VN (osucc o).
+    x ∈ VN o -> y ∈ VN o -> pair x y ∈ VN (osucc o).
 intros.
 rewrite <- VN_succ; trivial.
 rewrite power_ax; intros.
@@ -151,7 +151,7 @@ Qed.
 
 
   Lemma VNlim_def : forall o x, limitOrd o ->
-    (x \in VN o <-> exists2 o', lt o' o & x \in VN o').
+    (x ∈ VN o <-> exists2 o', lt o' o & x ∈ VN o').
 destruct 1; rewrite VN_def; trivial.
 split; intros.
  destruct H1.
@@ -168,7 +168,7 @@ split; intros.
 Qed.
 
 
-  Lemma VNlim_power : forall o x, limitOrd o -> x \in VN o -> power x \in VN o.
+  Lemma VNlim_power : forall o x, limitOrd o -> x ∈ VN o -> power x ∈ VN o.
 intros.
 rewrite VNlim_def in H0|-*; trivial.
 destruct H0.
@@ -182,7 +182,7 @@ Qed.
 
 (*
   Lemma VNlim_pair : forall o x y, isDir o -> limitOrd o ->
-    x \in VN o -> y \in VN o -> pair x y \in VN o.
+    x ∈ VN o -> y ∈ VN o -> pair x y ∈ VN o.
 intros o x y dir lim; intros.
 rewrite VNlim_def in H,H0|-*; auto.
 destruct H; destruct H0.
@@ -204,13 +204,13 @@ Qed.
 *)
 
   Lemma VNlim_pair : forall o x y, limitOrd o ->
-    x \in VN o -> y \in VN o -> pair x y \in VN o.
+    x ∈ VN o -> y ∈ VN o -> pair x y ∈ VN o.
 intros o x y lim; intros.
 rewrite VNlim_def in H,H0|-*; auto.
 destruct H; destruct H0.
 assert (o0 : isOrd x0) by eauto using isOrd_inv.
 assert (o1 : isOrd x1) by eauto using isOrd_inv.
-exists (osucc (osup2 x0 x1)).
+exists (osucc (x0 ⊔ x1)).
  apply lim.
  apply osup2_lt; auto.
 
@@ -226,9 +226,9 @@ Require Import ZFrelations.
 
   Lemma VN_func : forall o A B,
     isOrd o ->
-    A \in VN o ->
-    B \in VN o ->
-    func A B \in VN (osucc (osucc (osucc (osucc o)))).
+    A ∈ VN o ->
+    B ∈ VN o ->
+    func A B ∈ VN (osucc (osucc (osucc (osucc o)))).
 unfold func; intros.
 apply VN_subset; auto.
 unfold rel.
@@ -244,7 +244,7 @@ Qed.
 
 Require Import ZFwf.
 
-Lemma VN_wf o x : isOrd o -> x \in VN o -> isWf x.
+Lemma VN_wf o x : isOrd o -> x ∈ VN o -> isWf x.
 intros oo; revert x; induction oo using isOrd_ind.
 intros.
 apply isWf_intro; intros.
@@ -255,26 +255,26 @@ Qed.
 Lemma VN_osup2 o :
   isOrd o ->
   forall x y,
-  x \in VN o ->
-  y \in VN o ->
-  osup2 x y \in VN o.
+  x ∈ VN o ->
+  y ∈ VN o ->
+  x ⊔ y ∈ VN o.
 induction 1 using isOrd_ind; intros.
 rewrite VN_def in H2,H3|-*; trivial.
 destruct H2.
 destruct H3.
-exists (osup2 x0 x1).
+exists (x0 ⊔ x1).
  apply osup2_lt; trivial.
 
  red; intros.
  rewrite osup2_ax in H6.
  2:apply isWf_intro; intros; eauto using VN_wf, isOrd_inv.
- assert (x \incl VN (osup2 x0 x1)).
+ assert (x ⊆ VN (x0 ⊔ x1)).
   red; intros.
   apply H4 in H7; revert H7; apply VN_mono_le.
    apply isOrd_inv with y; trivial.
    apply isOrd_osup2; eauto using isOrd_inv.
    apply osup2_incl1; eauto using isOrd_inv.
- assert (y0 \incl VN (osup2 x0 x1)).
+ assert (y0 ⊆ VN (x0 ⊔ x1)).
   red; intros.
   apply H5 in H8; revert H8; apply VN_mono_le.
    apply isOrd_inv with y; trivial.
@@ -287,7 +287,7 @@ Qed.
 
 (*
 Let N_TI :
-  let f := fun X => union2 (singl zero) (replf X succ) in N \incl TI f omega.
+  let f := fun X => union2 (singl zero) (replf X succ) in N ⊆ TI f omega.
 intro f.
 red; intros.
 assert (fm : morph1 f).
@@ -318,7 +318,7 @@ induction x; simpl.
 Qed. (* cf ZFgrothendieck *)
 *)
 
-Lemma VN_N : N \incl VN omega.
+Lemma VN_N : N ⊆ VN omega.
 red; intros.
 elim H using N_ind; simpl; intros.
  rewrite <- H1; trivial.
@@ -336,13 +336,13 @@ Qed.
 Definition VN_regular o :=
   forall x F,
   ext_fun x F ->
-  x \in VN o ->
-  (forall y, y \in x -> F y \in VN o) ->
-  sup x F \in VN o.
+  x ∈ VN o ->
+  (forall y, y ∈ x -> F y ∈ VN o) ->
+  sup x F ∈ VN o.
 
 Definition bound_ord A o :=
   forall F, ext_fun A F ->
-  (forall n, n \in A -> lt (F n) o) ->
+  (forall n, n ∈ A -> lt (F n) o) ->
   lt (osup A F) o.
 
 
@@ -350,9 +350,9 @@ Definition bound_ord A o :=
 Lemma VN_ord_sup F o :
   isOrd o ->
   VN_regular o ->
-  omega \in o ->
-  (forall n, F n \in VN o) ->
-  ord_sup F \in VN o.
+  omega ∈ o ->
+  (forall n, F n ∈ VN o) ->
+  ord_sup F ∈ VN o.
 intros.
 apply ord_sup_typ; trivial; intros.
 apply H0; trivial.
@@ -368,11 +368,11 @@ Qed.
 Lemma VN_reg_ord : forall o,
   isOrd o -> 
   VN_regular o ->
-  omega \in o ->
+  omega ∈ o ->
   forall x F,
   ext_fun x F ->
-  x \in VN o ->
-  (forall y, y \in x -> lt (F y) o) ->
+  x ∈ VN o ->
+  (forall y, y ∈ x -> lt (F y) o) ->
   lt (osup x F) o.
 intros.
 apply VN_ord_inv; trivial.
@@ -390,7 +390,7 @@ apply VN_ord_inv; trivial.
   red; intros.
   apply singl_elim in H10; rewrite H10; apply VN_osup2; eauto using isOrd_inv.
 
-  apply VN_incl with (VN omega); trivial. (* N \in VN o needed ? (cf osup_univ) *)
+  apply VN_incl with (VN omega); trivial. (* N ∈ VN o needed ? (cf osup_univ) *)
    apply VN_N.
 
    apply VN_mono; trivial.
@@ -407,9 +407,9 @@ Require Import ZFrepl.
 Definition VN_regular_rel o :=
   forall x R,
   repl_rel x R ->
-  x \in VN o ->
-  (forall y z, y \in x -> R y z -> z \in VN o) ->
-  union (repl x R) \in VN o.
+  x ∈ VN o ->
+  (forall y z, y ∈ x -> R y z -> z ∈ VN o) ->
+  union (repl x R) ∈ VN o.
 
 Definition VN_inaccessible_rel o :=
   limitOrd o /\ VN_regular_rel o.
@@ -420,7 +420,7 @@ Section UnionClosure.
   Hypothesis mu_ord : isOrd mu.
   Hypothesis mu_lim : forall x, lt x mu -> lt (osucc x) mu.
   Hypothesis mu_reg : VN_regular_rel mu.
-  Hypothesis mu_inf : omega \in mu.
+  Hypothesis mu_inf : omega ∈ mu.
 
 
   Lemma VN_regular_weaker : VN_regular mu.
@@ -487,7 +487,7 @@ Qed.
 *)
 
   Lemma VN_clos_pair : forall x y,
-    x \in VN mu -> y \in VN mu -> pair x y \in VN mu.
+    x ∈ VN mu -> y ∈ VN mu -> pair x y ∈ VN mu.
 intros.
 apply VNlim_pair; trivial.
 (*apply isDir_regular.*)
@@ -495,17 +495,17 @@ Qed.
 
   Definition lt_cardf a b :=
     forall F, ext_fun a F ->
-    exists2 y, y \in b & forall x, x \in a -> ~ y == F x.
+    exists2 y, y ∈ b & forall x, x ∈ a -> ~ y == F x.
 
   Lemma VN_cardf : forall a,
-    a \in VN mu -> lt_cardf a mu.
+    a ∈ VN mu -> lt_cardf a mu.
 red; intros.
-pose (mu' := osup (subset a (fun x => F x \in mu)) F).
-assert (ext : ext_fun (subset a (fun x : set => F x \in mu)) F).
+pose (mu' := osup (subset a (fun x => F x ∈ mu)) F).
+assert (ext : ext_fun (subset a (fun x : set => F x ∈ mu)) F).
  red; red; intros.
  apply H0; trivial.
  apply subset_elim1 in H1; trivial.
-assert (mu' \in mu).
+assert (mu' ∈ mu).
  unfold mu'; apply VN_reg_ord; auto.
   exact VN_regular_weaker.
 
@@ -540,19 +540,19 @@ Qed.
 Require Import ZFcard.
 
   Lemma VNcard : forall x,
-    x \in VN mu -> lt_card x mu.
+    x ∈ VN mu -> lt_card x mu.
 red; red; intros.
 destruct H0 as (R,?,(?,?)).
 rewrite VN_def in H; auto; destruct H.
-pose (mu' := osup (subset x (fun x' => exists2 w, w \in mu & R w x'))
-              (fun x' => uchoice (fun o => o \in mu /\ R o x'))).
-assert (ext : ext_fun (subset x (fun x' => exists2 w, w \in mu & R w x'))
-   (fun x' => uchoice (fun o => o \in mu /\ R o x'))).
+pose (mu' := osup (subset x (fun x' => exists2 w, w ∈ mu & R w x'))
+              (fun x' => uchoice (fun o => o ∈ mu /\ R o x'))).
+assert (ext : ext_fun (subset x (fun x' => exists2 w, w ∈ mu & R w x'))
+   (fun x' => uchoice (fun o => o ∈ mu /\ R o x'))).
  red; red; intros.
  apply uchoice_morph_raw.
  red; intros.
  rewrite H5; rewrite H6; reflexivity.
-assert (mu' \in mu).
+assert (mu' ∈ mu).
  unfold mu'; apply VN_reg_ord; auto.
   exact VN_regular_weaker.
 
@@ -565,7 +565,7 @@ assert (mu' \in mu).
   destruct H5.
   destruct H6.
   rewrite <- H5 in H7; clear x1 H5.
-  assert (uchoice_pred (fun o => o \in mu /\ R o y)).
+  assert (uchoice_pred (fun o => o ∈ mu /\ R o y)).
    split; [|split]; intros; eauto.
     rewrite <- H5; trivial.
 
@@ -622,7 +622,7 @@ Require Import ZFrepl.
 Import ZFord.
 
   Lemma repl_rel_incl : forall x y R,
-    x \incl y ->
+    x ⊆ y ->
     repl_rel y R ->
     repl_rel x R.
 destruct 2.
@@ -637,7 +637,7 @@ Section Inaccessible.
   Variable mu_regular : regular mu.
 
   Lemma VNcard : forall x,
-    x \in VN mu -> lt_card x mu.
+    x ∈ VN mu -> lt_card x mu.
 red; red; intros.
 destruct H0.
 
@@ -645,9 +645,9 @@ Admitted.
 
   Lemma VNlim_clos_union_repl : forall I R,
     repl_rel I R ->
-    I \in VN mu ->
-    (forall x y, x \in I -> R x y -> y \in VN mu) ->
-    union (repl I R) \in VN mu.
+    I ∈ VN mu ->
+    (forall x y, x ∈ I -> R x y -> y ∈ VN mu) ->
+    union (repl I R) ∈ VN mu.
 unfold VN; intros.
 pose (I' := subset I (fun x => exists y, R x y)).
 assert (rrI' : repl_rel I' R).
@@ -666,12 +666,12 @@ assert (repl I R == repl I' R).
   red; intros.
   apply subset_elim1 in H3; trivial.
 rewrite H2; clear H2.
-assert (stgI' : I' \in VN mu).
+assert (stgI' : I' ∈ VN mu).
  apply VN_incl with I; trivial; red; intros.
  apply subset_elim1 in H2; trivial.
 clear H0.
 pose (G := fun x => least_ord mu
-   (fun n => forall y, R x y -> y \in VN n)).
+   (fun n => forall y, R x y -> y ∈ VN n)).
 assert (Gm : ext_fun I' G).
  unfold G, VN; do 2 red; intros.
  apply least_ord_morph; intros; auto; try reflexivity.
@@ -696,8 +696,8 @@ assert (Gm : ext_fun I' G).
    reflexivity.
 apply TI_elim in stgI'; auto with *.
 destruct stgI'.
-assert (Fprop : forall x, x \in I' ->
-  (forall y, R x y -> y \in VN (G x)) /\ lt (G x) mu).
+assert (Fprop : forall x, x ∈ I' ->
+  (forall y, R x y -> y ∈ VN (G x)) /\ lt (G x) mu).
  intros.
  assert (exists y, R x0 y).
   specialize subset_elim2 with (1:=H3); destruct 1.
@@ -717,7 +717,7 @@ assert (Fprop : forall x, x \in I' ->
  2:exact power_mono.
  2:apply isOrd_inv with mu; trivial.
  destruct least_ord1 with
-    (o:=mu) (P:=fun n => forall y, R x0 y -> y \in VN n)
+    (o:=mu) (P:=fun n => forall y, R x0 y -> y ∈ VN n)
     (x:=osucc x2); intros; auto.
   setoid_replace (VN x') with (VN x3); auto.
   symmetry; unfold VN; apply TI_morph; trivial.
@@ -735,7 +735,7 @@ assert (Fprop : forall x, x \in I' ->
 assert (Fmu := fun x h => proj2 (Fprop x h)).
 assert (Fspec := fun x h => proj1 (Fprop x h)).
 clear Fprop.
-assert (Ford : forall x, x \in I' -> isOrd (G x)).
+assert (Ford : forall x, x ∈ I' -> isOrd (G x)).
  intros.
  apply isOrd_inv with mu; auto.
 assert (lt (sup I' G) mu).
@@ -786,16 +786,16 @@ Qed.
 
 
   Lemma VNcard' : forall x,
-    x \in VN mu -> lt_card x mu.
+    x ∈ VN mu -> lt_card x mu.
 Admitted.
 
   Lemma VNreg_clos_sup : forall I F,
     ext_fun I F ->
-    I \in VN mu ->
-    (forall x, x \in I -> F x \in VN mu) ->
-    sup I F \in VN mu.
+    I ∈ VN mu ->
+    (forall x, x ∈ I -> F x ∈ VN mu) ->
+    sup I F ∈ VN mu.
 unfold VN; intros.
-pose (G := fun x => least_ord mu (fun n => F x \in VN n)).
+pose (G := fun x => least_ord mu (fun n => F x ∈ VN n)).
 assert (Gm : ext_fun I G).
  unfold G, VN; do 2 red; intros.
  apply least_ord_morph; intros; trivial; try reflexivity.
@@ -807,7 +807,7 @@ assert (Gm : ext_fun I G).
  reflexivity.
 apply TI_elim in H0; auto with *.
 destruct H0.
-assert (Fprop : forall x, x \in I -> F x \in VN (G x) /\ lt (G x) mu).
+assert (Fprop : forall x, x ∈ I -> F x ∈ VN (G x) /\ lt (G x) mu).
  intros.
  specialize H1 with (1:=H3).
  apply TI_elim in H1; auto with *.
@@ -816,7 +816,7 @@ assert (Fprop : forall x, x \in I -> F x \in VN (G x) /\ lt (G x) mu).
  2:exact power_mono.
  2:apply isOrd_inv with mu; trivial.
  destruct least_ord1 with
-    (o:=mu) (P:=fun n => F x0 \in VN n)
+    (o:=mu) (P:=fun n => F x0 ∈ VN n)
     (x:=osucc x1); intros; auto.
   setoid_replace (VN x') with (VN x2); auto.
   symmetry; unfold VN; apply TI_morph; trivial.
@@ -831,7 +831,7 @@ assert (Fprop : forall x, x \in I -> F x \in VN (G x) /\ lt (G x) mu).
 assert (Fmu := fun x h => proj2 (Fprop x h)).
 assert (Fspec := fun x h => proj1 (Fprop x h)).
 clear Fprop.
-assert (Ford : forall x, x \in I -> isOrd (G x)).
+assert (Ford : forall x, x ∈ I -> isOrd (G x)).
  intros.
  apply isOrd_inv with mu; auto.
 assert (sup_ord : isOrd (sup I G)).

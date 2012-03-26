@@ -29,10 +29,10 @@ Hypothesis Am : morph1 A.
 Hypothesis Bm : morph2 B.
 Hypothesis Cm : Proper (eq_set==>eq_set==>eq_set==>eq_set) C.
 Hypothesis Cty : forall a x y,
-  a \in Arg ->
-  x \in A a ->
-  y \in B a x ->
-  C a x y \in Arg.
+  a ∈ Arg ->
+  x ∈ A a ->
+  y ∈ B a x ->
+  C a x y ∈ Arg.
 
 
 (** The intended type operator: parameter is not part of the data-structure *)
@@ -77,7 +77,7 @@ Hint Resolve W_Fd_mono.
 
 Lemma W_Fd_eta w X a :
   morph1 X ->
-  w \in W_Fd X a ->
+  w ∈ W_Fd X a ->
   w == couple (fst w) (cc_lam (B a (fst w)) (fun i => cc_app (snd w) i)).
 intros.
 transitivity (couple (fst w) (snd w)).
@@ -96,13 +96,13 @@ Qed.
 
 Lemma W_Fd_intro X x x' a a' f :
   morph1 X ->
-  a \in Arg ->
+  a ∈ Arg ->
   a == a' ->
-  x \in A a' ->
+  x ∈ A a' ->
   x == x' ->
   ext_fun (B a x') f ->
-  (forall i, i \in B a x' -> f i \in X (C a x' i)) ->
-  couple x (cc_lam (B a x') f) \in W_Fd X a'.
+  (forall i, i ∈ B a x' -> f i ∈ X (C a x' i)) ->
+  couple x (cc_lam (B a x') f) ∈ W_Fd X a'.
 intros.
 apply couple_intro_sigma; trivial.
  do 2 red; intros.
@@ -138,14 +138,14 @@ Qed.
 Hint Resolve B'ext.
 
 Lemma A'_intro a x :
-  a \in Arg ->
-  x \in A a ->
-  couple a x \in A'.
+  a ∈ Arg ->
+  x ∈ A a ->
+  couple a x ∈ A'.
 intros; apply couple_intro_sigma; auto.
 Qed.
 
 Lemma A'_elim x :
-  x \in A' -> fst x \in Arg /\ snd x \in A (fst x) /\ x == couple (fst x) (snd x).
+  x ∈ A' -> fst x ∈ Arg /\ snd x ∈ A (fst x) /\ x == couple (fst x) (snd x).
 intros.
 assert (eqx := surj_pair _ _ _ (subset_elim1 _ _ _ H)).
 specialize fst_typ_sigma with (1:=H); intros.
@@ -160,7 +160,7 @@ Qed.
 Inductive instance a w : Prop :=
 | I_node :
     a == fst (fst w) ->
-    (forall i, i \in B' (fst w) -> instance (C a (snd (fst w)) i) (cc_app (snd w) i)) ->
+    (forall i, i ∈ B' (fst w) -> instance (C a (snd (fst w)) i) (cc_app (snd w) i)) ->
     instance a w.
 
 Instance instance_morph : Proper (eq_set==>eq_set==>iff) instance.
@@ -200,8 +200,8 @@ Qed.
 
 Let tr_cont o z :
  isOrd o ->
- (z \in TI (W0.W_F A' B') o <->
-  (exists2 o', o' \in o & z \in TI (W0.W_F A' B') (osucc o'))).
+ (z ∈ TI (W0.W_F A' B') o <->
+  (exists2 o', o' ∈ o & z ∈ TI (W0.W_F A' B') (osucc o'))).
 intros.
 rewrite TI_mono_eq; auto.
 rewrite sup_ax; auto with *.
@@ -237,15 +237,15 @@ Require Import ZFiso.
 Lemma tr_iso a X Y P f :
   Proper (eq_set==>eq_set==>iff) P ->
   morph1 Y ->
-  a \in Arg ->
-  (forall a, a \in Arg -> iso_fun (subset X (P a)) (Y a) f) ->
+  a ∈ Arg ->
+  (forall a, a ∈ Arg -> iso_fun (subset X (P a)) (Y a) f) ->
   let Wd := subset (W0.W_F A' B' X)
      (fun w => fst (fst w) == a /\
-        forall i, i \in B a (snd (fst w)) -> P (C a (snd (fst w)) i) (cc_app (snd w) i)) in
+        forall i, i ∈ B a (snd (fst w)) -> P (C a (snd (fst w)) i) (cc_app (snd w) i)) in
   iso_fun Wd (W_Fd Y a) (tr f).
 intros Pm; intros.
 unfold tr.
-assert (fm : forall x x', x \in Wd -> x == x' ->
+assert (fm : forall x x', x ∈ Wd -> x == x' ->
              eq_fun (B' (fst x)) (fun i => f (cc_app (snd x) i)) (fun i => f (cc_app (snd x') i))).
  do 2 red; intros.
  unfold Wd in H2; rewrite subset_ax in H2; destruct H2 as (?,(w,?,(?,?))).
@@ -388,7 +388,7 @@ do 2 red; intros; apply cc_prod_morph.
     rewrite fst_def; rewrite snd_def; reflexivity.
 
     red; intros.
-    assert (cc_app (snd y) x \in Y (C a (fst y) x)).
+    assert (cc_app (snd y) x ∈ Y (C a (fst y) x)).
      apply cc_prod_elim with (1:=H2); trivial.
     transitivity (f (iso_inv (subset X (P(C a(fst y) x'))) f (cc_app (snd y) x'))).
      rewrite H4 in H3,H5|-*.
@@ -409,7 +409,7 @@ Require Import ZFlimit.
 
 Lemma tr_iso_it a o :
   isOrd o ->
-  a \in Arg ->
+  a ∈ Arg ->
   iso_fun (subset (TI (W0.W_F A' B') o) (instance a))
           (TIF Arg W_Fd o a) (TRF tr o).
 intros oo; revert a; elim oo using isOrd_ind; intros.
@@ -442,11 +442,11 @@ constructor; intros.
  destruct H3.
  apply TI_elim in H4; auto.
  destruct H4.
- assert (osup2 x2 x3 \in y).
+ assert (x2 ⊔ x3 ∈ y).
   apply osup2_lt; auto.
  assert (h:=H1 _ H12); apply tr_iso with (a:=a) in h; auto with *.
- rewrite TRF_indep with (T:=TI(W0.W_F A' B'))(o':=osup2 x2 x3) in H5; intros; auto with *.
-  rewrite TRF_indep with (T:=TI(W0.W_F A' B'))(o':=osup2 x2 x3) in H5; intros; auto with *.
+ rewrite TRF_indep with (T:=TI(W0.W_F A' B'))(o':=x2 ⊔ x3) in H5; intros; auto with *.
+  rewrite TRF_indep with (T:=TI(W0.W_F A' B'))(o':=x2 ⊔ x3) in H5; intros; auto with *.
    apply (iso_inj h) in H5; trivial.
     apply subset_intro.
      revert H10; apply W0.W_F_mono; auto with *.
@@ -519,7 +519,7 @@ Hint Resolve W_o_o.
 
 Definition W := Wi W_ord.
 
-Lemma W_eqn a : a \in Arg -> W a == W_Fd W a.
+Lemma W_eqn a : a ∈ Arg -> W a == W_Fd W a.
 unfold W,Wi; intros.
 rewrite <- TIF_mono_succ; auto with *.
 apply eq_intro; intros.
@@ -571,17 +571,17 @@ Section W_Univ.
 
   Variable U : set.
   Hypothesis Ugrot : grot_univ U.
-  Hypothesis Unontriv : omega \in U.  
+  Hypothesis Unontriv : omega ∈ U.  
 
   (** The size of Arg matters: *)
-  Hypothesis ArgU : Arg \in U.
-  Hypothesis aU : forall a, a \in Arg -> A a \in U.
-  Hypothesis bU : forall a x, a \in Arg -> x \in A a -> B a x \in U.
+  Hypothesis ArgU : Arg ∈ U.
+  Hypothesis aU : forall a, a ∈ Arg -> A a ∈ U.
+  Hypothesis bU : forall a x, a ∈ Arg -> x ∈ A a -> B a x ∈ U.
 
   Lemma G_W_Fd X :
     morph1 X ->
-    (forall a, a \in Arg -> X a \in U) ->
-    forall a, a \in Arg -> W_Fd X a \in U.
+    (forall a, a ∈ Arg -> X a ∈ U) ->
+    forall a, a ∈ Arg -> W_Fd X a ∈ U.
 unfold W_Fd; intros.
 apply G_sigma; intros; auto.
  do 2 red; intros.
@@ -596,7 +596,7 @@ apply G_sigma; intros; auto.
  rewrite H4; reflexivity.
 Qed.
 
-  Lemma G_Wi o a : isOrd o -> o \in U -> a \in Arg -> Wi o a \in U.
+  Lemma G_Wi o a : isOrd o -> o ∈ U -> a ∈ Arg -> Wi o a ∈ U.
 unfold Wi.
 unfold TIF; intros.
 apply G_cc_app; trivial.
@@ -638,7 +638,7 @@ apply G_TR; trivial.
     apply G_trans with Arg; trivial.
 Qed.
 
-  Lemma G_W_ord : W_ord \in U.
+  Lemma G_W_ord : W_ord ∈ U.
 apply W0.G_W_ord; trivial.
  apply G_sigma; trivial.
  do 2 red; intros; apply Am; trivial.
@@ -650,7 +650,7 @@ apply W0.G_W_ord; trivial.
   apply snd_typ_sigma with (y:=fst a) in H; auto with *.
 Qed.
 
-  Lemma G_W a : a \in Arg -> W a \in U.
+  Lemma G_W a : a ∈ Arg -> W a ∈ U.
 intros.
 unfold W.
 apply G_Wi; auto.
@@ -722,10 +722,10 @@ Hypothesis Am : morph1 A.
 Hypothesis Bm : morph2 B.
 Hypothesis Cm : Proper (eq_set==>eq_set==>eq_set==>eq_set) C.
 Hypothesis Cty : forall a x y,
-  a \in Arg ->
-  x \in A a ->
-  y \in B a x ->
-  C a x y \in Arg.
+  a ∈ Arg ->
+  x ∈ A a ->
+  y ∈ B a x ->
+  C a x y ∈ Arg.
 
 Variable Arg' : set.
 Variable A' : set -> set.
@@ -735,20 +735,20 @@ Hypothesis Am' : morph1 A'.
 Hypothesis Bm' : morph2 B'.
 Hypothesis Cm' : Proper (eq_set==>eq_set==>eq_set==>eq_set) C'.
 Hypothesis Cty' : forall a x y,
-  a \in Arg' ->
-  x \in A' a ->
-  y \in B' a x ->
-  C' a x y \in Arg'.
+  a ∈ Arg' ->
+  x ∈ A' a ->
+  y ∈ B' a x ->
+  C' a x y ∈ Arg'.
 
 Lemma W_simul f p p' o o':
   morph1 f ->
-  (forall p, p \in Arg -> f p \in Arg') ->
-  (forall p, p \in Arg -> A p == A' (f p)) ->
-  (forall p a, p \in Arg -> a \in A p -> B p a == B' (f p) a) ->
-  (forall p a b, p \in Arg -> a \in A p -> b \in B p a ->
+  (forall p, p ∈ Arg -> f p ∈ Arg') ->
+  (forall p, p ∈ Arg -> A p == A' (f p)) ->
+  (forall p a, p ∈ Arg -> a ∈ A p -> B p a == B' (f p) a) ->
+  (forall p a b, p ∈ Arg -> a ∈ A p -> b ∈ B p a ->
    f (C p a b) == C' (f p) a b) ->
   isOrd o ->
-  p \in Arg ->
+  p ∈ Arg ->
   f p == p' ->
   o == o' ->
   Wi Arg A B C o p == Wi Arg' A' B' C' o' p'.
@@ -801,7 +801,7 @@ End W_Simulation.
 (** Support for definitions by case *)
 (* --> ? *)
 Definition if_prop P x y :=
-  union2 (cond_set P x) (cond_set (~P) y).
+  cond_set P x ∪ cond_set (~P) y.
 
 Instance if_prop_morph : Proper (iff ==> eq_set ==> eq_set ==> eq_set) if_prop.
 do 4 red; intros.
@@ -849,16 +849,15 @@ Hypothesis Am : morph1 A.
 Hypothesis Bm : morph2 B.
 Hypothesis Cm : Proper (eq_set==>eq_set==>eq_set==>eq_set) C.
 Hypothesis Cty : forall a x y,
-  a \in Arg ->
-  x \in A a ->
-  y \in B a x ->
-  C a x y \in Arg.
+  a ∈ Arg ->
+  x ∈ A a ->
+  y ∈ B a x ->
+  C a x y ∈ Arg.
 
 (** Encoding big parameters as (small) paths from a fixed parameter [a].
     First, the type operator. *)
 Let L X a :=
-  union2 (singl empty) 
-    (sigma (A a) (fun x => sigma (B a x) (fun y => X (C a x y)))).
+  singl empty ∪ sigma (A a) (fun x => sigma (B a x) (fun y => X (C a x y))).
 
 
 Instance Lmorph : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) L.
@@ -874,18 +873,18 @@ apply sigma_morph.
 Qed.
 Hint Resolve Lmorph.
 
-Lemma L_intro1 X a : empty \in L X a.
+Lemma L_intro1 X a : empty ∈ L X a.
 apply union2_intro1.
 apply singl_intro.
 Qed.
 
 Lemma L_intro2 a x y q X :
   morph1 X ->
-  a \in Arg ->
-  x \in A a ->
-  y \in B a x ->
-  q \in X (C a x y) ->
-  couple x (couple y q) \in L X a.
+  a ∈ Arg ->
+  x ∈ A a ->
+  y ∈ B a x ->
+  q ∈ X (C a x y) ->
+  couple x (couple y q) ∈ L X a.
 unfold L; intros.
 apply union2_intro2.
 apply couple_intro_sigma; trivial.
@@ -903,19 +902,19 @@ Definition L_match q f g :=
 
 Lemma L_elim a q X :
   morph1 X ->
-  a \in Arg ->
-  q \in L X a ->
+  a ∈ Arg ->
+  q ∈ L X a ->
   q == empty \/
-  exists2 x, x \in A a &
-  exists2 y, y \in B a x &
-  exists2 q', q' \in X (C a x y) &
+  exists2 x, x ∈ A a &
+  exists2 y, y ∈ B a x &
+  exists2 q', q' ∈ X (C a x y) &
   q == couple x (couple y q').
 intros.
 destruct union2_elim with (1:=H1);[left|right].
  apply singl_elim in H2; trivial.
 
  clear H1.
- assert (fst q \in A a).
+ assert (fst q ∈ A a).
   apply fst_typ_sigma in H2; auto.
  exists (fst q); trivial.
  assert (q == couple (fst q) (snd q)).
@@ -924,7 +923,7 @@ destruct union2_elim with (1:=H1);[left|right].
   2:do 2 red; intros; apply sigma_morph.
   2: apply Bm; auto with *.
   2: red; intros; apply H; apply Cm; auto with *.
- assert (fst (snd q) \in B a (fst q)).
+ assert (fst (snd q) ∈ B a (fst q)).
   apply fst_typ_sigma in  H2; trivial.
  exists (fst (snd q)); trivial.
  exists (snd (snd q)).
@@ -958,17 +957,17 @@ Qed.
 
 Lemma Arg'_ind P :
   Proper (eq_set ==> eq_set ==> iff) P ->
-  (forall a, a\in Arg -> P a empty) ->
+  (forall a, a∈ Arg -> P a empty) ->
   (forall a x y q,
-   a \in Arg ->
-   x \in A a ->
-   y \in B a x ->
-   q \in Arg' (C a x y) ->
+   a ∈ Arg ->
+   x ∈ A a ->
+   y ∈ B a x ->
+   q ∈ Arg' (C a x y) ->
    P (C a x y) q ->
    P a (couple x (couple y q))) ->
   forall a q,
-  a \in Arg -> 
-  q \in Arg' a ->
+  a ∈ Arg -> 
+  q ∈ Arg' a ->
   P a q.
 unfold Arg'; intros.
 revert a q H2 H3; elim isOrd_omega using isOrd_ind; intros.
@@ -990,7 +989,7 @@ destruct L_elim with (3:=H7) as [qnil|(x,xty,(y,yty,(q',q'ty,qcons)))]; trivial.
 Qed.
 
 Lemma Arg'_eqn a :
-  a \in Arg ->
+  a ∈ Arg ->
   Arg' a == L Arg' a.
 intros.
 apply eq_intro; intros.
@@ -1019,19 +1018,19 @@ apply eq_intro; intros.
 Qed.
 
 Lemma Arg'_intro1 a :
-  a \in Arg ->
-  empty \in Arg' a.
+  a ∈ Arg ->
+  empty ∈ Arg' a.
 intros.
 rewrite Arg'_eqn; trivial.
 apply L_intro1.
 Qed.
 
 Lemma Arg'_intro2 a x y q :
-  a \in Arg ->
-  x \in A a ->
-  y \in B a x ->
-  q \in Arg' (C a x y) ->
-  couple x (couple y q) \in Arg' a.
+  a ∈ Arg ->
+  x ∈ A a ->
+  y ∈ B a x ->
+  q ∈ Arg' (C a x y) ->
+  couple x (couple y q) ∈ Arg' a.
 intros.
 rewrite Arg'_eqn; trivial.
 apply L_intro2; trivial with *.
@@ -1139,8 +1138,8 @@ apply qrel; intros.
 Qed.
 
 Lemma Arg'_ex a q :
-  a \in Arg ->
-  q \in Arg' a ->
+  a ∈ Arg ->
+  q ∈ Arg' a ->
   exists2 h, morph1 h & Arg'_rec_rel q h.
 intros.
 pattern a, q; apply Arg'_ind with (5:=H0); intros; trivial.
@@ -1180,8 +1179,8 @@ split; intros.
 Qed.
 
 Lemma uchoice_Arg'_rec a q x :
-  a \in Arg ->
-  q \in Arg' a ->
+  a ∈ Arg ->
+  q ∈ Arg' a ->
   uchoice_pred (fun y => exists2 f, morph1 f & Arg'_rec_rel q f /\ y == f x).
 intros.
 split;[|split]; intros.
@@ -1199,8 +1198,8 @@ split;[|split]; intros.
 Qed.
 
 Lemma Arg'_def a q :
-  a \in Arg ->
-  q \in Arg' a ->
+  a ∈ Arg ->
+  q ∈ Arg' a ->
   Arg'_rec_rel q (Arg'_rec q).
 intros.
 generalize
@@ -1217,7 +1216,7 @@ Qed.
 
 
 Lemma Arg'_rec_mt a x :
-  a \in Arg ->
+  a ∈ Arg ->
   Arg'_rec empty x == f x.
 intros.
 destruct (uchoice_def _ (uchoice_Arg'_rec a empty x H (Arg'_intro1 _ H)))
@@ -1228,10 +1227,10 @@ red; auto.
 Qed.
 
 Lemma Arg'_rec_cons a x y q z :
-  a \in Arg ->
-  x \in A a ->
-  y \in B a x ->
-  q \in Arg' (C a x y) ->
+  a ∈ Arg ->
+  x ∈ A a ->
+  y ∈ B a x ->
+  q ∈ Arg' (C a x y) ->
   Arg'_rec (couple x (couple y q)) z == g x y q (Arg'_rec q) z.
 intros.
 specialize Arg'_def with (1:=H) (2:=Arg'_intro2 _ _ _ _ H H0 H1 H2); intro.
@@ -1254,7 +1253,7 @@ Definition Dec a q :=
   Arg'_rec (fun a => a) (fun x y q' F a => F (C a x y)) q a.
 
 
-Lemma Dec_mt a : a \in Arg -> Dec a empty == a.
+Lemma Dec_mt a : a ∈ Arg -> Dec a empty == a.
 unfold Dec; intros.
 rewrite Arg'_rec_mt with (a:=a); auto with *.
  do 2 red; auto.
@@ -1265,10 +1264,10 @@ rewrite Arg'_rec_mt with (a:=a); auto with *.
 Qed.
 
 Lemma Dec_cons a x y q :
-  a \in Arg ->
-  x \in A a ->
-  y \in B a x ->
-  q \in Arg' (C a x y) ->
+  a ∈ Arg ->
+  x ∈ A a ->
+  y ∈ B a x ->
+  q ∈ Arg' (C a x y) ->
   Dec a (couple x (couple y q)) == Dec (C a x y) q.
 intros.
 unfold Dec.
@@ -1288,9 +1287,9 @@ Qed.
 
 
 Lemma Dec_typ a q :
-  a \in Arg ->
-  q \in Arg' a ->
-  Dec a q \in Arg.
+  a ∈ Arg ->
+  q ∈ Arg' a ->
+  Dec a q ∈ Arg.
 intros.
 apply Arg'_ind with (5:=H0); intros; auto with *.
  do 3 red; intros.
@@ -1329,12 +1328,12 @@ apply and_iff_morphism.
 Qed.
 
 Lemma extln_cons a x y q x' y' :
-  a \in Arg ->
-  x \in A a ->
-  y \in B a x ->
-  q \in Arg' (C a x y) ->
-  x' \in A (Dec (C a x y) q) ->
-  y' \in B (Dec (C a x y) q) x' ->
+  a ∈ Arg ->
+  x ∈ A a ->
+  y ∈ B a x ->
+  q ∈ Arg' (C a x y) ->
+  x' ∈ A (Dec (C a x y) q) ->
+  y' ∈ B (Dec (C a x y) q) x' ->
   extln (couple x (couple y q)) x' y' == couple x (couple y (extln q x' y')).
 intros.
 unfold extln at 1.
@@ -1348,9 +1347,9 @@ rewrite Arg'_rec_cons with (a:=a); auto.
 Qed.
 
 Lemma extln_nil a x y :
-  a \in Arg ->
-  x \in A a ->
-  y \in B a x ->
+  a ∈ Arg ->
+  x ∈ A a ->
+  y ∈ B a x ->
   extln empty x y == couple x (couple y empty).
 intros.
 unfold extln at 1.
@@ -1363,11 +1362,11 @@ rewrite Arg'_rec_mt with (a:=a); auto with *.
 Qed.
 
 Lemma extln_typ : forall a q x y,
-  a \in Arg ->
-  q \in Arg' a ->
-  x \in A (Dec a q) ->
-  y \in B (Dec a q) x ->
-  extln q x y \in Arg' a.
+  a ∈ Arg ->
+  q ∈ Arg' a ->
+  x ∈ A (Dec a q) ->
+  y ∈ B (Dec a q) x ->
+  extln q x y ∈ Arg' a.
 intros a q x y aty qty; revert x y; apply Arg'_ind with (5:=qty); trivial; intros.
  do 3 red; intros.
  apply fa_morph; intros x1.
@@ -1417,12 +1416,12 @@ Section SmallerParameter.
 Import ZFfix.
 
 Variable (a x y : set)
- (tya : a \in Arg)
- (tyx : x \in A a)
- (tyy : y \in B a x).
+ (tya : a ∈ Arg)
+ (tyx : x ∈ A a)
+ (tyy : y ∈ B a x).
 Let a' := C a x y.
 Variable
- (tya' : a' \in Arg).
+ (tya' : a' ∈ Arg).
 
 Let cs q := couple x (couple y q).
 
@@ -1453,7 +1452,7 @@ unfold B', B''.
 rewrite H0; reflexivity.
 Qed.
 
-Let idx_incl : sup (A' (Arg' a') (A'' a')) (B' (B'' a')) \incl sup (A' (Arg' a) (A'' a)) (B' (B'' a)).
+Let idx_incl : sup (A' (Arg' a') (A'' a')) (B' (B'' a')) ⊆ sup (A' (Arg' a) (A'' a)) (B' (B'' a)).
 red; intros.
 rewrite sup_ax in H|-*; auto with *.
 destruct H.
@@ -1504,12 +1503,12 @@ rewrite H0; reflexivity.
 Qed.
 
 Let csw_sup : forall w X,
-  w \in W0.W_F (A' (Arg' a') (A'' a')) (B' (B'' a')) X ->
+  w ∈ W0.W_F (A' (Arg' a') (A'' a')) (B' (B'' a')) X ->
   csw (W0.Wsup (B' (B'' a')) w) ==
   W0.Wsup (B' (B'' a)) (couple (csa (fst w))
      (cc_lam (B' (B'' a) (csa (fst w))) (fun i => csw (cc_app (snd w) i)))).
  intros.
- assert (fst (fst w) \in Arg' a').
+ assert (fst (fst w) ∈ Arg' a').
   apply fst_typ_sigma in H.
   apply fst_typ_sigma in H; trivial.
  apply eq_set_ax; intros z.
@@ -1594,8 +1593,8 @@ apply W0.Wf_mono; trivial.
 Qed.
 
 Let Fa_dom z : forall X,
-  X \incl W0.Wdom (A' (Arg' z) (A'' z)) (B' (B'' z)) ->
-  W0.Wf (A' (Arg' z) (A'' z)) (B' (B'' z)) X \incl W0.Wdom (A' (Arg' z) (A'' z)) (B' (B'' z)).
+  X ⊆ W0.Wdom (A' (Arg' z) (A'' z)) (B' (B'' z)) ->
+  W0.Wf (A' (Arg' z) (A'' z)) (B' (B'' z)) X ⊆ W0.Wdom (A' (Arg' z) (A'' z)) (B' (B'' z)).
 apply W0.Wf_typ; trivial.
 Qed.
 
@@ -1618,7 +1617,7 @@ Qed.
 
 Lemma wsup_fsub A0 B0 (bm : ext_fun A0 B0) o w :
   isOrd o ->
-  w \in W0.W_F A0 B0 (TI (W0.Wf A0 B0) o) ->
+  w ∈ W0.W_F A0 B0 (TI (W0.Wf A0 B0) o) ->
   fsub (W0.Wf A0 B0) (W0.Wdom A0 B0) (W0.Wsup B0 w) == replf (B0 (fst w)) (fun i => cc_app (snd w) i).
 intros.
 assert (tyw :=H0).
@@ -1673,7 +1672,7 @@ Qed.
 
 Let csw_fsub : forall o w,
   isOrd o ->
-  w \in Fa' (TI Fa' o) ->
+  w ∈ Fa' (TI Fa' o) ->
   typ_fun csw (fsub Fa' dom_a' w) (fsub Fa dom_a (csw w)).
 red; intros.
 apply W0.Wf_elim in H0; [|trivial].
@@ -1690,7 +1689,7 @@ rewrite csw_sup with (1:=H0).
 rewrite wsup_fsub with (o:=o); trivial.
  rewrite replf_ax.
  2:do 2 red; intros; apply cc_app_morph; auto with *.
- assert (i \in B' (B'' a) (csa (fst w'))).
+ assert (i ∈ B' (B'' a) (csa (fst w'))).
   unfold B',B''.
   unfold csa; rewrite fst_def; rewrite snd_def.
   unfold cs; rewrite Dec_cons; trivial.
@@ -1714,13 +1713,13 @@ rewrite wsup_fsub with (o:=o); trivial.
 Qed.
 
 Let Fra'_ord : forall x,
-  x \in Ffix Fa' dom_a' ->
+  x ∈ Ffix Fa' dom_a' ->
   isOrd (Fix_rec Fa' dom_a' (F_a Fa' dom_a') x).
 apply F_a_ord; auto with *.
 Qed.
 
 Let Fra_ord : forall x,
-  x \in Ffix Fa' dom_a' ->
+  x ∈ Ffix Fa' dom_a' ->
   isOrd (Fix_rec Fa dom_a (F_a Fa dom_a) (csw x)).
 intros.
 apply F_a_ord.
@@ -1730,21 +1729,21 @@ apply F_a_ord.
 Qed.
 
 Let F_a_ext : forall (x x' : set) (g g' : set -> set),
- x \in Ffix Fa dom_a ->
+ x ∈ Ffix Fa dom_a ->
  eq_fun (fsub Fa dom_a x) g g' ->
  x == x' -> F_a Fa dom_a g x == F_a Fa dom_a g' x'.
 intros; apply F_a_morph; trivial.
 Qed.
 Let F_a'_ext : forall (x x' : set) (g g' : set -> set),
- x \in Ffix Fa' dom_a' ->
+ x ∈ Ffix Fa' dom_a' ->
  eq_fun (fsub Fa' dom_a' x) g g' ->
  x == x' -> F_a Fa' dom_a' g x == F_a Fa' dom_a' g' x'.
 intros; apply F_a_morph; trivial.
 Qed.
 
 Lemma Faord : forall x,
-  x \in Ffix Fa' dom_a' ->
-  Fix_rec Fa' dom_a' (F_a Fa' dom_a') x \incl
+  x ∈ Ffix Fa' dom_a' ->
+  Fix_rec Fa' dom_a' (F_a Fa' dom_a') x ⊆
   Fix_rec Fa dom_a (F_a Fa dom_a) (csw x).
 intros.
 rewrite Ffix_def in H; auto.
@@ -1786,7 +1785,7 @@ Qed.
 
 
 Lemma smaller_parameter :
-  W_ord (Arg' a') (A'' a') (B'' a') \incl W_ord (Arg' a) (A'' a) (B'' a).
+  W_ord (Arg' a') (A'' a') (B'' a') ⊆ W_ord (Arg' a) (A'' a) (B'' a).
 unfold W_ord.
 unfold W0.W_ord.
 unfold Ffix_ord.
@@ -1808,7 +1807,7 @@ Qed.
 End SmallerParameter.
 
 
-Lemma WW_eqn a : a \in Arg -> WW a == W_Fd A B C WW a.
+Lemma WW_eqn a : a ∈ Arg -> WW a == W_Fd A B C WW a.
 intros.
 unfold WW.
 rewrite W_eqn; auto with *.
@@ -1825,13 +1824,13 @@ rewrite W_eqn; auto with *.
 
    red; intros.
    set (a' := C a x' x0).
-   assert (tya' : a' \in Arg).
+   assert (tya' : a' ∈ Arg).
     unfold a'; apply Cty; auto.
     rewrite H1; trivial.
    unfold W.
    set (Wo1 := W_ord (Arg' a') (A'' a') (B'' a')).
    set (Wo := W_ord (Arg' a) (A'' a) (B'' a)).
-   assert (Wo1 \incl Wo).
+   assert (Wo1 ⊆ Wo).
     (* Wo1 is smaller than Wo because there are less parameters reachable from
        [C a x x' x0] than from [a]. *)
     apply smaller_parameter; trivial.
@@ -1899,15 +1898,15 @@ Section UniverseFacts.
 
   Variable U : set.
   Hypothesis Ugrot : grot_univ U.
-  Hypothesis Unontriv : omega \in U.  
+  Hypothesis Unontriv : omega ∈ U.  
 
   (** We don't assume Arg is in U... *)
-  Hypothesis aU : forall a, a \in Arg -> A a \in U.
-  Hypothesis bU : forall a x, a \in Arg -> x \in A a -> B a x \in U.
+  Hypothesis aU : forall a, a ∈ Arg -> A a ∈ U.
+  Hypothesis bU : forall a x, a ∈ Arg -> x ∈ A a -> B a x ∈ U.
 
 
   (* ... but Arg' is in U *)
-  Lemma G_Arg' : forall a, a \in Arg -> Arg' a \in U.
+  Lemma G_Arg' : forall a, a ∈ Arg -> Arg' a ∈ U.
 unfold Arg'.
 elim isOrd_omega using isOrd_ind; intros.
 rewrite TIF_eq; auto.
@@ -1939,7 +1938,7 @@ apply G_sup; trivial.
 Qed.
 
 
-  Lemma G_WW a : a \in Arg -> WW a \in U.
+  Lemma G_WW a : a ∈ Arg -> WW a ∈ U.
 intros.
 unfold WW.
 apply G_W; intros; auto with *.

@@ -146,11 +146,11 @@ intros; apply Tr_isL.
 Qed.
 Global Hint Resolve inset_isL.
 
-Notation "x \in y" := (in_set x y) (at level 60).
+Notation "x ∈ y" := (in_set x y) (at level 60).
 Notation "x == y" := (eq_set x y) (at level 70).
 
 Lemma eq_set_ax : forall x y,
-  x == y <-> (forall z, z \in x <-> z \in y).
+  x == y <-> (forall z, z ∈ x <-> z ∈ y).
 intros.
 rewrite eq_set_def.
 split; intros.
@@ -170,7 +170,7 @@ split; intros.
   apply H.
   Texists i; apply eq_set_refl.
 
-  assert (elts y j \in y).
+  assert (elts y j ∈ y).
    Texists j; apply eq_set_refl.
   apply H in H0.
   Tdestruct H0; intros.
@@ -179,7 +179,7 @@ split; intros.
 Qed.
 
 Lemma in_reg : forall x x' y,
-  x == x' -> x \in y -> x' \in y.
+  x == x' -> x ∈ y -> x' ∈ y.
 intros.
 Tdestruct H0.
 Texists x0.
@@ -188,8 +188,8 @@ apply eq_set_sym; trivial.
 Qed.
 
 Lemma eq_intro : forall x y,
-  (forall z, z \in x -> z \in y) ->
-  (forall z, z \in y -> z \in x) ->
+  (forall z, z ∈ x -> z ∈ y) ->
+  (forall z, z ∈ y -> z ∈ x) ->
   x == y.
 intros.
 rewrite eq_set_ax.
@@ -197,9 +197,9 @@ split; intros; eauto.
 Qed.
 
 Lemma eq_elim : forall x y y',
-  x \in y ->
+  x ∈ y ->
   y == y' ->
-  x \in y'.
+  x ∈ y'.
 intros.
 rewrite eq_set_ax in H0.
 destruct (H0 x); auto.
@@ -217,8 +217,8 @@ split; intros.
  apply eq_elim with y0; trivial.
 Qed.
 
-Definition el (x:set) := {z|z \in x}.
-Definition eli x y (h:y \in x): el x := exist (fun z=>z\in x) y h.
+Definition el (x:set) := {z|z ∈ x}.
+Definition eli x y (h:y ∈ x): el x := exist (fun z=>z∈ x) y h.
 
 Definition elts' (x:set) (i:idx x) : el x.
 exists (elts x i).
@@ -233,7 +233,7 @@ apply proj2_sig.
 Defined.
 
 Lemma incl_elim1 x y :
-  el x -> (forall z, z \in x -> z \in y) -> el y.
+  el x -> (forall z, z ∈ x -> z ∈ y) -> el y.
 intros z eqxy.
 exists (proj1_sig z).
 apply eqxy.
@@ -245,7 +245,7 @@ Defined.
 Lemma wf_ax :
   forall (P:set->Prop),
   (forall x, isL (P x)) ->
-  (forall x, (forall y, y \in x -> P y) -> P x) ->
+  (forall x, (forall y, y ∈ x -> P y) -> P x) ->
   forall x, P x.
 intros P isLP H x.
 cut (forall x', x == x' -> P x');[auto using eq_set_refl|].
@@ -264,7 +264,7 @@ Qed.
 Definition empty :=
   sup False (fun x => match x with end).
 
-Lemma empty_ax : forall x, x \in empty -> Tr False.
+Lemma empty_ax : forall x, x ∈ empty -> Tr False.
 intros.
 Tdestruct H.
 Tin; trivial.
@@ -278,7 +278,7 @@ Definition pair x y :=
   sup bool (fun b => if b then x else y).
 
 Lemma pair_ax : forall a b z,
-  z \in pair a b <-> Tr(z == a \/ z == b).
+  z ∈ pair a b <-> Tr(z == a \/ z == b).
 split; intros.
  Tdestruct H.
  Tin; destruct x; auto.
@@ -318,7 +318,7 @@ Definition union (x:set) :=
     (fun p => elts (elts x (un_i _ p)) (un_j _ p)).
 
 Lemma union_ax : forall a z,
-  z \in union a <-> Tr(exists2 b, z \in b & b \in a).
+  z ∈ union a <-> Tr(exists2 b, z ∈ b & b ∈ a).
 split; intros.
  Tdestruct H.
  destruct x as (i,j); simpl in *.
@@ -362,8 +362,8 @@ Definition subset (x:set) (P:set->Prop) :=
   sup (subset_idx x P) (fun y => elts x (sb_i _ _ y)).
 
 Lemma subset_ax : forall x P z,
-  z \in subset x P <->
-  z \in x /\ Tr(exists2 z', z == z' & P z').
+  z ∈ subset x P <->
+  z ∈ x /\ Tr(exists2 z', z == z' & P z').
 intros x P z.
 split; intros.
  Tdestruct H.
@@ -393,15 +393,15 @@ Definition power (x:set) :=
          (fun y => Tr(exists2 i, y == elts x i & P i))).
 
 Lemma power_ax : forall x z,
-  z \in power x <->
-  (forall y, y \in z -> y \in x).
+  z ∈ power x <->
+  (forall y, y ∈ z -> y ∈ x).
 split; intros.
  Tdestruct H.
  specialize eq_elim with (1:=H0)(2:=H); intro.
  simpl in H1; rewrite subset_ax in H1.
  destruct H1; trivial.
 
- Texists (fun i => elts x i \in z).
+ Texists (fun i => elts x i ∈ z).
  apply eq_intro; intros.
   simpl; rewrite subset_ax.
   split; auto.
@@ -440,13 +440,13 @@ Fixpoint num (n:nat) : set :=
 
 Definition infinite := sup _ num.
 
-Lemma infinity_ax1 : empty \in infinite.
+Lemma infinity_ax1 : empty ∈ infinite.
 Texists 0.
 apply eq_set_refl.
 Qed.
 
-Lemma infinity_ax2 : forall x, x \in infinite ->
-  union (pair x (pair x x)) \in infinite.
+Lemma infinity_ax2 : forall x, x ∈ infinite ->
+  union (pair x (pair x x)) ∈ infinite.
 intros.
 Tdestruct H.
 Texists (S x0); simpl elts.
@@ -462,9 +462,9 @@ Definition replf (x:set) (F:set->set) :=
   sup _ (fun i => F (elts x i)).
 
 Lemma replf_ax : forall x F z,
-  (forall z z', z \in x -> z == z' -> F z == F z') ->
-  (z \in replf x F <->
-   Tr(exists2 y, y \in x & z == F y)).
+  (forall z z', z ∈ x -> z == z' -> F z == F z') ->
+  (z ∈ replf x F <->
+   Tr(exists2 y, y ∈ x & z == F y)).
 split; intros.
  Tdestruct H0.
  Texists (elts x x0); trivial.
@@ -484,7 +484,7 @@ Definition repl1 (x:set) (F:el x->set) :=
 
 Lemma repl1_ax : forall x F z,
   (forall z z', proj1_sig z == proj1_sig z' -> F z == F z') ->
-  (z \in repl1 x F <-> Tr(exists y, z == F y)).
+  (z ∈ repl1 x F <-> Tr(exists y, z == F y)).
 split; intros.
  Tdestruct H0.
  Texists (elts' x x0); trivial.
@@ -498,9 +498,9 @@ split; intros.
 Qed.
 
 Lemma repl1_mono x y F G :
-  (forall z, z \in x -> z \in y) ->
+  (forall z, z ∈ x -> z ∈ y) ->
   (forall x' y', proj1_sig x' == proj1_sig y' -> F x' == G y') ->
-  (forall z, z \in repl1 x F -> z \in repl1 y G).
+  (forall z, z ∈ repl1 x F -> z ∈ repl1 y G).
 intros inclxy eqFG.
 assert (forall x' y', proj1_sig x' == proj1_sig y' -> F x' == F y').
  intros z z' eqz.
@@ -549,9 +549,9 @@ Record repl_dom a (R:set->set->Prop) := mkRi {
  *)
 Hypothesis intuit : forall P:Prop, Tr P -> P.
 Lemma intuit_repl_ax a (R:set->set->Prop) :
-    (forall x x' y y', x \in a -> x == x' -> y == y' -> R x y -> R x' y') ->
-    (forall x y y', x \in a -> R x y -> R x y' -> y == y') ->
-    exists b, forall x, x \in b <-> Tr(exists2 y, y \in a & R y x).
+    (forall x x' y y', x ∈ a -> x == x' -> y == y' -> R x y -> R x' y') ->
+    (forall x y y', x ∈ a -> R x y -> R x y' -> y == y') ->
+    exists b, forall x, x ∈ b <-> Tr(exists2 y, y ∈ a & R y x).
 intros.
 destruct (ttrepl_ax (repl_dom a R)
         (fun i y => Tr(R (elts a (rd_i _ _ i)) y))) as (f,?); intros.
@@ -655,9 +655,9 @@ Qed.
 (* Collection axiom out of TTColl: *)
 Lemma collection_ax : forall A (R:set->set->Prop), 
     Proper (eq_set==>eq_set==>iff) R ->
-    exists B, forall x, x \in A ->
+    exists B, forall x, x ∈ A ->
       Tr (exists y, R x y) ->
-      Tr (exists2 y, y \in B & R x y).
+      Tr (exists2 y, y ∈ B & R x y).
 intros.
 destruct ttcoll_set with A R as (B,HB); trivial.
 exists B; intros x inA H0.
@@ -679,8 +679,8 @@ Qed.
 
 Lemma collection_ax' : forall A (R:set->set->Prop), 
     Proper (eq_set==>eq_set==>iff) R ->
-    (forall x, x \in A -> Tr(exists y, R x y)) ->
-    exists B, forall x, x \in A -> Tr(exists2 y, y \in B & R x y).
+    (forall x, x ∈ A -> Tr(exists y, R x y)) ->
+    exists B, forall x, x ∈ A -> Tr(exists2 y, y ∈ B & R x y).
 intros.
 destruct (collection_ax A R H) as (B,HB); trivial.
 exists B; auto.
@@ -714,12 +714,12 @@ split; intros.
 Qed.
 
 Lemma repl_from_collection : forall a (R:set->set->Prop),
-    (forall x x' y y', x \in a -> R x y -> R x' y' -> x == x' -> y == y') ->
-    exists b, forall x, x \in b <->
-                 Tr(exists2 y, y \in a & exists2 x', x == x' & R y x').
+    (forall x x' y y', x ∈ a -> R x y -> R x' y' -> x == x' -> y == y') ->
+    exists b, forall x, x ∈ b <->
+                 Tr(exists2 y, y ∈ a & exists2 x', x == x' & R y x').
 intros a R Rfun.
 destruct (collection_ax a (mkRel R) (mkRel_morph R)) as (B,HB).
-exists (subset B (fun y => exists2 x, x \in a & R x y)); split; intros.
+exists (subset B (fun y => exists2 x, x ∈ a & R x y)); split; intros.
  rewrite subset_ax in H; destruct H.
  Tdestruct H0 as (y,?,(x',?,?)).
  Texists x'; trivial.
@@ -751,7 +751,7 @@ red; red; intros.
 assert (exists2 a, X = idx a & forall i i', elts a i == elts a i' -> i=i') by admit.
 destruct H1 as (a,?,elinj); subst X.
 pose (R' x y := exists2 i, x == elts a i & exists2 y', y == y' & R i y').
-assert (R'fun : forall x x' y y', x \in a -> R' x y -> R' x' y' -> x == x' -> y == y').
+assert (R'fun : forall x x' y y', x ∈ a -> R' x y -> R' x' y' -> x == x' -> y == y').
  intros.
  destruct H2 as (i,?,(z,?,?)).
  destruct H3 as (i',?,(z',?,?)).
@@ -797,34 +797,34 @@ Qed.
 
 (* Deriving the existentially quantified sets *)
 
-Lemma empty_ex: Tr(exists empty, forall x, x \in empty -> Tr False).
+Lemma empty_ex: Tr(exists empty, forall x, x ∈ empty -> Tr False).
 Texists empty.
 exact empty_ax.
 Qed.
 
 Lemma pair_ex: forall a b,
-  Tr(exists c, forall x, x \in c <-> Tr(x == a \/ x == b)).
+  Tr(exists c, forall x, x ∈ c <-> Tr(x == a \/ x == b)).
 intros.
 Texists (pair a b).
 apply pair_ax.
 Qed.
 
 Lemma union_ex: forall a, Tr(exists b,
-    forall x, x \in b <-> Tr(exists2 y, x \in y & y \in a)).
+    forall x, x ∈ b <-> Tr(exists2 y, x ∈ y & y ∈ a)).
 intros.
 Texists (union a).
 apply union_ax.
 Qed.
 
 Lemma subset_ex : forall a P, Tr(exists b,
-    forall x, x \in b <-> x \in a /\ Tr(exists2 x', x == x' & P x')).
+    forall x, x ∈ b <-> x ∈ a /\ Tr(exists2 x', x == x' & P x')).
 intros.
 Texists (subset a P).
 apply subset_ax.
 Qed.
 
 Lemma power_ex: forall a, Tr(exists b,
-     forall x, x \in b <-> (forall y, y \in x -> y \in a)).
+     forall x, x ∈ b <-> (forall y, y ∈ x -> y ∈ a)).
 intros.
 Texists (power a).
 apply power_ax.
@@ -833,11 +833,11 @@ Qed.
 (* Infinity *)
 
 Lemma infinity_ex: Tr(exists2 infinite,
-    (Tr(exists2 empty, (forall x, x \in empty -> Tr False) & empty \in infinite)) &
-    (forall x, x \in infinite ->
+    (Tr(exists2 empty, (forall x, x ∈ empty -> Tr False) & empty ∈ infinite)) &
+    (forall x, x ∈ infinite ->
      Tr(exists2 y,
-       (forall z, z \in y <-> Tr(z == x \/ z \in x)) &
-       y \in infinite))).
+       (forall z, z ∈ y <-> Tr(z == x \/ z ∈ x)) &
+       y ∈ infinite))).
 Texists infinite.
  Texists empty.
   exact empty_ax.
@@ -888,7 +888,7 @@ Fixpoint wfrec (F:(set->set)->set->set) (x:set) : set :=
 Section FixRec.
 Hypothesis F : (set->set)->set->set.
 Hypothesis Fext : forall x x' f f',
-  (forall y y', y \in x -> y == y' -> f y == f' y') ->
+  (forall y y', y ∈ x -> y == y' -> f y == f' y') ->
   x == x' ->
   F f x == F f' x'.
 
@@ -986,7 +986,7 @@ apply eq_intro; intros.
 Qed.
 
 Lemma V_def : forall x z,
-  z \in V x <-> Tr(exists2 y, y \in x & z \in power (V y)).
+  z ∈ V x <-> Tr(exists2 y, y ∈ x & z ∈ power (V y)).
 destruct x; simpl; intros.
 rewrite union_ax.
 unfold replf; simpl.
@@ -1008,7 +1008,7 @@ Qed.
 
 
 Lemma V_trans : forall x y z,
-  z \in y -> y \in V x -> z \in V x.
+  z ∈ y -> y ∈ V x -> z ∈ V x.
 intros x.
 apply wf_ax with (x:=x); auto.
 clear x; intros.
@@ -1034,7 +1034,7 @@ apply eq_intro; intros.
 Qed.
 
 Lemma V_mono : forall x x',
-  x \in x' -> V x \in V x'.
+  x ∈ x' -> V x ∈ V x'.
 intros.
 rewrite (V_def x').
 Texists x; trivial.
@@ -1042,7 +1042,7 @@ rewrite power_ax; auto.
 Qed.
 
 Lemma V_sub : forall x y y',
-  y \in V x -> y' \in power y -> y' \in V x.
+  y ∈ V x -> y' ∈ power y -> y' ∈ V x.
 intros.
 rewrite V_def in H|-*.
 Tdestruct H.
@@ -1050,7 +1050,7 @@ Texists x0; trivial.
 rewrite power_ax in H0,H1|-*; auto.
 Qed.
 
-Lemma V_compl : forall x z, z \in V x <-> V z \in V x. 
+Lemma V_compl : forall x z, z ∈ V x <-> V z ∈ V x. 
 intros x.
 pattern x; apply wf_ax; clear x; intros; auto.
 repeat rewrite V_def.
@@ -1072,7 +1072,7 @@ split; intros.
  apply V_mono; trivial.
 Qed.
 
-Lemma V_comp2 x y : x \in power (V y) -> V x \in power (V y).
+Lemma V_comp2 x y : x ∈ power (V y) -> V x ∈ power (V y).
 intros.
 apply eq_elim with (V (singl y)).
 2:apply eq_set_sym; apply V_pow.
@@ -1081,7 +1081,7 @@ apply eq_elim with (1:=H).
 apply V_pow.
 Qed.
 
-Lemma V_intro : forall x, x \in power (V x).
+Lemma V_intro : forall x, x ∈ power (V x).
 intros x.
 rewrite power_ax; intros.
 rewrite V_compl; apply V_mono; trivial.
@@ -1103,10 +1103,10 @@ Qed.
 Lemma rk_induc :
   forall P:set->Prop,
   (forall x, isL (P x)) ->
-  (forall x, (forall y, y \in V x -> P y) -> P x) ->
+  (forall x, (forall y, y ∈ V x -> P y) -> P x) ->
   forall x, P x.
 intros.
-cut (forall y, V y \in power (V x) -> P y).
+cut (forall y, V y ∈ power (V x) -> P y).
  intros.
  apply H1.
  rewrite power_ax; auto.
@@ -1122,12 +1122,12 @@ Qed.
 Hypothesis EM : forall A, Tr(A \/ (A->Tr False)).
 
 (** Classical proof that the rank of a set is totally ordered *)
-Lemma V_total : forall x y, Tr(V x \in V y \/ V y \in power (V x)).
+Lemma V_total : forall x y, Tr(V x ∈ V y \/ V y ∈ power (V x)).
 intros x y.
 revert x.
 apply wf_ax with (x:=y); clear y; auto.
 intros y Hy x.
-Tdestruct (EM (Tr(exists2 y', y' \in V y & V x \in power y'))).
+Tdestruct (EM (Tr(exists2 y', y' ∈ V y & V x ∈ power y'))).
  Tleft.
  Tdestruct H.
  apply V_sub with x0; trivial.
@@ -1135,14 +1135,14 @@ Tdestruct (EM (Tr(exists2 y', y' \in V y & V x \in power y'))).
  Tright; rewrite power_ax; intros.
  rewrite V_def in H0.
  Tdestruct H0.
- assert (Tr(exists2 w, w \in V x & w \in V x0 -> Tr False)).
-  Tdestruct (EM (Tr(exists2 w, w \in V x & w \in V x0 -> Tr False))); trivial.
-  assert (V x \in power (V x0) -> Tr False).
+ assert (Tr(exists2 w, w ∈ V x & w ∈ V x0 -> Tr False)).
+  Tdestruct (EM (Tr(exists2 w, w ∈ V x & w ∈ V x0 -> Tr False))); trivial.
+  assert (V x ∈ power (V x0) -> Tr False).
    intros; apply H.
    Texists (V x0); trivial.
    apply V_mono; trivial.
   Tabsurd; apply H3; rewrite power_ax; intros.
-  Tdestruct (EM (y1 \in V x0)); trivial.
+  Tdestruct (EM (y1 ∈ V x0)); trivial.
   Tabsurd; apply H2.
   Texists y1; trivial.
  Tdestruct H2.
@@ -1160,7 +1160,7 @@ Qed.
 Definition lst_rk (P:set->Prop) (y:set) :=
   P y /\
   y == V y /\
-  forall x, x == V x -> P x -> y \in power(V x).
+  forall x, x == V x -> P x -> y ∈ power(V x).
 
 (*
 Lemma lst_rk_isL P y : (forall x, isL (P x)) -> isL (lst_rk P y).
@@ -1218,7 +1218,7 @@ Lemma lst_ex : forall (P:set->Prop),
 intros P Pm Pex.
 Telim Pex; destruct 1.
 revert H; apply rk_induc with (x:=x); clear x; intros; auto.
-Tdestruct (EM (Tr(exists2 z, z \in V x & P (V z)))).
+Tdestruct (EM (Tr(exists2 z, z ∈ V x & P (V z)))).
  Tdestruct H1; eauto.
 
  Texists (V x).
@@ -1240,15 +1240,15 @@ Qed.
 
 Definition coll_spec A R B :=
   lst_rk (fun B =>
-      forall x, x \in A ->
+      forall x, x ∈ A ->
       Tr(exists y, R x y) ->
-      Tr(exists2 y, y \in B & R x y)) B.
+      Tr(exists2 y, y ∈ B & R x y)) B.
 
 Lemma coll_ax_uniq : forall A (R:set->set->Prop), 
     Proper (eq_set ==> eq_set ==> iff) R ->
     Tr(exists B, coll_spec A R B).
 intros.
-pose (R' x y := x \in A /\ R x y).
+pose (R' x y := x ∈ A /\ R x y).
 destruct collection_ax with (A:=A) (R:=R'); trivial.
  unfold R'; do 3 red; intros.
  split; destruct 1; split.
@@ -1283,8 +1283,8 @@ Lemma coll_ax_mono : forall A A' (R:set->set->Prop) B B',
     Proper (eq_set ==> eq_set ==> iff) R ->
     coll_spec A R B ->
     coll_spec A' R B' ->
-    (forall z, z \in A -> z \in A') ->
-    (forall z, z \in B -> z \in B').
+    (forall z, z ∈ A -> z ∈ A') ->
+    (forall z, z ∈ B -> z ∈ B').
 intros.
 destruct H0 as (HB,(BV,Blst)).
 destruct H1 as (HB',(B'V,_)).
@@ -1306,7 +1306,7 @@ Import Ens.
  *)
 Lemma ttcoll_from_ttrepl_em : (forall P,P\/~P) -> ttrepl eq_set -> ttcoll eq_set.
 intros EM ttrepl_ax X R Rm.
-pose (P i v := exists2 x, x \in v & R i x).
+pose (P i v := exists2 x, x ∈ v & R i x).
 destruct (@ttrepl_ax (ttcoll_dom X R)
   (fun i y => lst_rk (P (cd_i _ _ i)) y)) as (f,?).
  destruct x as (i,e); simpl.
@@ -1340,7 +1340,7 @@ specialize H with (mkCi _ _ i H0); simpl in H.
 apply lst_incl in H.
 red in H.
 destruct H.
-assert (x \in B).
+assert (x ∈ B).
  simpl.
  unfold B; rewrite union_ax.
  econstructor;[eexact H|].

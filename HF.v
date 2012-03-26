@@ -669,7 +669,7 @@ Infix ":::" := cons_hf (at level 60, right associativity).
 Infix "+++" := app_hf (at level 60, right associativity).
 
 (* *)
-Notation "x \in y" := (In_hf x y) (at level 60).
+Notation "x ∈ y" := (In_hf x y) (at level 60).
 Notation "x == y" := (Eq_hf x y) (at level 70).
 
 Notation morph1 := (Proper (Eq_hf ==> Eq_hf)).
@@ -712,7 +712,7 @@ reflexivity.
 Qed.
 
 Definition eq_hf_fun (x:hf) (f1 f2:hf->hf) :=
-  forall y1 y2, y1 \in x -> y1 == y2 -> f1 y1 == f2 y2.
+  forall y1 y2, y1 ∈ x -> y1 == y2 -> f1 y1 == f2 y2.
 
 Lemma eq_hf_fun_sym : forall x f1 f2,
   eq_hf_fun x f1 f2 -> eq_hf_fun x f2 f1.
@@ -745,29 +745,29 @@ apply H.
 Qed.
 
 Definition hf_pred_morph x P :=
-  forall y1 y2, y1 \in x -> y1 == y2 -> P y1 = true -> P y2 = true.
+  forall y1 y2, y1 ∈ x -> y1 == y2 -> P y1 = true -> P y2 = true.
 
 Definition eq_hf_pred (x:hf) (f1 f2:hf->bool) :=
-  forall y1 y2, y1 \in x -> y1 == y2 -> f1 y1 = f2 y2.
+  forall y1 y2, y1 ∈ x -> y1 == y2 -> f1 y1 = f2 y2.
 
 (* *)
 
-Lemma empty_elim : forall x, ~ x \in empty.
+Lemma empty_elim : forall x, ~ x ∈ empty.
 compute in |- *; intros;  discriminate.
 Qed.
 
-Lemma empty_ext : forall a, (forall x, ~ x \in a) -> a == empty.
+Lemma empty_ext : forall a, (forall x, ~ x ∈ a) -> a == empty.
 intros.
 apply Eq_hf_intro; red; intros.
  elim H with a0; trivial.
  elim empty_elim with a0; trivial.
 Qed.
 
-Lemma singl_intro : forall x y, x == y -> x \in singl y.
+Lemma singl_intro : forall x y, x == y -> x ∈ singl y.
 unfold singl in |- *; auto.
 Qed.
 
-Lemma singl_elim : forall x a, x \in singl a -> x == a.
+Lemma singl_elim : forall x a, x ∈ singl a -> x == a.
 unfold singl in |- *; intros.
 elim In_hf_elim_hf with (1 := H); intros; auto.
 discriminate H0.
@@ -775,8 +775,8 @@ Qed.
 
 Lemma singl_ext :
   forall y x,
-  x \in y ->
-  (forall z, z \in y -> z == x) ->
+  x ∈ y ->
+  (forall z, z ∈ y -> z == x) ->
   y == singl x.
 Proof.
 intros; apply Eq_hf_intro; red; intros.
@@ -787,7 +787,7 @@ Qed.
 
 
 Lemma pair_elim : forall x a b,
-  x \in pair a b -> x == a \/ x == b.
+  x ∈ pair a b -> x == a \/ x == b.
 intros.
 unfold pair in H.
 elim In_hf_elim_hf with (1 := H); intros; auto.
@@ -796,18 +796,18 @@ elim In_hf_elim_hf with (1 := H0); intros; auto.
  discriminate H1.
 Qed.
 
-Lemma pair_intro1 : forall x a b, x == a -> x \in pair a b.
+Lemma pair_intro1 : forall x a b, x == a -> x ∈ pair a b.
 Proof.
 unfold pair;auto.
 Qed.
 
-Lemma pair_intro2 : forall x a b, x == b -> x \in pair a b.
+Lemma pair_intro2 : forall x a b, x == b -> x ∈ pair a b.
 Proof.
 unfold pair;auto.
 Qed.
 
 
-Lemma union_intro : forall x y z, x \in y -> y \in z -> x \in union z.
+Lemma union_intro : forall x y z, x ∈ y -> y ∈ z -> x ∈ union z.
 Proof.
 intros x y z H.
 unfold union.
@@ -828,7 +828,7 @@ apply fold_set_ind; intros.
   auto.
 Qed.
 
-Lemma union_elim : forall x z, x \in union z -> exists2 y, x \in y & y \in z.
+Lemma union_elim : forall x z, x ∈ union z -> exists2 y, x ∈ y & y ∈ z.
 unfold union.
 intros x z.
 pattern z, (fold_set _ (fun y l => hf_elts y +++ l) z nil).
@@ -852,8 +852,8 @@ Qed.
 
 Lemma union_ext :
   forall u z,
-  (forall x y, x \in y -> y \in z -> x \in u) ->
-  (forall x, x \in u -> exists2 y, x \in y & y \in z) ->
+  (forall x y, x ∈ y -> y ∈ z -> x ∈ u) ->
+  (forall x, x ∈ u -> exists2 y, x ∈ y & y ∈ z) ->
   u == union z.
 intros.
 apply Eq_hf_intro; red; intros.
@@ -890,14 +890,14 @@ Qed.
 (* power properties *)
 
 Lemma power_intro :
-  forall x y, Incl_hf x y -> x \in power y.
+  forall x y, Incl_hf x y -> x ∈ power y.
 unfold power.
 set (g := fun y0 (pow:list hf ->list hf) p => pow p ++ pow (y0 :: p)).
 set (h := fun p => HF(rev p) :: nil).
 intros x y.
 assert (forall x l, Incl_hf (HF (rev l)) x ->
  Incl_hf x (HF(rev l ++ hf_elts y)) ->
- x \in HF(fold_set _ g y h l)).
+ x ∈ HF(fold_set _ g y h l)).
 clear x.
 pattern y, (fold_set _ g y h).
 apply fold_set_ind; intros.
@@ -950,14 +950,14 @@ intro; apply H; simpl.
 Qed.
 
 
-Lemma power_elim : forall x y z, x \in power y -> z \in x -> z \in y.
+Lemma power_elim : forall x y z, x ∈ power y -> z ∈ x -> z ∈ y.
 unfold power.
 set (g := fun y0 (pow:list hf ->list hf) p => pow p ++ pow (y0 :: p)).
 set (h := fun p => HF(rev p) :: nil).
 intros x y.
 assert (forall l,
- x \in HF(fold_set _ g y h l) ->
- forall z, z \in x -> ~ z \in (HF(rev l)) -> z \in y).
+ x ∈ HF(fold_set _ g y h l) ->
+ forall z, z ∈ x -> ~ z ∈ (HF(rev l)) -> z ∈ y).
  pattern y, (fold_set _ g y h).
  apply fold_set_ind; intros.
   unfold h in H.
@@ -993,8 +993,8 @@ Qed.
 
 Lemma power_ext :
   forall p a,
-  (forall x, (forall y, y \in x -> y \in a) -> x \in p) ->
-  (forall x y, x \in p -> y \in x -> y \in a) ->
+  (forall x, (forall y, y ∈ x -> y ∈ a) -> x ∈ p) ->
+  (forall x y, x ∈ p -> y ∈ x -> y ∈ a) ->
   p == power a.
 intros.
 apply Eq_hf_intro; red; intros.
@@ -1016,7 +1016,7 @@ Qed.
 
 
 Lemma subset_intro_gen : forall a (P:hf->bool) x,
-  x \in a -> (forall x', x==x' -> P x' = true) -> x \in subset a P.
+  x ∈ a -> (forall x', x==x' -> P x' = true) -> x ∈ subset a P.
 unfold subset.
 intros a P x in_a in_P; revert in_a.
 set (g := fun y l => if P y then y :: l else l).
@@ -1036,7 +1036,7 @@ Qed.
 
 Lemma subset_intro : forall a (P:hf->bool) x,
   hf_pred_morph a P ->
-  x \in a -> P x = true -> x \in subset a P.
+  x ∈ a -> P x = true -> x ∈ subset a P.
 intros.
 apply subset_intro_gen; trivial.
 intros.
@@ -1044,7 +1044,7 @@ red in H.
 apply H with (2:=H2); trivial.
 Qed.
 
-Lemma subset_elim1 : forall a (P:hf->bool) x, x \in subset a P -> x \in a.
+Lemma subset_elim1 : forall a (P:hf->bool) x, x ∈ subset a P -> x ∈ a.
 unfold subset.
 intros a P x.
 set (g := fun y l => if P y then y :: l else l).
@@ -1063,7 +1063,7 @@ destruct (P x').
 Qed.
 
 Lemma subset_elim2_gen : forall a (P:hf->bool) x,
-  x \in subset a P ->
+  x ∈ subset a P ->
   exists2 x', x==x' & P x' = true.
 unfold subset.
 intros a P x.
@@ -1083,7 +1083,7 @@ Qed.
 
 Lemma subset_elim2 : forall a (P:hf->bool) x,
   hf_pred_morph a P ->
-  x \in subset a P ->
+  x ∈ subset a P ->
   P x = true.
 unfold subset.
 intros a P x Pmorph.
@@ -1105,9 +1105,9 @@ Qed.
 Lemma subset_ext :
   forall s a (P:hf->bool),
   hf_pred_morph a P ->
-  (forall x, x \in a -> P x = true -> x \in s) ->
-  (forall x, x \in s -> x \in a) ->
-  (forall x, x \in s -> P x = true) ->
+  (forall x, x ∈ a -> P x = true -> x ∈ s) ->
+  (forall x, x ∈ s -> x ∈ a) ->
+  (forall x, x ∈ s -> P x = true) ->
   s == subset a P.
 intros.
 apply Eq_hf_intro; red; intros.
@@ -1168,9 +1168,9 @@ elim empty_elim with x; trivial.
 Qed.
 
 Lemma subset_singl : forall x a (P:hf->bool),
-  x \in a ->
+  x ∈ a ->
   P x = true ->
-  (forall x', x' \in a -> (x==x' <-> P x' = true)) ->
+  (forall x', x' ∈ a -> (x==x' <-> P x' = true)) ->
   subset a P == singl x.
 intros.
 apply singl_ext; intros.
@@ -1190,7 +1190,7 @@ Qed.
 
 Lemma repl_intro : forall a f y x,
   eq_hf_fun a f f ->
-  y \in a -> x == f y -> x \in repl a f.
+  y ∈ a -> x == f y -> x ∈ repl a f.
 Proof.
 unfold repl.
 intros a f y x.
@@ -1210,7 +1210,7 @@ Qed.
 
 Lemma repl_elim : forall a f x,
   eq_hf_fun a f f ->
-  x \in repl a f -> exists2 y, y \in a & x == f y.
+  x ∈ repl a f -> exists2 y, y ∈ a & x == f y.
 Proof.
 unfold repl.
 intros a f x.
@@ -1231,8 +1231,8 @@ Qed.
 
 Lemma repl_ext : forall x a f,
   eq_hf_fun a f f ->
-  (forall y, y \in a -> f y \in x) ->
-  (forall y, y \in x -> exists2 z, z \in a & y == f z) ->  
+  (forall y, y ∈ a -> f y ∈ x) ->
+  (forall y, y ∈ x -> exists2 z, z ∈ a & y == f z) ->  
   x == repl a f.
 intros.
 apply Eq_hf_intro; red; intros.
@@ -1320,7 +1320,7 @@ intros.
 assert (hf_pred_morph (union (couple x y))
          (fun x0 => in_hf (singl x0) (couple x y))).
  red; intros.
- change (singl y2 \in couple x y).
+ change (singl y2 ∈ couple x y).
  rewrite <- H0; trivial.
 symmetry.
 apply union_ext; intros.
@@ -1423,13 +1423,13 @@ Lemma raw_choose_elt : forall x, {y | In y (hf_elts x)}+{x==empty}.
 intros ([|h l]); simpl; [right;compute;reflexivity|left;exists h; auto].
 Qed.
 
-Lemma choose_elt : forall x, {y | y \in x}+{x==empty}.
+Lemma choose_elt : forall x, {y | y ∈ x}+{x==empty}.
 intros ([|h l]); [right;compute;reflexivity|left;exists h].
 apply in_hf_intro with h; simpl; auto; reflexivity.
 Qed.
 
-Lemma regularity_ax: forall a a0, a0 \in a ->
-    exists2 b, b \in a & ~(exists2 c, c \in a & c \in b).
+Lemma regularity_ax: forall a a0, a0 ∈ a ->
+    exists2 b, b ∈ a & ~(exists2 c, c ∈ a & c ∈ b).
 induction a0 using hf_ind2; intros.
 set (a0 := HF l) in *.
 pose (A := subset a0 (fun y => in_hf y a)).
@@ -1440,7 +1440,7 @@ destruct (choose_elt A).
  apply in_hf_elim in H1.
  destruct H1.
  rewrite H2 in i; clear H2 x.
- assert (x0 \in a).
+ assert (x0 ∈ a).
   apply subset_elim2 with (2:=i).
   red; intros.
   rewrite H3 in H4; trivial.
@@ -1448,7 +1448,7 @@ destruct (choose_elt A).
 
  exists a0; trivial.
  red; destruct 1.
- assert (x \in A).
+ assert (x ∈ A).
   apply subset_intro; trivial.
   red; intros.
   rewrite H4 in H5; trivial.

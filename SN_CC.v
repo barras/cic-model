@@ -17,7 +17,7 @@ Definition El T := fst T.
 Definition Real T := sSAT (snd T) .
 
 Definition piSAT A (F:set->SAT) :=
-  prodSAT (Real A) (interSAT (fun p:{y|y \in El A} => F (proj1_sig p))).
+  prodSAT (Real A) (interSAT (fun p:{y|y ∈ El A} => F (proj1_sig p))).
 
 Definition sn_prod A F :=
   mkTY (cc_prod (El A) (fun x => El (F x)))
@@ -28,8 +28,8 @@ Definition sn_lam A F := cc_lam (El A) F.
 Lemma sn_prod_intro : forall dom f F,
   ext_fun (El dom) f ->
   ext_fun (El dom) F ->
-  (forall x, x \in El dom -> f x \in El (F x)) ->
-  sn_lam dom f \in El (sn_prod dom F).
+  (forall x, x ∈ El dom -> f x ∈ El (F x)) ->
+  sn_lam dom f ∈ El (sn_prod dom F).
 intros.
 unfold sn_lam, sn_prod, mkTY, El.
 rewrite fst_def.
@@ -40,9 +40,9 @@ Qed.
 
 
 Lemma sn_prod_elim : forall dom f x F,
-  f \in El (sn_prod dom F) ->
-  x \in El dom ->
-  cc_app f x \in El (F x).
+  f ∈ El (sn_prod dom F) ->
+  x ∈ El dom ->
+  cc_app f x ∈ El (F x).
 intros.
 unfold sn_prod, mkTY, El in H.
 rewrite fst_def in H.
@@ -51,7 +51,7 @@ Qed.
 
 Lemma cc_impredicative_prod_non_empty : forall dom F,
   ext_fun dom F ->
-  (forall x, x \in dom -> F x == singl prf_trm) ->
+  (forall x, x ∈ dom -> F x == singl prf_trm) ->
   cc_prod dom F == singl prf_trm.
 Proof.
 intros.
@@ -97,8 +97,8 @@ Hint Resolve prop_repl_morph.
 
 Lemma sn_impredicative_prod : forall dom F,
   ext_fun (El dom) F ->
-  (forall x, x \in El dom -> F x \in El sn_props) ->
-  sn_prod dom F \in El sn_props.
+  (forall x, x ∈ El dom -> F x ∈ El sn_props) ->
+  sn_prod dom F ∈ El sn_props.
 unfold sn_props, mkTY, El; intros.
 rewrite fst_def.
 rewrite replSAT_ax; trivial.
@@ -117,7 +117,7 @@ apply cc_impredicative_prod_non_empty; intros.
  reflexivity.
 Qed.
 
-  Lemma sn_proof_of_false : prf_trm \in El (sn_prod sn_props (fun P => P)).
+  Lemma sn_proof_of_false : prf_trm ∈ El (sn_prod sn_props (fun P => P)).
 setoid_replace prf_trm with (cc_lam (El sn_props) (fun _ => prf_trm)).
  unfold sn_prod, mkTY, El; rewrite fst_def.
  apply cc_prod_intro; intros.
@@ -147,7 +147,7 @@ Require Import Models.
 Module SN_CC_Model <: CC_Model.
 
 Definition X := set.
-Definition inX x y := x \in El y.
+Definition inX x y := x ∈ El y.
 Definition eqX := eq_set.
 Lemma eqX_equiv : Equivalence eqX.
 Proof eq_set_equiv.
@@ -163,11 +163,11 @@ Definition app := cc_app.
 Definition lam := sn_lam.
 Definition prod := sn_prod.
 
-Notation "x \in y" := (inX x y).
+Notation "x ∈ y" := (inX x y).
 Notation "x == y" := (eqX x y).
 
 Definition eq_fun (x:X) (f1 f2:X->X) :=
-  forall y1 y2, y1 \in x -> y1 == y2 -> f1 y1 == f2 y2.
+  forall y1 y2, y1 ∈ x -> y1 == y2 -> f1 y1 == f2 y2.
 
 Lemma lam_ext :
   forall x1 x2 f1 f2,
@@ -208,29 +208,29 @@ Qed.
 Lemma prod_intro : forall dom f F,
   eq_fun dom f f ->
   eq_fun dom F F ->
-  (forall x, x \in dom -> f x \in F x) ->
-  lam dom f \in prod dom F.
+  (forall x, x ∈ dom -> f x ∈ F x) ->
+  lam dom f ∈ prod dom F.
 Proof sn_prod_intro.
 
 Lemma prod_elim : forall dom f x F,
   eq_fun dom F F ->
-  f \in prod dom F ->
-  x \in dom ->
-  app f x \in F x.
+  f ∈ prod dom F ->
+  x ∈ dom ->
+  app f x ∈ F x.
 intros.
 eapply sn_prod_elim; eauto.
 Qed.
 
 Lemma impredicative_prod : forall dom F,
   eq_fun dom F F ->
-  (forall x, x \in dom -> F x \in props) ->
-  prod dom F \in props.
+  (forall x, x ∈ dom -> F x ∈ props) ->
+  prod dom F ∈ props.
 Proof sn_impredicative_prod.
 
 Lemma beta_eq:
   forall dom F x,
   eq_fun dom F F ->
-  x \in dom ->
+  x ∈ dom ->
   app (lam dom F) x == F x.
 unfold app, lam, inX, eqX, El; intros.
 apply cc_beta_eq; trivial.
@@ -263,7 +263,7 @@ Qed.
   Lemma Real_prod : forall A B,
     eqSAT (Real (prod A B))
      (prodSAT (Real A)
-        (interSAT (fun p:{y|y\in A} => Real (B (proj1_sig p))))).
+        (interSAT (fun p:{y|y∈ A} => Real (B (proj1_sig p))))).
 unfold Real, CCSN.Real, prod, sn_prod, piSAT, mkTY; intros.
 rewrite snd_def.
 rewrite iSAT_id.
@@ -272,7 +272,7 @@ Qed.
 
   Definition daemon := empty.
 
-  Lemma daemon_false : daemon \in prod props (fun P => P).
+  Lemma daemon_false : daemon ∈ prod props (fun P => P).
 Proof sn_proof_of_false.
 
 End SN_CC_addon.

@@ -13,7 +13,7 @@ Definition X := set.
 Definition inX : X -> X -> Prop := in_set.
 Definition eqX : X -> X -> Prop := eq_set.
 Definition eqX_equiv : Equivalence eqX := eq_set_equiv.
-Notation "x \in y" := (inX x y).
+Notation "x ∈ y" := (inX x y).
 Notation "x == y" := (eqX x y).
 
 Lemma in_ext: Proper (eqX ==> eqX ==> iff) inX.
@@ -25,7 +25,7 @@ Definition lam : X -> (X -> X) -> X := cc_lam.
 Definition prod : X -> (X -> X) -> X := cc_prod.
 
 Definition eq_fun (x:X) (f1 f2:X->X) :=
-  forall y1 y2, y1 \in x -> y1 == y2 -> f1 y1 == f2 y2.
+  forall y1 y2, y1 ∈ x -> y1 == y2 -> f1 y1 == f2 y2.
 
 Lemma lam_ext :
   forall x1 x2 f1 f2,
@@ -56,28 +56,28 @@ Qed.
 Lemma prod_intro : forall dom f F,
   eq_fun dom f f ->
   eq_fun dom F F ->
-  (forall x, x \in dom -> f x \in F x) ->
-  lam dom f \in prod dom F.
+  (forall x, x ∈ dom -> f x ∈ F x) ->
+  lam dom f ∈ prod dom F.
 Proof cc_prod_intro.
 
 Lemma prod_elim : forall dom f x F,
   eq_fun dom F F ->
-  f \in prod dom F ->
-  x \in dom ->
-  app f x \in F x.
+  f ∈ prod dom F ->
+  x ∈ dom ->
+  app f x ∈ F x.
 Proof fun dom f x F _ H H0 => cc_prod_elim dom f x F H H0.
 
 
 Lemma impredicative_prod : forall dom F,
   eq_fun dom F F ->
-  (forall x, x \in dom -> F x \in props) ->
-  prod dom F \in props.
+  (forall x, x ∈ dom -> F x ∈ props) ->
+  prod dom F ∈ props.
 Proof fun dom F _ => cc_impredicative_prod dom F.
 
 Lemma beta_eq:
   forall dom F x,
   eq_fun dom F F ->
-  x \in dom ->
+  x ∈ dom ->
   app (lam dom F) x == F x.
 Proof cc_beta_eq.
 
@@ -104,7 +104,7 @@ setoid_replace (CCM.prod CCM.props (fun x => x)) with empty in H0.
  destruct n; discriminate.
 
  apply empty_ext; red; intros.
- assert (empty \in props) by
+ assert (empty ∈ props) by
    (unfold props; apply empty_in_power).
  specialize cc_prod_elim with (1:=H1) (2:=H2); intro.
  apply empty_ax with (1:=H3).
@@ -122,7 +122,7 @@ Require Import ZFrepl.
 
 Definition CH_spec a f1 f2 z :=
      a == empty /\ z == app f2 (lam empty (fun _ => empty))
-  \/ (exists w, w \in a) /\ z == app f1 (choose a).
+  \/ (exists w, w ∈ a) /\ z == app f1 (choose a).
 
 Parameter CH_spec_u : forall a f1 f2, uchoice_pred (CH_spec a f1 f2).
 

@@ -31,15 +31,15 @@ Qed.
 
   Definition LIM f := inr f.
 
-  Lemma LIM_typ_gen : forall x X, x \in func NAT X -> LIM x \in sum UNIT (func NAT X).
+  Lemma LIM_typ_gen : forall x X, x ∈ func NAT X -> LIM x ∈ sum UNIT (func NAT X).
 unfold LIM; intros.
 apply inr_typ; trivial.
 Qed.
 
   Lemma ORDf_case : forall X (P:Prop) x,
     (x == ZERO -> P) ->
-    (forall f, f \in func NAT X -> x == LIM f -> P) ->
-    x \in ORDf X -> P.
+    (forall f, f ∈ func NAT X -> x == LIM f -> P) ->
+    x ∈ ORDf X -> P.
 intros.
 unfold ORDf in H.
 apply sum_ind with (3:=H1); intros.
@@ -108,10 +108,10 @@ Qed.
 
   Lemma ORDi_case : forall (P:set->Prop) o n,
     isOrd o ->
-    (forall x x', x \in ORDi o -> x == x' -> P x -> P x') ->
+    (forall x x', x ∈ ORDi o -> x == x' -> P x -> P x') ->
     P ZERO ->
-    (forall f o', lt o' o -> f \in func NAT (ORDi o') -> P (LIM f)) ->    
-    n \in ORDi o -> P n.
+    (forall f o', lt o' o -> f ∈ func NAT (ORDi o') -> P (LIM f)) ->    
+    n ∈ ORDi o -> P n.
 intros.
 apply TI_elim in H3; auto.
 destruct H3.
@@ -131,10 +131,10 @@ Qed.
   Lemma ORDi_fix :
     forall (P:set->Prop) o,
     isOrd o ->
-    (forall i, isOrd i -> i \incl o ->
-     (forall i' m, lt i' i -> m \in ORDi i' -> P m) ->
-     forall n, n \in ORDi i -> P n) ->
-    forall n, n \in ORDi o -> P n.
+    (forall i, isOrd i -> i ⊆ o ->
+     (forall i' m, lt i' i -> m ∈ ORDi i' -> P m) ->
+     forall n, n ∈ ORDi i -> P n) ->
+    forall n, n ∈ ORDi o -> P n.
 intros P o is_ord Prec.
 induction is_ord using isOrd_ind; intros; eauto.
 Qed.
@@ -164,7 +164,7 @@ Hint Resolve ordOc.
   Lemma ORDf_cont0 : forall F,
     stable_ord F ->
     increasing F ->
-    ORDf (sup ORDf_clos F) \incl sup ORDf_clos (fun A => ORDf (F A)).
+    ORDf (sup ORDf_clos F) ⊆ sup ORDf_clos (fun A => ORDf (F A)).
 unfold ORDf.
 intros.
 rewrite <- sum_cont; auto.
@@ -184,13 +184,13 @@ Section OrdConvergence.
 Lemma boundo :
     forall F,
     ext_fun NAT F -> 
-    (forall n, n \in NAT -> lt (F n) o) ->
+    (forall n, n ∈ NAT -> lt (F n) o) ->
     lt (sup NAT F) o.
 intros.
 apply hartog_bound; trivial.
 Qed.
 
-Lemma zer_h : zero \in o.
+Lemma zer_h : zero ∈ o.
 unfold o, hartog_succ.
 rewrite sup_ax.
 2:admit.
@@ -229,7 +229,7 @@ pose (R' :=
     (replf R (fun p => couple (SUCC (fst p)) (SUCC (snd p)))) (* shift R *)
     (replf NAT (fun n => couple (SUCC n) ZERO))). (* put 0 above all elements of R *)
 assert (Rax: forall y z, rel_app R' y z <->
-  exists2 y', y == SUCC y' /\ y' \in NAT &
+  exists2 y', y == SUCC y' /\ y' ∈ NAT &
   (exists2 z', z==SUCC z' & rel_app R y' z') \/ z == ZERO).
  split; intros.
   apply union2_elim in H; destruct H.
@@ -265,10 +265,10 @@ assert (Rax: forall y z, rel_app R' y z <->
    apply replf_intro with y'; auto.
     admit.
     rewrite H; rewrite H1; reflexivity.
-assert (R' \in wo NAT).
+assert (R' ∈ wo NAT).
  apply subset_intro.
 Lemma union2_rel : forall A B r1 r2,
-  r1 \in rel A B -> r2 \in rel A B -> union2 r1 r2 \in rel A B.
+  r1 ∈ rel A B -> r2 ∈ rel A B -> union2 r1 r2 ∈ rel A B.
 intros.
 apply power_intro; intros.
 apply union2_elim in H1; destruct H1.
@@ -341,7 +341,7 @@ exists R'; trivial.
     rewrite Rax.
     exists x0; auto with *.
 
-   assert (forall n, n \in NAT -> forall x,
+   assert (forall n, n ∈ NAT -> forall x,
      order_type_assign_rel NAT R n x -> order_type_assign_rel NAT R' (SUCC n) x).
     intros.
     apply H3; intros.
@@ -362,7 +362,7 @@ Qed.
   Lemma nato : lt omega o.
 pose (NtoO := fun n m => exists2 n', n == nat2NAT n' &
       m == (fix F n := match n with 0 => zero | S k => osucc (F k) end) n').
-assert (forall n, n \in NAT -> uchoice_pred (NtoO n)).
+assert (forall n, n ∈ NAT -> uchoice_pred (NtoO n)).
  admit.
 setoid_replace omega with (sup NAT (fun n => uchoice (NtoO n))).
  apply boundo.
@@ -401,13 +401,13 @@ Qed.
 *)
 
   Variable o : set.
-Hypothesis zer_o : zero \in o.
+Hypothesis zer_o : zero ∈ o.
   Hypothesis limo : limitOrd o.
 (*  Hypothesis nato : lt omega o.*)
   Hypothesis boundo :
     forall F,
     ext_fun NAT F -> 
-    (forall n, n \in NAT -> lt (F n) o) ->
+    (forall n, n ∈ NAT -> lt (F n) o) ->
     lt (osup NAT F) o.
 
   Let oo : isOrd o.
@@ -423,7 +423,7 @@ assert (eP : ext_fun NAT (fun n => uchoice (P n))).
  unfold P.
  rewrite H2; rewrite H3.
  reflexivity.
-assert (forall n, n \in NAT -> uchoice_pred (P n)).
+assert (forall n, n ∈ NAT -> uchoice_pred (P n)).
  split; intros.
   revert H3; unfold P; rewrite H2; trivial.
 
@@ -466,7 +466,7 @@ exists (osup NAT (fun n => uchoice (P n))).
    elim d; reflexivity.
 
   red; intros.
-  assert (t1 : SUCC ZERO \in NAT).
+  assert (t1 : SUCC ZERO ∈ NAT).
    apply SUCC_typ; apply ZERO_typ.
   apply osup_intro with (x:=SUCC ZERO); trivial.
   assert (P (SUCC ZERO) (uchoice (P (SUCC ZERO)))).
@@ -478,12 +478,12 @@ exists (osup NAT (fun n => uchoice (P n))).
 Qed.
 Hint Resolve diro.
 
-  Let zer : zero \in VN o.
+  Let zer : zero ∈ VN o.
 intros.
 apply VN_intro; auto.
 Qed.
 
-  Let suc : forall x, x \in VN o -> succ x \in VN o.
+  Let suc : forall x, x ∈ VN o -> succ x ∈ VN o.
 unfold succ.
 intros.
 apply VN_union; trivial.
@@ -491,13 +491,13 @@ apply VNlim_pair; auto.
 apply VNlim_pair; auto.
 Qed.
 
-  Let NATo : NAT \in VN o.
+  Let NATo : NAT ∈ VN o.
 apply NAT_typ; trivial.
 admit. (* this is the real hyp. *)
 Qed.
 
   Lemma ORDf_size_gen :
-    forall X, X \in VN o -> ORDf X \in VN o.
+    forall X, X ∈ VN o -> ORDf X ∈ VN o.
 intros.
 unfold ORDf.
 unfold sum.
@@ -524,7 +524,7 @@ apply VNlim_pair; trivial.
 Qed.
 
   Lemma ORDf_size_gen_le : forall X,
-    X \incl VN o -> ORDf X \incl VN o.
+    X ⊆ VN o -> ORDf X ⊆ VN o.
 red; intros.
 apply ORDf_case with (3:=H0); intros.
  rewrite H1.
@@ -542,7 +542,7 @@ apply ORDf_case with (3:=H0); intros.
 
 Import ZFrelations.
   apply VNlim_pair; auto.
-  pose (F n := inter (subset o (fun x => ZFpairs.couple  n (app f n) \in VN x))).
+  pose (F n := inter (subset o (fun x => ZFpairs.couple  n (app f n) ∈ VN x))).
   assert (eS : ext_fun (func NAT o) (fun f0 => sup NAT (app f0))).
    red; red; intros.
    apply sup_morph; auto with *.
@@ -554,14 +554,14 @@ Import ZFrelations.
    apply subset_morph; auto with *.
    red; intros.
    rewrite H4; reflexivity.
-  assert (pF : forall n, n \in NAT -> lt (F n) o /\ ZFpairs.couple n (app f n) \in VN (F n)). 
+  assert (pF : forall n, n ∈ NAT -> lt (F n) o /\ ZFpairs.couple n (app f n) ∈ VN (F n)). 
    intros.
-   assert (app f n \in X).
+   assert (app f n ∈ X).
     apply app_typ with NAT; auto.
    generalize (H _ H4); intros.
    rewrite VN_def in H5; auto.
    destruct H5.
-   assert (n \in VN o).
+   assert (n ∈ VN o).
     apply VN_trans with NAT; trivial.
    rewrite VN_def in H7; auto.
    destruct H7.
@@ -573,8 +573,8 @@ Import ZFrelations.
 
 
 
-   assert (ZFpairs.couple n (app f n) \in VN (osucc (osucc (osucc x1)))).
-    assert (n \in VN (osucc x1)).
+   assert (ZFpairs.couple n (app f n) ∈ VN (osucc (osucc (osucc x1)))).
+    assert (n ∈ VN (osucc x1)).
      apply VN_incl with (VN x0); auto.
      apply VN_mono; auto.
      apply oles_lt in H11; trivial.
@@ -683,12 +683,12 @@ Import ZFrelations.
  apply VN_mono; auto.
 Qed.
 
-  Lemma ORDi_incl_o : ORDi o \incl VN o.
+  Lemma ORDi_incl_o : ORDi o ⊆ VN o.
 apply TI_pre_fix; auto.
 apply ORDf_size_gen_le; auto with *.
 Qed.
 
-  Lemma ORDi_typ : forall mu, isOrd mu -> lt o mu -> ORDi o \in VN mu.
+  Lemma ORDi_typ : forall mu, isOrd mu -> lt o mu -> ORDi o ∈ VN mu.
 intros.
 rewrite VN_def; trivial.
 exists o; trivial.
@@ -699,7 +699,7 @@ Qed.
   Lemma ORDf_cont : forall F,
     stable_ord F ->
     increasing F ->
-    ORDf (sup o F) \incl sup o (fun A => ORDf (F A)).
+    ORDf (sup o F) ⊆ sup o (fun A => ORDf (F A)).
 unfold ORDf.
 intros.
 rewrite <- sum_cont; auto.
@@ -710,9 +710,9 @@ apply func_cont_gen; auto. (* uses boundo *)
 Qed.
 
 (* least fixpoint reached at ordinal o *)
-  Lemma ORDo_pre : ORDf (ORDi o) \incl ORDi o.
+  Lemma ORDo_pre : ORDf (ORDi o) ⊆ ORDi o.
 red; intros.
-assert (ORDi o \incl sup o ORDi).
+assert (ORDi o ⊆ sup o ORDi).
  red; intros.
  apply TI_elim in H0; auto.
  destruct H0.
@@ -724,7 +724,7 @@ assert (ORDi o \incl sup o ORDi).
    apply isOrd_inv with o; auto.
 
   red; red; intros; apply ORDi_morph; trivial.
-assert (z \in ORDf (sup o ORDi)).
+assert (z ∈ ORDf (sup o ORDi)).
  revert H; apply ORDf_mono; auto with *.
 apply ORDf_cont in H1.
  rewrite sup_ax in H1; auto.
@@ -746,7 +746,7 @@ Qed.
 
   Lemma ORDi_ORD : forall x,
     isOrd x ->
-    ORDi x \incl ORDi o.
+    ORDi x ⊆ ORDi o.
 induction 1 using isOrd_ind; intros.
 unfold ORDi at 1.
 rewrite TI_eq; auto.
@@ -767,7 +767,7 @@ Require Import ZFgrothendieck ZFinaccessible.
 
   Variable U : set.
   Hypothesis Ug : grot_univ U.
-  Hypothesis Uw : omega \in U.
+  Hypothesis Uw : omega ∈ U.
 
   Notation mu := (grot_ord U).
 
@@ -800,11 +800,11 @@ Qed.
 apply grot_ord_inv; trivial.
 Qed.
 
-  Lemma NATf_size_mu : forall X, X \in VN mu -> NATf X \in VN mu.
+  Lemma NATf_size_mu : forall X, X ∈ VN mu -> NATf X ∈ VN mu.
 apply NATf_size_gen; trivial.
 Qed.
 
-  Lemma NAT_in_mu : NAT \in VN mu.
+  Lemma NAT_in_mu : NAT ∈ VN mu.
 apply NAT_typ; trivial.
 Qed.
 
@@ -818,7 +818,7 @@ apply VN_reg_ord; trivial.
 apply NAT_in_mu.
 Qed.
 
-  Lemma ORD_weak_typ : ORD \incl VN mu.
+  Lemma ORD_weak_typ : ORD ⊆ VN mu.
 apply ORDi_incl_o; trivial.
  apply isOrd_trans with omega; trivial.
 intros.
@@ -832,14 +832,14 @@ End FirstAttempt.
 (* Building a bound to the cardinal of NAT, following ZFind_w *)
 Require Import ZFlist.
 
-Definition Ndom := subset (power (List NAT)) (fun X => Nil \in X).
+Definition Ndom := subset (power (List NAT)) (fun X => Nil ∈ X).
 
 Require Import ZFcoc.
 
 Definition Nsup x :=
-  union2 (singl Nil)
-   (sup (fst x) (fun y =>
-      replf (cc_app (snd x) y) (fun p => Cons y p))).
+   singl Nil ∪
+   sup (fst x) (fun y =>
+      replf (cc_app (snd x) y) (fun p => Cons y p)).
 
 Definition N_F X := sigma (power NAT) (fun Y => cc_arr Y X).
 
@@ -883,10 +883,10 @@ Hint Resolve wext1 wext2.
 
 Lemma Nsup_def :
   forall x p,
-  (p \in Nsup x <->
+  (p ∈ Nsup x <->
    p == Nil \/
-   exists2 i, i \in fst x &
-   exists2 q, q \in cc_app (snd x) i & p == Cons i q).
+   exists2 i, i ∈ fst x &
+   exists2 q, q ∈ cc_app (snd x) i & p == Cons i q).
 intros x p; intros.
 unfold Nsup.
 split; intros.
@@ -908,7 +908,7 @@ split; intros.
   exists q; auto with *.
 Qed.
 
-Lemma Nsup_hd_prop : forall x, Nil \in Nsup x.
+Lemma Nsup_hd_prop : forall x, Nil ∈ Nsup x.
 intros.
 unfold Nsup.
 apply union2_intro1.
@@ -916,11 +916,11 @@ apply singl_intro.
 Qed.
 
 Lemma Nsup_tl_prop : forall X i l x,
-  x \in N_F X ->
-  X \incl Ndom ->
-  (Cons i l \in Nsup x <-> i \in fst x /\ l \in cc_app (snd x) i).
+  x ∈ N_F X ->
+  X ⊆ Ndom ->
+  (Cons i l ∈ Nsup x <-> i ∈ fst x /\ l ∈ cc_app (snd x) i).
 intros X i l x H inclX.
-assert (tyx : fst x \in power NAT).
+assert (tyx : fst x ∈ power NAT).
  apply fst_typ_sigma in H; trivial.
 split; intros.
  apply union2_elim in H0; destruct H0.
@@ -947,16 +947,16 @@ split; intros.
 Qed.
 
 Lemma Nsup_inj : forall X Y x x',
-  X \incl Ndom ->
-  Y \incl Ndom ->
-  x \in N_F X ->
-  x' \in N_F Y ->
+  X ⊆ Ndom ->
+  Y ⊆ Ndom ->
+  x ∈ N_F X ->
+  x' ∈ N_F Y ->
   Nsup x == Nsup x' -> x == x'.
 Admitted.
 (*intros X Y x x' tyf tyf' H H0 H1.
 assert (fst x == fst x').
-  assert (forall i l, i \in fst x /\ l \in cc_app (snd x) i <->
-                      i \in fst x' /\ l \in cc_app (snd x') i).
+  assert (forall i l, i ∈ fst x /\ l ∈ cc_app (snd x) i <->
+                      i ∈ fst x' /\ l ∈ cc_app (snd x') i).
    intros.
    rewrite <- Nsup_tl_prop with (1:=H); trivial.
    rewrite H1.
@@ -976,16 +976,16 @@ assert (snd x == snd x').
   apply fst_typ_sigma in H; trivial.
 
   red; intros.
-  assert (x'0 \in B (fst x')).
+  assert (x'0 ∈ B (fst x')).
    revert H5; apply in_set_morph; auto with *.
    apply Bext; auto with *.
    apply fst_typ_sigma in H0; trivial.
-  assert (cc_app (snd x) x0 \incl prodcart (List (sup A B)) A).
+  assert (cc_app (snd x) x0 ⊆ prodcart (List (sup A B)) A).
    red; intros.
    apply power_elim with (2:=H8).
    apply tyf.
    apply cc_prod_elim with (1:=tys _ _ H); trivial.
-  assert (cc_app (snd x') x'0 \incl prodcart (List (sup A B)) A).
+  assert (cc_app (snd x') x'0 ⊆ prodcart (List (sup A B)) A).
    red; intros.
    apply power_elim with (2:=H9); trivial.
    apply tyf'.
@@ -1020,9 +1020,9 @@ Qed.
 Hint Resolve nextarr1.
 
 Lemma Nsup_typ_gen : forall X x,
-  X \incl Ndom ->
-  x \in N_F X ->
-  Nsup x \in Ndom.
+  X ⊆ Ndom ->
+  x ∈ N_F X ->
+  Nsup x ∈ Ndom.
 intros.
 apply subset_intro.
 2:apply Nsup_hd_prop.
@@ -1048,8 +1048,8 @@ Definition Nf X := replf (N_F X) Nsup.
 Hint Resolve Nsup_morph.
 
 Lemma Nf_intro : forall x X,
-  x \in N_F X ->
-  Nsup x \in Nf X.
+  x ∈ N_F X ->
+  Nsup x ∈ Nf X.
 intros.
 unfold Nf.
 rewrite replf_ax; trivial.
@@ -1057,8 +1057,8 @@ exists x; auto with *.
 Qed.
 
 Lemma Nf_elim : forall a X,
-  a \in Nf X ->
-  exists2 x, x \in N_F X &
+  a ∈ Nf X ->
+  exists2 x, x ∈ N_F X &
   a == Nsup x.
 intros.
 unfold Nf in H.
@@ -1076,7 +1076,7 @@ Qed.
 Hint Resolve Nf_mono Fmono_morph.
 
 Lemma Nf_typ : forall X,
-  X \incl Ndom -> Nf X \incl Ndom.
+  X ⊆ Ndom -> Nf X ⊆ Ndom.
 red; intros.
 apply Nf_elim in H0; destruct H0 as (x,?,?).
 rewrite H1.
@@ -1086,11 +1086,11 @@ Hint Resolve Nf_typ.
 
 (*
 Lemma Wf_stable : forall X,
-  X \incl power Wdom ->
-  inter (replf X Wf) \incl Wf (inter X).
+  X ⊆ power Wdom ->
+  inter (replf X Wf) ⊆ Wf (inter X).
 red; intros X Xty z H.
 unfold Wf.
-assert (forall a, a \in X -> z \in Wf a).
+assert (forall a, a ∈ X -> z ∈ Wf a).
  intros.
  apply inter_elim with (1:=H).
  rewrite replf_ax.
@@ -1099,7 +1099,7 @@ assert (forall a, a \in X -> z \in Wf a).
 rewrite replf_ax; auto.
 destruct inter_wit with (2:=H).
  apply Fmono_morph; trivial.
-assert (z \in Wf x); auto.
+assert (z ∈ Wf x); auto.
 apply Wf_elim in H2.
 destruct H2.
 exists x0; auto.
@@ -1133,19 +1133,19 @@ Qed.
 
 Definition NF := Ffix Nf Ndom.
 
-Lemma NFtyp : NF \incl Ndom.
+Lemma NFtyp : NF ⊆ Ndom.
 apply Ffix_inA.
 Qed.
 
-Lemma Ni_NF : forall o, isOrd o -> TI Nf o \incl NF.
+Lemma Ni_NF : forall o, isOrd o -> TI Nf o ⊆ NF.
 apply TI_Ffix; auto.
 Qed.
 
 Lemma TI_Nf_elim : forall a o,
   isOrd o ->
-  a \in TI Nf o ->
+  a ∈ TI Nf o ->
   exists2 o', lt o' o &
-  exists2 x, x \in N_F (TI Nf o') &
+  exists2 x, x ∈ N_F (TI Nf o') &
   a == Nsup x.
 intros.
 apply TI_elim in H0; trivial.
@@ -1157,8 +1157,8 @@ Qed.
 
 Lemma Nsup_typ : forall o x,
   isOrd o ->
-  x \in N_F (TI Nf o) ->
-  Nsup x \in TI Nf (osucc o).
+  x ∈ N_F (TI Nf o) ->
+  Nsup x ∈ TI Nf (osucc o).
 intros.
 rewrite TI_mono_succ; auto.
 apply Nf_intro; trivial.
@@ -1166,10 +1166,10 @@ Qed.
 
 Lemma NF_ind : forall (P:set->Prop),
   Proper (eq_set ==> iff) P ->
-  (forall o' x, isOrd o' -> x \in N_F (TI Nf o') ->
-   (forall i, i \in fst x -> P (cc_app (snd x) i)) ->
+  (forall o' x, isOrd o' -> x ∈ N_F (TI Nf o') ->
+   (forall i, i ∈ fst x -> P (cc_app (snd x) i)) ->
    P (Nsup x)) ->
-  forall a, a \in NF -> P a.
+  forall a, a ∈ NF -> P a.
 intros.
 unfold NF in H1; rewrite Ffix_def in H1; auto.
 destruct H1.
@@ -1197,8 +1197,8 @@ Definition Nsnd x :=
 Definition Nsupi x := couple (Nfst x) (Nsnd x).
 
 Lemma Nfst_inv X x:
-  X \incl Ndom ->
-  x \in N_F X ->
+  X ⊆ Ndom ->
+  x ∈ N_F X ->
   Nfst (Nsup x) == fst x.
 intros.
 unfold Nfst.
@@ -1231,8 +1231,8 @@ apply eq_intro; intros.
 Qed.
 
 Lemma Nsnd_inv X x:
-  X \incl Ndom ->
-  x \in N_F X ->
+  X ⊆ Ndom ->
+  x ∈ N_F X ->
   Nsnd (Nsup x) == snd x.
 intros.
 unfold Nsnd.
@@ -1265,8 +1265,8 @@ apply eq_intro; intros.
 Qed.
 
 Lemma Nsup_inv X x:
-  X \incl Ndom ->
-  x \in N_F X ->
+  X ⊆ Ndom ->
+  x ∈ N_F X ->
   Nsupi (Nsup x) == x.
 intros.
 unfold Nsupi.
@@ -1276,9 +1276,9 @@ symmetry; apply surj_pair with (1:=subset_elim1 _ _ _ H0).
 Qed.
 
 Lemma Nsupi_ty X x :
-  X \incl Ndom ->
-  x \in Nf X ->
-  Nsupi x \in N_F X.
+  X ⊆ Ndom ->
+  x ∈ Nf X ->
+  Nsupi x ∈ N_F X.
 intros.
 destruct Nf_elim with (1:=H0); trivial.
 Admitted.
@@ -1302,8 +1302,8 @@ Hint Resolve W_o_o.
 
 (*
   Lemma NF_post : forall a,
-   a \in NF ->
-   a \in TI Nf N_ord.
+   a ∈ NF ->
+   a ∈ TI Nf N_ord.
 apply Ffix_post; eauto.
 intros.
 apply Wf_stable.
@@ -1322,16 +1322,16 @@ Section OrdUniverse.
 
   (* The universe where we build the inductive type *)
   Variable U : set.
-  Hypothesis has_cstr : forall X, X \in U -> sum UNIT (func NAT X) \in U.
-  Hypothesis has_empty : empty \in U.
+  Hypothesis has_cstr : forall X, X ∈ U -> sum UNIT (func NAT X) ∈ U.
+  Hypothesis has_empty : empty ∈ U.
   Variable mu : set.
   Hypothesis mu_ord : isOrd mu.
   Hypothesis mu_clos : forall x F,
     le x mu ->
     ext_fun x F ->
-    (forall n, n \in x -> F n \in U) -> sup x F \in U.
+    (forall n, n ∈ x -> F n ∈ U) -> sup x F ∈ U.
 
-  Lemma ORDi_pre_typ : forall n, lt n mu -> ORDi n \in U.
+  Lemma ORDi_pre_typ : forall n, lt n mu -> ORDi n ∈ U.
 intros.
 assert (isOrd n).
  apply isOrd_inv with mu; auto.
@@ -1343,7 +1343,7 @@ apply has_cstr; apply H1; trivial.
 apply isOrd_trans with y; trivial.
 Qed.
 
-  Lemma ORD_typ : ORDi mu \in U.
+  Lemma ORD_typ : ORDi mu ∈ U.
 unfold ORDi.
 rewrite TI_eq; auto.
 apply mu_clos; intros; auto.

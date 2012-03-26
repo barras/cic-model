@@ -47,7 +47,7 @@ simpl; apply El_def.
 Qed.
 
 Lemma RealNat_eq i n :
-  n \in NAT ->
+  n ∈ NAT ->
   eqSAT (Real (int i Nat) n) (cNAT n).
 intros.
 simpl int.
@@ -58,10 +58,10 @@ rewrite Real_def; intros; trivial.
  intros; apply fam_mrph; trivial.
 Qed.
 
-  Notation "[ x , t ] \real A" := (x \in El A  /\ inSAT t (Real A x)) (at level 60).
+  Notation "[ x , t ] \real A" := (x ∈ El A  /\ inSAT t (Real A x)) (at level 60).
 
 Lemma realNat_def : forall i n t,
-  [n,t] \real int i Nat <-> n \in NAT /\ inSAT t (cNAT n).
+  [n,t] \real int i Nat <-> n ∈ NAT /\ inSAT t (cNAT n).
 intros.
 rewrite ElNat_eq.
 split; destruct 1; split; trivial.
@@ -220,7 +220,7 @@ Qed.
 
 
 Lemma NREC_choice : forall f g n,
-  n \in NAT ->
+  n ∈ NAT ->
   morph2 g ->
   uchoice_pred (NREC f g n).
 intros f g n H gm.
@@ -286,7 +286,7 @@ split; intros.
 Qed.
 
 Lemma NATREC_def : forall f g n,
-  morph2 g -> n \in NAT -> NREC f g n (NATREC f g n).
+  morph2 g -> n ∈ NAT -> NREC f g n (NATREC f g n).
 intros.
 unfold NATREC; apply uchoice_def.
 apply NREC_choice; trivial.
@@ -301,7 +301,7 @@ symmetry; apply uchoice_ext; trivial.
  red; auto.
 Qed.
 
-Lemma NATREC_S : forall f g n, morph2 g -> n \in NAT ->
+Lemma NATREC_S : forall f g n, morph2 g -> n ∈ NAT ->
    NATREC f g (SUCC n) == g n (NATREC f g n).
 intros.
 elim H0 using NAT_ind; intros.
@@ -330,10 +330,10 @@ Qed.
 Lemma NATREC_typ P f g n :
   morph1 P ->
   morph2 g ->
-  n \in NAT ->
-  f \in P ZERO ->
-  (forall k h, k \in NAT -> h \in P k -> g k h \in P (SUCC k)) ->
-  NATREC f g n \in P n.
+  n ∈ NAT ->
+  f ∈ P ZERO ->
+  (forall k h, k ∈ NAT -> h ∈ P k -> g k h ∈ P (SUCC k)) ->
+  NATREC f g n ∈ P n.
 intros.
 elim H1 using NAT_ind; intros.
  rewrite <- H5; trivial.
@@ -389,8 +389,8 @@ pose (gg := fun n y => app (app (int i g) n) y).
 assert (ggm : morph2 gg).
  unfold gg; do 3 red; intros.
  rewrite H3;rewrite H4; reflexivity.
-assert (NRtyp : forall n, n \in NAT ->
-  NATREC (int i f) gg n \in El (app (int i P) n)).
+assert (NRtyp : forall n, n ∈ NAT ->
+  NATREC (int i f) gg n ∈ El (app (int i P) n)).
  destruct H0 as (H0,_).
  destruct H1 as (H1,_); unfold inX, prod in H1; rewrite El_def in H1.
  intros.

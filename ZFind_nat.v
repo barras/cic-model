@@ -42,21 +42,21 @@ unfold SUCC.
 apply inr_inj.
 Qed.
 
-  Lemma ZERO_typ_gen : forall X, ZERO \in sum UNIT X.
+  Lemma ZERO_typ_gen : forall X, ZERO ∈ sum UNIT X.
 unfold ZERO; intros.
 apply inl_typ.
 apply unit_typ.
 Qed.
 
-  Lemma SUCC_typ_gen : forall x X, x \in X -> SUCC x \in sum UNIT X.
+  Lemma SUCC_typ_gen : forall x X, x ∈ X -> SUCC x ∈ sum UNIT X.
 unfold SUCC; intros.
 apply inr_typ; trivial.
 Qed.
 
   Lemma NATf_case : forall X (P:Prop) x,
     (x == ZERO -> P) ->
-    (forall n, n \in X -> x == SUCC n -> P) ->
-    x \in NATf X -> P.
+    (forall n, n ∈ X -> x == SUCC n -> P) ->
+    x ∈ NATf X -> P.
 intros.
 unfold NATf in H.
 apply sum_ind with (3:=H1); intros.
@@ -68,7 +68,7 @@ apply sum_ind with (3:=H1); intros.
 Qed.
 
   Lemma SUCC_inv_typ_gen : forall X x,
-    SUCC x \in NATf X -> x \in X.
+    SUCC x ∈ NATf X -> x ∈ X.
 intros.
 apply NATf_case with (3:=H); intros.
  symmetry in H0; apply NATf_discr in H0; contradiction.
@@ -136,7 +136,7 @@ Qed.
 *)
 
 Lemma ZEROi_typ : forall o,
-  isOrd o -> ZERO \in NATi (osucc o).
+  isOrd o -> ZERO ∈ NATi (osucc o).
 intros.
 apply TI_intro with o; auto.
 apply ZERO_typ_gen.
@@ -144,8 +144,8 @@ Qed.
 
 Lemma SUCCi_typ : forall o n,
   isOrd o ->
-  n \in NATi o ->
-  SUCC n \in NATi (osucc o).
+  n ∈ NATi o ->
+  SUCC n ∈ NATi (osucc o).
 intros.
 apply TI_intro with o; auto.
 apply SUCC_typ_gen; trivial.
@@ -153,8 +153,8 @@ Qed.
 
 Lemma SUCCi_inv_typ : forall o n,
   isOrd o ->
-  SUCC n \in NATi (osucc o) ->
-  n \in NATi o.
+  SUCC n ∈ NATi (osucc o) ->
+  n ∈ NATi o.
 intros.
 apply TI_elim in H0; auto.
 destruct H0.
@@ -173,10 +173,10 @@ Section CaseAnalysis.
 
   Lemma NATi_case : forall (P:set->Prop) o n,
     isOrd o ->
-    (forall x x', x \in NATi o -> x == x' -> P x -> P x') ->
+    (forall x x', x ∈ NATi o -> x == x' -> P x -> P x') ->
     P ZERO ->
-    (forall m o', lt o' o -> m \in NATi o' -> P (SUCC m)) ->    
-    n \in NATi o -> P n.
+    (forall m o', lt o' o -> m ∈ NATi o' -> P (SUCC m)) ->    
+    n ∈ NATi o -> P n.
 intros.
 apply TI_elim in H3; auto.
 destruct H3.
@@ -199,8 +199,8 @@ Qed.
   Variable fS : set -> set.
 
   Definition NATCASE (n:set) :=
-    union2 (cond_set (n==ZERO) fZ)
-           (cond_set (exists k,n==SUCC k) (fS (dest_sum n))).
+    cond_set (n==ZERO) fZ ∪
+    cond_set (exists k,n==SUCC k) (fS (dest_sum n)).
 
 Instance NATCASE_m1 : morph1 fS -> morph1 NATCASE.
 do 2 red; intros.
@@ -270,11 +270,11 @@ Lemma NATCASE_typ :
   morph1 P ->
   morph1 fS ->
   isOrd o ->
-  fZ \in P ZERO ->
-  (forall n, n \in NATi o -> fS n \in P (SUCC n)) ->
+  fZ ∈ P ZERO ->
+  (forall n, n ∈ NATi o -> fS n ∈ P (SUCC n)) ->
   forall n,
-  n \in NATi (osucc o) ->
-  NATCASE n \in P n.
+  n ∈ NATi (osucc o) ->
+  NATCASE n ∈ P n.
 intros.
 pattern n; apply NATi_case with (o:=osucc o); intros; auto.
  rewrite <- H6; trivial.
@@ -325,10 +325,10 @@ Section Recursor.
   Lemma NATi_fix :
     forall (P:set->Prop) o,
     isOrd o ->
-    (forall i, isOrd i -> i \incl o ->
-     (forall i' m, lt i' i -> m \in NATi i' -> P m) ->
-     forall n, n \in NATi i -> P n) ->
-    forall n, n \in NATi o -> P n.
+    (forall i, isOrd i -> i ⊆ o ->
+     (forall i' m, lt i' i -> m ∈ NATi i' -> P m) ->
+     forall n, n ∈ NATi i -> P n) ->
+    forall n, n ∈ NATi o -> P n.
 intros P o is_ord Prec.
 induction is_ord using isOrd_ind; intros; eauto.
 Qed.
@@ -346,20 +346,20 @@ Qed.
 
   Variable U : set -> set -> set.
   Hypothesis Umono : forall o o' x x',
-    isOrd o' -> o' \incl ord -> isOrd o -> o \incl o' ->
-    x \in NATi o -> x == x' ->
-    U o x \incl U o' x'.
+    isOrd o' -> o' ⊆ ord -> isOrd o -> o ⊆ o' ->
+    x ∈ NATi o -> x == x' ->
+    U o x ⊆ U o' x'.
 
   Let Ty o := prod (NATi o) (U o).
-  Hypothesis Ftyp : forall o f, isOrd o -> o \incl ord ->
-    f \in Ty o -> F o f \in Ty (osucc o).
+  Hypothesis Ftyp : forall o f, isOrd o -> o ⊆ ord ->
+    f ∈ Ty o -> F o f ∈ Ty (osucc o).
 
-  Let Q o f := forall x, x \in NATi o -> cc_app f x \in U o x.
+  Let Q o f := forall x, x ∈ NATi o -> cc_app f x ∈ U o x.
 
   Definition NAT_ord_irrel :=
     forall o o' f g,
-    isOrd o' -> o' \incl ord -> isOrd o -> o \incl o' ->
-    f \in Ty o -> g \in Ty o' ->
+    isOrd o' -> o' ⊆ ord -> isOrd o -> o ⊆ o' ->
+    f ∈ Ty o -> g ∈ Ty o' ->
     fcompat (NATi o) f g ->
     fcompat (NATi (osucc o)) (F o f) (F o' g).
 
@@ -367,8 +367,8 @@ Qed.
 
   Definition NATREC := REC F.
 
-Lemma Umorph : forall o o', isOrd o' -> o' \incl ord -> o == o' ->
-    forall x x', x \in NATi o -> x == x' -> U o x == U o' x'. 
+Lemma Umorph : forall o o', isOrd o' -> o' ⊆ ord -> o == o' ->
+    forall x x', x ∈ NATi o -> x == x' -> U o x == U o' x'. 
 intros.
 apply incl_eq.
  apply Umono; auto.
@@ -383,14 +383,14 @@ apply incl_eq.
   symmetry; trivial.
 Qed.
 
-Lemma Uext : forall o, isOrd o -> o \incl ord -> ext_fun (NATi o) (U o).
+Lemma Uext : forall o, isOrd o -> o ⊆ ord -> ext_fun (NATi o) (U o).
 red; red; intros.
 apply Umorph; auto with *.
 Qed.
 
 
-  Lemma NATREC_typing : forall o f, isOrd o -> o \incl ord -> 
-    is_cc_fun (NATi o) f -> Q o f -> f \in Ty o.
+  Lemma NATREC_typing : forall o f, isOrd o -> o ⊆ ord -> 
+    is_cc_fun (NATi o) f -> Q o f -> f ∈ Ty o.
 intros.
 rewrite cc_eta_eq' with (1:=H1).
 apply cc_prod_intro; intros; auto.
@@ -414,7 +414,7 @@ Qed.
 Let Qm :
    forall o o',
    isOrd o ->
-   o \incl ord ->
+   o ⊆ ord ->
    o == o' -> forall f f', fcompat (NATi o) f f' -> Q o f -> Q o' f'.
 intros.
 unfold Q in H3|-*; intros.
@@ -429,9 +429,9 @@ Qed.
 
 Let Qcont : forall o f : set,
  isOrd o ->
- o \incl ord ->
+ o ⊆ ord ->
  is_cc_fun (NATi o) f ->
- (forall o' : set, o' \in o -> Q (osucc o') f) -> Q o f.
+ (forall o' : set, o' ∈ o -> Q (osucc o') f) -> Q o f.
 intros.
 red; intros.
 apply TI_elim in H3; auto.
@@ -446,11 +446,11 @@ Qed.
 
 Let Qtyp : forall o f,
  isOrd o ->
- o \incl ord ->
+ o ⊆ ord ->
  is_cc_fun (NATi o) f ->
  Q o f -> is_cc_fun (NATi (osucc o)) (F o f) /\ Q (osucc o) (F o f).
 intros.
-assert (F o f \in Ty (osucc o)).
+assert (F o f ∈ Ty (osucc o)).
  apply Ftyp; trivial.
  apply NATREC_typing; trivial.
 split.
@@ -481,7 +481,7 @@ Qed.
  Hint Resolve NAT_recursor.
 
   (* Main properties of NATREC: typing and equation *)
-  Lemma NATREC_wt : NATREC ord \in Ty ord.
+  Lemma NATREC_wt : NATREC ord ∈ Ty ord.
 intros.
 refine ((fun h => NATREC_typing
           ord (NATREC ord) oord (reflexivity _) (proj1 h) (proj2 h)) _).
@@ -491,9 +491,9 @@ Qed.
   Lemma NATREC_ord_irrel o o' x:
     isOrd o ->
     isOrd o' ->
-    o \incl o' ->
-    o' \incl ord ->
-    x \in NATi o ->
+    o ⊆ o' ->
+    o' ⊆ ord ->
+    x ∈ NATi o ->
     cc_app (NATREC o) x == cc_app (NATREC o') x.
 intros.
 apply REC_ord_irrel with (2:=NAT_recursor); auto with *.
@@ -502,7 +502,7 @@ Qed.
 
   Lemma NATREC_ext G :
     is_cc_fun (NATi ord) G ->
-    (forall o', o' \in ord ->
+    (forall o', o' ∈ ord ->
      NATREC o' == cc_lam (NATi o') (cc_app G) ->
      fcompat (NATi (osucc o')) G (F o' (cc_lam (NATi o') (cc_app G)))) ->
     NATREC ord == G.
@@ -511,7 +511,7 @@ apply REC_ext with (T:=NATi) (Q:=Q); auto.
 Qed.
 
   Lemma NATREC_expand : forall n,
-    n \in NATi ord -> cc_app (NATREC ord) n == cc_app (F ord (NATREC ord)) n.
+    n ∈ NATi ord -> cc_app (NATREC ord) n == cc_app (F ord (NATREC ord)) n.
 intros.
 apply REC_expand with (T:=NATi) (Q:=Q); auto.
 Qed.
@@ -574,7 +574,7 @@ Qed.
 
   Lemma NATi_NAT : forall o,
     isOrd o ->
-    NATi o \incl NAT.
+    NATi o ⊆ NAT.
 induction 1 using isOrd_ind; intros.
 unfold NATi.
 rewrite TI_eq; auto.
@@ -585,12 +585,12 @@ rewrite NAT_eq.
 apply NATf_mono with (NATi x); auto.
 Qed.
 
-  Lemma ZERO_typ : ZERO \in NAT.
+  Lemma ZERO_typ : ZERO ∈ NAT.
 rewrite NAT_eq.
 apply ZERO_typ_gen.
 Qed.
 
-  Lemma SUCC_typ : forall n, n \in NAT -> SUCC n \in NAT.
+  Lemma SUCC_typ : forall n, n ∈ NAT -> SUCC n ∈ NAT.
 intros.
 rewrite NAT_eq.
 apply SUCC_typ_gen; trivial.
@@ -599,19 +599,19 @@ Qed.
   Lemma NAT_fix :
     forall (P:set->Prop),
     (forall o, isOrd o ->
-     (forall o' m, lt o' o -> m \in NATi o' -> P m) ->
-     forall n, n \in NATi o -> P n) ->
-    forall n, n \in NAT -> P n.
+     (forall o' m, lt o' o -> m ∈ NATi o' -> P m) ->
+     forall n, n ∈ NATi o -> P n) ->
+    forall n, n ∈ NAT -> P n.
 intros.
 apply NATi_fix with (P:=P) (o:=omega); intros; auto.
 apply H with i; trivial.
 Qed.
 
   Lemma NAT_ind : forall (P:set->Prop),
-    (forall x x', x \in NAT -> x == x' -> P x -> P x') ->
+    (forall x x', x ∈ NAT -> x == x' -> P x -> P x') ->
     P ZERO ->
-    (forall n, n \in NAT -> P n -> P (SUCC n)) ->    
-    forall n, n \in NAT -> P n.
+    (forall n, n ∈ NAT -> P n -> P (SUCC n)) ->    
+    forall n, n ∈ NAT -> P n.
 intros.
 elim H2 using NAT_fix; intros.
 elim H5 using NATi_case; trivial; intros.
@@ -630,7 +630,7 @@ Qed.
     end.
 
   Lemma nat2NAT_reflect : forall x,
-    x \in NAT -> exists n, x == nat2NAT n.
+    x ∈ NAT -> exists n, x == nat2NAT n.
 intros.
 elim H using NAT_ind; intros.
  destruct H2.
@@ -663,14 +663,14 @@ Require Import ZFrank.
   Let oo : isOrd o.
 Proof proj1 limo.
 
-  Let zer : forall x, x \in VN o -> zero \in VN o.
+  Let zer : forall x, x ∈ VN o -> zero ∈ VN o.
 intros.
 apply VN_incl with x; auto.
 red; intros.
 elim empty_ax with z; trivial.
 Qed.
 
-  Let suc : forall x, x \in VN o -> succ x \in VN o.
+  Let suc : forall x, x ∈ VN o -> succ x ∈ VN o.
 unfold succ.
 intros.
 apply VN_union; trivial.
@@ -679,7 +679,7 @@ apply VNlim_pair; auto.
 Qed.
 
   Lemma NATf_size_gen :
-    forall X, X \in VN o -> NATf X \in VN o.
+    forall X, X ∈ VN o -> NATf X ∈ VN o.
 intros.
 unfold NATf.
 unfold sum.
@@ -694,10 +694,10 @@ apply VN_union; trivial.
 apply VNlim_pair; eauto.
 Qed.
 
-  Hypothesis zer_o : zero \in VN o.
+  Hypothesis zer_o : zero ∈ VN o.
 
   Lemma NATf_size_gen_le : forall X,
-    X \incl VN o -> NATf X \incl VN o.
+    X ⊆ VN o -> NATf X ⊆ VN o.
 red; intros.
 apply NATf_case with (3:=H0); intros.
  rewrite H1.
@@ -720,14 +720,14 @@ End NatConvergence.
 
   (* Showing that omega is the closing ordinal for NAT *)
 
-  Lemma NAT_incl_omega : NAT \incl VN omega.
+  Lemma NAT_incl_omega : NAT ⊆ VN omega.
 apply TI_pre_fix; auto.
 apply NATf_size_gen_le; auto with *.
 apply VN_intro; trivial.
 apply zero_omega.
 Qed.
 
-  Lemma NAT_typ : forall o, isOrd o -> lt omega o -> NAT \in VN o.
+  Lemma NAT_typ : forall o, isOrd o -> lt omega o -> NAT ∈ VN o.
 intros.
 rewrite VN_def; trivial.
 exists omega; trivial.
@@ -751,8 +751,8 @@ Definition shift f := cc_lam NAT (fun n =>
 
 Lemma shift_typ : forall o f,
   isOrd o ->
-  f \in cc_arr NAT (NATi (osucc (osucc o))) ->
-  shift f \in cc_arr NAT (NATi (osucc o)).
+  f ∈ cc_arr NAT (NATi (osucc (osucc o))) ->
+  shift f ∈ cc_arr NAT (NATi (osucc o)).
 intros.
 unfold shift.
 apply cc_arr_intro; intros.
@@ -782,8 +782,8 @@ Definition loopF o loop :=
 
 Lemma loopF_typ : forall o lp,
   isOrd o ->
-  lp \in cc_arr (NATi o) (U o) ->
-  loopF o lp \in cc_arr (NATi (osucc o)) (U (osucc o)).
+  lp ∈ cc_arr (NATi o) (U o) ->
+  loopF o lp ∈ cc_arr (NATi (osucc o)) (U (osucc o)).
 unfold loopF, U; intros.
 apply cc_arr_intro;[| intros y ?].
  do 2 red; reflexivity.

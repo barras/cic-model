@@ -5,7 +5,7 @@ Require Import ZF ZFpairs ZFrelations ZFnats.
 *)
 
 Definition fcompat dom f g :=
-  forall x, x \in dom -> cc_app f x == cc_app g x.
+  forall x, x ∈ dom -> cc_app f x == cc_app g x.
 Instance fext_morph :
   Proper (eq_set ==> eq_set ==> eq_set ==> iff) fcompat.
 apply morph_impl_iff3; auto with *.
@@ -21,8 +21,8 @@ Qed.
 Lemma fext_lam : forall A B f g,
     ext_fun A f ->
     ext_fun B g ->
-    (forall x, x \in A -> x \in B) ->
-    (forall x, x \in A -> f x == g x) ->
+    (forall x, x ∈ A -> x ∈ B) ->
+    (forall x, x ∈ A -> f x == g x) ->
     fcompat A (cc_lam A f) (cc_lam B g).
 red; intros.
 rewrite cc_beta_eq; trivial.
@@ -51,22 +51,22 @@ Section ExtendFamily.
   Hypothesis extA : ext_fun I A.
   Hypothesis extF : ext_fun I F.
 
-  Hypothesis in_prod : forall x, x \in I -> is_cc_fun (A x) (F x).
+  Hypothesis in_prod : forall x, x ∈ I -> is_cc_fun (A x) (F x).
 
   Definition fdirected :=
-    forall x y, x \in I -> y \in I -> fcompat (inter2 (A x) (A y)) (F x) (F y).
+    forall x y, x ∈ I -> y ∈ I -> fcompat (A x ∩ A y) (F x) (F y).
 
   Hypothesis fcomp : fdirected.
 
   Lemma fdir :
     forall x0 x1 x z,
-    x0 \in I ->
-    x1 \in I ->
-    x \in A x0 ->
-    z \in cc_app (F x1) x ->
-    z \in cc_app (F x0) x.
+    x0 ∈ I ->
+    x1 ∈ I ->
+    x ∈ A x0 ->
+    z ∈ cc_app (F x1) x ->
+    z ∈ cc_app (F x0) x.
 intros.
-assert (x \in A x1).
+assert (x ∈ A x1).
  rewrite <- couple_in_app in H2.
  specialize in_prod with (1:=H0).
  apply in_prod in H2.
@@ -88,7 +88,7 @@ Qed.
 
 
 Lemma prd_sup : forall x,
-  x \in I ->
+  x ∈ I ->
   fcompat (A x) (F x) (sup I F).
 red; intros.
 apply eq_intro; intros.
@@ -107,7 +107,7 @@ Qed.
 
 
 Lemma prd_sup_lub : forall g,
-  (forall x, x \in I -> fcompat (A x) (F x) g) ->
+  (forall x, x ∈ I -> fcompat (A x) (F x) g) ->
   fcompat (sup I A) (sup I F) g.
 red; intros.
 rewrite sup_ax in H0; trivial; destruct H0.

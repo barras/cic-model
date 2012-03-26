@@ -12,7 +12,7 @@ Require Ens.
 Module S := Ens0.IZF_R. (* small sets *)
 Module B := Ens.IZF_R. (* big sets *)
 
-Notation "x \in y" := (B.in_set x y) (at level 60).
+Notation "x ∈ y" := (B.in_set x y) (at level 60).
 Notation "x == y" := (B.eq_set x y) (at level 70).
 
 (* This definition implies that the universe of indexes of small
@@ -52,7 +52,7 @@ split; intros.
  exists x; auto.
 Qed.
 
-Lemma lift_in : forall x y, S.in_set x y -> injU x \in injU y.
+Lemma lift_in : forall x y, S.in_set x y -> injU x ∈ injU y.
 destruct y; simpl; intros.
 destruct H; simpl in *.
 apply lift_eq in H.
@@ -60,7 +60,7 @@ exists x0.
 assumption.
 Qed.
 
-Lemma down_in : forall x y, injU x \in injU y -> S.in_set x y.
+Lemma down_in : forall x y, injU x ∈ injU y -> S.in_set x y.
 destruct y; simpl; intros.
 destruct H.
 simpl injU in H.
@@ -70,7 +70,7 @@ Qed.
 
 Lemma down_in_ex  x y y' :
   y == injU y' ->
-  x \in y ->
+  x ∈ y ->
   exists2 x', x == injU x' & S.in_set x' y'.
 intros.
 specialize B.eq_elim with (1:=H0) (2:=H); intro.
@@ -88,18 +88,18 @@ Qed.
  *)
 Definition U : B.set := B.sup S.set injU.
 
-Lemma U_elim : forall x, x \in U -> exists x', x == injU x'.
+Lemma U_elim : forall x, x ∈ U -> exists x', x == injU x'.
 destruct 1.
 exists x0; trivial.
 Qed.
 
-Lemma U_intro : forall x, injU x \in U.
+Lemma U_intro : forall x, injU x ∈ U.
 red; intros.
 exists x.
 apply B.eq_set_refl.
 Qed.
 
-Lemma injU_elim : forall x y, x \in injU y -> x \in U.
+Lemma injU_elim : forall x y, x ∈ injU y -> x ∈ U.
 destruct y; destruct 1; simpl; intros.
 exists (f x0).
 assumption.
@@ -172,8 +172,8 @@ Lemma power_equiv : forall x, B.power (injU x) == injU (S.power x).
 intros.
 apply B.eq_intro; intros.
  rewrite B.power_ax in H.
- apply B.in_reg with (injU (S.subset x (fun x' => injU x' \in z))).
-  apply B.eq_set_trans with (B.subset (injU x) (fun x' => x' \in z)).
+ apply B.in_reg with (injU (S.subset x (fun x' => injU x' ∈ z))).
+  apply B.eq_set_trans with (B.subset (injU x) (fun x' => x' ∈ z)).
    apply subset_equiv; intros.
    split; intros.
     apply B.in_reg with (injU x0); trivial.
@@ -202,7 +202,7 @@ apply B.eq_intro; intros.
  specialize injU_elim with (1:=H); intro.
  apply U_elim in H1.
  destruct H1.
- assert (y \in injU x0).
+ assert (y ∈ injU x0).
   apply B.eq_elim with z; trivial.
  specialize injU_elim with (1:=H2); intro. 
  apply U_elim in H3.
@@ -240,15 +240,15 @@ Qed.
 
 (* Closure properties of U *)
 
-Lemma U_trans : forall x y, y \in x -> x \in U -> y \in U.
+Lemma U_trans : forall x y, y ∈ x -> x ∈ U -> y ∈ U.
 intros.
 apply U_elim in H0; destruct H0.
-assert (y \in injU x0).
+assert (y ∈ injU x0).
  apply B.eq_elim with x; trivial.
 apply injU_elim in H1; trivial.
 Qed.
 
-Lemma U_pair : forall x y, x \in U -> y \in U -> B.pair x y \in U.
+Lemma U_pair : forall x y, x ∈ U -> y ∈ U -> B.pair x y ∈ U.
 intros.
 apply U_elim in H; destruct H.
 apply U_elim in H0; destruct H0.
@@ -262,7 +262,7 @@ apply B.in_reg with (injU (S.pair x0 x1)).
  apply U_intro.
 Qed.
 
-Lemma U_power : forall x, x \in U -> B.power x \in U.
+Lemma U_power : forall x, x ∈ U -> B.power x ∈ U.
 intros.
 apply U_elim in H; destruct H.
 apply B.in_reg with (injU (S.power x0)).
@@ -275,7 +275,7 @@ apply B.in_reg with (injU (S.power x0)).
  apply U_intro.
 Qed.
 
-Lemma U_union : forall x, x \in U -> B.union x \in U.
+Lemma U_union : forall x, x ∈ U -> B.union x ∈ U.
 intros.
 apply U_elim in H; destruct H.
 apply B.in_reg with (injU (S.union x0)).
@@ -291,11 +291,11 @@ Qed.
 
 Lemma U_repl : forall a R,
   Proper (B.eq_set==>B.eq_set==>iff) R ->
-  a \in U ->
-  (forall x y y', x \in a -> y \in U -> y' \in U ->
+  a ∈ U ->
+  (forall x y y', x ∈ a -> y ∈ U -> y' ∈ U ->
    R x y -> R x y' -> y == y') ->
-  exists2 b, b \in U & forall y, y \in U ->
-                         (y \in b <-> exists2 x, x \in a & R x y).
+  exists2 b, b ∈ U & forall y, y ∈ U ->
+                         (y ∈ b <-> exists2 x, x ∈ a & R x y).
 intros.
 apply U_elim in H0; destruct H0.
 (* replacement on small sets *)
@@ -352,9 +352,9 @@ Qed.
    is U. *)
 Lemma U_coll : forall a R,
   Proper (B.eq_set==>B.eq_set==>iff) R ->
-  a \in U ->
-  (forall x, x \in a -> exists2 y, y \in U & R x y) ->
-  exists2 b, b \in U & forall x, x \in a -> exists2 y, y \in b & R x y.
+  a ∈ U ->
+  (forall x, x ∈ a -> exists2 y, y ∈ U & R x y) ->
+  exists2 b, b ∈ U & forall x, x ∈ a -> exists2 y, y ∈ b & R x y.
 intros.
 apply U_elim in H0; destruct H0 as (a',?).
 (* We use collection on small sets *)
@@ -391,14 +391,14 @@ Qed.
 
 (* Grothendieck universe *)
 Record grot_univ (U:B.set) : Prop := {
-  G_trans : forall x y, y \in x -> x \in U -> y \in U;
-  G_pair : forall x y, x \in U -> y \in U -> B.pair x y \in U;
-  G_power : forall x, x \in U -> B.power x \in U;
-  G_union : forall x, x \in U -> B.union x \in U;
+  G_trans : forall x y, y ∈ x -> x ∈ U -> y ∈ U;
+  G_pair : forall x y, x ∈ U -> y ∈ U -> B.pair x y ∈ U;
+  G_power : forall x, x ∈ U -> B.power x ∈ U;
+  G_union : forall x, x ∈ U -> B.union x ∈ U;
   G_repl : forall a R, Proper (B.eq_set==>B.eq_set==>iff) R ->
-           a \in U ->
-           (forall x y y', x \in a -> y \in U -> y' \in U -> R x y -> R x y' -> y == y') ->
-           exists2 b, b \in U & forall y, y \in U -> (y \in b <-> exists2 x, x \in a & R x y) }.
+           a ∈ U ->
+           (forall x y y', x ∈ a -> y ∈ U -> y' ∈ U -> R x y -> R x y' -> y == y') ->
+           exists2 b, b ∈ U & forall y, y ∈ U -> (y ∈ b <-> exists2 x, x ∈ a & R x y) }.
 
 Lemma U_univ : grot_univ U.
 constructor.
@@ -413,14 +413,14 @@ Qed.
    *functional* replacement.
  *)
 Record grot_univ1 (U:B.set) : Prop := {
-  G_trans1 : forall x y, y \in x -> x \in U -> y \in U;
-  G_pair1 : forall x y, x \in U -> y \in U -> B.pair x y \in U;
-  G_power1 : forall x, x \in U -> B.power x \in U;
+  G_trans1 : forall x y, y ∈ x -> x ∈ U -> y ∈ U;
+  G_pair1 : forall x y, x ∈ U -> y ∈ U -> B.pair x y ∈ U;
+  G_power1 : forall x, x ∈ U -> B.power x ∈ U;
   G_union_repl1 : forall I F,
                  (forall x x', proj1_sig x == proj1_sig x' -> F x == F x') ->
-                 I \in U ->
-                 (forall x, F x \in U) ->
-                 B.union (B.repl1 I F) \in U }.
+                 I ∈ U ->
+                 (forall x, F x ∈ U) ->
+                 B.union (B.repl1 I F) ∈ U }.
 
 Lemma U_univ1 : grot_univ1 U.
 constructor.
@@ -430,7 +430,7 @@ constructor.
 
  intros.
  apply U_elim in H0; destruct H0.
- assert (forall z, S.in_set z x -> injU z \in I).
+ assert (forall z, S.in_set z x -> injU z ∈ I).
   intros.
   apply B.eq_set_sym in H0.
   apply B.eq_elim with (injU x); trivial.
@@ -440,11 +440,11 @@ constructor.
     again. Relational replacement does it, of course!
   *)
  destruct S.repl_ax with x
-         (fun x' y => exists h:injU x' \in I, F (exist (fun z=>z \in I) _ h) == injU y)
+         (fun x' y => exists h:injU x' ∈ I, F (exist (fun z=>z ∈ I) _ h) == injU y)
    as (B,HB).
   intros.
   destruct H6.
-  assert (injU x' \in I).  
+  assert (injU x' ∈ I).  
    apply B.eq_elim with (injU x).
    2:apply B.eq_set_sym; trivial.
    apply lift_in.
@@ -490,7 +490,7 @@ constructor.
    destruct H4.
    destruct H5.
    rewrite B.repl1_ax; trivial.
-   exists (exist (fun z => z \in I) (injU x1) x2).
+   exists (exist (fun z => z ∈ I) (injU x1) x2).
    apply B.eq_set_trans with (1:=H3).
    apply B.eq_set_sym; trivial.
 Qed.

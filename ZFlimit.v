@@ -9,10 +9,10 @@ Hypothesis oord : isOrd o.
 Hypothesis Fm : ext_fun o F.
 
 Definition lim :=
-  subset (sup o F) (fun z => exists2 o', o' \in o & forall w, o' \incl w -> w \in o -> z \in F w).
+  subset (sup o F) (fun z => exists2 o', o' ∈ o & forall w, o' ⊆ w -> w ∈ o -> z ∈ F w).
 
 Lemma lim_def z :
-  z \in lim <-> exists2 o', o' \in o &forall w, o' \incl w -> w \in o -> z \in F w.
+  z ∈ lim <-> exists2 o', o' ∈ o &forall w, o' ⊆ w -> w ∈ o -> z ∈ F w.
 intros.
 unfold lim.
 rewrite subset_ax.
@@ -29,8 +29,8 @@ Qed.
 
 (** If the sequence is stationary, it has a limit *)
 Lemma lim_cst o' :
-  o' \in o ->
-  (forall w, o' \incl w -> w \in o -> F w == F o') ->
+  o' ∈ o ->
+  (forall w, o' ⊆ w -> w ∈ o -> F w == F o') ->
   lim == F o'.
 intros o'lt fcst.
 apply eq_set_ax; intros z.
@@ -38,7 +38,7 @@ assert (os := fun y => isOrd_inv o y oord).
 rewrite lim_def; trivial.
 split; intros.
  destruct H as (w,w'o,zin).
- rewrite <- (fcst (osup2 o' w)).
+ rewrite <- (fcst (o' ⊔ w)).
   apply zin.
    apply osup2_incl2; auto.
    apply osup2_lt; auto.
@@ -131,7 +131,7 @@ split; destruct 1.
 Qed.
 
 Lemma lim_mono z :
-  z \in lim o F <-> exists2 o', o' \in o & z \in F o'.
+  z ∈ lim o F <-> exists2 o', o' ∈ o & z ∈ F o'.
 rewrite lim_def_mono; rewrite sup_ax; auto with *.
 Qed.
 
@@ -160,14 +160,14 @@ Section TRF.
 Hypothesis F:(set->set->set)->set->set->set.
 Hypothesis Fext : forall o o' f f' x x',
   isOrd o ->
-  (forall o' o'' x x', o' \in o -> o'==o'' -> x==x' -> f o' x == f' o'' x') ->
+  (forall o' o'' x x', o' ∈ o -> o'==o'' -> x==x' -> f o' x == f' o'' x') ->
   o == o' ->
   x == x' ->
   F f o x == F f' o' x'.
 
 
 Fixpoint TR_acc (o:set) (H:Acc in_set o) (H':isOrd o) (x:set) : set :=
-  F (fun o' x' => ZFrepl.uchoice (fun y' => exists h:o' \in o, y' == TR_acc o' (Acc_inv H h) (isOrd_inv _ _ H' h) x')) o x.
+  F (fun o' x' => ZFrepl.uchoice (fun y' => exists h:o' ∈ o, y' == TR_acc o' (Acc_inv H h) (isOrd_inv _ _ H' h) x')) o x.
 
 Lemma TR_acc_morph o o' h h' oo oo' x x' :
   o == o' ->
@@ -178,7 +178,7 @@ apply Fext; intros; trivial.
 apply ZFrepl.uchoice_morph_raw; red; intros.
 split; destruct 1; intros.
  rewrite H5 in H6; clear x2 H5.
- assert (o'' \in o').
+ assert (o'' ∈ o').
   rewrite <- H0; rewrite <- H3; trivial.
  exists H5.
  rewrite H6; clear y H6.
@@ -273,11 +273,11 @@ Variable F : (set->set->set)->set->set->set.
 
 Variable T : set -> set.
 Variable Tcont : forall o z, isOrd o ->
-  (z \in T o <-> exists2 o', o' \in o & z \in T (osucc o')).
+  (z ∈ T o <-> exists2 o', o' ∈ o & z ∈ T (osucc o')).
 
 Hypothesis Fext : forall o o' f f' x x',
   isOrd o ->
-  (forall o' o'' x x', o' \in o -> o'==o'' -> x==x' -> f o' x == f' o'' x') ->
+  (forall o' o'' x x', o' ∈ o -> o'==o'' -> x==x' -> f o' x == f' o'' x') ->
   o == o' ->
   x == x' ->
   F f o x == F f' o' x'.
@@ -288,18 +288,18 @@ Hypothesis Firr : forall o o' f f' x x',
   isOrd o ->
   isOrd o' ->
   (forall o1 o1' x x',
-   o1 \in o -> o1' \in o' -> o1 \incl o1' -> x \in T o1 -> x==x' ->
+   o1 ∈ o -> o1' ∈ o' -> o1 ⊆ o1' -> x ∈ T o1 -> x==x' ->
    f o1 x == f' o1' x') ->
-  o \incl o' ->
-  x \in T o ->
+  o ⊆ o' ->
+  x ∈ T o ->
   x == x' ->
   F f o x == F f' o' x'.
 
 Lemma TR_irrel : forall o o' x,
   isOrd o ->
   isOrd o' ->
-  o' \incl o ->
-  x \in T o' ->
+  o' ⊆ o ->
+  x ∈ T o' ->
   TR F o x == TR F o' x.
 intros.
 revert o H H1 x H2; elim H0 using isOrd_ind; intros.
@@ -323,13 +323,13 @@ Variable F : (set->set)->set->set.
 Hypothesis Fm : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) F.
 Variable T : set -> set.
 Variable Tcont : forall o z, isOrd o ->
-  (z \in T o <-> exists2 o', o' \in o & z \in T (osucc o')).
+  (z ∈ T o <-> exists2 o', o' ∈ o & z ∈ T (osucc o')).
 Hypothesis Fext : forall o f f',
   isOrd o ->
   eq_fun (T o) f f' ->
   eq_fun (T (osucc o)) (F f) (F f').
 
-Lemma Tmono o o': isOrd o -> isOrd o' -> o \incl o' -> T o \incl T o'.
+Lemma Tmono o o': isOrd o -> isOrd o' -> o ⊆ o' -> T o ⊆ T o'.
 red; intros.
 rewrite Tcont in H2; auto.
 destruct H2.
@@ -343,7 +343,7 @@ Definition TRF := TR G.
 
 Let Gext : forall o o' f f' x x',
   isOrd o ->
-  (forall o' o'' x x', o' \in o -> o'==o'' -> x==x' -> f o' x == f' o'' x') ->
+  (forall o' o'' x x', o' ∈ o -> o'==o'' -> x==x' -> f o' x == f' o'' x') ->
   o == o' ->
   x == x' ->
   G f o x == G f' o' x'.
@@ -360,10 +360,10 @@ Let Girr : forall o o' f f' x x',
   isOrd o ->
   isOrd o' ->
   (forall o1 o1' x x',
-   o1 \in o -> o1' \in o' -> o1 \incl o1' -> x \in T o1 -> x==x' ->
+   o1 ∈ o -> o1' ∈ o' -> o1 ⊆ o1' -> x ∈ T o1 -> x==x' ->
    f o1 x == f' o1' x') ->
-  o \incl o' ->
-  x \in T o ->
+  o ⊆ o' ->
+  x ∈ T o ->
   x == x' ->
   G f o x == G f' o' x'.
 unfold G; intros.
@@ -403,8 +403,8 @@ Qed.
 
 Lemma TRF_indep : forall o o' x,
   isOrd o ->
-  o' \in o ->
-  x \in T (osucc o') ->
+  o' ∈ o ->
+  x ∈ T (osucc o') ->
   TRF o x == F (TRF o') x.
 intros.
 assert (os := fun y => isOrd_inv _ y H).

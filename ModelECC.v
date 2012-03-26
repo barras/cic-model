@@ -14,9 +14,9 @@ Module MakeModel (M : ECC_Model).
 Import M M.CC.
 
 Lemma in_reg_r : forall x y y',
-  x \in y ->
+  x ∈ y ->
   y == y' ->
-  x \in y'.
+  x ∈ y'.
 intros.
 rewrite <- H0; trivial.
 Qed.
@@ -34,7 +34,7 @@ Fixpoint int (i:nat->X) (t:term) {struct t} : X :=
   end.
 
 Definition In_int (i:nat->X) (M T:term) : Prop :=
-  int i M \in int i T.
+  int i M ∈ int i T.
 
 (* setoid stuff *)
 Definition eq_int (i1 i2:nat->X) := forall i, i1 i == i2 i.
@@ -152,12 +152,12 @@ Qed.
 (** * Semantical judgements *)
 
 Definition int_env (e:env) (i:nat->X) : Prop :=
-  forall t n, item_lift t e n -> i n \in int i t.
+  forall t n, item_lift t e n -> i n ∈ int i t.
 
 Lemma int_env_cons :
   forall e i T x,
   int_env e i ->
-  x \in int i T ->
+  x ∈ int i T ->
   int_env (cons T e) (cons_map x i).
 unfold int_env in |- *; intros.
 destruct n.
@@ -176,7 +176,7 @@ destruct n.
  inversion_clear H1.
     subst t.
    inversion_clear H3.
-   assert (i n \in int i (lift (S n) x0)).
+   assert (i n ∈ int i (lift (S n) x0)).
   apply H.
     exists x0; trivial.
    rewrite simpl_lift.
@@ -260,7 +260,7 @@ apply in_reg_r with (int (cons_map (int i v) i) Ur).
  apply int_subst0.
 Qed.
 
-Lemma u_card_incl_le : forall n m x, le n m -> x \in u_card n -> x \in u_card m.
+Lemma u_card_incl_le : forall n m x, le n m -> x ∈ u_card n -> x ∈ u_card m.
 induction 1; intros; trivial.
 apply u_card_incl; auto.
 Qed.
@@ -478,27 +478,27 @@ Module ECC <: ECC_Model.
 
   Definition u_card := ecc.
   
-  Lemma u_card_in1 : props \in u_card 0.
+  Lemma u_card_in1 : props ∈ u_card 0.
   Proof (ecc_in1 0).
 
-  Lemma u_card_in2 : forall n, u_card n \in u_card (S n).
+  Lemma u_card_in2 : forall n, u_card n ∈ u_card (S n).
   Proof ecc_in2.
 
-  Lemma u_card_incl : forall n x, x \in u_card n -> x \in u_card (S n).
+  Lemma u_card_incl : forall n x, x ∈ u_card n -> x ∈ u_card (S n).
   Proof ecc_incl.
 
   Lemma u_card_prod : forall n X Y,
     CC.eq_fun X Y Y ->
-    X \in u_card n ->
-    (forall x, x \in X -> Y x \in u_card n) ->
-    CC.prod X Y \in u_card n.
+    X ∈ u_card n ->
+    (forall x, x ∈ X -> Y x ∈ u_card n) ->
+    CC.prod X Y ∈ u_card n.
   Proof ecc_prod.
 
   Lemma u_card_prod2 : forall n X Y,
     CC.eq_fun X Y Y ->
-    X \in props ->
-    (forall x, x \in X -> Y x \in u_card n) ->
-    CC.prod X Y \in u_card n.
+    X ∈ props ->
+    (forall x, x ∈ X -> Y x ∈ u_card n) ->
+    CC.prod X Y ∈ u_card n.
   Proof ecc_prod2.
 
 End ECC.

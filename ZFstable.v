@@ -48,11 +48,11 @@ Hint Resolve increasing_is_ext.
 (* Stable functions *)
 
 Definition stable2 F :=
-  forall X Y, inter2 (F X) (F Y) \incl F (inter2 X Y).
+  forall X Y, F X ∩ F Y ⊆ F (X ∩ Y).
 
 Definition stable F :=
   forall X,
-  inter (replf X F) \incl F (inter X).
+  inter (replf X F) ⊆ F (inter X).
 
 Lemma stable2_weaker :
   forall F, morph1 F -> stable F -> stable2 F.
@@ -106,7 +106,7 @@ destruct H1.
 apply inter_intro; eauto.
 clear H2 H3 H1 x0 x.
 intros.
-assert (z \in power y).
+assert (z ∈ power y).
  apply inter_elim with (1:=H).
  rewrite replf_ax.
  2:red;red;intros;apply power_morph; trivial.
@@ -126,7 +126,7 @@ red; red ;intros.
 destruct inter_wit with (2:=H) as (w,H0).
  do 2 red; intros.
  rewrite H0; reflexivity.
-assert (forall x, x \in X -> z \in prodcart (F x) (G x)).
+assert (forall x, x ∈ X -> z ∈ prodcart (F x) (G x)).
  intros.
  apply inter_elim with (1:=H).
  rewrite replf_ax.
@@ -135,7 +135,7 @@ assert (forall x, x \in X -> z \in prodcart (F x) (G x)).
   red; red; intros.
   rewrite H3; reflexivity.
 clear H.
-assert (z \in prodcart (F w) (G w)) by auto.
+assert (z ∈ prodcart (F w) (G w)) by auto.
 rewrite (surj_pair _ _ _ H).
 apply couple_intro.
  apply Fs.
@@ -161,8 +161,8 @@ apply couple_intro.
 Qed.
 
 Lemma sigma_stable' : forall A F,
-  (forall y y' x x', y == y' -> x \in A -> x == x' -> F y x == F y' x') ->
-  (forall x, x \in A -> stable (fun y => F y x)) ->
+  (forall y y' x x', y == y' -> x ∈ A -> x == x' -> F y x == F y' x') ->
+  (forall x, x ∈ A -> stable (fun y => F y x)) ->
   stable (fun y => sigma A (F y)).
 intros A F Fm Fs.
 assert (Hm : morph1 (fun y => sigma A (F y))).
@@ -180,13 +180,13 @@ assert (Hm : morph1 (fun y => sigma A (F y))).
  apply fst_typ in H0; trivial.
 red; red ;intros.
 destruct inter_wit with (2:=H) as (w,H0); trivial.
-assert (forall x, x \in X -> z \in sigma A (F x)).
+assert (forall x, x ∈ X -> z ∈ sigma A (F x)).
  intros.
  apply inter_elim with (1:=H).
  rewrite replf_ax; auto.
  exists x; auto with *.
 clear H.
-assert (z \in sigma A (F w)) by auto.
+assert (z ∈ sigma A (F w)) by auto.
 rewrite (surj_pair _ _ _ (subset_elim1 _ _ _ H)).
 apply couple_intro_sigma.
  red;red;intros;apply Fm; auto with *.
@@ -234,13 +234,13 @@ assert (Hm : morph1 (fun y => sigma (F y) (G y))).
  rewrite H; reflexivity.
 red; red ;intros.
 destruct inter_wit with (2:=H) as (w,H0); trivial.
-assert (forall x, x \in X -> z \in sigma (F x) (G x)).
+assert (forall x, x ∈ X -> z ∈ sigma (F x) (G x)).
  intros.
  apply inter_elim with (1:=H).
  rewrite replf_ax; auto.
  exists x; auto with *.
 clear H.
-assert (z \in sigma (F w) (G w)) by auto.
+assert (z ∈ sigma (F w) (G w)) by auto.
 rewrite (surj_pair _ _ _ (subset_elim1 _ _ _ H)).
 apply couple_intro_sigma.
  red;red;intros;apply Gm; auto with *.
@@ -282,7 +282,7 @@ red; red ;intros.
 destruct inter_wit with (2:=H) as (w,H0).
  do 2 red; intros.
  rewrite H0; reflexivity.
-assert (forall x, x \in X -> z \in sum (F x) (G x)).
+assert (forall x, x ∈ X -> z ∈ sum (F x) (G x)).
  intros.
  apply inter_elim with (1:=H).
  rewrite replf_ax.
@@ -291,7 +291,7 @@ assert (forall x, x \in X -> z \in sum (F x) (G x)).
   red; red; intros.
   rewrite H3; reflexivity.
 clear H.
-assert (z \in sum (F w) (G w)) by auto.
+assert (z ∈ sum (F w) (G w)) by auto.
 apply sum_ind with (3:=H); intros.
  rewrite H3; apply inl_typ.
  apply Fs; eauto.
@@ -301,7 +301,7 @@ apply sum_ind with (3:=H); intros.
   2:red;red;intros;apply Fm; trivial.
   destruct H4.
   rewrite H5; clear H5 y.
-  assert (z \in sum (F x0) (G x0)) by auto.
+  assert (z ∈ sum (F x0) (G x0)) by auto.
   apply sum_ind with (3:=H5); intros.
    rewrite H7 in H3; apply inl_inj in H3; rewrite <-H3; trivial.
 
@@ -320,7 +320,7 @@ apply sum_ind with (3:=H); intros.
   2:red;red;intros;apply Gm; trivial.
   destruct H4.
   rewrite H5; clear H5 y0.
-  assert (z \in sum (F x) (G x)) by auto.
+  assert (z ∈ sum (F x) (G x)) by auto.
   apply sum_ind with (3:=H5); intros.
    rewrite H7 in H3; apply discr_sum in H3; contradiction.
 
@@ -336,7 +336,7 @@ Lemma func_stable : forall A,
   stable (func A).
 red; red; intros.
 destruct inter_wit with (2:=H); eauto with *.
-assert (forall x, x \in X -> z \in func A x).
+assert (forall x, x ∈ X -> z ∈ func A x).
  intros.
  apply inter_elim with (1:=H).
  rewrite replf_ax.
@@ -345,7 +345,7 @@ assert (forall x, x \in X -> z \in func A x).
   red; red; intros.
   rewrite H3; reflexivity.
 clear H.
-assert (z \in func A x) by auto.
+assert (z ∈ func A x) by auto.
 apply func_narrow with x; trivial.
 intros.
 apply inter_intro; eauto.
@@ -355,8 +355,8 @@ Qed.
 
 
 Lemma cc_prod_stable : forall dom F,
-  (forall y y' x x', y == y' -> x \in dom -> x == x' -> F y x == F y' x') ->
-  (forall x, x \in dom -> stable (fun y => F y x)) ->
+  (forall y y' x x', y == y' -> x ∈ dom -> x == x' -> F y x == F y' x') ->
+  (forall x, x ∈ dom -> stable (fun y => F y x)) ->
   stable (fun y => cc_prod dom (F y)).
 intros dom F Fm Fs.
 assert (Hm : morph1 (fun y => cc_prod dom (F y))).
@@ -365,13 +365,13 @@ assert (Hm : morph1 (fun y => cc_prod dom (F y))).
  red; intros; apply Fm; auto.
 red; red ;intros.
 destruct inter_wit with (2:=H) as (w,H0); trivial.
-assert (forall x, x \in X -> z \in cc_prod dom (F x)).
+assert (forall x, x ∈ X -> z ∈ cc_prod dom (F x)).
  intros.
  apply inter_elim with (1:=H).
  rewrite replf_ax; auto.
  exists x; auto with *.
 clear H.
-assert (z \in cc_prod dom (F w)) by auto.
+assert (z ∈ cc_prod dom (F w)) by auto.
 rewrite (cc_eta_eq _ _ _ H).
 apply cc_prod_intro.
  red; red; intros; apply cc_app_morph; auto with *.
@@ -399,12 +399,12 @@ Qed.
 Definition stable2_ord F :=
   forall x, isOrd x ->
   forall y, isOrd y ->
-  inter2 (F x) (F y) \incl F (inter2 x y).
+  F x ∩ F y ⊆ F (x ∩ y).
 
 Definition stable_ord F :=
   forall X,
-  (forall x, x \in X -> isOrd x) ->
-  inter (replf X F) \incl F (inter X).
+  (forall x, x ∈ X -> isOrd x) ->
+  inter (replf X F) ⊆ F (inter X).
 
 Lemma compose_stable : forall F G,
   Proper (incl_set ==> incl_set) F ->
@@ -445,7 +445,7 @@ red; intros.
 rewrite inter2_def in H3 ;destruct H3.
 apply TI_elim in H3; auto; destruct H3.
 apply TI_elim in H4; auto; destruct H4.
-apply TI_intro with (inter2 x0 x1); auto.
+apply TI_intro with (x0 ∩ x1); auto.
  apply isOrd_inter2; auto.
 
  rewrite inter2_def; split.
@@ -472,8 +472,8 @@ assert (Fm : morph1 F).
  apply Fmono_morph; trivial.
 cut (forall o, isOrd o ->
   forall X, o == inter X ->
-  (forall x, x \in X -> isOrd x) ->
-  inter (replf X (TI F)) \incl TI F (inter X)).
+  (forall x, x ∈ X -> isOrd x) ->
+  inter (replf X (TI F)) ⊆ TI F (inter X)).
  red; intros.
  apply H with (inter X); auto with *.
  apply isOrd_inter; auto.
@@ -482,8 +482,8 @@ assert (eX : ext_fun X (TI F)).
  red; red; intros; apply TI_morph; trivial.
 assert (eN : forall X, ext_fun X F).
  red; red; intros; apply Fm; trivial.
-pose (Y := subset (union X) (fun y => z \in F (TI F y))).
-assert (oY : forall y, y \in Y -> isOrd y).
+pose (Y := subset (union X) (fun y => z ∈ F (TI F y))).
+assert (oY : forall y, y ∈ Y -> isOrd y).
  unfold Y; intros.
  apply subset_elim1 in H5.
  apply union_elim in H5; destruct H5.
@@ -491,14 +491,14 @@ assert (oY : forall y, y \in Y -> isOrd y).
 assert (eY : ext_fun Y (TI F)).
  red; red; intros.
  apply TI_morph; trivial.
-assert (wX : exists w, w \in X).
+assert (wX : exists w, w ∈ X).
  destruct inter_non_empty with (1:=H4).
  rewrite replf_ax in H5; trivial.
  destruct H5.
  exists x0; trivial.
 destruct wX as (wx,wX).
-assert (wY : exists w, w \in Y).
- assert (z \in TI F wx).
+assert (wY : exists w, w ∈ Y).
+ assert (z ∈ TI F wx).
   apply inter_elim with (1:=H4).
   rewrite replf_ax; trivial.
   exists wx; auto with *.
@@ -511,7 +511,7 @@ destruct wY as (wy,wY).
 assert (ltY : lt (inter Y) (inter X)).
  apply inter_intro; eauto.
  intros.
- assert (z \in TI F y0).
+ assert (z ∈ TI F y0).
   apply inter_elim with (1:=H4).
   rewrite replf_ax; trivial.
   exists y0; auto with *.
@@ -524,7 +524,7 @@ assert (ltY : lt (inter Y) (inter X)).
   apply inter_elim with (1:=H8).
   apply subset_intro; trivial.
   apply union_intro with y0; trivial.
-assert (inter (replf Y (TI F)) \incl TI F (inter Y)).
+assert (inter (replf Y (TI F)) ⊆ TI F (inter Y)).
  apply H1 with (inter Y); auto with *.
  rewrite H2; trivial.
 apply TI_intro with (inter Y); auto.

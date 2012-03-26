@@ -1,6 +1,6 @@
 Require Import Explicit_sub.
 Require Import FOTheory.
-Require Import basic1.
+Require Import basic Omega.
 
 Import BuildModel.
 Import T J R.
@@ -67,7 +67,7 @@ Qed.
 
 Lemma int_trm_N : forall hyp t i, hyp_ok hyp t -> 
   val_ok (int_hyp hyp) i ->
-  int (int_fotrm t) i \in N.
+  int (int_fotrm t) i ∈ N.
 unfold hyp_ok; unfold val_ok; induction t; simpl in *; intros.
  assert (n=n\/False). left; trivial.
  specialize H with (n0:=n) (1:=H1).
@@ -79,7 +79,7 @@ unfold hyp_ok; unfold val_ok; induction t; simpl in *; intros.
  apply succ_typ. apply zero_typ.
 
  replace (fun k : nat => i k) with i; trivial.
- assert (int (int_fotrm t2) i \in N).
+ assert (int (int_fotrm t2) i ∈ N).
   apply IHt2; trivial; intros.
    apply H. apply in_or_app. right; trivial.
  elim H1 using N_ind; intros.
@@ -490,8 +490,6 @@ destruct IHderiv. exists x. simpl in H0. apply Conj_elim in H0.
 
     elim fofml_Some with (f:=(subst_fml0 f N)); trivial.
 
- Check subst_Some.
-
   elim subst_Some with (t:=(int_fofml f)) (a:=(int_fotrm N));
   [apply fofml_Some |  trivial ].
 
@@ -515,7 +513,7 @@ Fixpoint const_env n :=
 
 Lemma const_env_spec : forall m n t, 
   nth_error (const_env n) m = value t ->
-  m <= n /\ t = T.
+  (m <= n)%nat /\ t = T.
 induction m; destruct n; simpl; intros.
  injection H; intros; split; [|subst t]; trivial.
 
@@ -538,7 +536,7 @@ unfold eq_fosub in H0.
 assert (val_ok (const_env (Peano.max (max_var t1) (max_var t2))) (esub_conv s i)).
  unfold val_ok. do 2 red; intros. apply const_env_spec in H2.
  destruct H2; subst T; simpl.
- assert (n < S (Peano.max (max_var t1) (max_var t2))) by omega.
+ assert (n < S (Peano.max (max_var t1) (max_var t2)))%nat by omega.
  specialize H0 with (1:=H3); destruct H0 as (Heqtyp, (Htyps, Htyps')).
  do 2 red in Htyps; simpl in Htyps; specialize Htyps with (1:=H1). apply Htyps.
 

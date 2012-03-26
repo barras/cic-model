@@ -11,7 +11,7 @@ Lemma TI_op_mono o o' f f' :
   (incl_set ==> incl_set)%signature f f' ->
   isOrd o ->
   o == o' ->
-  TI f o \incl TI f' o'.
+  TI f o ⊆ TI f' o'.
 intros.
 rewrite <- H3.
 clear o' H3.
@@ -105,10 +105,10 @@ W2(n) = 0|1+W2(n-1)
 *)
 
 Lemma F_elim x X Y :
-  x \in F X Y ->
-  fst x \in A /\
-  (forall b, b \in B (fst x) -> cc_app (fst (snd x)) b \in X) /\
-  (forall i, i \in C (fst x) -> cc_app (snd (snd x)) i \in Y) /\
+  x ∈ F X Y ->
+  fst x ∈ A /\
+  (forall b, b ∈ B (fst x) -> cc_app (fst (snd x)) b ∈ X) /\
+  (forall i, i ∈ C (fst x) -> cc_app (snd (snd x)) i ∈ Y) /\
   x == (couple (fst x)
        (couple (cc_lam (B (fst x)) (cc_app (fst (snd x))))
                (cc_lam (C (fst x)) (cc_app (snd (snd x)))))).
@@ -152,10 +152,10 @@ Qed.
 Lemma F_intro a fb fc X Y :
   ext_fun (B a) fb ->
   ext_fun (C a) fc -> 
-  a \in A ->
-  (forall b, b \in B a -> fb b \in X) ->
-  (forall i, i \in C a -> fc i \in Y) ->
-  couple a (couple (cc_lam (B a) fb) (cc_lam (C a) fc)) \in F X Y.
+  a ∈ A ->
+  (forall b, b ∈ B a -> fb b ∈ X) ->
+  (forall i, i ∈ C a -> fc i ∈ Y) ->
+  couple a (couple (cc_lam (B a) fb) (cc_lam (C a) fc)) ∈ F X Y.
 intros.
 rewrite Fdef.
 apply couple_intro_sigma; trivial.
@@ -169,24 +169,24 @@ Qed.
 Let A'i := TI (W_F A C).
 
 Lemma fst_A'i o x' :
-  isOrd o -> x' \in A'i o -> fst x' \in A.
+  isOrd o -> x' ∈ A'i o -> fst x' ∈ A.
 intros.
 apply TI_elim in H0; trivial.
 destruct H0.
 apply fst_typ_sigma in H1; trivial.
 Qed.
 
-Let B'0 := List (union2 (sup A C) (sup A B)).
+Let B'0 := List (sup A C ∪ sup A B).
 
 (* B_ok x' b means that b is an element of B'0 that is
    correctly indexed by x':A' *)
 Inductive B_ok (x':set) (b:set) : Prop :=
 | Bnil l :
-   l \in B (fst x') ->
+   l ∈ B (fst x') ->
    b == Cons l Nil ->
    B_ok x' b
 | Bcons i b' :
-   i \in C (fst x') ->
+   i ∈ C (fst x') ->
    B_ok (cc_app (snd x') i) b' ->
    b == Cons i b' ->
    B_ok x' b.
@@ -206,7 +206,7 @@ assert (Proper (eq_set ==> eq_set ==> impl) B_ok).
 split; apply H0; auto with *.
 Qed.
 
-Lemma B'notmt x' z : z \in B' x' -> ~ z == Nil.
+Lemma B'notmt x' z : z ∈ B' x' -> ~ z == Nil.
 red; intros.
 rewrite H0 in H; clear z H0.
 unfold B' in H; rewrite subset_ax in H; destruct H.
@@ -217,9 +217,9 @@ destruct H1.
 Qed.
 (*
 Lemma B'nil X x' l :
-  x' \in W_F A C X ->
-  l \in B (fst x') ->
-  Cons l Nil \in B' x'.
+  x' ∈ W_F A C X ->
+  l ∈ B (fst x') ->
+  Cons l Nil ∈ B' x'.
 intros.
 apply subset_intro.
  apply Cons_typ;[|apply Nil_typ].
@@ -232,10 +232,10 @@ apply subset_intro.
 Qed.
 
 Lemma B'cons X x' i b' :
-  x' \in W_F A C X ->
-  i \in C (fst x') ->
-  b' \in B' (cc_app (snd x') i) ->
-  Cons i b' \in B' x'.
+  x' ∈ W_F A C X ->
+  i ∈ C (fst x') ->
+  b' ∈ B' (cc_app (snd x') i) ->
+  Cons i b' ∈ B' x'.
 intros.
 apply subset_intro.
  apply Cons_typ.
@@ -254,9 +254,9 @@ Qed.
 
 Lemma B'nil o x' l :
   isOrd o ->
-  x' \in A'i o ->
-  l \in B (fst x') ->
-  Cons l Nil \in B' x'.
+  x' ∈ A'i o ->
+  l ∈ B (fst x') ->
+  Cons l Nil ∈ B' x'.
 intros.
 apply subset_intro.
  apply Cons_typ;[|apply Nil_typ].
@@ -270,10 +270,10 @@ Qed.
 
 Lemma B'cons o x' i b' :
   isOrd o ->
-  x' \in A'i o ->
-  i \in C (fst x') ->
-  b' \in B' (cc_app (snd x') i) ->
-  Cons i b' \in B' x'.
+  x' ∈ A'i o ->
+  i ∈ C (fst x') ->
+  b' ∈ B' (cc_app (snd x') i) ->
+  Cons i b' ∈ B' x'.
 intros.
 apply subset_intro.
  apply Cons_typ.
@@ -290,9 +290,9 @@ apply subset_intro.
 Qed.
 
 Lemma B'_elim x' z :
-  z \in B' x' ->
-  (exists2 l, l \in B (fst x') & z == Cons l Nil) \/
-  (exists2 i, i \in C (fst x') & exists2 b', b' \in B' (cc_app (snd x') i) & z == Cons i b').
+  z ∈ B' x' ->
+  (exists2 l, l ∈ B (fst x') & z == Cons l Nil) \/
+  (exists2 i, i ∈ C (fst x') & exists2 b', b' ∈ B' (cc_app (snd x') i) & z == Cons i b').
 unfold B'.
 intros.
 rewrite subset_ax in H.
@@ -319,16 +319,16 @@ Qed.
 
 Lemma B'_ind : forall (P:set->set->Prop),
   (forall x' b l,
-   l \in B (fst x') ->
+   l ∈ B (fst x') ->
    b == Cons l Nil -> P x' b) ->
   (forall x' b i b',
-   i \in C (fst x') ->
-   b' \in B' (cc_app (snd x') i) ->
+   i ∈ C (fst x') ->
+   b' ∈ B' (cc_app (snd x') i) ->
    P (cc_app (snd x') i) b' ->
    b == Cons i b' ->
    P x' b) ->
   forall x' z,
-  z \in B' x' ->
+  z ∈ B' x' ->
   P x' z.
 intros.
 unfold B' in H1; rewrite subset_ax in H1; destruct H1.
@@ -337,7 +337,7 @@ revert z H1 H2; induction H3; intros.
  rewrite <- H4 in H2; eauto with *.
 
  rewrite <- H5 in H2.
- assert (b' \in B'0).
+ assert (b' ∈ B'0).
   revert H2; apply List_ind with (4:=H4); intros.
    do 2 red; intros.
    rewrite H2; reflexivity.
@@ -352,10 +352,10 @@ Qed.
 
 Lemma B'_eqn o x' z :
   isOrd o ->
-  x' \in A'i o -> 
-  (z \in B' x' <->
-   (exists2 l, l \in B (fst x') & z == Cons l Nil) \/
-   (exists2 i, i \in C (fst x') & exists2 b', b' \in B' (cc_app (snd x') i) & z == Cons i b')).
+  x' ∈ A'i o -> 
+  (z ∈ B' x' <->
+   (exists2 l, l ∈ B (fst x') & z == Cons l Nil) \/
+   (exists2 i, i ∈ C (fst x') & exists2 b', b' ∈ B' (cc_app (snd x') i) & z == Cons i b')).
 split; intros.
  apply B'_ind with (3:=H1); intros.
   left; exists l; trivial.
@@ -368,10 +368,10 @@ split; intros.
 Qed.
 
 Lemma B'cases x b :
-  b \in B' x ->
-  (b == Cons (fst b) Nil /\ fst b \in B (fst x) /\
+  b ∈ B' x ->
+  (b == Cons (fst b) Nil /\ fst b ∈ B (fst x) /\
    forall f g, LIST_case (snd b) f g == f) \/
-  (b == Cons (fst b) (snd b) /\ fst b \in C (fst x) /\ snd b \in B'(cc_app (snd x) (fst b)) /\
+  (b == Cons (fst b) (snd b) /\ fst b ∈ C (fst x) /\ snd b ∈ B'(cc_app (snd x) (fst b)) /\
    forall f g, LIST_case (snd b) f g == g).
 intros.
 apply B'_elim in H; destruct H as [(l,?,?)|(i,?,(b',?,?))].
@@ -395,10 +395,10 @@ Qed.
 
 
 Definition B'case_typ x b f g X :
-  b \in B' x ->
-  (fst b \in B(fst x) -> f \in X) ->
-  (fst b \in C(fst x) -> snd b \in B'(cc_app(snd x)(fst b)) -> g \in X) ->
-  LIST_case (snd b) f g \in X.
+  b ∈ B' x ->
+  (fst b ∈ B(fst x) -> f ∈ X) ->
+  (fst b ∈ C(fst x) -> snd b ∈ B'(cc_app(snd x)(fst b)) -> g ∈ X) ->
+  LIST_case (snd b) f g ∈ X.
 intros.
 apply B'cases in H; destruct H as [(?,(?,eqc))|(?,(?,(?,eqc)))]; rewrite eqc; auto.
 Qed.
@@ -406,8 +406,8 @@ Qed.
 Parameter B'case : (set -> set) -> (set->set->set) -> set -> set.
 
 Lemma B'case_ext a' f g :
-  (forall l l', l \in B (fst a') -> l == l' -> f l == f l') ->
-  (forall i i' b b', i \in C (fst a') -> i==i' -> b \in B' (cc_app (snd a') i) -> b==b' ->
+  (forall l l', l ∈ B (fst a') -> l == l' -> f l == f l') ->
+  (forall i i' b b', i ∈ C (fst a') -> i==i' -> b ∈ B' (cc_app (snd a') i) -> b==b' ->
    g i b == g i' b') ->
   ext_fun (B' a') (B'case f g).
 Admitted.
@@ -417,11 +417,11 @@ Admitted.
 
 Parameter B'case_typ : forall P f g o x' b,
   isOrd o ->
-  x' \in A'i o ->
-  b \in B' x' ->
-  (forall l, l \in B (fst x') -> f l \in P) ->
-  (forall i b', i \in C (fst x') -> b' \in B' (cc_app (snd x') i) -> g i b' \in P) ->
-  B'case f g b \in P.
+  x' ∈ A'i o ->
+  b ∈ B' x' ->
+  (forall l, l ∈ B (fst x') -> f l ∈ P) ->
+  (forall i b', i ∈ C (fst x') -> b' ∈ B' (cc_app (snd x') i) -> g i b' ∈ P) ->
+  B'case f g b ∈ P.
 
 Parameter B'case_nil : forall f g l,
   B'case f g (Cons l Nil) == f l.
@@ -441,7 +441,7 @@ Parameter B'case_cons' : forall x f g i b',
 
 (*
 Let fcm :
-  a \in A ->
+  a ∈ A ->
   ext_fun  fc
   ext_fun (C a) (fun i => fst (f (cc_app (snd (snd x)) i)))
 *)
@@ -453,9 +453,9 @@ Let a'of a fc :=
 Let a'of_typ o a fc X :
   ext_fun (C a) fc ->
   isOrd o ->
-  a \in A ->
+  a ∈ A ->
   typ_fun fc (C a) (W_F (A'i o) B' X) ->
-  a'of a fc \in A'i(osucc o).
+  a'of a fc ∈ A'i(osucc o).
 unfold a'of; intros.
 unfold A'i; rewrite TI_mono_succ; auto with *.
 2:apply W_F_mono; auto with *.
@@ -580,7 +580,7 @@ constructor; intros.
  red; intros.
  apply F_elim in H1; destruct H1 as (ty1,(ty2,(ty3,et1))).
  unfold g.
- assert (tya' : a'of (fst x) (fun i => f (cc_app (snd (snd x)) i)) \in TI (W_F A C) (osucc o)).
+ assert (tya' : a'of (fst x) (fun i => f (cc_app (snd (snd x)) i)) ∈ TI (W_F A C) (osucc o)).
   apply a'of_typ with X; auto.
    do 2 red; intros; apply (iso_funm H0); auto.
    rewrite H2; reflexivity.
@@ -609,7 +609,7 @@ constructor; intros.
   apply B'm; trivial.
  destruct WFi_inv with (1:=H1); clear H1; intros; auto with *.
  rewrite et; rewrite et'.
- assert (tya' : a'of (fst x) (fun i => f (cc_app (snd (snd x)) i)) \in TI (W_F A C) (osucc o)).
+ assert (tya' : a'of (fst x) (fun i => f (cc_app (snd (snd x)) i)) ∈ TI (W_F A C) (osucc o)).
   apply a'of_typ with X; auto.
    do 2 red; intros; apply (iso_funm H0); auto.
    rewrite H5; reflexivity.
@@ -678,7 +678,7 @@ constructor; intros.
  pose (fb' :=  fun i => couple (cc_app (snd (fst y)) i)
    (cc_lam (B' (cc_app (snd (fst y)) i))
       (fun b' : set => cc_app (snd y) (Cons i b')))).
- assert (fb'ty : forall i, i \in C (fst (fst y)) -> fb' i \in W_F (A'i o) B' X).
+ assert (fb'ty : forall i, i ∈ C (fst (fst y)) -> fb' i ∈ W_F (A'i o) B' X).
   intros; unfold fb'.
   apply W_F_intro; intros; auto with *.
    do 2 red; intros.
@@ -799,8 +799,8 @@ Qed.
 
 Lemma TRF_indep_g : forall X o o' x,
   isOrd o ->
-  o' \in o ->
-  x \in F X (TI(fun Y=>F X Y) o') ->
+  o' ∈ o ->
+  x ∈ F X (TI(fun Y=>F X Y) o') ->
   TRF g o x == g (TRF g o') x.
 intros.
 rewrite <- TI_mono_succ in H1; eauto using isOrd_inv.
@@ -846,10 +846,10 @@ constructor; intros.
  destruct H9.
  specialize H2 with (1:=H8).
  apply giso in H2; eauto using isOrd_inv.
- assert (x \in F X (TI (fun Y=>F X Y) x2)).
+ assert (x ∈ F X (TI (fun Y=>F X Y) x2)).
   revert H6; apply Fmono; auto with *.
   apply TI_mono; eauto using isOrd_inv.
- assert (x' \in F X (TI (fun Y=>F X Y) x2)).
+ assert (x' ∈ F X (TI (fun Y=>F X Y) x2)).
   revert H7; apply Fmono; auto with *.
   apply TI_mono; eauto using isOrd_inv.
  clear H6 H7.
@@ -919,7 +919,7 @@ Lemma W_F_inj :
   (forall X, iso_fun (W_F A B X) (W_F A' B' X) f) ->
   let f1 := fun a => fst(f (*X=1*) (couple a (cc_lam (B a) (fun _ => empty)))) in
   iso_fun A A' () /\
-  (forall X x, a \in A -> iso_fun (cc_arr (B x) X) (cc_arr (B' (f1 x)) X) (fun
+  (forall X x, a ∈ A -> iso_fun (cc_arr (B x) X) (cc_arr (B' (f1 x)) X) (fun
 )).
 *)
 (*

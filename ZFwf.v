@@ -8,10 +8,10 @@ Section WellFoundedSets.
 (** Definition of well-founded sets. Could be Acc in_set... *)
 Definition isWf x :=
   forall P : set -> Prop,
-  (forall a,(forall b, b \in a -> P b)-> P a) -> P x.
+  (forall a,(forall b, b ∈ a -> P b)-> P a) -> P x.
 
 Lemma isWf_intro : forall x,
-  (forall a, a \in x -> isWf a) -> isWf x.
+  (forall a, a ∈ x -> isWf a) -> isWf x.
 red; intros.
 apply H0; intros.
 red in H.
@@ -19,7 +19,7 @@ apply H; trivial.
 Qed.
 
 Lemma isWf_inv : forall a b,
-  isWf a -> b \in a -> isWf b.
+  isWf a -> b ∈ a -> isWf b.
 intros a b H; revert b.
 red in H; apply H; intros.
 apply isWf_intro; eauto.
@@ -47,7 +47,7 @@ Qed.
 
 Lemma isWf_ind :
   forall P : set -> Prop,
-  (forall a, isWf a -> (forall b, b \in a -> P b)-> P a) ->
+  (forall a, isWf a -> (forall b, b ∈ a -> P b)-> P a) ->
   forall x, isWf x ->  P x.
 intros.
 cut (isWf x /\ P x).
@@ -92,7 +92,7 @@ apply isWf_inv with x0; trivial.
 apply isWf_inv with x; trivial.
 Qed.
 
-Lemma isWf_incl x y : isWf x -> y \incl x -> isWf y.
+Lemma isWf_incl x y : isWf x -> y ⊆ x -> isWf y.
 intros.
 apply isWf_intro; intros.
 apply isWf_inv with x; auto.
@@ -127,14 +127,14 @@ Require Import ZFrepl.
 
 Lemma isWf_repl : forall x R,
   repl_rel x R ->
-  (forall a b, a \in x -> R a b -> isWf b) ->
+  (forall a b, a ∈ x -> R a b -> isWf b) ->
   isWf (repl x R).
 intros.
 apply isWf_intro; intros.
 elim repl_elim with (1:=H) (2:=H1); intros; eauto.
 Qed.
 
-Lemma isWf_inter2 : forall x y, isWf x -> isWf y -> isWf (inter2 x y).
+Lemma isWf_inter2 : forall x y, isWf x -> isWf y -> isWf (x ∩ y).
 unfold inter2; intros.
 unfold inter.
 apply isWf_subset.
@@ -143,7 +143,7 @@ apply isWf_pair; trivial.
 Qed.
 
 (** A well-founded set does not belong to itself. *)
-Lemma isWf_antirefl : forall x, isWf x -> ~ x \in x.
+Lemma isWf_antirefl : forall x, isWf x -> ~ x ∈ x.
 intros.
 elim H using isWf_ind; clear x H; intros.
 red; intros.
@@ -155,8 +155,8 @@ Qed.
 (** Transitive closure *)
 
 Definition tr x p :=
-  x \in p /\
-  (forall a b, a \in b -> b \in p -> a \in p).
+  x ∈ p /\
+  (forall a b, a ∈ b -> b ∈ p -> a ∈ p).
 
 Instance tr_morph : Proper (eq_set ==> eq_set ==> iff) tr.
 unfold tr.
@@ -169,7 +169,7 @@ destruct H1; split; intros.
 Qed.
 
 Definition isTransClos x y :=
-  tr x y /\ (forall p, tr x p -> y \incl p).
+  tr x y /\ (forall p, tr x p -> y ⊆ p).
 
 Instance isTransClos_morph : Proper (eq_set ==> eq_set ==> iff) isTransClos.
 apply morph_impl_iff2; auto with *.
@@ -190,8 +190,8 @@ Qed.
 
 Lemma isTransClos_intro a f :
   morph1 f ->
-  (forall b, b \in a -> isTransClos b (f b)) ->
-  isTransClos a (union2 (singl a) (sup a f)).
+  (forall b, b ∈ a -> isTransClos b (f b)) ->
+  isTransClos a (singl a ∪ sup a f).
 split; intros.
  split; intros.
   apply union2_intro1.
@@ -229,7 +229,7 @@ Qed.
 Definition isWf' x :=
   exists2 c:set, isTransClos x c &
   forall p:set, 
-    (forall a:set, a \incl c -> a \incl p -> a \in p) -> x \in p.
+    (forall a:set, a ⊆ c -> a ⊆ p -> a ∈ p) -> x ∈ p.
 
 (** The equivalence result *)
 Lemma isWf_equiv x :
@@ -240,7 +240,7 @@ split; intros.
   do 2 red; intros.
   apply uchoice_morph_raw; red; intros.
   apply isTransClos_morph; trivial.
- assert (Hch : forall b, b \in a -> uchoice_pred (isTransClos b)).
+ assert (Hch : forall b, b ∈ a -> uchoice_pred (isTransClos b)).
   split; [|split; intros]; auto.
    intros.
    rewrite <- H2; trivial.
@@ -249,7 +249,7 @@ split; intros.
    exists x0; trivial.
 
    apply isTransClos_fun with b; trivial.
- exists (union2 (singl a) (sup a (fun b => uchoice (isTransClos b)))).
+ exists (singl a ∪ sup a (fun b => uchoice (isTransClos b))).
   apply isTransClos_intro.
    do 2 red; intros.
    apply uchoice_morph_raw; red; intros.
@@ -280,7 +280,7 @@ split; intros.
  red; intros.
  destruct H as (c,?,?).
  destruct H.
- cut (x \in subset (power c) (fun x' => forall x'', x' == x'' -> P x'')).
+ cut (x ∈ subset (power c) (fun x' => forall x'', x' == x'' -> P x'')).
   rewrite subset_ax; destruct 1 as (?,(x',?,?)).
   auto with *.
  apply H1; intros.
@@ -309,14 +309,14 @@ apply uchoice_morph_raw; red; intros.
 apply isTransClos_morph; trivial.
 Qed.
 
-Lemma trClos_intro1 x : isWf x -> x \in trClos x.
+Lemma trClos_intro1 x : isWf x -> x ∈ trClos x.
 intro.
 specialize isWf_clos_ex with (1:=H); intro.
 apply uchoice_def in H0.
 destruct H0 as ((?,_),_); trivial.
 Qed.
 
-Lemma trClos_intro2 x y z : isWf x -> y \in trClos x -> z \in y -> z \in trClos x.
+Lemma trClos_intro2 x y z : isWf x -> y ∈ trClos x -> z ∈ y -> z ∈ trClos x.
 intros.
 specialize isWf_clos_ex with (1:=H); intro.
 apply uchoice_def in H2.
@@ -326,15 +326,15 @@ Qed.
 Lemma trClos_ind x (P:set->Prop) :
   isWf x ->
   (forall x', x==x' -> P x') ->
-  (forall y z, y \in trClos x -> P y -> z \in y -> P z) ->
+  (forall y z, y ∈ trClos x -> P y -> z ∈ y -> P z) ->
   forall y,
-  y \in trClos x ->
+  y ∈ trClos x ->
   P y.
 intros.
 specialize isWf_clos_ex with (1:=H); intro.
 apply uchoice_def in H3.
 destruct H3 as (?,?).
-assert (y \in subset (trClos x) (fun z => forall z', z==z' -> P z')).
+assert (y ∈ subset (trClos x) (fun z => forall z', z==z' -> P z')).
  apply H4; trivial.
  split; intros.
   apply subset_intro; trivial.
@@ -362,7 +362,7 @@ elim H0 using trClos_ind; intros; trivial.
  apply isWf_inv with y; trivial.
 Qed.
 
-Lemma trClos_trans x y z : isWf x -> y \in trClos x -> z \in trClos y -> z \in trClos x.
+Lemma trClos_trans x y z : isWf x -> y ∈ trClos x -> z ∈ trClos y -> z ∈ trClos x.
 intros.
 revert z H1; elim H0 using trClos_ind; intros; trivial.
  rewrite H1; trivial.
@@ -384,7 +384,7 @@ Hint Resolve isWf_trClos trClos_intro1 trClos_intro2.
 
 
 Lemma isWf_ind2 x (P : set -> Prop) :
-  (forall a, a \in trClos x -> (forall b, b \in a -> P b)-> P a) ->
+  (forall a, a ∈ trClos x -> (forall b, b ∈ a -> P b)-> P a) ->
   isWf x ->  P x.
 intros.
 generalize (trClos_intro1 _ H0).
@@ -392,16 +392,16 @@ pattern x at 1 3; elim H0 using isWf_ind; intros; eauto.
 Qed.
 (*
 Lemma isWf_tr_ind x (P : set -> Prop) :
-  (forall a, a \in trClos x -> (forall b b', b \in trClos a -> b' \in b -> P b')-> P a) ->
+  (forall a, a ∈ trClos x -> (forall b b', b ∈ trClos a -> b' ∈ b -> P b')-> P a) ->
   isWf x ->  P x.
 intros.
-cut (forall z, z \in trClos x -> P z); [eauto|].
+cut (forall z, z ∈ trClos x -> P z); [eauto|].
 revert H; elim H0 using isWf_ind; intros.
 apply H2; intros; trivial.
 
 
 Lemma isWf_tr_ind x (P : set -> Prop) :
-  (forall a, a \in trClos x -> (forall b b', b \in a -> b' \in trClos b -> P b')-> P a) ->
+  (forall a, a ∈ trClos x -> (forall b b', b ∈ a -> b' ∈ trClos b -> P b')-> P a) ->
   isWf x ->  P x.
 intros.
 generalize (trClos_intro1 _ H0).
@@ -430,14 +430,14 @@ transfinite iteration is functional and defined on well-founded sets.
 (*
 Let R x y :=
   forall r:set,
-  (forall x' f, x' \in trClos x ->
-   (forall z, z \in x' -> couple z (cc_app f z) \in r) ->
-   couple x' (F (cc_app f) x') \in r) ->
-  couple x y \in r.
+  (forall x' f, x' ∈ trClos x ->
+   (forall z, z ∈ x' -> couple z (cc_app f z) ∈ r) ->
+   couple x' (F (cc_app f) x') ∈ r) ->
+  couple x y ∈ r.
 
 Lemma R_inv x : isWf x -> forall y, R x y ->
   exists2 f,
-    (forall z, z \in x -> R z (cc_app f z)) &
+    (forall z, z ∈ x -> R z (cc_app f z)) &
     y == F (cc_app f) x.
 induction 1 using isWf_ind; intros.
 
@@ -454,7 +454,7 @@ Lemma R_intro :
 Lemma R_ex x :
   isWf x -> uchoice_pred (R x).
 intro.
-cut (forall z, z \in trClos x -> uchoice_pred (R z)); eauto.
+cut (forall z, z ∈ trClos x -> uchoice_pred (R z)); eauto.
 elim H using isWf_ind2; intros.
 split; [|split]; intros.
  admit.
@@ -478,7 +478,7 @@ split; [|split]; intros.
   apply trClos_trans with a; trivial.
  pose (f:=sup z (fun b => replf (trClos b) (fun b' => couple b' (uchoice (R b'))))).
  pose (r :=union2 (singl (couple z (F (cc_app (cc_lam z (fun z' => uchoice (R z')))) z))) f).
- assert (discr : forall b, z \in trClos b -> b \in z -> False).
+ assert (discr : forall b, z ∈ trClos b -> b ∈ z -> False).
 admit.
 (*  elim wfz using isWf_ind; intros.
   assert (wfb : isWf b).
@@ -489,7 +489,7 @@ admit.
  assert (h := fun h => conj (H3 r h) (H4 r h)).
  destruct h.
   intros.
-assert (x'0 == z \/ exists2 z', z' \in z & x'0 \in trClos z') by admit.
+assert (x'0 == z \/ exists2 z', z' ∈ z & x'0 ∈ trClos z') by admit.
   destruct H7.
    rewrite H7; unfold r; apply union2_intro1.
    apply singl_intro_eq.
@@ -523,7 +523,7 @@ assert (x'0 == z \/ exists2 z', z' \in z & x'0 \in trClos z') by admit.
    exists x'0; trivial.
    apply couple_morph; auto with *.   
    apply uchoice_ext.
-    assert (exists2 b, b \in a & z' \in trClos b).
+    assert (exists2 b, b ∈ a & z' ∈ trClos b).
      admit.
     destruct H5.
     apply H1 with x1; trivial.
@@ -543,16 +543,16 @@ assert (x'0 == z \/ exists2 z', z' \in z & x'0 \in trClos z') by admit.
 
   Definition isTR_rel F P :=
     forall o y,
-    couple o y \in P ->
-    exists2 f, (forall n, n \in o -> couple n (cc_app f n) \in P) &
+    couple o y ∈ P ->
+    exists2 f, (forall n, n ∈ o -> couple n (cc_app f n) ∈ P) &
       y == F (cc_app f) o.
 
   Lemma isTR_rel_fun P P' o y y':
     isWf o ->
     isTR_rel F P ->
     isTR_rel F P' -> 
-    couple o y \in P ->
-    couple o y' \in P' ->
+    couple o y ∈ P ->
+    couple o y' ∈ P' ->
     y == y'.
 intros wfo istr istr' inP inP'; revert y y' inP inP'; elim wfo using isWf_ind; intros.
 destruct istr with (1:=inP) as (f,?,?).
@@ -591,8 +591,8 @@ Qed.
 
   Definition TRP_rel F o P :=
     isTR_rel F P /\
-    (exists y, couple o y \in P) /\
-    forall P' y, isTR_rel F P' -> couple o y \in P' -> P \incl P'.
+    (exists y, couple o y ∈ P) /\
+    forall P' y, isTR_rel F P' -> couple o y ∈ P' -> P ⊆ P'.
 
   Instance TRP_rel_morph_gen :
     Proper (((eq_set ==> eq_set) ==> eq_set ==> eq_set) ==> eq_set ==> eq_set ==> iff) TRP_rel.
@@ -626,7 +626,7 @@ Qed.
 
   Lemma TR_img_ex x P : isWf x ->
     TRP_rel F x P ->
-    uchoice_pred (fun y => couple x y \in P).
+    uchoice_pred (fun y => couple x y ∈ P).
 intros.
 split;[|split]; intros.
  rewrite <- H1; trivial.
@@ -644,11 +644,11 @@ intro wfo; elim wfo using isWf_ind; clear o wfo; intros.
 split;[|split]; intros.
  revert H2; apply TRP_rel_morph; auto with *.
 
- pose (P:=union2 (singl(couple a (F (fun b=> uchoice(fun y => couple b y \in uchoice(TRP_rel F b))) a)))
-            (sup a (fun b => uchoice(TRP_rel F b)))).
- assert (Pax:forall z, z \in P <->
-     z == couple a (F (fun b=> uchoice(fun y => couple b y \in uchoice(TRP_rel F b))) a) \/
-     exists2 b, b \in a & z \in uchoice(TRP_rel F b)).
+ pose (P:=singl(couple a (F (fun b=> uchoice(fun y => couple b y ∈ uchoice(TRP_rel F b))) a)) ∪
+          sup a (fun b => uchoice(TRP_rel F b))).
+ assert (Pax:forall z, z ∈ P <->
+     z == couple a (F (fun b=> uchoice(fun y => couple b y ∈ uchoice(TRP_rel F b))) a) \/
+     exists2 b, b ∈ a & z ∈ uchoice(TRP_rel F b)).
   intros; unfold P; rewrite union2_ax; apply or_iff_morphism.
    split; intros.
     apply singl_elim in H1; trivial.
@@ -660,7 +660,7 @@ split;[|split]; intros.
     do 2 red; intros; apply uchoice_morph_raw.
     apply TRP_rel_morph; trivial.
  assert (ychm : morph1 (fun b =>
-      uchoice (fun y0 => couple b y0 \in uchoice (TRP_rel F b)))).
+      uchoice (fun y0 => couple b y0 ∈ uchoice (TRP_rel F b)))).
   do 2 red; intros.
   apply uchoice_morph_raw.
   red; intros.
@@ -671,7 +671,7 @@ split;[|split]; intros.
   rewrite Pax in H1; destruct H1 as [?|(b,?,?)].
    apply couple_injection in H1; destruct H1.
    exists (cc_lam o (fun b=> uchoice
-            (fun y : set => couple b y \in uchoice(TRP_rel F b)))); intros.
+            (fun y : set => couple b y ∈ uchoice(TRP_rel F b)))); intros.
     rewrite cc_beta_eq; trivial.
      rewrite Pax; right.
      rewrite H1 in H3; exists n; trivial.
@@ -695,7 +695,7 @@ split;[|split]; intros.
    rewrite Pax; right.
    exists b; auto.
 
-  exists (F (fun b => uchoice (fun y => couple b y \in uchoice (TRP_rel F b))) a).
+  exists (F (fun b => uchoice (fun y => couple b y ∈ uchoice (TRP_rel F b))) a).
   rewrite Pax; left; reflexivity.
 
   red; intros.
@@ -722,7 +722,7 @@ split;[|split]; intros.
   specialize H0 with (1:=H3).
   apply uchoice_def in H0; destruct H0 as (?,((w,?),?)).
   assert (z == couple (fst z) (snd z)).
-   assert (z \in subset (uchoice(TRP_rel F y')) (fun z => z == couple (fst z) (snd z))).
+   assert (z ∈ subset (uchoice(TRP_rel F y')) (fun z => z == couple (fst z) (snd z))).
     apply H6 with w; trivial.
      red; intros.
      apply subset_elim1 in H7.
@@ -745,7 +745,7 @@ split;[|split]; intros.
  apply incl_eq; eauto.
 Qed.
 
-  Definition WFR x := uchoice (fun y => couple x y \in uchoice(TRP_rel F x)).
+  Definition WFR x := uchoice (fun y => couple x y ∈ uchoice(TRP_rel F x)).
 
   Lemma WFR_eqn x : isWf x -> WFR x == F WFR x.
 unfold WFR; intros.
@@ -822,20 +822,20 @@ Hypothesis uch_eq : forall P f h, eqA (uch P f) (f h).
 Hypothesis F:(set->A)->set->A.
 Hypothesis Fext : forall o o' f f',
   isWf o ->
-  (forall o' o'', o' \in o -> o'==o'' -> eqA (f o') (f' o'')) ->
+  (forall o' o'', o' ∈ o -> o'==o'' -> eqA (f o') (f' o'')) ->
   o == o' ->
   eqA (F f o) (F f' o').
 
 Fixpoint TR_acc (o:set) (H:Acc in_set o) : A :=
-  F (fun o' => uch _ (fun (h:o' \in o) => TR_acc o' (Acc_inv H h))) o.
+  F (fun o' => uch _ (fun (h:o' ∈ o) => TR_acc o' (Acc_inv H h))) o.
 
 
 Hypothesis proj1 : set -> A.
 Hypothesis proj1m : Proper (eq_set ==> eqA) proj1.
 Hypothesis proj1inj : forall x x', eqA (proj1 x) (proj1 x') -> x == x'.
 Hypothesis F_typ' : forall f x, 
-  x \in c ->
-  (forall y, y \in x -> exists y', eqA (f y) (proj1 y')) ->
+  x ∈ c ->
+  (forall y, y ∈ x -> exists y', eqA (f y) (proj1 y')) ->
   exists y', eqA (F f x) (proj1 y').
 
 (*
@@ -864,10 +864,10 @@ Qed.
 Variable ord : set.
 Variable c : set.
 Hypothesis trcl : tr ord c.
-Hypothesis cwf : forall z, z \in c -> isWf z.
+Hypothesis cwf : forall z, z ∈ c -> isWf z.
 
   Let G f o :=
-    cond_set (o \in c) (proj' (F (fun x => proj1 (f x)) o)).
+    cond_set (o ∈ c) (proj' (F (fun x => proj1 (f x)) o)).
 
   Let Fext : forall o f f', eq_fun o f f' -> G f o == G f' o.
 unfold G; intros.
@@ -879,7 +879,7 @@ Qed.
 
 
 Lemma equiv o h :
-  o \in c ->
+  o ∈ c ->
   eqA (TR_acc o h) (proj1 (WFR G o)).
 induction h using Acc_indd; simpl; intros.
 rewrite WFR_eqn.
@@ -897,7 +897,7 @@ destruct F_typ' with (f:=fun x => proj1 (WFR G x)) (x:=x); trivial.
  rewrite retA'.
  rewrite <- H1.
  apply Fext; intros; auto with *.
- rewrite uch_eq with (P:=o' \in x) (h:=H2).
+ rewrite uch_eq with (P:=o' ∈ x) (h:=H2).
  rewrite <- H3.
  apply H.
  destruct trcl; eauto.
@@ -905,10 +905,10 @@ destruct F_typ' with (f:=fun x => proj1 (WFR G x)) (x:=x); trivial.
 
 
 
-destruct F_typ' with (f:=fun o' => uch (o' \in x) (fun h => TR_acc o' (a o' h))) (x:=x); trivial.
+destruct F_typ' with (f:=fun o' => uch (o' ∈ x) (fun h => TR_acc o' (a o' h))) (x:=x); trivial.
  intros.
  exists (WFR G y).
- rewrite uch_eq with (P:=y \in x) (h:=H1).
+ rewrite uch_eq with (P:=y ∈ x) (h:=H1).
  apply H.
  destruct trcl; eauto.
 
@@ -922,7 +922,7 @@ unfold proj'
  with (f:=fu
   eqA (F f x) (proj1 (
 
-  (forall y, y \in x -> eqA (f y) (proj1 (proj' (f y)))) ->
+  (forall y, y ∈ x -> eqA (f y) (proj1 (proj' (f y)))) ->
   eqA (F f x) (proj1 (proj' (F f x))).
 rewrite F_typ.
  2:trivial.
@@ -933,15 +933,15 @@ rewrite F_typ.
   auto.
   2:reflexivity.
  intros.
- rewrite uch_eq with (P:=o' \in x) (h:=H1).
+ rewrite uch_eq with (P:=o' ∈ x) (h:=H1).
  rewrite <- H2.
  apply H.
  destruct trcl.
  apply H4 with x; trivial.
 
  intros.
-assert (eqA (uch (y \in x) (fun h => TR_acc y (a y h))) (proj1 (WFR G y))).
- rewrite uch_eq with (P:=y \in x) (h:=H1).
+assert (eqA (uch (y ∈ x) (fun h => TR_acc y (a y h))) (proj1 (WFR G y))).
+ rewrite uch_eq with (P:=y ∈ x) (h:=H1).
  apply H.
  destruct trcl; eauto.
 apply transitivity with (1:=H2).
@@ -975,7 +975,7 @@ rewrite WFR_eqn.
 unfold G at 1.
 rewrite cond_set_ok.
 Axiom F_typ : forall f x, 
-  (forall y, y \in x -> eqA (f y) (proj1 (proj (f y)))) ->
+  (forall y, y ∈ x -> eqA (f y) (proj1 (proj (f y)))) ->
   eqA (F f x) (proj1 (proj (F f x))).
 rewrite F_typ.
 apply proj1m.
@@ -984,7 +984,7 @@ apply Fext.
  admit.
 
  intros.
- rewrite uch_eq with (P:=o' \in x) (h:=H0).
+ rewrite uch_eq with (P:=o' ∈ x) (h:=H0).
  rewrite <- H1.
  apply H.
 
@@ -1006,9 +1006,9 @@ Lemma TR_acc_morph o o' h h' :
 revert o' h'; induction h using Acc_indd; destruct h'; simpl; intros.
 apply Fext; intros; trivial.
  rewrite isWf_acc; constructor; trivial.
-rewrite uch_eq with (P:=o'0 \in x) (h:=H1).
+rewrite uch_eq with (P:=o'0 ∈ x) (h:=H1).
 assert (h:=H1); rewrite H0 in h; rewrite H2 in h.
-rewrite uch_eq with (P:=o'' \in o') (h:=h).
+rewrite uch_eq with (P:=o'' ∈ o') (h:=h).
 auto.
 Qed.
 
@@ -1020,7 +1020,7 @@ case h; simpl; intros.
 apply Fext; intros; auto with *.
  rewrite isWf_acc; constructor; trivial.
 unfold TR.
-rewrite (uch_eq (o' \in o) _ H).
+rewrite (uch_eq (o' ∈ o) _ H).
 assert (h' := H); rewrite H0 in h'.
 rewrite (uch_eq (Acc in_set o'') _ (a _ h')).
 apply TR_acc_morph; trivial.
@@ -1065,14 +1065,14 @@ Qed.
 Hypothesis F:(set->set->set)->set->set->set.
 Hypothesis Fext : forall o o' f f' x x',
   isWf o ->
-  (forall o' o'' x x', o' \in o -> o'==o'' -> x==x' -> f o' x == f' o'' x') ->
+  (forall o' o'' x x', o' ∈ o -> o'==o'' -> x==x' -> f o' x == f' o'' x') ->
   o == o' ->
   x == x' ->
   F f o x == F f' o' x'.
 
 
 Fixpoint TR_acc (o:set) (H:Acc in_set o) (x:set) : set :=
-  F (fun o' x' => ZFrepl.uchoice (fun y' => exists h:o' \in o, y' == TR_acc o' (Acc_inv H h) x')) o x.
+  F (fun o' x' => ZFrepl.uchoice (fun y' => exists h:o' ∈ o, y' == TR_acc o' (Acc_inv H h) x')) o x.
 
 Lemma TR_acc_morph o o' h h' x x' :
   o == o' ->
@@ -1084,7 +1084,7 @@ apply Fext; intros; trivial.
 apply ZFrepl.uchoice_morph_raw; red; intros.
 split; destruct 1; intros.
  rewrite H5 in H6; clear x2 H5.
- assert (o'' \in o').
+ assert (o'' ∈ o').
   rewrite <- H0; rewrite <- H3; trivial.
  exists H5.
  rewrite H6; clear y H6.

@@ -50,7 +50,7 @@ assert (Hm : ext_fun dom (fun i => sigma A (fun x => f x i))).
  red; intros; apply H; trivial.
 apply eq_intro; intros.
  rewrite sup_ax; trivial.
- assert (snd z \in sup dom (f (fst z))).
+ assert (snd z ∈ sup dom (f (fst z))).
   apply snd_typ_sigma with (2:=H0); auto with *.
   do 2 red; intros.
   apply sup_morph; auto with *.
@@ -90,24 +90,24 @@ Section ProductContinuity.
   Hypothesis X_small : bound_ord X mu. 
 (*forall F,
     ext_fun X F ->
-    (forall x, x \in X -> lt (F x) mu) ->
+    (forall x, x ∈ X -> lt (F x) mu) ->
     lt (sup X F) mu.*)
 
   Lemma func_cont_gen : forall F,
     stable_ord F ->
     increasing F ->
-    func X (sup mu F) \incl sup mu (fun A => func X (F A)).
+    func X (sup mu F) ⊆ sup mu (fun A => func X (F A)).
 intros F Fstb Fincr.
 assert (Fm : forall o, isOrd o -> ext_fun o F) by auto.
 red; intros.
-pose (G := fun n => inter (subset mu (fun y => app z n \in F y))).
+pose (G := fun n => inter (subset mu (fun y => app z n ∈ F y))).
 assert (Gm : ext_fun X G).
  red; red; intros.
  apply inter_morph.
  apply subset_morph; auto with *.
  red; intros.
  rewrite H1; reflexivity.
-assert (Fprop : forall x, x \in X -> app z x \in F (G x) /\ lt (G x) mu).
+assert (Fprop : forall x, x ∈ X -> app z x ∈ F (G x) /\ lt (G x) mu).
   intros.
   apply app_typ with (x:=x) in H; trivial.
   rewrite sup_ax in H; auto.
@@ -148,7 +148,7 @@ assert (Fprop : forall x, x \in X -> app z x \in F (G x) /\ lt (G x) mu).
 assert (Fmu := fun x h => proj2 (Fprop x h)).
 assert (Fspec := fun x h => proj1 (Fprop x h)).
 clear Fprop.
-assert (Ford : forall x, x \in X -> isOrd (G x)).
+assert (Ford : forall x, x ∈ X -> isOrd (G x)).
  intros.
  apply isOrd_inv with mu; auto.
 rewrite sup_ax; auto.
@@ -192,8 +192,8 @@ Goal lt_cardf X mu.
 red ;intros.
 assert (exG : exists2 G,
   ext_fun X G &
-  (forall x, x \in X -> lt (G x) mu) /\
-  forall x, x \in X -> lt (F x) mu -> F x == G x).
+  (forall x, x ∈ X -> lt (G x) mu) /\
+  forall x, x ∈ X -> lt (F x) mu -> F x == G x).
  exists (fun x => subset (F x) (fun _ => lt (F x) mu)).
   admit.
 
@@ -225,13 +225,13 @@ assert (isOrd l).
  apply isOrd_supf; trivial.
  intros.
  apply isOrd_inv with mu; auto.
-assert (ll : osucc l \in mu).
- assert (l \in mu).
+assert (ll : osucc l ∈ mu).
+ assert (l ∈ mu).
   apply X_small; trivial.
  admit. (* mu limit *)
 exists (osucc l); trivial.
 red; intros.
-assert (F x \incl l).
+assert (F x ⊆ l).
  red; intros.
  unfold l; rewrite sup_ax; trivial.
  exists x; trivial.
@@ -250,10 +250,10 @@ End ProductContinuity.
 Lemma func_cont : forall mu X F,
   isOrd mu ->
   VN_regular mu ->
-  omega \in mu ->
+  omega ∈ mu ->
   stable_ord F ->
   increasing F ->
-  X \in VN mu ->
+  X ∈ VN mu ->
   func X (sup mu F) == sup mu (fun x => func X (F x)).
 intros mu X F mu_ord mu_reg mu_inf Fstb Fincr Fsmall.
 apply eq_intro; intros.

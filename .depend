@@ -1,4 +1,4 @@
-CCTnat.vo CCTnat.glob: CCTnat.v Explicit_sub.vo FOTheory.vo basic1.vo
+CCTnat.vo CCTnat.glob: CCTnat.v Explicit_sub.vo FOTheory.vo basic.vo
 CCUT.vo CCUT.glob: CCUT.v Models.vo GenModelSN.vo ZF.vo ZFind_nat.vo SN_CC.vo
 Can.vo Can.glob: Can.v Lambda.vo
 Choice.vo Choice.glob: Choice.v
@@ -46,12 +46,11 @@ ObjectSN.vo ObjectSN.glob: ObjectSN.v basic.vo Models.vo VarMap.vo Lambda.vo
 SATnat.vo SATnat.glob: SATnat.v basic.vo Can.vo Sat.vo ZF.vo ZFind_nat.vo ZFord.vo
 SN_CC.vo SN_CC.glob: SN_CC.v Sat.vo ZF.vo ZFcoc.vo ZFlambda.vo Models.vo GenModelSN.vo TypeJudge.vo
 SN_CC_Real.vo SN_CC_Real.glob: SN_CC_Real.v Sat.vo ZF.vo ZFcoc.vo ZFlambda.vo GenRealSN.vo TypeJudge.vo
-SN_NAT.vo SN_NAT.glob: SN_NAT.v ZF.vo ZFcoc.vo ZFind_nat.vo basic.vo Can.vo Sat.vo SATnat.vo SN_CC_Real.vo ZFord.vo ZFrepl.vo
+SN_NAT.vo SN_NAT.glob: SN_NAT.v basic.vo Can.vo Sat.vo SATnat.vo SN_CC_Real.vo ZF.vo ZFcoc.vo ZFind_nat.vo ZFord.vo ZFrepl.vo
 Sat.vo Sat.glob: Sat.v Lambda.vo Can.vo
 StrengthenECC.vo StrengthenECC.glob: StrengthenECC.v TypeECC.vo
 Sublogic.vo Sublogic.glob: Sublogic.v basic.vo Logics.vo
 Term.vo Term.glob: Term.v
-TermCCUT.vo TermCCUT.glob: TermCCUT.v
 TermECC.vo TermECC.glob: TermECC.v
 TheoryInTerm.vo TheoryInTerm.glob: TheoryInTerm.v ZFtheory.vo GenModel.vo ZFcoc.vo ModelZF.vo
 ThierryFix.vo ThierryFix.glob: ThierryFix.v ZF.vo ZFord.vo
@@ -127,8 +126,7 @@ ZFtmp1.vo ZFtmp1.glob: ZFtmp1.v ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.v
 ZFtrans.vo ZFtrans.glob: ZFtrans.v ZF.vo ZFpairs.vo ZFrelations.vo ZFnats.vo
 ZFwf.vo ZFwf.glob: ZFwf.v basic.vo ZF.vo ZFnats.vo ZFrepl.vo ZFpairs.vo ZFrelations.vo
 basic.vo basic.glob: basic.v
-basic1.vo basic1.glob: basic1.v
-CCTnat.html CCTnat.glob: CCTnat.v Explicit_sub.html FOTheory.html basic1.html
+CCTnat.html CCTnat.glob: CCTnat.v Explicit_sub.html FOTheory.html basic.html
 CCUT.html CCUT.glob: CCUT.v Models.html GenModelSN.html ZF.html ZFind_nat.html SN_CC.html
 Can.html Can.glob: Can.v Lambda.html
 Choice.html Choice.glob: Choice.v
@@ -176,12 +174,11 @@ ObjectSN.html ObjectSN.glob: ObjectSN.v basic.html Models.html VarMap.html Lambd
 SATnat.html SATnat.glob: SATnat.v basic.html Can.html Sat.html ZF.html ZFind_nat.html ZFord.html
 SN_CC.html SN_CC.glob: SN_CC.v Sat.html ZF.html ZFcoc.html ZFlambda.html Models.html GenModelSN.html TypeJudge.html
 SN_CC_Real.html SN_CC_Real.glob: SN_CC_Real.v Sat.html ZF.html ZFcoc.html ZFlambda.html GenRealSN.html TypeJudge.html
-SN_NAT.html SN_NAT.glob: SN_NAT.v ZF.html ZFcoc.html ZFind_nat.html basic.html Can.html Sat.html SATnat.html SN_CC_Real.html ZFord.html ZFrepl.html
+SN_NAT.html SN_NAT.glob: SN_NAT.v basic.html Can.html Sat.html SATnat.html SN_CC_Real.html ZF.html ZFcoc.html ZFind_nat.html ZFord.html ZFrepl.html
 Sat.html Sat.glob: Sat.v Lambda.html Can.html
 StrengthenECC.html StrengthenECC.glob: StrengthenECC.v TypeECC.html
 Sublogic.html Sublogic.glob: Sublogic.v basic.html Logics.html
 Term.html Term.glob: Term.v
-TermCCUT.html TermCCUT.glob: TermCCUT.v
 TermECC.html TermECC.glob: TermECC.v
 TheoryInTerm.html TheoryInTerm.glob: TheoryInTerm.v ZFtheory.html GenModel.html ZFcoc.html ModelZF.html
 ThierryFix.html ThierryFix.glob: ThierryFix.v ZF.html ZFord.html
@@ -257,4 +254,3 @@ ZFtmp1.html ZFtmp1.glob: ZFtmp1.v ZF.html ZFpairs.html ZFsum.html ZFrelations.ht
 ZFtrans.html ZFtrans.glob: ZFtrans.v ZF.html ZFpairs.html ZFrelations.html ZFnats.html
 ZFwf.html ZFwf.glob: ZFwf.v basic.html ZF.html ZFnats.html ZFrepl.html ZFpairs.html ZFrelations.html
 basic.html basic.glob: basic.v
-basic1.html basic1.glob: basic1.v

@@ -11,7 +11,7 @@ Definition path := List A.
 Definition tree := power path.
 
 Definition node f :=
-  union2 (singl Nil) (sup A (fun x => replf (f x) (Cons x))).
+  singl Nil ∪ sup A (fun x => replf (f x) (Cons x)).
 
 Lemma text1 X x : ext_fun X (Cons x).
 do 2 red; intros; apply couple_morph; auto with *.
@@ -24,8 +24,8 @@ Hint Resolve text1 text2.
 
 Lemma node_def : forall f p,
   ext_fun A f ->
-  (p \in node f <->
-   p == Nil \/ exists2 i, i \in A & exists2 p', p' \in f i & p == Cons i p').
+  (p ∈ node f <->
+   p == Nil \/ exists2 i, i ∈ A & exists2 p', p' ∈ f i & p == Cons i p').
 intros; unfold node.
 split; intros.
  apply union2_elim in H0; destruct H0; [left|right].
@@ -46,8 +46,8 @@ Qed.
 
 Lemma node_tl f i p :
   ext_fun A f ->
-  i \in A ->
-  (Cons i p \in node f <-> p \in f i).
+  i ∈ A ->
+  (Cons i p ∈ node f <-> p ∈ f i).
 intros.
 rewrite node_def; trivial.
 split; intros; eauto with *.
@@ -61,8 +61,8 @@ Qed.
 Lemma node_mono f f':
   ext_fun A f -> 
   ext_fun A f' ->
-  (forall i, i \in A -> f i \incl f' i) ->
-  node f \incl node f'.
+  (forall i, i ∈ A -> f i ⊆ f' i) ->
+  node f ⊆ node f'.
 red; intros.
 rewrite node_def in H2|-*; trivial.
 destruct H2;[left;trivial|right].
@@ -85,8 +85,8 @@ Qed.
 Lemma node_inv_mono f f' :
   ext_fun A f ->
   ext_fun A f' ->
-  node f \incl node f' ->
-  forall i, i \in A -> f i \incl f' i.
+  node f ⊆ node f' ->
+  forall i, i ∈ A -> f i ⊆ f' i.
 red; intros.
 rewrite <- node_tl in H3; trivial.
 apply H1 in H3.
@@ -112,7 +112,7 @@ Qed.
 Lemma node_typ f :
   ext_fun A f ->
   typ_fun f A tree ->
-  node f \in tree.
+  node f ∈ tree.
 intros.
 apply power_intro; intros.
 rewrite node_def in H1; trivial.
@@ -137,7 +137,7 @@ Hint Resolve text3 text4.
 Definition nodeF X := replf (cc_arr A X) (fun f => node (cc_app f)).
 
 Lemma nodeF_def X t :
-  t \in nodeF X <-> exists2 f, f \in cc_arr A X & t == node (cc_app f).
+  t ∈ nodeF X <-> exists2 f, f ∈ cc_arr A X & t == node (cc_app f).
 unfold nodeF.
 rewrite replf_ax; auto with *.
 Qed.
@@ -153,7 +153,7 @@ Qed.
 Instance nodeF_morph : morph1 nodeF.
 Proof Fmono_morph _ nodeF_mono.
 
-Lemma nodeF_typ X : X \incl tree -> nodeF X \incl tree.
+Lemma nodeF_typ X : X ⊆ tree -> nodeF X ⊆ tree.
 unfold nodeF; red; intros.
 rewrite replf_ax in H0; trivial.
 destruct H0.
@@ -182,32 +182,32 @@ Definition node x f :=
   sup ts (fun t => replf t (Cons x)).
 
 Lemma node_def : forall x ts p,
-  p \in node x ts <-> exists2 t, t \in ts & exists2 p', p' \in t & p == Cons x p'.
+  p ∈ node x ts <-> exists2 t, t ∈ ts & exists2 p', p' ∈ t & p == Cons x p'.
 
 Lemma node_inj : forall x x' t t', node x t == node x' t' -> x == x' /\ t == t'.
 
 (* Prefix order on paths *)
-Definition leP := exists2 x, x \in A & p2 == Cons x p1.
-Definition leT t p1 p2 := (p1 \in t /\ p2 \in t) /\ leP t1 t2.
+Definition leP := exists2 x, x ∈ A & p2 == Cons x p1.
+Definition leT t p1 p2 := (p1 ∈ t /\ p2 ∈ t) /\ leP t1 t2.
 Lemma leT_node : forall x ts t p1 p2,
-  t \in ts ->
+  t ∈ ts ->
   leT t p1 p2 ->
   leT (node x ts) (Cons x p1) (Cons x p2).
 
 Lemma node_typ :
-  x \in A -> ts \incl tree -> node x t \in tree
+  x ∈ A -> ts ⊆ tree -> node x t ∈ tree
 
 Definition nodeF ts := sup A (fun x => replf ts (node x)).
 
 Lemma nodeF_typ : forall ts,
-  ts \incl tree -> nodeF ts \incl tree.
+  ts ⊆ tree -> nodeF ts ⊆ tree.
 
 Lemma nodeF_mono : Proper (incl_set ==> incl_set) nodeF.
 
 Lemma nodeF_stable : forall X Y,
-  X \incl tree ->
-  Y \incl tree ->
-  nodeF (inter2 X Y) == inter2 (nodeF X) (nodeF Y).
+  X ⊆ tree ->
+  Y ⊆ tree ->
+  nodeF (X ∩ Y) == nodeF X ∩ nodeF Y.
 
 Definition trees := Ffix tree nodeF.
 
@@ -222,7 +222,7 @@ Definition wftree t := well_founded (leT t).
 Definition trees := subset (power tree) wftree.
 
 Lemma node_typ_wf :
-  x \in A -> ts \in tress -> wftree (node x t)
+  x ∈ A -> ts ∈ tress -> wftree (node x t)
 
 Lemma wft_constr :
 
@@ -237,18 +237,17 @@ Qed.
 
 Variable Fdom : set -> set.
 Hypothesis Fdm : morph1 Fdom.
-Hypothesis Fds : forall X x, x \in F X -> Fdom x \incl A.
+Hypothesis Fds : forall X x, x ∈ F X -> Fdom x ⊆ A.
 
 Variable Fsub : set -> set -> set.
 Hypothesis Fsm : morph2 Fsub.
-Hypothesis Fstyp : forall X x i, x \in F X -> i \in Fdom x -> Fsub x i \in X.
+Hypothesis Fstyp : forall X x i, x ∈ F X -> i ∈ Fdom x -> Fsub x i ∈ X.
 
 (* The construction domain and the constructor *)
 Definition Wdom := power (List A).
 
 Definition Wsup x :=
-  union2 (singl Nil) 
-    (sup (Fdom x) (fun i => replf (Fsub x i) (fun p => Cons i p))).
+  singl Nil ∪ sup (Fdom x) (fun i => replf (Fsub x i) (fun p => Cons i p)).
 
 Instance Wsup_morph : Proper (eq_set ==> eq_set) Wsup.
 do 2 red; intros.
@@ -283,10 +282,10 @@ Hint Resolve wext1 wext2.
 
 Lemma Wsup_def :
   forall x p,
-  (p \in Wsup x <->
+  (p ∈ Wsup x <->
    p == Nil \/
-   exists2 i, i \in Fdom x &
-   exists2 q, q \in Fsub x i &
+   exists2 i, i ∈ Fdom x &
+   exists2 q, q ∈ Fsub x i &
    p == Cons i q).
 intros.
 unfold Wsup.
@@ -309,7 +308,7 @@ split; intros.
   exists q; auto with *.
 Qed.
 
-Lemma Wsup_hd_prop : forall x, Nil \in Wsup x.
+Lemma Wsup_hd_prop : forall x, Nil ∈ Wsup x.
 intros.
 unfold Wsup.
 apply union2_intro1.
@@ -317,8 +316,8 @@ apply singl_intro.
 Qed.
 
 Lemma Wsup_tl_prop : forall i l x,
-  x \in F Wdom ->
-  (Cons i l \in Wsup x <-> i \in Fdom x /\ l \in Fsub x i).
+  x ∈ F Wdom ->
+  (Cons i l ∈ Wsup x <-> i ∈ Fdom x /\ l ∈ Fsub x i).
 intros.
 split; intros.
  apply union2_elim in H0; destruct H0.
@@ -344,8 +343,8 @@ split; intros.
 Qed.
 (*
 Lemma Wsup_inj : forall x x',
-  x \in F Wdom ->
-  x' \in F Wdom ->
+  x ∈ F Wdom ->
+  x' ∈ F Wdom ->
   Wsup x == Wsup x' -> x == x'.
 intros.
 assert (fst x == fst x').
@@ -363,13 +362,13 @@ assert (snd x == snd x').
   apply Bmorph; trivial.
 
   red; intros.
-  assert (x'0 \in A (fst x')).
+  assert (x'0 ∈ A (fst x')).
    rewrite <- H6; rewrite <- H2; trivial.
-  assert (cc_app (snd x) x0 \incl prodcart (List (sup A A)) A).
+  assert (cc_app (snd x) x0 ⊆ prodcart (List (sup A A)) A).
    red; intros.
    apply power_elim with (2:=H8).
    apply cc_prod_elim with (1:=tys _ _ H); trivial.
-  assert (cc_app (snd x') x'0 \incl prodcart (List (sup A A)) A).
+  assert (cc_app (snd x') x'0 ⊆ prodcart (List (sup A A)) A).
    red; intros.
    apply power_elim with (2:=H9); trivial.
    apply cc_prod_elim with (1:=tys _ _ H0); trivial.
@@ -397,15 +396,15 @@ rewrite H2; rewrite H3; reflexivity.
 Qed.
 *)
 Lemma Wsup_typ_gen : forall x,
-  x \in F Wdom ->
-  Wsup x \in Wdom.
+  x ∈ F Wdom ->
+  Wsup x ∈ Wdom.
 intros.
 apply power_intro; intros.
 rewrite Wsup_def in H0.
 destruct H0 as [eqz|(i,?,(q,?,eqz))]; rewrite eqz; clear z eqz.
  apply Nil_typ.
 
- assert (q \in List A).
+ assert (q ∈ List A).
   apply power_elim with (2:=H1); auto.
  apply Cons_typ; auto.
  revert H0; apply (Fds Wdom); trivial.
@@ -421,8 +420,8 @@ Qed.
 Hint Resolve wfext1.
 
 Lemma Wf_intro : forall x X,
-  x \in F X ->
-  Wsup x \in Wf X.
+  x ∈ F X ->
+  Wsup x ∈ Wf X.
 intros.
 unfold Wf.
 rewrite replf_ax; trivial.
@@ -430,8 +429,8 @@ exists x; auto with *.
 Qed.
 
 Lemma Wf_elim : forall a X,
-  a \in Wf X ->
-  exists2 x, x \in F X &
+  a ∈ Wf X ->
+  exists2 x, x ∈ F X &
   a == Wsup x.
 intros.
 unfold Wf in H.
@@ -448,7 +447,7 @@ Qed.
 Hint Resolve Wf_mono Fmono_morph.
 
 Lemma Wf_typ : forall X,
-  X \incl Wdom -> Wf X \incl Wdom.
+  X ⊆ Wdom -> Wf X ⊆ Wdom.
 red; intros.
 apply Wf_elim in H0; destruct H0 as (x,?,?).
 rewrite H1.
@@ -459,11 +458,11 @@ Qed.
 Hint Resolve Wf_typ.
 
 Lemma Wf_stable : forall X,
-  X \incl power Wdom ->
-  inter (replf X Wf) \incl Wf (inter X).
+  X ⊆ power Wdom ->
+  inter (replf X Wf) ⊆ Wf (inter X).
 red; intros X Xty z H.
 unfold Wf.
-assert (forall a, a \in X -> z \in Wf a).
+assert (forall a, a ∈ X -> z ∈ Wf a).
  intros.
  apply inter_elim with (1:=H).
  rewrite replf_ax.
@@ -473,7 +472,7 @@ rewrite replf_ax.
 2:red;red;intros;apply Wsup_morph; trivial.
 destruct inter_wit with (2:=H).
  apply Fmono_morph; trivial.
-assert (z \in Wf x); auto.
+assert (z ∈ Wf x); auto.
 apply Wf_elim in H2.
 destruct H2.
 exists x0; auto.
@@ -507,19 +506,19 @@ Hint Resolve Wf_stable.
 
 Definition W := Ffix Wf Wdom.
 
-Lemma Wtyp : W \incl Wdom.
+Lemma Wtyp : W ⊆ Wdom.
 apply Ffix_inA.
 Qed.
 
-Lemma Wi_W : forall o, isOrd o -> TI Wf o \incl W.
+Lemma Wi_W : forall o, isOrd o -> TI Wf o ⊆ W.
 apply TI_Ffix; auto.
 Qed.
 
 Lemma TI_Wf_elim : forall a o,
   isOrd o ->
-  a \in TI Wf o ->
+  a ∈ TI Wf o ->
   exists2 o', lt o' o &
-  exists2 x, x \in F (TI Wf o') &
+  exists2 x, x ∈ F (TI Wf o') &
   a == Wsup x.
 intros.
 apply TI_elim in H0; trivial.
@@ -531,8 +530,8 @@ Qed.
 
 Lemma Wsup_typ : forall o x,
   isOrd o ->
-  x \in F (TI Wf o) ->
-  Wsup x \in TI Wf (osucc o).
+  x ∈ F (TI Wf o) ->
+  Wsup x ∈ TI Wf (osucc o).
 intros.
 rewrite TI_mono_succ; auto.
 apply Wf_intro; trivial.
@@ -540,9 +539,9 @@ Qed.
 (*
 Lemma W_ind : forall (P:set->Prop),
   Proper (eq_set ==> iff) P ->
-  (forall o' x, isOrd o' -> x \in W_F (TI Wf o') ->
-   (forall i, i \in A (fst x) -> P (cc_app (snd x) i)) -> P (Wsup x)) ->
-  forall a, a \in W -> P a.
+  (forall o' x, isOrd o' -> x ∈ W_F (TI Wf o') ->
+   (forall i, i ∈ A (fst x) -> P (cc_app (snd x) i)) -> P (Wsup x)) ->
+  forall a, a ∈ W -> P a.
 intros.
 unfold W in H1; rewrite Ffix_def in H1; auto.
 destruct H1.
@@ -568,8 +567,8 @@ Qed.
 Hint Resolve W_o_o.
 
   Lemma W_post : forall a,
-   a \in W ->
-   a \in TI Wf W_ord.
+   a ∈ W ->
+   a ∈ TI Wf W_ord.
 apply Ffix_post; eauto.
 Qed.
 
@@ -580,7 +579,7 @@ Qed.
 
 
 
-  Lemma Fix_reached : TI F (osucc W_ord) \incl TI F W_ord.
+  Lemma Fix_reached : TI F (osucc W_ord) ⊆ TI F W_ord.
 
 (*
 Parameter hd : set -> set.
@@ -588,8 +587,8 @@ Parameter tl : set -> set -> set.
 Parameter hd_eq : forall x, hd (Wsup x) == fst x.
 
 Parameter Wf_eta : forall X x,
-  X \incl Wdom ->
-  x \in Wf X ->
+  X ⊆ Wdom ->
+  x ∈ Wf X ->
   x == Wsup (couple (hd x) (cc_lam (A (hd x)) (tl x))).
 
   Definition trad := Fix_rec Wf Wdom
@@ -599,8 +598,8 @@ Parameter Wf_eta : forall X x,
   Lemma trad_ok : forall o,
     isOrd o ->
     forall x,
-    x \in TI Wf o ->
-    trad x \in TI W_F o.
+    x ∈ TI Wf o ->
+    trad x ∈ TI W_F o.
 intros o oo.
 apply isOrd_ind with (2:=oo); intros.
 unfold trad.
@@ -611,7 +610,7 @@ destruct H2 as (o',?,(x',?,?)).
 apply TI_intro with o'; auto.
  apply Fmono_morph; apply W_F_mono.
 
- assert (x \in Wf (TI Wf o')).
+ assert (x ∈ Wf (TI Wf o')).
   rewrite <- TI_mono_succ; auto.
   2:apply isOrd_inv with y; trivial.
   rewrite H4; apply Wsup_typ; trivial.
@@ -632,8 +631,8 @@ Qed.
 
   Lemma trad_inj : forall o,
     isOrd o ->
-    forall x y, x \in TI Wf o ->
-    y \in TI Wf o ->
+    forall x y, x ∈ TI Wf o ->
+    y ∈ TI Wf o ->
     trad x == trad y -> x == y.
 intros o oo.
 apply isOrd_ind with (2:=oo); intros.

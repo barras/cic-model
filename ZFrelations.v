@@ -4,9 +4,9 @@ Require Import ZFpairs.
 (** * Relations *)
 
 Definition is_relation x :=
-  forall p, p \in x -> p == couple (fst p) (snd p).
+  forall p, p ∈ x -> p == couple (fst p) (snd p).
 
-Definition rel_app r x y := couple x y \in r.
+Definition rel_app r x y := couple x y ∈ r.
 
 Instance rel_app_morph :
   Proper (eq_set ==> eq_set ==> eq_set ==> iff) rel_app.
@@ -36,7 +36,7 @@ apply subset_morph.
   rewrite H; trivial.
 Qed.
 
-Lemma rel_image_ex : forall r x, x \in rel_domain r -> exists y, rel_app r x y.
+Lemma rel_image_ex : forall r x, x ∈ rel_domain r -> exists y, rel_app r x y.
 Proof.
 unfold rel_domain; intros.
 elim subset_elim2 with (1:=H); intros.
@@ -45,7 +45,7 @@ rewrite <- H0 in H1.
 exists x1; trivial.
 Qed.
 
-Lemma rel_domain_intro : forall r x y, rel_app r x y -> x \in rel_domain r.
+Lemma rel_domain_intro : forall r x y, rel_app r x y -> x ∈ rel_domain r.
 Proof.
 unfold rel_domain in |- *; intros.
 apply subset_intro.
@@ -56,7 +56,7 @@ apply subset_intro.
  exists y; trivial.
 Qed.
 
-Lemma rel_image_intro : forall r x y, rel_app r x y -> y \in rel_image r.
+Lemma rel_image_intro : forall r x y, rel_app r x y -> y ∈ rel_image r.
 Proof.
 unfold rel_image in |- *; intros.
 apply subset_intro.
@@ -106,7 +106,7 @@ unfold rel.
 rewrite H; rewrite H0; reflexivity.
 Qed.
 
-Lemma app_typ1 : forall r x y A B, r \in rel A B -> rel_app r x y -> x \in A.
+Lemma app_typ1 : forall r x y A B, r ∈ rel A B -> rel_app r x y -> x ∈ A.
 Proof.
 unfold rel, rel_app in |- *; intros.
 specialize power_elim with (1 := H) (2 := H0); intro.
@@ -114,7 +114,7 @@ rewrite <- (fst_def x y).
 apply fst_typ with (1 := H1).
 Qed.
 
-Lemma app_typ2 : forall r x y A B, r \in rel A B -> rel_app r x y -> y \in B.
+Lemma app_typ2 : forall r x y A B, r ∈ rel A B -> rel_app r x y -> y ∈ B.
 Proof.
 unfold rel, rel_app in |- *; intros.
 specialize power_elim with (1 := H) (2 := H0); intro.
@@ -122,13 +122,13 @@ rewrite <- (snd_def x y).
 apply snd_typ with (1 := H1).
 Qed.
 
-Lemma rel_is_relation : forall f A B, f \in rel A B -> is_relation f.
+Lemma rel_is_relation : forall f A B, f ∈ rel A B -> is_relation f.
 Proof.
 unfold rel in |- *; red in |- *; intros.
 specialize power_elim with (1 := H) (2 := H0); apply surj_pair.
 Qed.
 
-Lemma rel_domain_incl : forall r A B, r \in rel A B -> rel_domain r \incl A.
+Lemma rel_domain_incl : forall r A B, r ∈ rel A B -> rel_domain r ⊆ A.
 Proof.
 unfold rel_domain in |- *; intros.
 red in |- *; intros.
@@ -138,7 +138,7 @@ rewrite <- H1 in img_z.
 apply app_typ1 with (1 := H) (2 := img_z).
 Qed.
 
-Lemma rel_image_incl : forall r A B, r \in rel A B -> rel_image r \incl B.
+Lemma rel_image_incl : forall r A B, r ∈ rel A B -> rel_image r ⊆ B.
 Proof.
 unfold rel_image in |- *; intros.
 red in |- *; intros.
@@ -151,9 +151,9 @@ Qed.
 Lemma relation_is_rel :
   forall r A B,
   is_relation r ->
-  rel_domain r \incl A ->
-  rel_image r \incl B ->
-  r \in rel A B.
+  rel_domain r ⊆ A ->
+  rel_image r ⊆ B ->
+  r ∈ rel A B.
 Proof.
 unfold rel in |- *; intros.
 red in H.
@@ -176,7 +176,7 @@ Definition inject_rel R A B :=
   subset (prodcart A B) (fun p => R (fst p) (snd p)).
 
 Lemma inject_rel_is_rel :  forall (R:set->set->Prop) A B,
-  inject_rel R A B \in rel A B.
+  inject_rel R A B ∈ rel A B.
 Proof.
 unfold rel in |- *.
 intros.
@@ -188,8 +188,8 @@ Qed.
 Lemma inject_rel_intro :
   forall (R:set->set->Prop) A B x y,
   ext_rel A R ->
-  x \in A ->
-  y \in B ->
+  x ∈ A ->
+  y ∈ B ->
   R x y ->
   rel_app (inject_rel R A B) x y.
 Proof.
@@ -205,12 +205,12 @@ Lemma inject_rel_elim :
   forall (R:set->set->Prop) A B x y,
   ext_rel A R ->
   rel_app (inject_rel R A B) x y ->
-  x \in A /\ y \in B /\ R x y.
+  x ∈ A /\ y ∈ B /\ R x y.
 Proof.
 unfold inject_rel, rel_app in |- *; intros.
 specialize subset_elim1 with (1 := H0); intro.
 elim subset_elim2 with (1 := H0); intros.
-assert (x \in A).
+assert (x ∈ A).
  rewrite <- (fst_def x y).
  apply fst_typ with B; trivial.
 split; trivial.
@@ -266,7 +266,7 @@ transitivity (union (singl y)).
 Qed.
 
 Lemma app_elim : forall f x,
-  is_function f -> x \in rel_domain f -> rel_app f x (app f x).
+  is_function f -> x ∈ rel_domain f -> rel_app f x (app f x).
 Proof.
 intros.
 elim rel_image_ex with (1 := H0); intros.
@@ -278,7 +278,7 @@ Qed.
 Definition func A B :=
   subset (rel A B)
     (fun r =>
-       (forall x, x \in A -> exists2 y, y \in B & rel_app r x y) /\
+       (forall x, x ∈ A -> exists2 y, y ∈ B & rel_app r x y) /\
        (forall x y y', rel_app r x y -> rel_app r x y' -> y == y')).
 
 Instance func_mono :
@@ -325,12 +325,12 @@ apply subset_morph.
   rewrite H0; trivial.
 Qed.
 
-Lemma func_rel_incl : forall A B, func A B \incl rel A B.
+Lemma func_rel_incl : forall A B, func A B ⊆ rel A B.
 Proof.
 unfold func; red; intros; eapply subset_elim1; eauto.
 Qed.
 
-Lemma func_is_function : forall f A B, f \in func A B -> is_function f.
+Lemma func_is_function : forall f A B, f ∈ func A B -> is_function f.
 Proof.
 red in |- *; intros.
 split.
@@ -343,7 +343,7 @@ split.
    apply H4 with x; rewrite <- H2; auto.
 Qed.
 
-Lemma fun_domain_func : forall f A B, f \in func A B -> rel_domain f == A.
+Lemma fun_domain_func : forall f A B, f ∈ func A B -> rel_domain f == A.
 Proof.
 intros; apply eq_intro; intros.
  apply rel_domain_incl with f B; trivial.
@@ -369,7 +369,7 @@ intros; apply eq_intro; intros.
 Qed.
 
 Lemma app_typ :
-  forall f x A B, f \in func A B -> x \in A -> app f x \in B.
+  forall f x A B, f ∈ func A B -> x ∈ A -> app f x ∈ B.
 Proof.
 unfold func in |- *; intros.
 specialize subset_elim2 with (1 := H); destruct 1; auto.
@@ -383,9 +383,9 @@ Qed.
 
 
 Lemma func_narrow : forall f A B B',
-  f \in func A B ->
-  (forall x, x \in A -> app f x \in B') ->
-  f \in func A B'.
+  f ∈ func A B ->
+  (forall x, x ∈ A -> app f x ∈ B') ->
+  f ∈ func A B'.
 unfold func; intros.
 specialize subset_elim1 with (1:=H); intro.
 elim subset_elim2 with (1:=H); intros.
@@ -424,8 +424,8 @@ Definition lam_rel (F:set->set) A B := inject_rel (fun x y => F x == y) A B.
 
 Lemma lam_rel_is_func : forall A B f, 
   ext_fun A f ->
-  (forall x, x \in A -> f x \in B) ->
-  lam_rel f A B \in func A B.
+  (forall x, x ∈ A -> f x ∈ B) ->
+  lam_rel f A B ∈ func A B.
 Proof.
 unfold lam_rel in |- *; intros.
 unfold func in |- *.
@@ -459,7 +459,7 @@ Qed.
 
 Lemma beta_rel_eq : forall f x A B,
   ext_fun A f ->
-  x \in A -> (forall x, x \in A -> f x \in B) -> app (lam_rel f A B) x == f x.
+  x ∈ A -> (forall x, x ∈ A -> f x ∈ B) -> app (lam_rel f A B) x == f x.
 Proof.
 intros.
 apply app_defined.
@@ -505,8 +505,8 @@ Qed.
 
 Lemma lam_is_func : forall A B f, 
   ext_fun A f ->
-  (forall x, x \in A -> f x \in B) ->
-  lam A f \in func A B.
+  (forall x, x ∈ A -> f x ∈ B) ->
+  lam A f ∈ func A B.
 Proof.
 unfold lam in |- *; intros.
 unfold func in |- *.
@@ -544,7 +544,7 @@ apply subset_intro.
 Qed.
 
 Lemma beta_eq : forall f x A,
-  ext_fun A f -> x \in A -> app (lam A f) x == f x.
+  ext_fun A f -> x ∈ A -> app (lam A f) x == f x.
 Proof.
 unfold lam.
 intros.
@@ -581,7 +581,7 @@ Qed.
 
 Definition dep_func (A:set) (B:set->set) :=
   subset (func A (union (dep_image A B)))
-    (fun f => forall x, x \in A -> app f x \in B x).
+    (fun f => forall x, x ∈ A -> app f x ∈ B x).
 
 Lemma dep_func_ext :
   forall x1 x2 f1 f2,
@@ -608,8 +608,8 @@ Lemma dep_func_mono : forall A A' F F',
   ext_fun A F ->
   ext_fun A' F' ->
   A == A' ->  
-  (forall x, x \in A -> F x \incl F' x) ->
-  dep_func A F \incl dep_func A' F'.
+  (forall x, x ∈ A -> F x ⊆ F' x) ->
+  dep_func A F ⊆ dep_func A' F'.
 unfold dep_func; red; intros A A' F F' eF eF' eqA H z H0.
 rewrite subset_ax in H0|-*.
 destruct H0; split.
@@ -638,11 +638,11 @@ Qed.
 Lemma dep_func_intro : forall f dom F,
   ext_fun dom f ->
   ext_fun dom F ->
-  (forall x, x \in dom -> f x \in F x) ->
-  lam dom f \in dep_func dom F.
+  (forall x, x ∈ dom -> f x ∈ F x) ->
+  lam dom f ∈ dep_func dom F.
 Proof.
 intros.
-assert (forall x, x \in dom -> f x \in union (dep_image dom F)).
+assert (forall x, x ∈ dom -> f x ∈ union (dep_image dom F)).
  intros.
  apply union_intro with (F x); auto.
  unfold dep_image.
@@ -657,7 +657,7 @@ apply subset_intro.
 Qed.
 
 Lemma func_eta : forall f A B,
-  f \in func A B ->
+  f ∈ func A B ->
   f == lam A (fun x => app f x).
 intros.
 specialize subset_elim2 with (1:=H); intro.
@@ -698,7 +698,7 @@ apply eq_intro; intros.
 Qed.
 
 Lemma dep_func_eta : forall f dom F,
-  f \in dep_func dom F ->
+  f ∈ dep_func dom F ->
   f == lam dom (fun x => app f x).
 intros.
 apply subset_elim1 in H.
@@ -706,14 +706,14 @@ apply func_eta with (1:=H).
 Qed.
 
 Lemma dep_func_incl_func : forall A B,
-  dep_func A B \incl func A (union (dep_image A B)).
+  dep_func A B ⊆ func A (union (dep_image A B)).
 Proof.
 unfold dep_func in |- *; red in |- *; intros.
 apply subset_elim1 with (1 := H).
 Qed.
 
 Lemma dep_func_elim :
-  forall f x A B, f \in dep_func A B -> x \in A -> app f x \in B x.
+  forall f x A B, f ∈ dep_func A B -> x ∈ A -> app f x ∈ B x.
 Proof.
 unfold dep_func in |- *; intros.
 elim subset_elim2 with (1 := H); intros.
@@ -726,7 +726,7 @@ Qed.
 (** Characterizing functions *)
 
 Definition is_cc_fun A f :=
-  forall c, c \in f -> c == couple (fst c) (snd c) /\ fst c \in A.
+  forall c, c ∈ f -> c == couple (fst c) (snd c) /\ fst c ∈ A.
 
 Instance is_cc_fun_morph : Proper (eq_set ==> eq_set ==> iff) is_cc_fun.
 apply morph_impl_iff2; auto with *.
@@ -751,8 +751,8 @@ Qed.
 
 Lemma cc_lam_def dom f z :
   ext_fun dom f ->
-  (z \in cc_lam dom f <->
-   exists2 x, x \in dom & exists2 y, y \in f x & z == couple x y).
+  (z ∈ cc_lam dom f <->
+   exists2 x, x ∈ dom & exists2 y, y ∈ f x & z == couple x y).
 unfold cc_lam; intros.
 rewrite sup_ax.
  apply ex2_morph; red; intros; auto with *.
@@ -796,7 +796,7 @@ Qed.
 
 Lemma cc_impredicative_lam : forall dom F,
   ext_fun dom F ->
-  (forall x, x \in dom -> F x == empty) ->
+  (forall x, x ∈ dom -> F x == empty) ->
   cc_lam dom F == empty.
 Proof.
 intros.
@@ -821,7 +821,7 @@ reflexivity.
 Qed.
 
 Lemma couple_in_app : forall x z f,
-  couple x z \in f <-> z \in cc_app f x.
+  couple x z ∈ f <-> z ∈ cc_app f x.
 unfold cc_app, rel_image; split; intros.
  apply subset_intro.
   apply union_intro with (pair x z).
@@ -859,7 +859,7 @@ Qed.
 
 Lemma cc_beta_eq : forall dom F x,
   ext_fun dom F ->
-  x \in dom ->
+  x ∈ dom ->
   cc_app (cc_lam dom F) x == F x.
 Proof.
 intros.
@@ -932,7 +932,7 @@ Qed.
 Hint Resolve cc_prod_fun1.
 
 Lemma cc_prod_is_cc_fun : forall A B f,
-  f \in cc_prod A B -> is_cc_fun A f.
+  f ∈ cc_prod A B -> is_cc_fun A f.
 intros.
 unfold cc_prod in H.
 rewrite replf_ax in H; auto.
@@ -956,11 +956,11 @@ Qed.
 Lemma cc_prod_intro : forall dom f F,
   ext_fun dom f ->
   ext_fun dom F ->
-  (forall x, x \in dom -> f x \in F x) ->
-  cc_lam dom f \in cc_prod dom F.
+  (forall x, x ∈ dom -> f x ∈ F x) ->
+  cc_lam dom f ∈ cc_prod dom F.
 unfold cc_prod in |- *.
 intros.
-assert (forall x, x \in dom -> f x \in union (dep_image dom F)).
+assert (forall x, x ∈ dom -> f x ∈ union (dep_image dom F)).
  intros.
  apply union_intro with (F x); auto.
  unfold dep_image.
@@ -978,9 +978,9 @@ apply replf_intro with (lam dom f); trivial.
 Qed.
 
 Lemma cc_prod_elim : forall dom f x F,
-  f \in cc_prod dom F ->
-  x \in dom ->
-  cc_app f x \in F x.
+  f ∈ cc_prod dom F ->
+  x ∈ dom ->
+  cc_app f x ∈ F x.
 intros.
 unfold cc_prod in H.
 elim replf_elim with (2 := H); clear H; intros; auto.
@@ -993,27 +993,27 @@ rewrite cc_beta_eq; auto.
 Qed.
 
 Lemma cc_app_typ f v A B B' :
-  f \in cc_prod A B ->
+  f ∈ cc_prod A B ->
   B' == B v ->
-  v \in A ->
-  cc_app f v \in B'.
+  v ∈ A ->
+  cc_app f v ∈ B'.
 intros.
 rewrite H0; apply cc_prod_elim with (1:=H); trivial.
 Qed.
 
 Lemma cc_arr_intro : forall A B F,
   ext_fun A F ->
-  (forall x, x \in A -> F x \in B) ->
-  cc_lam A F \in cc_arr A B.
+  (forall x, x ∈ A -> F x ∈ B) ->
+  cc_lam A F ∈ cc_arr A B.
 unfold cc_arr; intros.
 apply cc_prod_intro; auto.
 do 2 red; reflexivity.
 Qed.
 
 Lemma cc_arr_elim : forall f x A B,
-  f \in cc_arr A B -> 
-  x \in A ->
-  cc_app f x \in B.
+  f ∈ cc_arr A B -> 
+  x ∈ A ->
+  cc_app f x ∈ B.
 intros.
 apply cc_prod_elim with (1:=H); trivial.
 Qed.
@@ -1021,7 +1021,7 @@ Qed.
 
 (* Eta reduction : *)
 Lemma cc_eta_eq: forall dom F f,
-  f \in cc_prod dom F ->
+  f ∈ cc_prod dom F ->
   f == cc_lam dom (fun x => cc_app f x).
 intros.
 apply cc_eta_eq'; eauto.
@@ -1030,8 +1030,8 @@ Qed.
 Lemma cc_prod_covariant : forall dom dom' F G,
   ext_fun dom' G ->
   dom == dom' ->
-  (forall x, x \in dom -> F x \incl G x) ->
-  cc_prod dom F \incl cc_prod dom' G.
+  (forall x, x ∈ dom -> F x ⊆ G x) ->
+  cc_prod dom F ⊆ cc_prod dom' G.
 red; intros.
 setoid_replace (cc_prod dom' G) with (cc_prod dom G).
  specialize cc_eta_eq with (1:=H2); intro.
@@ -1055,10 +1055,10 @@ Lemma cc_prod_intro' : forall (dom dom': set) (f F : set -> set),
        ext_fun dom f ->
        ext_fun dom' F ->
        dom == dom' ->
-       (forall x : set, x \in dom -> f x \in F x) ->
-       cc_lam dom f \in cc_prod dom' F.
+       (forall x : set, x ∈ dom -> f x ∈ F x) ->
+       cc_lam dom f ∈ cc_prod dom' F.
 intros.
-cut (cc_lam dom f \in cc_prod dom F).
+cut (cc_lam dom f ∈ cc_prod dom F).
  apply cc_prod_covariant; auto with *.
 apply cc_prod_intro; intros; auto.
 do 2 red; intros.

@@ -31,13 +31,13 @@ repeat red; split; intros.
 Qed.
 
 Lemma NREC_inv : forall f g n y,
-  n \in N ->
+  n ∈ N ->
   morph2 g ->
   NREC f g n y ->
-  n \in N /\
+  n ∈ N /\
   NREC f g n y /\
   (n == zero -> y == f) /\
-  (forall m, m \in N -> n == succ m -> 
+  (forall m, m ∈ N -> n == succ m -> 
     exists2 z, NREC f g m z & y == g m z).
 intros. pattern n, y. apply H1. 
  do 3 red; intros.
@@ -81,7 +81,7 @@ Qed.
    
   
 Lemma NREC_choice : forall f g n,
-  n \in N ->
+  n ∈ N ->
   morph2 g ->
   uchoice_pred (NREC f g n).
 Proof.
@@ -167,7 +167,7 @@ symmetry. apply uchoice_ext.
  unfold NREC; intros; auto.
 Qed.
 
-Lemma NATREC_Succ : forall f g n, morph2 g -> n \in N ->
+Lemma NATREC_Succ : forall f g n, morph2 g -> n ∈ N ->
   NATREC f g (succ n) == g n (NATREC f g n).
 intros. elim H0 using N_ind; intros.
  rewrite <- H2; auto.
@@ -187,8 +187,8 @@ intros. elim H0 using N_ind; intros.
   unfold NATREC; apply uchoice_def. apply NREC_choice; auto.
 Qed.
 
-Lemma NATREC_typ : forall x y, x \in N -> y \in N ->
-  NATREC x (fun _ => succ) y \in N.
+Lemma NATREC_typ : forall x y, x ∈ N -> y ∈ N ->
+  NATREC x (fun _ => succ) y ∈ N.
 intros. assert (morph2 (fun _ => succ)).
  do 2 red; intros _ _ _ x1 x2 HEQ; rewrite HEQ; reflexivity.
 elim H0 using N_ind; intros.
@@ -210,16 +210,16 @@ intros; apply eq_set_ax; split; intros.
 Qed.
 
 Lemma EQ_succ_inj : forall x y x0, 
-  x \in N -> y \in N ->
-  x0 \in (EQ N (succ x) (succ y)) ->
-  empty \in (EQ N x y).
+  x ∈ N -> y ∈ N ->
+  x0 ∈ (EQ N (succ x) (succ y)) ->
+  empty ∈ (EQ N x y).
 intros x y x0 HxN HyN H. apply EQ_elim in H. 
 destruct H as (_, (H1, _)). 
 apply succ_inj in H1; trivial.
 rewrite H1. apply refl_typ; trivial.
 Qed.
 
-Lemma EQ_add_0 : forall x, x \in N ->
+Lemma EQ_add_0 : forall x, x ∈ N ->
   EQ N x (NATREC x (fun _ => succ) (zero)) == singl empty.
 intros x HxN. rewrite NATREC_0. apply eq_set_ax; split; intros.
  apply EQ_elim in H. destruct H as (_, (_, H0)); 
@@ -228,7 +228,7 @@ intros x HxN. rewrite NATREC_0. apply eq_set_ax; split; intros.
  apply singl_elim in H; rewrite H; apply refl_typ; trivial.
 Qed.
 
-Lemma EQ_add_succ : forall x y, x \in N -> y \in N ->
+Lemma EQ_add_succ : forall x y, x ∈ N -> y ∈ N ->
   EQ N (NATREC (NATREC x (fun _ => succ) y) 
          (fun _ => succ ) (succ zero))
        (NATREC x (fun _ => succ) 

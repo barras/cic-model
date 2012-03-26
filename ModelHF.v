@@ -15,7 +15,7 @@ split.
  apply eq_hf_trans.
 Qed.
 
-Notation "x \in y" := (inX x y).
+Notation "x ∈ y" := (inX x y).
 Notation "x == y" := (eqX x y).
 
 Lemma in_ext: Proper (eqX ==> eqX ==> iff) inX.
@@ -27,7 +27,7 @@ Definition lam := cc_lam.
 Definition prod := cc_prod.
 
 Definition eq_fun (x:X) (f1 f2:X->X) :=
-  forall y1 y2, y1 \in x -> y1 == y2 -> f1 y1 == f2 y2.
+  forall y1 y2, y1 ∈ x -> y1 == y2 -> f1 y1 == f2 y2.
 
 Lemma lam_ext :
   forall x1 x2 f1 f2,
@@ -49,27 +49,27 @@ Proof cc_prod_ext.
 Lemma prod_intro : forall dom f F,
   eq_fun dom f f ->
   eq_fun dom F F ->
-  (forall x, x \in dom -> f x \in F x) ->
-  lam dom f \in prod dom F.
+  (forall x, x ∈ dom -> f x ∈ F x) ->
+  lam dom f ∈ prod dom F.
 Proof cc_prod_intro.
 
 Lemma prod_elim : forall dom f x F,
   eq_fun dom F F ->
-  f \in prod dom F ->
-  x \in dom ->
-  app f x \in F x.
+  f ∈ prod dom F ->
+  x ∈ dom ->
+  app f x ∈ F x.
 Proof cc_prod_elim.
 
 Lemma impredicative_prod : forall dom F,
   eq_fun dom F F ->
-  (forall x, x \in dom -> F x \in props) ->
-  prod dom F \in props.
+  (forall x, x ∈ dom -> F x ∈ props) ->
+  prod dom F ∈ props.
 Proof cc_impredicative_prod.
 
 Lemma beta_eq:
   forall dom F x,
   eq_fun dom F F ->
-  x \in dom ->
+  x ∈ dom ->
   app (lam dom F) x == F x.
 Proof cc_beta_eq.
 

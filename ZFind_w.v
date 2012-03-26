@@ -28,18 +28,18 @@ Hint Resolve wfm1.
 
 Lemma W_F_intro X a f :
   ext_fun (B a) f ->
-  a \in A ->
-  (forall i, i \in B a -> f i \in X) ->
-  couple a (cc_lam (B a) f) \in W_F X.
+  a ∈ A ->
+  (forall i, i ∈ B a -> f i ∈ X) ->
+  couple a (cc_lam (B a) f) ∈ W_F X.
 intros.
 apply couple_intro_sigma; auto with *.
 apply cc_arr_intro; intros; auto with *.
 Qed.
 
 Lemma W_F_elim X x :
-  x \in W_F X ->
-  fst x \in A /\
-  (forall i, i \in B (fst x) -> cc_app (snd x) i \in X) /\
+  x ∈ W_F X ->
+  fst x ∈ A /\
+  (forall i, i ∈ B (fst x) -> cc_app (snd x) i ∈ X) /\
   x ==couple (fst x) (cc_lam (B (fst x)) (cc_app (snd x))). 
 intros.
 assert (ty1 := fst_typ_sigma _ _ _ H).
@@ -72,7 +72,7 @@ apply sigma_stable'; auto with *.
 Qed.
 
 Lemma WFi_ext a a' f f' :
-  a \in A ->
+  a ∈ A ->
   a == a' ->
   (a == a' -> eq_fun (B a) f f') ->
   couple a (cc_lam (B a) f) == couple a' (cc_lam (B a') f').
@@ -101,9 +101,9 @@ Qed.
     couple (fst x) (cc_lam (B (fst x)) (fun i => f (cc_app (snd x) i))).
 
   Lemma WFmap_ext : forall f f' x x',
-    fst x \in A ->
+    fst x ∈ A ->
     fst x == fst x' ->
-    (forall i i', i \in B (fst x) -> i == i' ->
+    (forall i i', i ∈ B (fst x) -> i == i' ->
      f (cc_app (snd x) i) == f' (cc_app (snd x') i')) ->
     WFmap f x == WFmap f' x'.
 intros.
@@ -125,8 +125,8 @@ Qed.
 Lemma WFmap_comp : forall f g X Y x,
   ext_fun X g ->
   ext_fun Y f ->
-  (forall x, x \in X -> g x \in Y) ->
-  x \in W_F X ->
+  (forall x, x ∈ X -> g x ∈ Y) ->
+  x ∈ W_F X ->
   WFmap f (WFmap g x) == WFmap (fun x => f (g x)) x.
 intros.
 unfold WFmap.
@@ -144,16 +144,16 @@ symmetry; apply WFi_ext; intros; auto.
 Qed.
 
 Lemma WF_eta : forall X x,
-  x \in W_F X ->
+  x ∈ W_F X ->
   x == WFmap (fun x => x) x.
 intros.
 apply W_F_elim in H; destruct H as (_,(_,?)); assumption.
 Qed.
 
   Lemma WFmap_inj : forall X Y g g' x x',
-    x \in W_F X -> x' \in W_F Y ->
+    x ∈ W_F X -> x' ∈ W_F Y ->
     ext_fun X g -> ext_fun Y g' ->
-    (forall a a', a \in X -> a' \in Y -> g a == g' a' -> a == a') ->
+    (forall a a', a ∈ X -> a' ∈ Y -> g a == g' a' -> a == a') ->
     WFmap g x == WFmap g' x' -> x == x'.
 unfold WFmap; intros.
 apply W_F_elim in H; destruct H as (?,(?,?)).
@@ -176,9 +176,9 @@ Qed.
 
   Lemma WFmap_typ : forall X Y f x,
     ext_fun X f ->
-    x \in W_F X ->
-    (forall a, a \in X -> f a \in Y) ->
-    WFmap f x \in W_F Y.
+    x ∈ W_F X ->
+    (forall a, a ∈ X -> f a ∈ Y) ->
+    WFmap f x ∈ W_F Y.
 intros.
 apply W_F_elim in H0; destruct H0 as (?,(?,_)).
 apply W_F_intro; auto.
@@ -233,10 +233,10 @@ Qed.
 Definition Wdom := rel (List (sup A B)) A.
 
 Definition Wsup x :=
-  union2 (singl (couple Nil (fst x)))
-   (sup (B (fst x)) (fun y =>
+   singl (couple Nil (fst x)) ∪
+   sup (B (fst x)) (fun y =>
       replf (cc_app (snd x) y)
-        (fun p => couple (Cons y (fst p)) (snd p)))).
+        (fun p => couple (Cons y (fst p)) (snd p))).
 
 Lemma Wsup_morph : forall X, ext_fun (W_F X) Wsup.
 do 2 red; intros.
@@ -277,10 +277,10 @@ Hint Resolve wext1 wext2.
 
 Lemma Wsup_def :
   forall x p,
-  (p \in Wsup x <->
+  (p ∈ Wsup x <->
    p == couple Nil (fst x) \/
-   exists2 i, i \in B (fst x) &
-   exists2 q, q \in cc_app (snd x) i &
+   exists2 i, i ∈ B (fst x) &
+   exists2 q, q ∈ cc_app (snd x) i &
    p == couple (Cons i (fst q)) (snd q)).
 intros x p; intros.
 unfold Wsup.
@@ -304,7 +304,7 @@ split; intros.
 Qed.
 
 Lemma Wsup_hd_prop : forall a x,
-  (couple Nil a \in Wsup x <-> a == fst x).
+  (couple Nil a ∈ Wsup x <-> a == fst x).
 split; intros.
  apply union2_elim in H; destruct H.
   apply singl_elim in H.
@@ -324,10 +324,10 @@ split; intros.
 Qed.
 
 Lemma Wsup_tl_prop : forall X i l a x,
-  x \in W_F X ->
-  X \incl Wdom ->
-  (couple (Cons i l) a \in Wsup x <->
-   i \in B (fst x) /\ couple l a \in cc_app (snd x) i).
+  x ∈ W_F X ->
+  X ⊆ Wdom ->
+  (couple (Cons i l) a ∈ Wsup x <->
+   i ∈ B (fst x) /\ couple l a ∈ cc_app (snd x) i).
 intros X i l a x H inclX.
 apply W_F_elim in H; destruct H as (tyx, (tys,_)).
 rewrite Wsup_def.
@@ -355,10 +355,10 @@ split; intros.
 Qed.
 
 Lemma Wsup_inj : forall X Y x x',
-  X \incl Wdom ->
-  Y \incl Wdom ->
-  x \in W_F X ->
-  x' \in W_F Y ->
+  X ⊆ Wdom ->
+  Y ⊆ Wdom ->
+  x ∈ W_F X ->
+  x' ∈ W_F Y ->
   Wsup x == Wsup x' -> x == x'.
 intros X Y x x' tyf tyf' H H0 H1.
 destruct W_F_elim with (1:=H) as (?,(?,?)).
@@ -372,12 +372,12 @@ rewrite H4; rewrite H7; apply WFi_ext; intros; auto.
  reflexivity.
 
  red; intros.
- assert (x'0 \in B (fst x')).
+ assert (x'0 ∈ B (fst x')).
   revert H9; apply in_set_morph; auto with *.
- assert (cc_app (snd x) x0 \incl prodcart (List (sup A B)) A).
+ assert (cc_app (snd x) x0 ⊆ prodcart (List (sup A B)) A).
   red; intros.
   apply power_elim with (2:=H12); auto.
- assert (cc_app (snd x') x'0 \incl prodcart (List (sup A B)) A).
+ assert (cc_app (snd x') x'0 ⊆ prodcart (List (sup A B)) A).
   red; intros.
   apply power_elim with (2:=H13); auto.
  generalize (fun z l => Wsup_tl_prop _ x0 l z _ H tyf); intros.
@@ -397,9 +397,9 @@ rewrite H4; rewrite H7; apply WFi_ext; intros; auto.
 Qed.
 
 Lemma Wsup_typ_gen : forall X x,
-  X \incl Wdom ->
-  x \in W_F X ->
-  Wsup x \in Wdom.
+  X ⊆ Wdom ->
+  x ∈ W_F X ->
+  Wsup x ∈ Wdom.
 intros.
 apply power_intro; intros.
 rewrite Wsup_def in H1; trivial.
@@ -408,7 +408,7 @@ destruct H1 as [eqz|(i,?,(q,?,eqz))]; rewrite eqz; clear z eqz.
  apply couple_intro; trivial.
  apply Nil_typ.
 
- assert (q \in prodcart (List (sup A B)) A).
+ assert (q ∈ prodcart (List (sup A B)) A).
   specialize H2 with (1:=H1); apply H in H2.
   apply power_elim with (1:=H2); trivial.
  apply couple_intro.
@@ -426,8 +426,8 @@ Definition Wf X := replf (W_F X) Wsup.
 Hint Resolve Wsup_morph.
 
 Lemma Wf_intro : forall x X,
-  x \in W_F X ->
-  Wsup x \in Wf X.
+  x ∈ W_F X ->
+  Wsup x ∈ Wf X.
 intros.
 unfold Wf.
 rewrite replf_ax; trivial.
@@ -435,8 +435,8 @@ exists x; auto with *.
 Qed.
 
 Lemma Wf_elim : forall a X,
-  a \in Wf X ->
-  exists2 x, x \in W_F X &
+  a ∈ Wf X ->
+  exists2 x, x ∈ W_F X &
   a == Wsup x.
 intros.
 unfold Wf in H.
@@ -453,7 +453,7 @@ Qed.
 Hint Resolve Wf_mono Fmono_morph.
 
 Lemma Wf_typ : forall X,
-  X \incl Wdom -> Wf X \incl Wdom.
+  X ⊆ Wdom -> Wf X ⊆ Wdom.
 red; intros.
 apply Wf_elim in H0; destruct H0 as (x,?,?).
 rewrite H1.
@@ -462,11 +462,11 @@ Qed.
 Hint Resolve Wf_typ.
 
 Lemma Wf_stable : forall X,
-  X \incl power Wdom ->
-  inter (replf X Wf) \incl Wf (inter X).
+  X ⊆ power Wdom ->
+  inter (replf X Wf) ⊆ Wf (inter X).
 red; intros X Xty z H.
 unfold Wf.
-assert (forall a, a \in X -> z \in Wf a).
+assert (forall a, a ∈ X -> z ∈ Wf a).
  intros.
  apply inter_elim with (1:=H).
  rewrite replf_ax.
@@ -475,7 +475,7 @@ assert (forall a, a \in X -> z \in Wf a).
 rewrite replf_ax; auto.
 destruct inter_wit with (2:=H).
  apply Fmono_morph; trivial.
-assert (z \in Wf x); auto.
+assert (z ∈ Wf x); auto.
 apply Wf_elim in H2.
 destruct H2.
 exists x0; auto.
@@ -504,7 +504,7 @@ apply inter_intro.
 Qed.
 
 Lemma W_F_Wf_iso X :
-  X \incl Wdom ->
+  X ⊆ Wdom ->
   iso_fun (W_F X) (Wf X) Wsup.
 split; intros.
  apply Wsup_morph.
@@ -521,19 +521,19 @@ Qed.
 
 Definition W := Ffix Wf Wdom.
 
-Lemma Wtyp : W \incl Wdom.
+Lemma Wtyp : W ⊆ Wdom.
 apply Ffix_inA.
 Qed.
 
-Lemma Wi_W : forall o, isOrd o -> TI Wf o \incl W.
+Lemma Wi_W : forall o, isOrd o -> TI Wf o ⊆ W.
 apply TI_Ffix; auto.
 Qed.
 
 Lemma TI_Wf_elim : forall a o,
   isOrd o ->
-  a \in TI Wf o ->
+  a ∈ TI Wf o ->
   exists2 o', lt o' o &
-  exists2 x, x \in W_F (TI Wf o') &
+  exists2 x, x ∈ W_F (TI Wf o') &
   a == Wsup x.
 intros.
 apply TI_elim in H0; trivial.
@@ -545,8 +545,8 @@ Qed.
 
 Lemma Wsup_typ : forall o x,
   isOrd o ->
-  x \in W_F (TI Wf o) ->
-  Wsup x \in TI Wf (osucc o).
+  x ∈ W_F (TI Wf o) ->
+  Wsup x ∈ TI Wf (osucc o).
 intros.
 rewrite TI_mono_succ; auto.
 apply Wf_intro; trivial.
@@ -554,10 +554,10 @@ Qed.
 
 Lemma W_ind : forall (P:set->Prop),
   Proper (eq_set ==> iff) P ->
-  (forall o' x, isOrd o' -> x \in W_F (TI Wf o') ->
-   (forall i, i \in B (fst x) -> P (cc_app (snd x) i)) ->
+  (forall o' x, isOrd o' -> x ∈ W_F (TI Wf o') ->
+   (forall i, i ∈ B (fst x) -> P (cc_app (snd x) i)) ->
    P (Wsup x)) ->
-  forall a, a \in W -> P a.
+  forall a, a ∈ W -> P a.
 intros.
 unfold W in H1; rewrite Ffix_def in H1; auto.
 destruct H1.
@@ -581,8 +581,8 @@ Qed.
 Hint Resolve W_o_o.
 
   Lemma W_post : forall a,
-   a \in W ->
-   a \in TI Wf W_ord.
+   a ∈ W ->
+   a ∈ TI Wf W_ord.
 apply Ffix_post; eauto.
 apply Wf_stable.
 Qed.
@@ -669,10 +669,10 @@ Section Recursor.
   Lemma Wi_fix :
     forall (P:set->Prop) o,
     isOrd o ->
-    (forall i, isOrd i -> i \incl o ->
-     (forall i' m, lt i' i -> m \in TI W_F i' -> P m) ->
-     forall n, n \in TI W_F i -> P n) ->
-    forall n, n \in TI W_F o -> P n.
+    (forall i, isOrd i -> i ⊆ o ->
+     (forall i' m, lt i' i -> m ∈ TI W_F i' -> P m) ->
+     forall n, n ∈ TI W_F i -> P n) ->
+    forall n, n ∈ TI W_F o -> P n.
 intros P o is_ord Prec.
 induction is_ord using isOrd_ind; intros; eauto.
 Qed.
@@ -685,20 +685,20 @@ Qed.
 
   Variable U : set -> set -> set.
   Hypothesis Umono : forall o o' x x',
-    isOrd o' -> o' \incl ord -> isOrd o -> o \incl o' ->
-    x \in TI W_F o -> x == x' ->
-    U o x \incl U o' x'.
+    isOrd o' -> o' ⊆ ord -> isOrd o -> o ⊆ o' ->
+    x ∈ TI W_F o -> x == x' ->
+    U o x ⊆ U o' x'.
 
   Let Ty o := cc_prod (TI W_F o) (U o).
-  Hypothesis Ftyp : forall o f, isOrd o -> o \incl ord ->
-    f \in Ty o -> F o f \in Ty (osucc o).
+  Hypothesis Ftyp : forall o f, isOrd o -> o ⊆ ord ->
+    f ∈ Ty o -> F o f ∈ Ty (osucc o).
 
-  Let Q o f := forall x, x \in TI W_F o -> cc_app f x \in U o x.
+  Let Q o f := forall x, x ∈ TI W_F o -> cc_app f x ∈ U o x.
 
   Definition Wi_ord_irrel :=
     forall o o' f g,
-    isOrd o' -> o' \incl ord -> isOrd o -> o \incl o' ->
-    f \in Ty o -> g \in Ty o' ->
+    isOrd o' -> o' ⊆ ord -> isOrd o -> o ⊆ o' ->
+    f ∈ Ty o -> g ∈ Ty o' ->
     fcompat (TI W_F o) f g ->
     fcompat (TI W_F (osucc o)) (F o f) (F o' g).
 
@@ -706,8 +706,8 @@ Qed.
 
   Definition WREC := REC F.
 
-Lemma Umorph : forall o o', isOrd o' -> o' \incl ord -> o == o' ->
-    forall x x', x \in TI W_F o -> x == x' -> U o x == U o' x'. 
+Lemma Umorph : forall o o', isOrd o' -> o' ⊆ ord -> o == o' ->
+    forall x x', x ∈ TI W_F o -> x == x' -> U o x == U o' x'. 
 intros.
 apply incl_eq.
  apply Umono; auto.
@@ -722,14 +722,14 @@ apply incl_eq.
   symmetry; trivial.
 Qed.
 
-Lemma Uext : forall o, isOrd o -> o \incl ord -> ext_fun (TI W_F o) (U o).
+Lemma Uext : forall o, isOrd o -> o ⊆ ord -> ext_fun (TI W_F o) (U o).
 red; red; intros.
 apply Umorph; auto with *.
 Qed.
 
 
-  Lemma WREC_typing : forall o f, isOrd o -> o \incl ord -> 
-    is_cc_fun (TI W_F o) f -> Q o f -> f \in Ty o.
+  Lemma WREC_typing : forall o f, isOrd o -> o ⊆ ord -> 
+    is_cc_fun (TI W_F o) f -> Q o f -> f ∈ Ty o.
 intros.
 rewrite cc_eta_eq' with (1:=H1).
 apply cc_prod_intro; intros; auto.
@@ -748,7 +748,7 @@ Qed.
 Let Qm :
    forall o o',
    isOrd o ->
-   o \incl ord ->
+   o ⊆ ord ->
    o == o' -> forall f f', fcompat (TI W_F o) f f' -> Q o f -> Q o' f'.
 intros.
 unfold Q in H3|-*; intros.
@@ -763,9 +763,9 @@ Qed.
 
 Let Qcont : forall o f : set,
  isOrd o ->
- o \incl ord ->
+ o ⊆ ord ->
  is_cc_fun (TI W_F o) f ->
- (forall o' : set, o' \in o -> Q (osucc o') f) -> Q o f.
+ (forall o' : set, o' ∈ o -> Q (osucc o') f) -> Q o f.
 intros.
 red; intros.
 apply TI_elim in H3; auto.
@@ -780,11 +780,11 @@ Qed.
 
 Let Qtyp : forall o f,
  isOrd o ->
- o \incl ord ->
+ o ⊆ ord ->
  is_cc_fun (TI W_F o) f ->
  Q o f -> is_cc_fun (TI W_F (osucc o)) (F o f) /\ Q (osucc o) (F o f).
 intros.
-assert (F o f \in Ty (osucc o)).
+assert (F o f ∈ Ty (osucc o)).
  apply Ftyp; trivial.
  apply WREC_typing; trivial.
 split.
@@ -813,7 +813,7 @@ Qed.
 Hint Resolve WREC_recursor.
 
   (* Main properties of WREC: typing and equation *)
-  Lemma WREC_wt : WREC ord \in Ty ord.
+  Lemma WREC_wt : WREC ord ∈ Ty ord.
 intros.
 apply WREC_typing; auto with *.
  apply REC_wt with (1:=oord) (2:=WREC_recursor).
@@ -823,11 +823,11 @@ Qed.
   Lemma WREC_ind : forall P x,
     Proper (eq_set==>eq_set==>eq_set==>iff) P ->
     (forall o x, isOrd o -> lt o ord ->
-     x \in W_F (TI W_F o) ->
-     (forall y, y \in TI W_F o -> P o y (cc_app (WREC ord) y)) ->
-     forall w, isOrd w -> w \incl ord -> lt o w ->
+     x ∈ W_F (TI W_F o) ->
+     (forall y, y ∈ TI W_F o -> P o y (cc_app (WREC ord) y)) ->
+     forall w, isOrd w -> w ⊆ ord -> lt o w ->
      P w x (cc_app (F ord (WREC ord)) x)) ->
-    x \in TI W_F ord ->
+    x ∈ TI W_F ord ->
     P ord x (cc_app (WREC ord) x).
 intros.
 unfold WREC.
@@ -840,7 +840,7 @@ red; auto.
 Qed.
 
   Lemma WREC_expand : forall n,
-    n \in TI W_F ord -> cc_app (WREC ord) n == cc_app (F ord (WREC ord)) n.
+    n ∈ TI W_F ord -> cc_app (WREC ord) n == cc_app (F ord (WREC ord)) n.
 intros.
 apply REC_expand with (2:=WREC_recursor) (Q:=Q); auto.
 Qed.
@@ -848,8 +848,8 @@ Qed.
   Lemma WREC_irrel o o' :
     isOrd o ->
     isOrd o' ->
-    o \incl o' ->
-    o' \incl ord ->
+    o ⊆ o' ->
+    o' ⊆ ord ->
     eq_fun (TI W_F o) (cc_app (WREC o)) (cc_app (WREC o')).
 red; intros.
 rewrite <- H4.
@@ -865,38 +865,38 @@ Section W_Univ.
 (* Universe facts *)
   Variable U : set.
   Hypothesis Ugrot : grot_univ U.
-  Hypothesis Unontriv : omega \in U.  
+  Hypothesis Unontriv : omega ∈ U.  
 
-  Hypothesis aU : A \in U.
-  Hypothesis bU : forall a, a \in A -> B a \in U.
+  Hypothesis aU : A ∈ U.
+  Hypothesis bU : forall a, a ∈ A -> B a ∈ U.
 
-  Lemma G_Wdom : Wdom \in U.
+  Lemma G_Wdom : Wdom ∈ U.
 unfold Wdom.
 apply G_rel; trivial.
 apply G_List; trivial.
 apply G_sup; trivial.
 Qed.
 
-  Lemma G_W : W \in U.
+  Lemma G_W : W ∈ U.
 apply G_subset; trivial.
 apply G_Wdom.
 Qed.
 
-  Lemma G_W_F X : X \in U -> W_F X \in U.
+  Lemma G_W_F X : X ∈ U -> W_F X ∈ U.
 intros.
 unfold W_F.
 apply G_sigma; intros; trivial.
 apply G_cc_prod; auto.
 Qed.
 
-  Lemma G_W_ord : W_ord \in U.
+  Lemma G_W_ord : W_ord ∈ U.
 unfold W_ord.
 apply G_Ffix_ord; auto.
 apply G_Wdom.
 Qed.
 
 
-  Lemma G_W2 : W2 \in U.
+  Lemma G_W2 : W2 ∈ U.
 apply G_TI; intros; trivial.
  do 2 red; intros; apply sigma_ext; intros; auto with *.
  apply cc_prod_morph; auto with *.

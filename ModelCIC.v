@@ -424,9 +424,9 @@ Definition val_mono (e:fenv) i i' :=
     val_ok (tenv e) i /\
     val_ok (tenv e) i' /\
     forall n,
-    if ords e n then i n \incl i' n
+    if ords e n then i n ⊆ i' n
     else match fixs e n with
-      Some T => forall x, x \in int T (V.shift (S n) i) -> app (i n) x == app (i' n) x
+      Some T => forall x, x ∈ int T (V.shift (S n) i) -> app (i n) x == app (i' n) x
     | _ => i n == i' n
     end.
 
@@ -458,7 +458,7 @@ Qed.
 
 Lemma val_push_ord : forall e i i' x x' T,
   val_mono e i i' ->
-  x \incl x' ->
+  x ⊆ x' ->
   el T i x ->
   el T i' x' ->
   val_mono (push_ord e T) (V.cons x i) (V.cons x' i').
@@ -476,8 +476,8 @@ Qed.
 
 Lemma val_push_fun : forall e i i' f g T U,
   val_mono e i i' ->
-  f \in prod (int T i) (fun x => int U (V.cons x i)) ->
-  g \in prod (int T i') (fun x => int U (V.cons x i')) ->
+  f ∈ prod (int T i) (fun x => int U (V.cons x i)) ->
+  g ∈ prod (int T i') (fun x => int U (V.cons x i')) ->
   fcompat (int T i) f g ->
   val_mono (push_fun e T U) (V.cons f i) (V.cons g i').
 destruct 1 as (?&?&?); split;[idtac|split]; trivial.
@@ -500,7 +500,7 @@ Definition fx_extends e dom M :=
 (** Covariance judgment *)
 Definition fx_sub e M :=
   forall i i', val_mono e i i' ->
-  int M i \incl int M i'.
+  int M i ⊆ int M i'.
 
 (** Invariance *)
 Definition fx_equals e M :=
@@ -683,7 +683,7 @@ assert (ord : isOrd (int O i)).
 assert (ord' : isOrd (int O i')).
  destruct H4 as (_,(H4,_)); apply tyO in H4.
  apply isOrd_inv with o; trivial.
-assert (int c i \in NATi (osucc (int O i))).
+assert (int c i ∈ NATi (osucc (int O i))).
  destruct H4 as (H4,_).
  apply tyc in H4; trivial.
 apply NATCASE_morph_gen; intros; auto.
@@ -763,8 +763,8 @@ Qed.
   Lemma ty_fix_body : forall i o f,
    val_ok e i ->
    lt o (osucc (int O i)) ->
-   f \in prod (NATi o) (fun x => int U (V.cons x (V.cons o i))) ->
-   F i o f \in
+   f ∈ prod (NATi o) (fun x => int U (V.cons x (V.cons o i))) ->
+   F i o f ∈
    prod (NATi (osucc o)) (fun x => int U (V.cons x (V.cons (osucc o) i))).
 unfold F; intros.
 specialize (ty_O _ H); simpl in ty_O.
@@ -822,12 +822,12 @@ Qed.
   Lemma fix_codom_mono : forall o o' x x' i,
    val_ok e i ->
    isOrd o' ->
-   o' \incl int O i ->
+   o' ⊆ int O i ->
    isOrd o ->
-   o \incl o' ->
-   x \in NATi o ->
+   o ⊆ o' ->
+   x ∈ NATi o ->
    x == x' ->
-   int U (V.cons x (V.cons o i)) \incl int U (V.cons x' (V.cons o' i)).
+   int U (V.cons x (V.cons o i)) ⊆ int U (V.cons x' (V.cons o' i)).
 intros.
 apply fx_sub_U.
 apply val_push_var; simpl; auto.
@@ -936,11 +936,11 @@ assert (oo: isOrd (int O i)).
 assert (oo': isOrd (int O i')).
  apply isOrd_inv with infty; trivial.
  apply ty_O; trivial.
-assert (inclo: int O i \incl int O i').
+assert (inclo: int O i ⊆ int O i').
  apply subO in H; trivial.
 clear subO.
 assert (tyfx' :
-  NATREC (F i') (int O i') \in
+  NATREC (F i') (int O i') ∈
   prod (NATi (int O i')) (fun x1 => int U (V.cons x1 (V.cons (int O i') i')))).
  apply NATREC_wt with
    (ord := int O i')
@@ -977,7 +977,7 @@ assert (NATREC (F i) (int O i) ==
      rewrite H5; reflexivity.
 
      rewrite cc_beta_eq; trivial.
-      assert (tyfx1 : NATREC (F i) o' \in
+      assert (tyfx1 : NATREC (F i) o' ∈
          prod (NATi o') (fun x1 => int U (V.cons x1 (V.cons o' i)))).
        apply NATREC_wt with
         (ord := o')
@@ -1441,7 +1441,7 @@ apply typ_nat_fix'' with (osucc omega) (App (Ref 4) (Ref 0)); auto.
      apply sub_refl.
      red; intros; simpl.
      apply cc_app_morph; [reflexivity|].
-     assert (i 1 \in NATi (i 4)).
+     assert (i 1 ∈ NATi (i 4)).
       generalize (H0 1 _ (eq_refl _)); simpl.
       unfold V.lams, V.shift; simpl.
       trivial.

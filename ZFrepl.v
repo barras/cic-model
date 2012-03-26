@@ -32,11 +32,11 @@ apply eq_intro.
 Qed.
 
 Definition repl_rel a (R:set->set->Prop) :=
-  (forall x x' y y', x \in a -> x == x' -> y == y' -> R x y -> R x' y') /\
-  (forall x y y', x \in a -> R x y -> R x y' -> y == y').
+  (forall x x' y y', x ∈ a -> x == x' -> y == y' -> R x y -> R x' y') /\
+  (forall x y y', x ∈ a -> R x y -> R x y' -> y == y').
 Lemma repl_rel_compat_lemma : forall a R,
   repl_rel a R ->
-  (forall x x' y y', x \in a -> R x y -> R x' y' -> x == x' -> y == y').
+  (forall x x' y y', x ∈ a -> R x y -> R x' y' -> x == x' -> y == y').
 intros.
 destruct H.
 apply H4 with x; trivial.
@@ -55,7 +55,7 @@ split; intros.
 Qed.
 
 Lemma repl_intro : forall a R y x,
-  repl_rel a R -> y \in a -> R y x -> x \in repl a R.
+  repl_rel a R -> y ∈ a -> R y x -> x ∈ repl a R.
 Proof.
 intros a R y x Rfun H1 H2.
 elim repl_ax with (1:=repl_rel_compat_lemma _ _ Rfun) (a := a) (x := x); intros.
@@ -65,7 +65,7 @@ exists x; trivial; reflexivity.
 Qed.
 
 Lemma repl_elim : forall a R x,
-  repl_rel a R -> x \in repl a R -> exists2 y, y \in a & R y x.
+  repl_rel a R -> x ∈ repl a R -> exists2 y, y ∈ a & R y x.
 Proof.
 intros a R x Rfun H1.
 elim repl_ax with (1:=repl_rel_compat_lemma _ _ Rfun) (a:=a) (x:=x); intros.
@@ -81,8 +81,8 @@ Qed.
 
 Lemma repl_ext : forall p a R,
   repl_rel a R ->
-  (forall x y, x \in a -> R x y -> y \in p) ->
-  (forall y, y \in p -> exists2 x, x \in a & R x y) ->
+  (forall x y, x ∈ a -> R x y -> y ∈ p) ->
+  (forall y, y ∈ p -> exists2 x, x ∈ a & R x y) ->
   p == repl a R.
 Proof.
 intros; apply eq_intro; intros.
@@ -94,8 +94,8 @@ Qed.
 
 Lemma repl_mono2 : forall x y R,
   repl_rel y R ->
-  x \incl y ->
-  repl x R \incl repl y R.
+  x ⊆ y ->
+  repl x R ⊆ repl y R.
 red; intros.
 assert (repl_rel x R).
  destruct H; split; intros; eauto.
@@ -202,7 +202,7 @@ Qed.
 
 Lemma uchoice_ax : forall P x,
   uchoice_pred P ->
-  (x \in uchoice P <-> exists2 z, P z & x \in z).
+  (x ∈ uchoice P <-> exists2 z, P z & x ∈ z).
 intros.
 specialize (uchoice_def _ H); intro.
 split; intros.
@@ -217,7 +217,7 @@ Qed.
 
 (* Relations between repl and uchoice *)
 (*Lemma repl_rel_uchoice_pred A R :
-  (forall x, x \in A -> uchoice_pred (R x)) ->
+  (forall x, x ∈ A -> uchoice_pred (R x)) ->
   repl_rel A R.
 split; intros.
  destruct (H _ H0) as (?,_); eauto with *.

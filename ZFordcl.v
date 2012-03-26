@@ -4,12 +4,12 @@ Require Import ZFnats.
 Definition isOrd x :=
   forall P : set -> Prop,
   (forall y,
-   (forall a b, a \in b -> b \in y -> a \in y) ->
-   (forall z, z \in y -> P z)-> P y) -> P x.
+   (forall a b, a ∈ b -> b ∈ y -> a ∈ y) ->
+   (forall z, z ∈ y -> P z)-> P y) -> P x.
 
 Lemma isOrd_intro x :
-  (forall a b, a \in b -> b \in x -> a \in x) ->
-  (forall y, y \in x -> isOrd y) ->
+  (forall a b, a ∈ b -> b ∈ x -> a ∈ x) ->
+  (forall y, y ∈ x -> isOrd y) ->
   isOrd x.
 red; intros.
 apply H1; trivial.
@@ -20,8 +20,8 @@ Qed.
 
 Lemma isOrd_elim x :
   isOrd x ->
-  (forall a b, a \in b -> b \in x -> a \in x) /\
-  (forall y, y \in x -> isOrd y).
+  (forall a b, a ∈ b -> b ∈ x -> a ∈ x) /\
+  (forall y, y ∈ x -> isOrd y).
 intro xo; apply xo; intros.
 split; intros; eauto.
 apply H0 in H1.
@@ -58,11 +58,11 @@ exact isOrd_ext.
 Qed.
 
 Lemma isOrd_ind : forall x (P:set->Prop),
-  (forall y, isOrd y -> y \incl x ->
+  (forall y, isOrd y -> y ⊆ x ->
    (forall z, lt z y -> P z) -> P y) ->
   isOrd x -> P x.
 intros.
-cut (isOrd x /\ (x \incl x -> P x)).
+cut (isOrd x /\ (x ⊆ x -> P x)).
  destruct 1 as (_,?); auto with *.
 pattern x at -3.
 apply H0; intros.
@@ -143,7 +143,7 @@ apply eq_intro; intros.
  apply le_lt_trans with x; trivial.
 Qed.
 
-Lemma ord_le_incl : forall x y, isOrd x -> isOrd y -> le x y -> x \incl y.
+Lemma ord_le_incl : forall x y, isOrd x -> isOrd y -> le x y -> x ⊆ y.
 red; intros.
 apply lt_le_trans with x; auto.
 Qed.
@@ -229,7 +229,7 @@ left; rewrite H1.
 apply le_refl.
 Qed.
 
-Lemma ord_incl_le : forall x y, isOrd x -> isOrd y -> x \incl y -> le x y. 
+Lemma ord_incl_le : forall x y, isOrd x -> isOrd y -> x ⊆ y -> le x y. 
 intros.
 destruct (ord_total x y); trivial.
 apply H1 in H2.
@@ -240,10 +240,10 @@ Qed.
 End ClassicOrdinal.
 
 Definition increasing F :=
-  forall x y, isOrd x -> isOrd y -> y \incl x -> F y \incl F x.
+  forall x y, isOrd x -> isOrd y -> y ⊆ x -> F y ⊆ F x.
 
 Lemma increasing_le : forall F x y,
-  increasing F -> isOrd x -> le y x -> F y \incl F x.
+  increasing F -> isOrd x -> le y x -> F y ⊆ F x.
 unfold increasing; intros.
 assert (isOrd y).
  apply isOrd_inv with (succ x); trivial.
@@ -268,7 +268,7 @@ apply isOrd_intro; intros.
   apply isOrd_succ; trivial.
 Qed.
 
-Lemma natOrd : forall n, n \in N -> isOrd n.
+Lemma natOrd : forall n, n ∈ N -> isOrd n.
 intros.
 apply isOrd_inv with N; trivial.
 apply isOrd_N.
@@ -334,7 +334,7 @@ Qed.
 Lemma isOrd_union2 : forall x y,
   isOrd x ->
   isOrd y ->
-  isOrd (union2 x y).
+  isOrd (x ∪ y).
 intros.
 apply isOrd_intro; intros.
  apply union2_elim in H2; destruct H2.
@@ -350,7 +350,7 @@ apply isOrd_intro; intros.
 Qed.
 
 Lemma ord1_union : forall a P Q,
-  union2 (subset a P) (subset a Q) ==
+  subset a P ∪ subset a Q ==
   subset a (fun x => P x\/Q x).
 intros.
 apply eq_intro; intros.
@@ -380,14 +380,14 @@ Lemma isOrd_union2_lub : forall o x y,
   isOrd o ->
   lt x o ->
   lt y o ->
-  lt (union2 x y) o.
+  lt (x ∪ y) o.
 intros.
-assert (uord : isOrd (union2 x y)).
+assert (uord : isOrd (x ∪ y)).
  apply isOrd_union2.
   apply isOrd_inv with o; trivial.
   apply isOrd_inv with o; trivial.
-destruct (ClassicOrdinal.ord_total o (union2 x y)); trivial.
-assert (o \incl union2 x y).
+destruct (ClassicOrdinal.ord_total o (x ∪ y)); trivial.
+assert (o ⊆ x ∪ y).
  apply ord_le_incl; trivial.
 assert (isOrd x).
  apply isOrd_inv with o; trivial.
@@ -548,7 +548,7 @@ split; intros.
  rewrite <- H0; trivial.
 Qed.
 
-  Lemma isOrd_sup_intro : forall n, f n \incl ord_sup.
+  Lemma isOrd_sup_intro : forall n, f n ⊆ ord_sup.
 unfold ord_sup.
 red; intros.
 apply union_intro with (f n); trivial.
@@ -609,7 +609,7 @@ split; intros.
  rewrite <- H1; trivial.
 Qed.
 
-  Lemma isOrd_sup_rel_intro2 : forall n y, R n y -> y \incl sup_rel.
+  Lemma isOrd_sup_rel_intro2 : forall n y, R n y -> y ⊆ sup_rel.
 unfold sup_rel.
 red; intros.
 apply union_intro with y; trivial.
@@ -622,7 +622,7 @@ apply repl_intro with (nat2set n).
 Qed.
 
   Lemma isOrd_sup_rel_intro : forall n,
-    exists2 y, R n y & y \incl sup_rel.
+    exists2 y, R n y & y ⊆ sup_rel.
 intros.
 elim (Rtot n); intros.
 exists x; trivial.
@@ -677,7 +677,7 @@ Qed.
 
   Lemma TR_rel_intro : forall x f,
     ext_fun x f ->
-    (forall y, y \in x -> TR_rel y (f y)) ->
+    (forall y, y ∈ x -> TR_rel y (f y)) ->
     TR_rel x (F f x).
 red; intros.
 apply H2; trivial; intros.
@@ -687,7 +687,7 @@ Qed.
   Lemma TR_rel_inv : forall x y,
     TR_rel x y ->
     exists2 f,
-      ext_fun x f /\ (forall y, y \in x -> TR_rel y (f y)) &
+      ext_fun x f /\ (forall y, y ∈ x -> TR_rel y (f y)) &
       y == F f x.
 intros.
 apply (@proj2 (TR_rel x y)).
@@ -798,10 +798,10 @@ apply TR_rel_fun with x'.
 Qed.
 
   Lemma TR_ind : forall o (P:set->set->Prop),
-    (forall x x', isOrd x -> x \incl o -> x == x' ->
+    (forall x x', isOrd x -> x ⊆ o -> x == x' ->
      forall y y', y == y' -> P x y -> P x' y') ->
     isOrd o ->
-    (forall y, isOrd y -> y \incl o ->
+    (forall y, isOrd y -> y ⊆ o ->
      (forall x, lt x y -> P x (TR x)) ->
      P y (F TR y)) ->
     P o (TR o).
@@ -820,9 +820,9 @@ Qed.
   Lemma TR_typ : forall n X,
     morph1 X ->
     isOrd n ->
-    (forall y f, isOrd y -> y \incl n ->
-     (forall z, lt z y -> f z \in X z) -> F f y \in X y) ->
-    TR n \in X n.
+    (forall y f, isOrd y -> y ⊆ n ->
+     (forall z, lt z y -> f z ∈ X z) -> F f y ∈ X y) ->
+    TR n ∈ X n.
 intros n X Xm is_ord.
 apply TR_ind with (o:=n); intros; trivial.
  rewrite <- H2; rewrite <- H1; apply H3; intros.
@@ -880,8 +880,8 @@ Qed.
   Lemma TI_intro : forall o o' x,
     isOrd o ->
     lt o' o ->
-    x \in F (TI o') ->
-    x \in TI o.
+    x ∈ F (TI o') ->
+    x ∈ TI o.
 intros.
 rewrite TI_eq; trivial.
 rewrite sup_ax; auto.
@@ -890,8 +890,8 @@ Qed.
 
   Lemma TI_elim : forall o x,
     isOrd o ->
-    x \in TI o ->
-    exists2 o', lt o' o & x \in F (TI o').
+    x ∈ TI o ->
+    exists2 o', lt o' o & x ∈ F (TI o').
 intros.
 rewrite TI_eq in H0; trivial.
 rewrite sup_ax in H0; auto.
@@ -907,12 +907,12 @@ apply TI_elim in H.
 Qed.
 
   Lemma TI_typ : forall n X,
-    (forall a, a \in X -> F a \in X) ->
+    (forall a, a ∈ X -> F a ∈ X) ->
     isOrd n ->
     (forall m G, le m n ->
      ext_fun m G ->
-     (forall x, lt x m -> G x \in X) -> sup m G \in X) ->
-    TI n \in X.
+     (forall x, lt x m -> G x ∈ X) -> sup m G ∈ X) ->
+    TI n ∈ X.
 induction 2 using isOrd_ind; intros.
 rewrite TI_eq; trivial.
 apply H3 with (G:=fun o => F (TI o)); intros; auto.

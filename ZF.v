@@ -17,12 +17,12 @@ Proof.
 split; red; intros; rewrite eq_set_ax in *; intros.
  reflexivity.
  symmetry; trivial.
- transitivity (x0 \in y); trivial.
+ transitivity (x0 ∈ y); trivial.
 Qed.
 
 Lemma eq_intro : forall x y,
-  (forall z, z \in x -> z \in y) ->
-  (forall z, z \in y -> z \in x) ->
+  (forall z, z ∈ x -> z ∈ y) ->
+  (forall z, z ∈ y -> z ∈ x) ->
   eq_set x y.
 intros.
 rewrite eq_set_ax; split; auto.
@@ -30,8 +30,8 @@ Qed.
 
 Lemma eq_elim : forall x y y',
   y == y' ->
-  x \in y ->
-  x \in y'.
+  x ∈ y ->
+  x ∈ y'.
 intros.
 rewrite eq_set_ax in H.
 destruct (H x); auto.
@@ -44,9 +44,9 @@ apply in_reg with x; trivial.
 apply eq_elim with x0; trivial.
 Qed.
 
-Definition incl_set x y := forall z, z \in x -> z \in y.
+Definition incl_set x y := forall z, z ∈ x -> z ∈ y.
 
-Notation "x \incl y" := (incl_set x y) (at level 70).
+Notation "x ⊆ y" := (incl_set x y) (at level 70).
 
 Instance incl_set_pre : PreOrder incl_set.
 split; do 2 red; intros; eauto.
@@ -59,7 +59,7 @@ unfold incl_set; do 4 red; intros.
 rewrite <- H0; rewrite <- H in H2; auto.
 Qed.
 
-Lemma incl_eq : forall x y, x \incl y -> y \incl x -> x == y.
+Lemma incl_eq : forall x y, x ⊆ y -> y ⊆ x -> x == y.
 intros.
 apply eq_intro; auto.
 Qed.
@@ -68,7 +68,7 @@ Qed.
 (** Extensional equivalences *)
 
 Definition eq_fun dom F G :=
-  forall x x', x \in dom -> x == x' -> F x == G x'.
+  forall x x', x ∈ dom -> x == x' -> F x == G x'.
 
 Instance eq_fun_sym : forall dom, Symmetric (eq_fun dom).
 do 2 red; intros.
@@ -88,7 +88,7 @@ Qed.
 Definition ext_fun dom f := eq_fun dom f f.
 
 Definition ext_fun2 A B f :=
-  forall x x' y y', x \in A -> x == x' -> y \in B x -> y == y' -> f x y == f x' y'.
+  forall x x' y y', x ∈ A -> x == x' -> y ∈ B x -> y == y' -> f x y == f x' y'.
 
 Lemma eq_fun_ext : forall dom F G, eq_fun dom F G -> ext_fun dom F.
 red; intros.
@@ -103,18 +103,18 @@ Qed.
 Hint Resolve morph_is_ext.
 
 Definition eq_pred dom (P Q : set -> Prop) :=
-  forall x, x \in dom -> (P x <-> Q x).
+  forall x, x ∈ dom -> (P x <-> Q x).
 
 Instance eq_pred_set : forall dom, Equivalence (eq_pred dom).
 firstorder.
 Qed.
 
 Definition ext_rel dom (R:set->set->Prop) :=
-  forall x x' y y', x \in dom -> x == x' -> y == y' -> (R x y <-> R x' y').
+  forall x x' y y', x ∈ dom -> x == x' -> y == y' -> (R x y <-> R x' y').
 
 Definition eq_index x F y G :=
-  (forall a, a \in x -> exists2 b, b \in y & F a == G b) /\
-  (forall b, b \in y -> exists2 a, a \in x & F a == G b).
+  (forall a, a ∈ x -> exists2 b, b ∈ y & F a == G b) /\
+  (forall b, b ∈ y -> exists2 a, a ∈ x & F a == G b).
 
 Lemma eq_index_sym : forall x F y G, eq_index x F y G -> eq_index y G x F.
 destruct 1; split; intros.
@@ -141,7 +141,7 @@ split; intros.
  apply H0; auto with *.
 Qed.
 
-Definition typ_fun f A B := forall x, x \in A -> f x \in B.
+Definition typ_fun f A B := forall x, x ∈ A -> f x ∈ B.
 
 Instance typ_fun_morph0 : Proper (eq ==> eq_set ==> eq_set ==> iff) typ_fun.
 apply morph_impl_iff3; auto with *.
@@ -152,7 +152,7 @@ Qed.
 
 (** Rephrasing axioms *)
 
-Lemma empty_ext : forall e, (forall x, ~x \in e) -> e == empty.
+Lemma empty_ext : forall e, (forall x, ~x ∈ e) -> e == empty.
 Proof.
 intros.
 apply eq_intro; intros.
@@ -160,14 +160,14 @@ apply eq_intro; intros.
  elim empty_ax with (1 := H0).
 Qed.
 
-Lemma pair_intro1 : forall x y, x \in pair x y.
+Lemma pair_intro1 : forall x y, x ∈ pair x y.
 Proof.
 intros.
 elim (pair_ax x y x); intros; auto.
 apply H0; left; reflexivity.
 Qed.
 
-Lemma pair_intro2 : forall x y, y \in pair x y.
+Lemma pair_intro2 : forall x y, y ∈ pair x y.
 Proof.
 intros.
 elim (pair_ax x y y); intros; auto.
@@ -176,14 +176,14 @@ Qed.
 
 Hint Resolve pair_intro1 pair_intro2.
 
-Lemma pair_elim : forall x a b, x \in pair a b -> x == a \/ x == b.
+Lemma pair_elim : forall x a b, x ∈ pair a b -> x == a \/ x == b.
 Proof.
 intros.
 elim (pair_ax a b x); auto.
 Qed.
 
 Lemma pair_ext : forall p a b,
-  a \in p -> b \in p -> (forall x, x \in p -> x == a \/ x == b) ->
+  a ∈ p -> b ∈ p -> (forall x, x ∈ p -> x == a \/ x == b) ->
   p == pair a b.
 Proof.
 intros; apply eq_intro; intros.
@@ -201,7 +201,7 @@ apply pair_ext; intros.
  apply pair_elim in H1; auto.
 Qed.
 
-Lemma union_intro : forall x y z, x \in y -> y \in z -> x \in union z.
+Lemma union_intro : forall x y z, x ∈ y -> y ∈ z -> x ∈ union z.
 Proof.
 intros.
 elim (union_ax z x); intros.
@@ -209,7 +209,7 @@ apply H2.
 exists y; trivial.
 Qed.
 
-Lemma union_elim : forall x z, x \in union z -> exists2 y, x \in y & y \in z.
+Lemma union_elim : forall x z, x ∈ union z -> exists2 y, x ∈ y & y ∈ z.
 Proof.
 intros.
 elim (union_ax z x); auto.
@@ -217,8 +217,8 @@ Qed.
 
 Lemma union_ext :
   forall u z,
-  (forall x y, x \in y -> y \in z -> x \in u) ->
-  (forall x, x \in u -> exists2 y, x \in y & y \in z) ->
+  (forall x y, x ∈ y -> y ∈ z -> x ∈ u) ->
+  (forall x, x ∈ u -> exists2 y, x ∈ y & y ∈ z) ->
   u == union z.
 Proof.
 intros; apply eq_intro; intros.
@@ -253,13 +253,13 @@ apply union_ext; intros.
 Qed.
 
 Lemma power_intro :
-  forall x y, (forall z, z \in x -> z \in y) -> x \in power y.
+  forall x y, (forall z, z ∈ x -> z ∈ y) -> x ∈ power y.
 Proof.
 intros.
 elim (power_ax y x); intros; auto.
 Qed.
 
-Lemma power_elim : forall x y z, x \in power y -> z \in x -> z \in y.
+Lemma power_elim : forall x y z, x ∈ power y -> z ∈ x -> z ∈ y.
 Proof.
 intros.
 elim (power_ax y x); intros; auto.
@@ -274,8 +274,8 @@ Qed.
 
 Lemma power_ext :
   forall p a,
-  (forall x, (forall y, y \in x -> y \in a) -> x \in p) ->
-  (forall x y, x \in p -> y \in x -> y \in a) ->
+  (forall x, (forall y, y ∈ x -> y ∈ a) -> x ∈ p) ->
+  (forall x y, x ∈ p -> y ∈ x -> y ∈ a) ->
   p == power a.
 Proof.
 intros; apply eq_intro; intros.
@@ -292,7 +292,7 @@ apply power_ext; intros.
     eapply power_elim;  eauto.
 Qed.
 
-Lemma empty_in_power : forall x, empty \in power x.
+Lemma empty_in_power : forall x, empty ∈ power x.
 Proof.
 intros.
 apply power_intro; intros.
@@ -300,7 +300,7 @@ elim empty_ax with (1:=H).
 Qed.
 
 Lemma union_in_power :
-    forall x X, x \incl power X -> union x \in power X.
+    forall x X, x ⊆ power X -> union x ∈ power X.
 intros.
 apply power_intro; intros.
 elim union_elim with (1:=H0); clear H0; intros.
@@ -309,7 +309,7 @@ Qed.
 
 
 Lemma subset_intro : forall a (P:set->Prop) x,
-  x \in a -> P x -> x \in subset a P.
+  x ∈ a -> P x -> x ∈ subset a P.
 Proof.
 intros.
 elim (subset_ax a P x); intros.
@@ -317,14 +317,14 @@ apply H2; split; trivial.
 exists x; trivial; reflexivity.
 Qed.
 
-Lemma subset_elim1 : forall a (P:set->Prop) x, x \in subset a P -> x \in a.
+Lemma subset_elim1 : forall a (P:set->Prop) x, x ∈ subset a P -> x ∈ a.
 Proof.
 intros.
 elim (subset_ax a P x); intros.
 elim H0; trivial.
 Qed.
 
-Lemma subset_elim2 : forall a (P:set->Prop) x, x \in subset a P ->
+Lemma subset_elim2 : forall a (P:set->Prop) x, x ∈ subset a P ->
   exists2 x', x==x' & P x'.
 Proof.
 intros.
@@ -334,9 +334,9 @@ Qed.
 
 Lemma subset_ext :
   forall s a (P:set->Prop),
-  (forall x, x \in a -> P x -> x \in s) ->
-  (forall x, x \in s -> x \in a) ->
-  (forall x, x \in s -> exists2 x', x==x' & P x') ->
+  (forall x, x ∈ a -> P x -> x ∈ s) ->
+  (forall x, x ∈ s -> x ∈ a) ->
+  (forall x, x ∈ s -> exists2 x', x==x' & P x') ->
   s == subset a P.
 Proof.
 intros; apply eq_intro; intros.
@@ -375,10 +375,10 @@ apply subset_ext; intros.
 Qed.
 
 Lemma union_subset_singl : forall x (P:set->Prop) y y',
-  y \in x ->
+  y ∈ x ->
   y == y' ->
   P y' ->
-  (forall y y', y \in x -> y' \in x -> P y -> P y' -> y == y') ->
+  (forall y y', y ∈ x -> y' ∈ x -> P y -> P y' -> y == y') ->
   union (subset x P) == y.
 intros.
 symmetry; apply union_ext; intros.
@@ -441,7 +441,7 @@ Qed.
 
 Lemma replf_ax : forall a F z,
   ext_fun a F ->
-  (z \in replf a F <-> exists2 x, x \in a & z == F x).
+  (z ∈ replf a F <-> exists2 x, x ∈ a & z == F x).
 Admitted.
 (*unfold replf; intros.
 rewrite repl_ax; intros.
@@ -460,7 +460,7 @@ Qed.
 *)
 
 Lemma replf_intro : forall a F y x,
-  ext_fun a F -> x \in a -> y == F x -> y \in replf a F.
+  ext_fun a F -> x ∈ a -> y == F x -> y ∈ replf a F.
 Proof.
 intros a F y x Fext H1 H2.
 rewrite replf_ax; trivial.
@@ -468,7 +468,7 @@ exists x; trivial.
 Qed.
 
 Lemma replf_elim : forall a F y,
-  ext_fun a F -> y \in replf a F -> exists2 x, x \in a & y == F x.
+  ext_fun a F -> y ∈ replf a F -> exists2 x, x ∈ a & y == F x.
 Proof.
 intros a F y Fext H1.
 rewrite replf_ax in H1; trivial.
@@ -476,8 +476,8 @@ Qed.
 
 Lemma replf_ext : forall p a F,
   ext_fun a F ->
-  (forall x, x \in a -> F x \in p) ->
-  (forall y, y \in p -> exists2 x, x \in a & y == F x) ->
+  (forall x, x ∈ a -> F x ∈ p) ->
+  (forall y, y ∈ p -> exists2 x, x ∈ a & y == F x) ->
   p == replf a F.
 intros.
 apply eq_intro; intros.
@@ -490,8 +490,8 @@ Qed.
 
 Lemma replf_mono2 : forall x y F,
   ext_fun y F ->
-  x \incl y ->
-  replf x F \incl replf y F.
+  x ⊆ y ->
+  replf x F ⊆ replf y F.
 red; intros.
 assert (ext_fun x F).
  do 2 red; auto.
@@ -587,7 +587,7 @@ red; auto.
 Qed.
 
   Lemma cond_set_ax P x z :
-    z \in cond_set P x <-> (z \in x /\ P).
+    z ∈ cond_set P x <-> (z ∈ x /\ P).
 unfold cond_set.
 rewrite subset_ax.
 split; destruct 1; split; trivial.
@@ -622,7 +622,7 @@ apply eq_intro; intros.
  apply subset_intro; trivial.
 Qed.
 
-  Lemma cond_set_elim_prop x P z :  z \in cond_set P x -> P.
+  Lemma cond_set_elim_prop x P z :  z ∈ cond_set P x -> P.
 rewrite cond_set_ax; destruct 1; trivial.
 Qed.
 
@@ -639,14 +639,14 @@ Lemma pair_inv : forall x y x' y',
   pair x y == pair x' y' -> (x==x' /\ y==y') \/ (x==y' /\ y==x').
 Proof.
 intros.
-assert (x \in pair x' y').
+assert (x ∈ pair x' y').
  rewrite <- H; auto.
- assert (y \in pair x' y').
+ assert (y ∈ pair x' y').
   rewrite <- H; auto.
   elim pair_elim with (1 := H0); intros; elim pair_elim with (1 := H1);
    intros; auto.
    left; split; trivial.
-     assert (y' \in pair x y).
+     assert (y' ∈ pair x y).
     rewrite H; auto.
      rewrite H2 in H4.
        rewrite H3 in H4.
@@ -654,7 +654,7 @@ assert (x \in pair x' y').
       symmetry  in |- *.
       elim pair_elim with (1:=H4); trivial.
    right; split; trivial.
-     assert (x' \in pair x y).
+     assert (x' ∈ pair x y).
     rewrite H; auto.
      rewrite H2 in H4.
        rewrite H3 in H4.
@@ -673,18 +673,18 @@ Qed.
 (** macros *)
 Definition singl x := pair x x.
 
-Lemma singl_intro : forall x, x \in singl x.
+Lemma singl_intro : forall x, x ∈ singl x.
 Proof.
 unfold singl in |- *; auto.
 Qed.
 
-Lemma singl_intro_eq : forall x y, x == y -> x \in singl y.
+Lemma singl_intro_eq : forall x y, x == y -> x ∈ singl y.
 Proof.
 intros.
  rewrite H; apply singl_intro.
 Qed.
 
-Lemma singl_elim : forall x y, x \in singl y -> x == y.
+Lemma singl_elim : forall x y, x ∈ singl y -> x == y.
 Proof.
 unfold singl; intros.
 elim pair_elim with (1:=H); auto.
@@ -692,8 +692,8 @@ Qed.
 
 Lemma singl_ext :
   forall y x,
-  x \in y ->
-  (forall z, z \in y -> z == x) ->
+  x ∈ y ->
+  (forall z, z ∈ y -> z == x) ->
   y == singl x.
 Proof.
 intros; apply eq_intro; intros.
@@ -725,26 +725,28 @@ Qed.
 (** Union of 2 sets *)
 Definition union2 x y := union (pair x y).
 
-Lemma union2_intro1: forall x y z, z \in x -> z \in union2 x y.
+Infix "∪" := union2 (at level 50).
+
+Lemma union2_intro1: forall x y z, z ∈ x -> z ∈ union2 x y.
 Proof.
 unfold union2 in |- *; intros.
 apply union_intro with x; trivial.
 Qed.
 
-Lemma union2_intro2: forall x y z, z \in y -> z \in union2 x y.
+Lemma union2_intro2: forall x y z, z ∈ y -> z ∈ union2 x y.
 Proof.
 unfold union2 in |- *; intros.
 apply union_intro with y; trivial.
 Qed.
 
-Lemma union2_elim : forall x y z, z \in union2 x y -> z \in x \/ z \in y.
+Lemma union2_elim : forall x y z, z ∈ x ∪ y -> z ∈ x \/ z ∈ y.
 Proof.
 unfold union2; intros.
 elim union_elim with (1:=H); intros.
 elim pair_elim with (1:=H1); intro x0_eq; rewrite <- x0_eq; auto.
 Qed.
 
-Lemma union2_ax x y z : z \in union2 x y <-> z \in x \/ z \in y.
+Lemma union2_ax x y z : z ∈ x ∪ y <-> z ∈ x \/ z ∈ y.
 split; intros.
  apply union2_elim in H; trivial.
 
@@ -752,7 +754,7 @@ split; intros.
 Qed.
 
 Lemma union2_mono : forall A A' B B',
-  A \incl A' -> B \incl B' -> union2 A B \incl union2 A' B'.
+  A ⊆ A' -> B ⊆ B' -> A ∪ B ⊆ A' ∪ B'.
 red; intros.
 red in H,H0|-.
 elim union2_elim with (1:=H1); intros.
@@ -765,7 +767,7 @@ unfold union2; do 3 red; intros.
 rewrite H; rewrite H0; reflexivity.
 Qed.
 
-Lemma union2_commut : forall x y, union2 x y == union2 y x.
+Lemma union2_commut : forall x y, x ∪ y == y ∪ x.
 Proof.
 intros.
 unfold union2; rewrite pair_commut; reflexivity.
@@ -773,7 +775,7 @@ Qed.
 
 
 (** subtraction *)
-Definition minus2 x y := subset x (fun x' => ~ (x' \in y)).
+Definition minus2 x y := subset x (fun x' => ~ (x' ∈ y)).
 
 
 (** Upper bound of a family of sets *)
@@ -782,7 +784,7 @@ Definition sup x F := union (replf x F).
 
 Lemma sup_ax : forall x F z,
   ext_fun x F ->
-  (z \in sup x F <-> exists2 y, y \in x & z \in F y).
+  (z ∈ sup x F <-> exists2 y, y ∈ x & z ∈ F y).
 intros.
 unfold sup.
 rewrite union_ax.
@@ -798,8 +800,8 @@ Qed.
 
 Lemma sup_ext : forall y a F,
   ext_fun a F ->
-  (forall x, x \in a -> F x \incl y) ->
-  (forall z, z \in y -> exists2 x, x \in a & z \in F x) ->
+  (forall x, x ∈ a -> F x ⊆ y) ->
+  (forall z, z ∈ y -> exists2 x, x ∈ a & z ∈ F x) ->
   y == sup a F.
 intros.
 apply eq_intro; intros.
@@ -835,7 +837,7 @@ apply sup_morph_gen; intros.
 Qed.
 
 Lemma sup_incl : forall a F x,
-  ext_fun a F -> x \in a -> F x \incl sup a F.
+  ext_fun a F -> x ∈ a -> F x ⊆ sup a F.
 intros.
 red; intros.
 rewrite sup_ax; trivial.
@@ -849,11 +851,11 @@ Hint Resolve sup_incl.
 Section Russel.
 
 Variable U : set.
-Variable universal : forall x, x \in U.
+Variable universal : forall x, x ∈ U.
 
-Definition omega := subset U (fun x => ~ x \in x).
+Definition omega := subset U (fun x => ~ x ∈ x).
 
-Lemma omega_not_in_omega : ~ omega \in omega.
+Lemma omega_not_in_omega : ~ omega ∈ omega.
 Proof.
 unfold omega at 2 in |- *.
 red in |- *; intro.
@@ -862,7 +864,7 @@ rewrite <- H0 in H1.
 exact (H1 H).
 Qed.
 
-Lemma omega_in_omega : omega \in omega.
+Lemma omega_in_omega : omega ∈ omega.
 Proof.
 unfold omega at 2 in |- *.
 apply subset_intro; trivial.
@@ -876,7 +878,7 @@ End Russel.
 
 (** intersection *)
 
-Definition inter x := subset (union x) (fun y => forall z, z \in x -> y \in z).
+Definition inter x := subset (union x) (fun y => forall z, z ∈ x -> y ∈ z).
 
 Lemma inter_empty_eq : inter empty == empty.
 Proof.
@@ -889,9 +891,9 @@ Qed.
 
 Lemma inter_intro :
   forall x a,
-  (forall y, y \in a -> x \in y) ->
-  (exists w, w \in a) -> (* non empty intersection *)
-  x \in inter a.
+  (forall y, y ∈ a -> x ∈ y) ->
+  (exists w, w ∈ a) -> (* non empty intersection *)
+  x ∈ inter a.
 Proof.
 unfold inter in |- *; intros.
 apply subset_intro; auto.
@@ -899,7 +901,7 @@ destruct H0 as (w,?).
 apply union_intro with w; auto.
 Qed.
 
-Lemma inter_elim : forall x a y, x \in inter a -> y \in a -> x \in y.
+Lemma inter_elim : forall x a y, x ∈ inter a -> y ∈ a -> x ∈ y.
 Proof.
 unfold inter in |- *; intros.
 elim subset_elim2 with (1 := H); intros.
@@ -907,15 +909,15 @@ rewrite H1; auto.
 Qed.
 
 Lemma inter_non_empty :
-  forall x y, y \in inter x -> exists2 w, w \in x & y \in w.
+  forall x y, y ∈ inter x -> exists2 w, w ∈ x & y ∈ w.
 intros.
 apply subset_elim1 in H.
 rewrite union_ax in H; destruct H; eauto.
 Qed.
 
 Lemma inter_wit : forall X F, morph1 F -> 
- forall x, x \in inter (replf X F) ->
- exists y, y \in X.
+ forall x, x ∈ inter (replf X F) ->
+ exists y, y ∈ X.
 intros.
 destruct inter_non_empty with (1:=H0).
 rewrite replf_ax in H1.
@@ -925,9 +927,9 @@ Qed.
 
 Lemma inter_ext :
   forall i a,
-  (forall y, y \in a -> i \incl y) ->
-  (forall x, (forall y, y \in a -> x \in y) -> x \in i) ->
-  (exists w, w \in a) ->
+  (forall y, y ∈ a -> i ⊆ y) ->
+  (forall x, (forall y, y ∈ a -> x ∈ y) -> x ∈ i) ->
+  (exists w, w ∈ a) ->
   i == inter a.
 Proof.
 unfold incl_set in |- *.
@@ -953,12 +955,14 @@ Qed.
 
 Definition inter2 x y := inter (pair x y).
 
+Infix "∩" := inter2 (at level 40).
+
 Instance inter2_morph: morph2 inter2.
 do 3 red; intros; apply inter_morph; apply pair_morph; trivial.
 Qed.
 
 Lemma inter2_def : forall x y z,
-  z \in inter2 x y <-> z \in x /\ z \in y.
+  z ∈ x ∩ y <-> z ∈ x /\ z ∈ y.
 unfold inter2.
 split; intros.
  split; apply inter_elim with (1:=H);
@@ -969,21 +973,21 @@ split; intros.
  apply pair_elim in H1; destruct H1; rewrite H1; trivial.
 Qed.
 
-Lemma inter2_incl1 : forall x y, inter2 x y \incl x.
+Lemma inter2_incl1 : forall x y, x ∩ y ⊆ x.
 red; intros.
 rewrite inter2_def in H; destruct H; trivial.
 Qed.
-Lemma inter2_incl2 : forall x y, inter2 x y \incl y.
+Lemma inter2_incl2 : forall x y, x ∩ y ⊆ y.
 red; intros.
 rewrite inter2_def in H; destruct H; trivial.
 Qed.
 
-Lemma incl_inter2 x y: x \incl y -> inter2 x y == x.
+Lemma incl_inter2 x y: x ⊆ y -> x ∩ y == x.
 intros; apply eq_intro; intro z; rewrite inter2_def; auto.
 destruct 1; trivial.
 Qed.
 
 Lemma inter2_comm x y :
-  inter2 x y == inter2 y x.
+  x ∩ y == y ∩ x.
 apply eq_intro; intro z; do 2 rewrite inter2_def; destruct 1; auto.
 Qed.

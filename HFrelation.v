@@ -8,8 +8,8 @@ Definition lam (x:hf) (f:hf->hf) :=
 
 Lemma lam_intro : forall x dom F,
   eq_hf_fun dom F F ->
-  x \in dom ->
-  couple x (F x) \in lam dom F.
+  x ∈ dom ->
+  couple x (F x) ∈ lam dom F.
 intros.
 unfold lam.
 apply repl_intro with x; trivial.
@@ -21,8 +21,8 @@ Qed.
 
 Lemma lam_elim : forall p dom F,
   eq_hf_fun dom F F ->
-  p \in lam dom F ->
-  exists2 x, x \in dom & p == couple x (F x).
+  p ∈ lam dom F ->
+  exists2 x, x ∈ dom & p == couple x (F x).
 unfold lam; intros.
 apply repl_elim; trivial. 
 red; intros.
@@ -101,8 +101,8 @@ apply fst_morph; trivial.
 Qed.
 
 Lemma app_def: forall f x y,
-  couple x y \in f ->
-  (forall p, p \in f -> fst p == x -> p == couple x y) ->
+  couple x y ∈ f ->
+  (forall p, p ∈ f -> fst p == x -> p == couple x y) ->
   app f x == y.
 unfold app; intros.
 rewrite (subset_singl (couple x y)); trivial; intros.
@@ -122,7 +122,7 @@ Qed.
 Lemma beta_eq :
   forall dom F x,
   eq_hf_fun dom F F ->
-  x \in dom ->
+  x ∈ dom ->
   app (lam dom F) x == F x.
 intros.
 apply app_def.
@@ -178,9 +178,9 @@ apply repl_ext.
 Qed.
 
 Lemma func_map_image_intro: forall f x y F Y,
-  f \in F ->
-  y \in Y ->
-  func_cons f x y \in func_map_image F x Y.
+  f ∈ F ->
+  y ∈ Y ->
+  func_cons f x y ∈ func_map_image F x Y.
 intros.
 unfold func_map_image.
 apply union_intro with
@@ -195,9 +195,9 @@ apply union_intro with
 Qed.
 
 Lemma func_map_image_elim : forall g x F Y,
-  g \in func_map_image F x Y ->
-  exists2 f, f \in F &
-  exists2 y, y \in Y & g == func_cons f x y.
+  g ∈ func_map_image F x Y ->
+  exists2 f, f ∈ F &
+  exists2 y, y ∈ Y & g == func_cons f x y.
 unfold func_map_image; intros.
 elim union_elim with (1:=H); clear H; intros.
 elim repl_elim with (2:=H0); clear H0; intros.
@@ -223,8 +223,8 @@ Lemma dep_func_intro :
   forall f X Y,
   eq_hf_fun X f f ->
   eq_hf_fun X Y Y ->
-  (forall x, x \in X -> f x \in Y x) ->
-  lam X f \in dep_func X Y.
+  (forall x, x ∈ X -> f x ∈ Y x) ->
+  lam X f ∈ dep_func X Y.
 Proof.
 intros f X Y.
 unfold lam, dep_func.
@@ -254,9 +254,9 @@ apply fold_set_ind; intros.
   apply H2; trivial.
 
  pose (h := repl (HF(hf_elts y)) (fun x => couple x (f x))).
- change (func_cons h x' (f x') \in g x' acc).
+ change (func_cons h x' (f x') ∈ g x' acc).
 
- assert (h \in acc).
+ assert (h ∈ acc).
   apply H1; intros.
    red; intros.
    apply H2; trivial; apply In_hf_tail; trivial.
@@ -265,7 +265,7 @@ apply fold_set_ind; intros.
    apply H3; trivial; apply In_hf_tail; trivial.
 
    apply H4; apply In_hf_tail; trivial.
- assert (f x' \in Y x').
+ assert (f x' ∈ Y x').
   apply H4.
   apply In_hf_head; reflexivity.
  clear H1 H2 H3 H4.
@@ -274,12 +274,12 @@ apply fold_set_ind; intros.
 Qed.
 
 Lemma dep_func_elim0 : forall f p X Y,
-  f \in dep_func X Y ->
-  p \in f ->
-  (exists2 x, x \in X &
-  exists2 y, y \in Y x &
+  f ∈ dep_func X Y ->
+  p ∈ f ->
+  (exists2 x, x ∈ X &
+  exists2 y, y ∈ Y x &
   p == couple x y) /\
-  (forall p', p' \in f -> fst p == fst p' -> p == p').
+  (forall p', p' ∈ f -> fst p == fst p' -> p == p').
 intros f p X Y.
 unfold dep_func.
 set (g:=fun x' fs => func_map_image fs x' (Y x')).
@@ -349,9 +349,9 @@ Qed.
 
 
 Lemma dep_func_total : forall f x X Y,
-  f \in dep_func X Y ->
-  x \in X ->
-  exists2 p, fst p == x & p \in f.
+  f ∈ dep_func X Y ->
+  x ∈ X ->
+  exists2 p, fst p == x & p ∈ f.
 intros f x X Y.
 unfold dep_func.
 set (g:=fun x' fs => func_map_image fs x' (Y x')).
@@ -384,9 +384,9 @@ Qed.
 
 Lemma dep_func_elim : forall f x X Y,
   eq_hf_fun X Y Y ->
-  f \in dep_func X Y ->
-  x \in X ->
-  app f x \in Y x.
+  f ∈ dep_func X Y ->
+  x ∈ X ->
+  app f x ∈ Y x.
 intros.
 elim dep_func_total with (1:=H0)(2:=H1); intros.
 elim dep_func_elim0 with (1:=H0)(2:=H3); intros.
@@ -408,7 +408,7 @@ rewrite app_def; intros; eauto.
 Qed.
 
 Lemma dep_func_eta: forall f X Y,
-  f \in dep_func X Y ->
+  f ∈ dep_func X Y ->
   f == lam X (fun x => app f x).
 intros.
 unfold lam.

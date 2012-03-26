@@ -4,7 +4,7 @@ Require Export ZF.
 (** Natural numbers *)
 
 Definition zero := empty.
-Definition succ n := union2 n (singl n).
+Definition succ n := n ∪ singl n.
 
 Instance succ_morph : morph1 succ.
 Proof.
@@ -29,6 +29,8 @@ Qed.
 
 Definition lt := in_set.
 Definition le m n := lt m (succ n).
+Infix "<" := lt.
+Infix "<=" := le.
 
 Instance lt_morph : Proper (eq_set ==> eq_set ==> iff) lt.
 exact in_set_morph.
@@ -40,7 +42,7 @@ unfold le; do 3 red; intros; rewrite H; rewrite H0; reflexivity.
 Qed.
 
 
-Lemma le_case : forall m n, le m n -> m == n \/ lt m n.
+Lemma le_case : forall m n, m <= n -> m == n \/ m < n.
 Proof.
 unfold le, lt, succ in |- *; intros.
 elim union2_elim with (1 := H); intros; auto.
@@ -48,7 +50,7 @@ left.
 apply singl_elim; trivial.
 Qed.
 
-Lemma succ_intro1 : forall x n, x == n -> lt x (succ n).
+Lemma succ_intro1 : forall x n, x == n -> x < succ n.
 red; intros.
 unfold succ.
 apply union2_intro2.
@@ -56,17 +58,17 @@ apply singl_intro_eq.
 trivial.
 Qed.
 
-Lemma succ_intro2 : forall x n, lt x n -> lt x (succ n).
+Lemma succ_intro2 : forall x n, x < n -> x < succ n.
 red; intros.
 unfold succ.
 apply union2_intro1.
 trivial.
 Qed.
 
-Lemma lt_is_le : forall x y, lt x y -> le x y.
+Lemma lt_is_le : forall x y, x < y -> x <= y.
 Proof succ_intro2.
 
-Lemma le_refl : forall n, le n n.
+Lemma le_refl : forall n, n <= n.
 intros.
 apply succ_intro1; reflexivity.
 Qed.
@@ -77,9 +79,9 @@ Hint Resolve lt_is_le le_refl.
 
 Definition is_nat n : Prop :=
   forall nat:set,
-  zero \in nat ->
-  (forall k, k \in nat -> succ k \in nat) ->
-  n \in nat.
+  zero ∈ nat ->
+  (forall k, k ∈ nat -> succ k ∈ nat) ->
+  n ∈ nat.
 
 Lemma is_nat_zero : is_nat zero.
 Proof.
@@ -95,7 +97,7 @@ Qed.
 
 Definition N := subset infinite is_nat.
 
-Lemma zero_typ: zero \in N.
+Lemma zero_typ: zero ∈ N.
 Proof.
 unfold N in |- *.
 apply subset_intro.
@@ -103,7 +105,7 @@ apply subset_intro.
  exact is_nat_zero.
 Qed.
 
-Lemma succ_typ: forall n, n \in N -> succ n \in N.
+Lemma succ_typ: forall n, n ∈ N -> succ n ∈ N.
 Proof.
 unfold N; intros.
 apply subset_intro.
@@ -117,13 +119,13 @@ apply subset_intro.
 Qed.
 
 Lemma N_ind : forall (P: set->Prop),
-  (forall n n', n \in N -> n == n' -> P n -> P n') ->
+  (forall n n', n ∈ N -> n == n' -> P n -> P n') ->
   P zero ->
-  (forall n, n \in N -> P n -> P (succ n)) ->
-  forall n, n \in N -> P n.
+  (forall n, n ∈ N -> P n -> P (succ n)) ->
+  forall n, n ∈ N -> P n.
 Proof.
 intros.
-assert (n \in subset N P).
+assert (n ∈ subset N P).
  unfold N in H2.
  elim subset_elim2 with (1 := H2); intros.
  rewrite H3.
@@ -151,7 +153,7 @@ assert (n \in subset N P).
 Qed.
 
 
-Lemma lt_trans : forall m n p, p \in N -> lt m n -> lt n p -> lt m p.
+Lemma lt_trans : forall m n p, p ∈ N -> m < n -> n < p -> m < p.
 Proof.
 intros m n p ty_p.
 unfold lt in |- *.
@@ -166,7 +168,7 @@ elim ty_p using N_ind; intros.
     apply union2_intro1; auto.
 Qed.
 
-Lemma pred_succ_eq : forall n, n \in N -> pred (succ n) == n.
+Lemma pred_succ_eq : forall n, n ∈ N -> pred (succ n) == n.
 Proof.
 unfold pred, succ in |- *; intros.
 apply eq_intro; intros.
@@ -180,7 +182,7 @@ apply eq_intro; intros.
    apply singl_intro.
 Qed.
 
-Lemma pred_typ : forall n, n \in N -> pred n \in N.
+Lemma pred_typ : forall n, n ∈ N -> pred n ∈ N.
 Proof.
 intros.
 elim H using N_ind; intros.
@@ -193,7 +195,7 @@ elim H using N_ind; intros.
  rewrite pred_succ_eq; trivial.
 Qed.
 
-Lemma succ_inj : forall m n, m \in N -> n \in N -> succ m == succ n -> m == n.
+Lemma succ_inj : forall m n, m ∈ N -> n ∈ N -> succ m == succ n -> m == n.
 Proof.
 intros.
  rewrite <- (pred_succ_eq _ H).
@@ -209,7 +211,7 @@ Instance max_morph : morph2 max.
 exact union2_morph.
 Qed.
 
-Lemma lt_0_succ : forall n, n \in N -> lt zero (succ n).
+Lemma lt_0_succ : forall n, n ∈ N -> zero < succ n.
 intros.
 elim H using N_ind; intros.
  rewrite <- H1; trivial.
@@ -221,8 +223,8 @@ elim H using N_ind; intros.
   apply succ_intro1; reflexivity.
 Qed.
 
-Lemma lt_mono : forall m n, m \in N -> n \in N -> 
-  lt m n -> lt (succ m) (succ n).
+Lemma lt_mono : forall m n, m ∈ N -> n ∈ N -> 
+  m < n -> succ m < succ n.
 intros m n Hm Hn.
 elim Hn using N_ind; intros. rewrite H0 in H1; auto.
  elim empty_ax with m; trivial.
@@ -232,8 +234,8 @@ elim Hn using N_ind; intros. rewrite H0 in H1; auto.
 Qed.
 
 
-Lemma le_total : forall m, m \in N -> forall n, n \in N ->
-  lt m n \/ m == n \/ lt n m.
+Lemma le_total : forall m, m ∈ N -> forall n, n ∈ N ->
+  m < n \/ m == n \/ n < m.
 intros m Hm.
 elim Hm using N_ind; intros. rewrite <- H0; auto.
  elim H using N_ind; intros. rewrite <- H1; auto.
@@ -272,7 +274,7 @@ apply eq_intro; intros.
  apply union2_intro1; trivial.
 Qed.
 
-Lemma max_lt : forall m n, n \in N -> lt m n -> max m n == n.
+Lemma max_lt : forall m n, n ∈ N -> m < n -> max m n == n.
 intros m n H.
 generalize m; clear m.
 elim H using N_ind; intros.
@@ -299,7 +301,7 @@ elim H using N_ind; intros.
 Qed.
 
 
-Lemma max_typ : forall m n, m \in N -> n \in N -> max m n \in N.
+Lemma max_typ : forall m n, m ∈ N -> n ∈ N -> max m n ∈ N.
 intros.
 elim le_total with m n; trivial; intros.
  rewrite (max_lt m n); trivial.
@@ -318,7 +320,7 @@ Fixpoint nat2set (n:nat) : set :=
   | S k => succ (nat2set k)
   end.
 
-Lemma nat2set_typ : forall n, nat2set n \in N.
+Lemma nat2set_typ : forall n, nat2set n ∈ N.
 induction n; simpl.
  apply zero_typ.
  apply succ_typ; trivial.
@@ -335,7 +337,7 @@ induction n; destruct m; simpl; intros; trivial.
  apply succ_inj; trivial; apply nat2set_typ.
 Qed.
 
-Lemma nat2set_reflect : forall x, x \in N -> exists n, x == nat2set n.
+Lemma nat2set_reflect : forall x, x ∈ N -> exists n, x == nat2set n.
 intros.
 elim H using N_ind; intros.
  destruct H2.
@@ -353,14 +355,14 @@ Qed.
 Definition NREC f g n y :=
   forall P,
   Proper (eq_set ==> eq_set ==> iff) P -> 
-  P zero f -> (forall m x, m \in N -> P m x -> P (succ m) (g m x)) -> P n y.
+  P zero f -> (forall m x, m ∈ N -> P m x -> P (succ m) (g m x)) -> P n y.
 
 Lemma NREC_inv : forall f g n y,
   morph2 g ->
   NREC f g n y ->
   NREC f g n y /\
   (n == zero -> y == f) /\
-  (forall m, m \in N -> n == succ m -> exists2 z, NREC f g m z & y == g m z).
+  (forall m, m ∈ N -> n == succ m -> exists2 z, NREC f g m z & y == g m z).
 intros f g n y gm h; pattern n, y; apply h.
  do 3 red; intros.
  apply and_iff_morphism.
@@ -430,7 +432,7 @@ split; [|split]; intros.
 Qed.
 
 Lemma NREC_choice : forall f g n,
-  n \in N ->
+  n ∈ N ->
   morph2 g ->
   uchoice_pred (NREC f g n).
 intros f g n H gm.
@@ -510,7 +512,7 @@ split; intros.
 Qed.
 
 Lemma natrec_def : forall f g n,
-  morph2 g -> n \in N -> NREC f g n (natrec f g n).
+  morph2 g -> n ∈ N -> NREC f g n (natrec f g n).
 intros.
 unfold natrec; apply uchoice_def.
 apply NREC_choice; trivial.
@@ -525,7 +527,7 @@ symmetry; apply uchoice_ext; trivial.
  red; auto.
 Qed.
 
-Lemma natrec_S : forall f g n, morph2 g -> n \in N ->
+Lemma natrec_S : forall f g n, morph2 g -> n ∈ N ->
    natrec f g (succ n) == g n (natrec f g n).
 intros.
 elim H0 using N_ind; intros.
@@ -557,10 +559,10 @@ Qed.
 Lemma natrec_typ P f g n :
   morph1 P ->
   morph2 g ->
-  n \in N ->
-  f \in P zero ->
-  (forall k h, k \in N -> h \in P k -> g k h \in P (succ k)) ->
-  natrec f g n \in P n.
+  n ∈ N ->
+  f ∈ P zero ->
+  (forall k h, k ∈ N -> h ∈ P k -> g k h ∈ P (succ k)) ->
+  natrec f g n ∈ P n.
 intros.
 elim H1 using N_ind; intros.
  rewrite <- H5; trivial.

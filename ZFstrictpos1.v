@@ -29,8 +29,8 @@ Variable Arg : set.
 
 Inductive eq_dpos : dpositive -> dpositive -> Prop :=
 | EDP_Cst : forall A A', A == A' -> eq_dpos (DP_Cst A) (DP_Cst A')
-| EDP_EqInst : forall j j', j \in Arg -> j == j' -> eq_dpos (DP_EqInst j) (DP_EqInst j')
-| EDP_Rec : forall i i', i \in Arg -> i == i' -> eq_dpos (DP_Rec i) (DP_Rec i')
+| EDP_EqInst : forall j j', j ∈ Arg -> j == j' -> eq_dpos (DP_EqInst j) (DP_EqInst j')
+| EDP_Rec : forall i i', i ∈ Arg -> i == i' -> eq_dpos (DP_Rec i) (DP_Rec i')
 | EDP_Sum : forall p1 p2 q1 q2,
    eq_dpos p1 p2 -> eq_dpos q1 q2 -> eq_dpos (DP_Sum p1 q1) (DP_Sum p2 q2)
 | EDP_ConsRec : forall p1 p2 q1 q2,
@@ -74,17 +74,17 @@ Qed.
 
 Lemma dpos_rect : forall (P:dpositive->Type),
   (forall A, P (DP_Cst A)) ->
-  (forall j, j \in Arg -> P (DP_EqInst j)) ->
-  (forall i, i \in Arg -> P (DP_Rec i)) ->
+  (forall j, j ∈ Arg -> P (DP_EqInst j)) ->
+  (forall i, i ∈ Arg -> P (DP_Rec i)) ->
   (forall p1 p2, eq_dpos p1 p1 -> eq_dpos p2 p2 -> P p1 -> P p2 -> P (DP_Sum p1 p2)) ->
   (forall p1 p2, eq_dpos p1 p1 -> eq_dpos p2 p2 -> P p1 -> P p2 -> P (DP_ConsRec p1 p2)) ->
   (forall A p,
    (forall x x', x == x' -> eq_dpos (p x) (p x')) ->
-   (forall x, x \in A -> P (p x)) ->
+   (forall x, x ∈ A -> P (p x)) ->
    P (DP_ConsNoRec A p)) ->
   (forall A p,
    (forall x x', x == x' -> eq_dpos (p x) (p x')) ->
-   (forall x, x \in A -> P (p x)) ->
+   (forall x, x ∈ A -> P (p x)) ->
    P (DP_Param A p)) ->
   forall p, eq_dpos p p -> P p.
 intros.
@@ -160,8 +160,8 @@ Qed.
 Lemma dpos_oper_mono p p' :
   eq_dpos p p' ->
   forall X Y, morph1 X -> morph1 Y ->
-  (forall a, a \in Arg -> X a \incl Y a) ->
-  forall a, a \in Arg -> dpos_oper p X a \incl dpos_oper p' Y a.
+  (forall a, a ∈ Arg -> X a ⊆ Y a) ->
+  forall a, a ∈ Arg -> dpos_oper p X a ⊆ dpos_oper p' Y a.
 intros eqp X Y Xm Ym Xmono a tya.
 induction eqp; simpl; intros; auto with *.
  rewrite H; reflexivity.
@@ -257,7 +257,7 @@ Qed.
 
 (** Checking dependencies *)
   Inductive instance p a : dpositive -> set -> Prop :=
-  | I_Cst A : forall x, x \in A -> instance p a (DP_Cst A) x
+  | I_Cst A : forall x, x ∈ A -> instance p a (DP_Cst A) x
   | I_EqInst j : forall z, a == j -> z == empty -> instance p a (DP_EqInst j) z
   | I_Rec i : forall x z, instance p i p x -> z == x -> instance p a (DP_Rec i) z
   | I_Sum1 p1 p2 :
@@ -278,14 +278,14 @@ Qed.
      instance p a (DP_ConsRec p1 p2) z
   | I_ConsNoRec A p' :
      forall x y z,
-     x \in A ->
+     x ∈ A ->
      instance p a (p' x) y ->
      z == couple x y ->
      instance p a (DP_ConsNoRec A p') z
   | I_Param A p' :
      forall f g,
      morph1 f ->
-     (forall x, x \in A -> instance p a (p' x) (f x)) ->
+     (forall x, x ∈ A -> instance p a (p' x) (f x)) ->
      g == cc_lam A f ->
      instance p a (DP_Param A p') g.
 
@@ -352,8 +352,8 @@ Qed.
 Let eqp' := tr_pos_morph _ _ eqp.
 
   Lemma DINDi_mono o o' a :
-    isOrd o -> isOrd o' -> o \incl o' ->
-    DINDi p o a \incl DINDi p o' a.
+    isOrd o -> isOrd o' -> o ⊆ o' ->
+    DINDi p o a ⊆ DINDi p o' a.
 intros.
 red; intros.
 unfold DINDi in H2; rewrite subset_ax in H2; destruct H2.
@@ -362,7 +362,7 @@ rewrite H3; apply subset_intro; trivial.
 rewrite <- H3; revert H2; apply INDi_mono; trivial.
 Qed.
 
-  Lemma DINDi_eq o : isOrd o -> forall a, a \in Arg ->
+  Lemma DINDi_eq o : isOrd o -> forall a, a ∈ Arg ->
     DINDi p (osucc o) a == dpos_oper p (DINDi p o) a.
 intros oo a tya.
 symmetry; apply subset_ext; intros.
@@ -500,7 +500,7 @@ symmetry; apply subset_ext; intros.
    apply surj_pair with (1:=H3).
 
   (* sigma *)
-  assert (fst x \in A) by (apply fst_typ_sigma in H1; trivial).
+  assert (fst x ∈ A) by (apply fst_typ_sigma in H1; trivial).
   apply I_ConsNoRec with (fst x) (snd x); trivial.
    apply H0; trivial.
    apply snd_typ_sigma with (2:=H1); auto with *.
@@ -519,7 +519,7 @@ symmetry; apply subset_ext; intros.
    apply cc_eta_eq with (1:=H1).
 Qed.
 
-  Lemma DINDi_eq2 o a : isOrd o -> a \in Arg ->
+  Lemma DINDi_eq2 o a : isOrd o -> a ∈ Arg ->
     DINDi p o a == sup o (fun o' => dpos_oper p (DINDi p o') a).
 intros.
 apply eq_intro; intros.
@@ -548,7 +548,7 @@ apply olts_le; trivial.
 Qed.
 
 
-  Lemma DIND_eq : forall a, a \in Arg ->
+  Lemma DIND_eq : forall a, a ∈ Arg ->
     DIND p a == dpos_oper p (DIND p) a.
 intros.
 assert (isOrd (IND_clos_ord (tr_pos p))).
@@ -568,8 +568,8 @@ Qed.
 
   Lemma DINDi_DIND o a :
     isOrd o ->
-    a \in Arg ->
-    DINDi p o a \incl DIND p a.
+    a ∈ Arg ->
+    DINDi p o a ⊆ DIND p a.
 intros.
 revert a H0.
 induction H using isOrd_ind; intros.

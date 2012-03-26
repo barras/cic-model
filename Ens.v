@@ -662,39 +662,39 @@ destruct repl_ax with
   apply Runiq with (1:=H4); trivial.
 Qed.
 
-Notation "x \in y" := (in_set x y).
+Notation "x ∈ y" := (in_set x y).
 Notation "x == y" := (eq_set x y).
 
 (* Deriving the existentially quantified sets *)
 
-Lemma empty_ex: exists empty, forall x, ~ x \in empty.
+Lemma empty_ex: exists empty, forall x, ~ x ∈ empty.
 exists empty.
 exact empty_ax.
 Qed.
 
-Lemma pair_ex: forall a b, exists c, forall x, x \in c <-> (x == a \/ x == b).
+Lemma pair_ex: forall a b, exists c, forall x, x ∈ c <-> (x == a \/ x == b).
 intros.
 exists (pair a b).
 apply pair_ax.
 Qed.
 
 Lemma union_ex: forall a, exists b,
-    forall x, x \in b <-> (exists2 y, x \in y & y \in a).
+    forall x, x ∈ b <-> (exists2 y, x ∈ y & y ∈ a).
 intros.
 exists (union a).
 apply union_ax.
 Qed.
 
 Lemma subset_ex : forall x P, exists b,
-  forall z, z \in b <->
-  (z \in x /\ exists2 z', z == z' & P z').
+  forall z, z ∈ b <->
+  (z ∈ x /\ exists2 z', z == z' & P z').
 intros.
 exists (subset x P).
 apply subset_ax.
 Qed.
 
 Lemma power_ex: forall a, exists b,
-     forall x, x \in b <-> (forall y, y \in x -> y \in a).
+     forall x, x ∈ b <-> (forall y, y ∈ x -> y ∈ a).
 intros.
 exists (power a).
 apply power_ax.
@@ -702,8 +702,8 @@ Qed.
 
 Lemma repl_ex:
     forall a (R:set->set->Prop),
-    (forall x x' y y', x \in a -> R x y -> R x' y' -> x == x' -> y == y') ->
-    exists b, forall x, x \in b <-> (exists2 y, y \in a & (exists2 x', x == x' & R y x')).
+    (forall x x' y y', x ∈ a -> R x y -> R x' y' -> x == x' -> y == y') ->
+    exists b, forall x, x ∈ b <-> (exists2 y, y ∈ a & (exists2 x', x == x' & R y x')).
 intros.
 elim repl_ax with a
   (fun y' x' => exists2 y, y == y' & exists2 x, x' == x & R y x); intros.
@@ -765,7 +765,7 @@ Qed.
 Lemma ttcoll' :
   forall (A:Ti) R,
   (forall x:A, exists y:set, R x y) ->
-  exists B, forall x:A, exists2 y, y \in B & R x y.
+  exists B, forall x:A, exists2 y, y ∈ B & R x y.
 intros.
 destruct ttcoll with (1:=H) as (X,(f,Hf)).
 exists (sup X f).
@@ -802,8 +802,8 @@ Qed.
 Lemma ttcoll'' : forall A (R:set->set->Prop),
   (forall x x' y y', in_set x A ->
    eq_set x x' -> eq_set y y' -> R x y -> R x' y') ->
-  (forall x, x \in A -> exists y:set, R x y) ->
-  exists f : {x|x\in A} -> {X:Ti & X->set},
+  (forall x, x ∈ A -> exists y:set, R x y) ->
+  exists f : {x|x∈ A} -> {X:Ti & X->set},
     forall x, exists i:projT1 (f x), R (proj1_sig x) (projT2 (f x) i).
 intros.
 destruct (coll_ax_ttcoll A R H H0) as (B,HB).
@@ -827,7 +827,7 @@ Lemma coll_ax_choice : forall A (R:set->set->Prop),
     (forall x, in_set x A -> exists y, R x y) ->
     exists B, forall x, in_set x A -> exists y, in_set y B /\ R x y.
 intros.
-elim (choice_axiom {x|x \in A} set (fun p y => R (proj1_sig p) y)); trivial; intros.
+elim (choice_axiom {x|x ∈ A} set (fun p y => R (proj1_sig p) y)); trivial; intros.
  exists (repl1 A x).
  intros.
  destruct H2.
@@ -902,7 +902,7 @@ split; intros.
 Qed.
 
 Lemma V_trans : forall x y z,
-  z \in y -> y \in V x -> z \in V x.
+  z ∈ y -> y ∈ V x -> z ∈ V x.
 intros x.
 pattern x; apply wf_ax; trivial; clear x; intros.
 rewrite V_def in H1|-*.
@@ -980,7 +980,7 @@ Qed.
 
 Lemma rk_induc :
   forall P:set->Prop,
-  (forall x, (forall y, y \in V x -> P y) -> P x) ->
+  (forall x, (forall y, y ∈ V x -> P y) -> P x) ->
   forall x, P x.
 intros.
 cut (forall y, incl_set (V y) (V x) -> P y).
@@ -1005,21 +1005,21 @@ intros x y.
 revert x.
 pattern y; apply wf_ax; trivial; clear y.
 intros y Hy x.
-destruct (EM (exists y', y' \in V y /\ incl_set (V x) y')).
+destruct (EM (exists y', y' ∈ V y /\ incl_set (V x) y')).
 left.
 destruct H; destruct H.
 apply V_sub with x0; trivial.
 
 right; red; intros.
 rewrite V_def in H0; destruct H0; destruct H0.
-assert (exists w, w \in V x /\ ~ w \in V x0).
- destruct (EM (exists w, w \in V x /\ ~ w \in V x0)); trivial.
+assert (exists w, w ∈ V x /\ ~ w ∈ V x0).
+ destruct (EM (exists w, w ∈ V x /\ ~ w ∈ V x0)); trivial.
  assert (~ incl_set (V x) (V x0)).
   red; intros; apply H.
   exists (V x0); split; trivial.
   apply V_mono; trivial.
  elim H3; red; intros.
- destruct (EM (z0 \in V x0)); trivial.
+ destruct (EM (z0 ∈ V x0)); trivial.
  elim H2.
  exists z0; split; trivial.
 destruct H2; destruct H2.
@@ -1097,7 +1097,7 @@ intros P Pm.
 destruct 1.
 revert H.
 pattern x; apply rk_induc; clear x; intros.
-destruct (EM (exists z, z \in V x /\ P (V z))).
+destruct (EM (exists z, z ∈ V x /\ P (V z))).
  destruct H1; destruct H1; eauto.
 
  exists (V x).
@@ -1126,8 +1126,8 @@ Lemma coll_ax : forall A (R:set->set->Prop),
     (forall x, in_set x A -> exists y, R x y) ->
     exists B, forall x, in_set x A -> exists y, in_set y B /\ R x y.
 intros.
-pose (P := fun x y => x \in A /\ exists z, z \in y /\ R x z).
-assert (Pm : forall x x', x \in A -> x == x' -> forall y y', y == y' -> P x y -> P x' y').
+pose (P := fun x y => x ∈ A /\ exists z, z ∈ y /\ R x z).
+assert (Pm : forall x x', x ∈ A -> x == x' -> forall y y', y == y' -> P x y -> P x' y').
  intros.
  destruct H4.
  destruct H5; destruct H5.
@@ -1138,7 +1138,7 @@ assert (Pm : forall x x', x \in A -> x == x' -> forall y y', y == y' -> P x y ->
 
   apply H with x x0; trivial.
   apply eq_set_refl.
-assert (Pwit : forall x, x \in A -> exists y, P x (V y)). 
+assert (Pwit : forall x, x ∈ A -> exists y, P x (V y)). 
  intros.
  destruct (H0 x); trivial.
  exists (singl x0); split; trivial.
@@ -1176,7 +1176,7 @@ Lemma coll2_ax : forall A (R:set->set->Prop) x,
     in_set x A ->
     exists B, exists y, in_set y B /\ R x y.
 intros.
-assert (forall z, z \in singl x -> z \in A).
+assert (forall z, z ∈ singl x -> z ∈ A).
  intros.
  destruct H2; simpl in *.
  apply in_reg with x; trivial.
@@ -1203,10 +1203,10 @@ End Collection.
 (* Infinity *)
 
 Lemma infinity_ex: exists2 infinite,
-    (exists2 empty, (forall x, ~ x \in empty) & empty \in infinite) &
-    (forall x, x \in infinite ->
-     exists2 y, (forall z, z \in y <-> (z == x \/ z \in x)) &
-       y \in infinite).
+    (exists2 empty, (forall x, ~ x ∈ empty) & empty ∈ infinite) &
+    (forall x, x ∈ infinite ->
+     exists2 y, (forall z, z ∈ y <-> (z == x \/ z ∈ x)) &
+       y ∈ infinite).
 exists infinity.
  exists empty.
   exact empty_ax.
@@ -1286,7 +1286,7 @@ Definition choose (x:set) :=
   | _ => empty
   end.
 
-Lemma choose_ax : forall a, (exists x, x \in a) -> choose a \in a.
+Lemma choose_ax : forall a, (exists x, x ∈ a) -> choose a ∈ a.
 intros.
 unfold choose.
 destruct (C (idx a)).
@@ -1330,13 +1330,13 @@ End Choice.
 Section Regularity.
 
 Definition regularity :=
-  forall a a0, a0 \in a ->
-  exists2 b, b \in a & ~(exists2 c, c \in a & c \in b).
+  forall a a0, a0 ∈ a ->
+  exists2 b, b ∈ a & ~(exists2 c, c ∈ a & c ∈ b).
 
 Lemma regularity_ax (EM:forall P,P\/~P): regularity.
 red.
 induction a0; intros.
-destruct (EM (exists i:X, f i \in a)).
+destruct (EM (exists i:X, f i ∈ a)).
  destruct H1; eauto.
 
  exists (sup X f); trivial.

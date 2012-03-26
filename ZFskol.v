@@ -60,13 +60,13 @@ split; intros.
  constructor; trivial.
 Qed.
 
-Notation "x \in y" := (in_set x y).
+Notation "x ∈ y" := (in_set x y).
 
-Definition eq_set a b := forall x, x \in a <-> x \in b.
+Definition eq_set a b := forall x, x ∈ a <-> x ∈ b.
 
 Notation "x == y" := (eq_set x y).
 
-Lemma eq_set_ax : forall a b, a == b <-> (forall x, x \in a <-> x \in b).
+Lemma eq_set_ax : forall a b, a == b <-> (forall x, x ∈ a <-> x ∈ b).
 reflexivity.
 Qed.
 
@@ -75,12 +75,12 @@ Proof.
 split; do 2 red; intros.
  reflexivity.
  symmetry; trivial.
- transitivity (x0 \in y); trivial.
+ transitivity (x0 ∈ y); trivial.
 Qed.
 
 Lemma In_intro: forall x y: set,
   (forall x' y', proj1_sig x x' -> proj1_sig y y' -> Z.in_set x' y') ->
-  x \in y.
+  x ∈ y.
 intros.
 destruct (proj2_sig x).
 destruct H0.
@@ -145,7 +145,7 @@ split; intros.
  rewrite <- H2; trivial.
 Qed.
 
-Lemma inZ_in : forall a b, Z.in_set a b -> Z2set a \in Z2set b.
+Lemma inZ_in : forall a b, Z.in_set a b -> Z2set a ∈ Z2set b.
 unfold Z2set, in_set; simpl.
 intros.
 constructor; simpl.
@@ -153,7 +153,7 @@ exists a; try reflexivity.
 exists b; try reflexivity; trivial.
 Qed.
 
-Lemma in_inZ : forall a b, Z2set a \in Z2set b -> Z.in_set a b.
+Lemma in_inZ : forall a b, Z2set a ∈ Z2set b -> Z.in_set a b.
 intros.
 rewrite in_set_elim in H.
 destruct H.
@@ -204,7 +204,7 @@ Instance Z2set_morph : Proper (Z.eq_set ==> eq_set) Z2set.
 exact Zeq_eq.
 Qed.
 
-Lemma in_reg : forall a a' b, a == a' -> a \in b -> a' \in b.
+Lemma in_reg : forall a a' b, a == a' -> a ∈ b -> a' ∈ b.
 intros.
 rewrite in_set_elim in H0.
 destruct H0 as (a0,eq_a,(b0,eq_b,in_ab)).
@@ -232,7 +232,7 @@ Qed.
 
 (* empty set *)
 
-Lemma empty_sig : { empty | forall x, ~ x \in empty }.
+Lemma empty_sig : { empty | forall x, ~ x ∈ empty }.
 apply set_intro with (fun x:Z.set => forall y, ~ Z.in_set y x); intros.
  apply Z.empty_ex.
 
@@ -248,16 +248,16 @@ apply set_intro with (fun x:Z.set => forall y, ~ Z.in_set y x); intros.
 Qed.
 
 Definition empty := proj1_sig empty_sig.
-Lemma empty_ax: forall x, ~ x \in empty.
+Lemma empty_ax: forall x, ~ x ∈ empty.
 Proof proj2_sig empty_sig.
 
 (* pair *)
 
 Lemma pair_sig : forall a b,
-  { pair | forall x, x \in pair <-> (x == a \/ x == b) }.
+  { pair | forall x, x ∈ pair <-> (x == a \/ x == b) }.
 intros a b.
 apply set_intro with
-  (fun x => forall y, y \in Z2set x <-> y == a \/ y == b); intros.
+  (fun x => forall y, y ∈ Z2set x <-> y == a \/ y == b); intros.
  elim (Z2set_surj a); intros.
  elim (Z2set_surj b); intros.
  elim Z.pair_ex with x x0; intros.
@@ -276,11 +276,11 @@ apply set_intro with
   split; intros; first [apply Zeq_eq|apply eq_Zeq]; trivial. 
 
  intros; rewrite Z.eq_set_ax; intros.
- transitivity (Z2set x \in Z2set a0).
+ transitivity (Z2set x ∈ Z2set a0).
   split; intros; first [apply inZ_in|apply in_inZ]; trivial. 
   transitivity (Z2set x == a \/ Z2set x == b); auto.
   symmetry.
-  transitivity (Z2set x \in Z2set a'); trivial.
+  transitivity (Z2set x ∈ Z2set a'); trivial.
   split; intros; first [apply inZ_in|apply in_inZ]; trivial.
 
  split; intros.
@@ -299,17 +299,17 @@ apply set_intro with
 Qed.
 
 Definition pair a b := proj1_sig (pair_sig a b).
-Lemma pair_ax: forall a b x, x \in pair a b <-> (x == a \/ x == b).
+Lemma pair_ax: forall a b x, x ∈ pair a b <-> (x == a \/ x == b).
 Proof fun a b => proj2_sig (pair_sig a b).
 
 (* union *)
 
 Lemma union_sig: forall a,
-  { union | forall x, x \in union <-> (exists2 y, x \in y & y \in a) }.
+  { union | forall x, x ∈ union <-> (exists2 y, x ∈ y & y ∈ a) }.
 intro a.
 apply set_intro with
  (fun x => forall z,
-  Z.in_set z x <-> exists2 y, Z.in_set z y & Z2set y \in a); intros.
+  Z.in_set z x <-> exists2 y, Z.in_set z y & Z2set y ∈ a); intros.
  elim (Z2set_surj a); intros.
  elim (Z.union_ex x); intros.
  exists x0.
@@ -350,18 +350,18 @@ Qed.
 
 Definition union a := proj1_sig (union_sig a).
 Lemma union_ax: forall a x,
-  x \in union a <-> (exists2 y, x \in y & y \in a).
+  x ∈ union a <-> (exists2 y, x ∈ y & y ∈ a).
 Proof fun a => proj2_sig (union_sig a).
 
 (* subset *)
 
 Lemma subset_sig: forall a P,
-  { subset | forall x, x \in subset <->
-             (x \in a /\ exists2 x', x==x' & P x') }.
+  { subset | forall x, x ∈ subset <->
+             (x ∈ a /\ exists2 x', x==x' & P x') }.
 intros a P.
 apply set_intro with
-  (fun x => forall y, y \in Z2set x <->
-    (y \in a /\ exists2 y', y==y' & P y')); intros.
+  (fun x => forall y, y ∈ Z2set x <->
+    (y ∈ a /\ exists2 y', y==y' & P y')); intros.
  elim (Z2set_surj a); intros.
  elim Z.subset_ex with
    x (fun z => exists2 z', z' == Z2set z & P z'); intros.
@@ -407,17 +407,17 @@ Qed.
 
 Definition subset a P := proj1_sig (subset_sig a P).
 Lemma subset_ax : forall a P x,
-    x \in subset a P <-> (x \in a /\ exists2 x', x==x' & P x').
+    x ∈ subset a P <-> (x ∈ a /\ exists2 x', x==x' & P x').
 Proof fun a P => proj2_sig (subset_sig a P).
 
 (* power set *)
 
 Lemma power_sig: forall a,
-  { power | forall x, x \in power <-> (forall y, y \in x -> y \in a) }.
+  { power | forall x, x ∈ power <-> (forall y, y ∈ x -> y ∈ a) }.
 intro a.
 apply set_intro with
  (fun x => forall z,
-  Z.in_set z x <-> (forall y, Z.in_set y z -> Z2set y \in a)); intros.
+  Z.in_set z x <-> (forall y, Z.in_set y z -> Z2set y ∈ a)); intros.
  elim (Z2set_surj a); intros.
  elim (Z.power_ex x); intros.
  exists x0; intros.
@@ -448,7 +448,7 @@ Qed.
 
 Definition power a := proj1_sig (power_sig a).
 Lemma power_ax:
-  forall a x, x \in power a <-> (forall y, y \in x -> y \in a).
+  forall a x, x ∈ power a <-> (forall y, y ∈ x -> y ∈ a).
 Proof fun a => proj2_sig (power_sig a).
 
 (* uchoice *)
@@ -472,7 +472,7 @@ split; intros.
 Defined.
 
 Lemma uchoice_ax : forall P h x,
-  (x \in uchoice P h <-> exists2 z, P z & x \in z).
+  (x ∈ uchoice P h <-> exists2 z, P z & x ∈ z).
 split; intros.
  destruct H.
  destruct H.
@@ -597,7 +597,7 @@ Lemma repl0 : forall (a:set) (R:set->set->Prop), set.
 intros a R.
 exists
  (fun a' => forall x,
-  Z.in_set x a' <-> exists2 y, Z2set y \in a & exists2 x', Z.eq_set x x' & downR R y x').
+  Z.in_set x a' <-> exists2 y, Z2set y ∈ a & exists2 x', Z.eq_set x x' & downR R y x').
 split; intros.
  elim (Z2set_surj a); intros.
  elim Z.repl_ex with x (downR R); intros.
@@ -622,7 +622,7 @@ split; intros.
  reflexivity.
 Defined.
 
-Definition incl_set x y := forall z, z \in x -> z \in y.
+Definition incl_set x y := forall z, z ∈ x -> z ∈ y.
 
 Lemma repl0_mono :
   Proper (incl_set ==> (eq_set ==> eq_set ==> iff) ==> incl_set) repl0.
@@ -663,8 +663,8 @@ Lemma repl_sig :
   { repl |
     Proper (incl_set ==> (eq_set ==> eq_set ==> iff) ==> incl_set) repl /\
     forall a (R:set->set->Prop),
-    (forall x x' y y', x \in a -> R x y -> R x' y' -> x == x' -> y == y') ->
-    forall x, x \in repl a R <-> (exists2 y, y \in a & exists2 x', x == x' & R y x') }.
+    (forall x x' y y', x ∈ a -> R x y -> R x' y' -> x == x' -> y == y') ->
+    forall x, x ∈ repl a R <-> (exists2 y, y ∈ a & exists2 x', x == x' & R y x') }.
 exists repl0; split.
  exact repl0_mono.
 split; intros.
@@ -707,17 +707,17 @@ Lemma repl_mono :
 Proof (proj1 (proj2_sig repl_sig)).
 Lemma repl_ax:
     forall a (R:set->set->Prop),
-    (forall x x' y y', x \in a -> R x y -> R x' y' -> x == x' -> y == y') ->
-    forall x, x \in repl a R <-> (exists2 y, y \in a & exists2 x', x == x' & R y x').
+    (forall x x' y y', x ∈ a -> R x y -> R x' y' -> x == x' -> y == y') ->
+    forall x, x ∈ repl a R <-> (exists2 y, y ∈ a & exists2 x', x == x' & R y x').
 Proof proj2 (proj2_sig repl_sig).
 
 (* infinite set (natural numbers) *)
 
 Definition Nat x :=
   forall (P:set),
-  empty \in P ->
-  (forall x, x \in P -> union (pair x (pair x x)) \in P) ->
-  x \in P.
+  empty ∈ P ->
+  (forall x, x ∈ P -> union (pair x (pair x x)) ∈ P) ->
+  x ∈ P.
 
 Instance Nat_morph : Proper (eq_set ==> iff) Nat.
 unfold Nat; split; intros.
@@ -731,8 +731,8 @@ unfold Nat; intros; auto.
 Qed.
 
 Definition infinite_sig :
-  { infty | empty \in infty /\
-      forall x, x \in infty -> union (pair x (pair x x)) \in infty }.
+  { infty | empty ∈ infty /\
+      forall x, x ∈ infty -> union (pair x (pair x x)) ∈ infty }.
 apply set_intro with
   (fun x => forall y, Z.in_set y x <-> Nat (Z2set y)); intros.
  elim Z.infinity_ex; intros.
@@ -846,18 +846,18 @@ split; intros.
    rewrite <- H2; trivial.
 Qed.
 Definition infinite := proj1_sig infinite_sig.
-Lemma infinity_ax1: empty \in infinite.
+Lemma infinity_ax1: empty ∈ infinite.
 Proof proj1 (proj2_sig infinite_sig).
 
 Lemma infinity_ax2: forall x,
-  x \in infinite -> union (pair x (pair x x)) \in infinite.
+  x ∈ infinite -> union (pair x (pair x x)) ∈ infinite.
 Proof proj2 (proj2_sig infinite_sig).
 
 (* well-founded induction *)
 
 Lemma wf_ax : forall (P:set->Prop),
   (forall x, P x -> P x) ->
-  (forall x, (forall y, y \in x -> P y) -> P x) ->
+  (forall x, (forall y, y ∈ x -> P y) -> P x) ->
   forall x, P x.
 intros P _ H x.
 cut (forall xs (x:set), x == Z2set xs -> P x).
@@ -906,8 +906,8 @@ Hypothesis coll_ax_uniq : forall A (R:Z.set->Z.set->Prop),
 
 Lemma coll_sig : forall A (R:set->set->Prop), 
   {coll| Proper (eq_set==>eq_set==>iff) R ->
-     forall x, x \in A -> (exists y, R x y) ->
-     exists2 y, y \in coll & R x y }.
+     forall x, x ∈ A -> (exists y, R x y) ->
+     exists2 y, y ∈ coll & R x y }.
 intros A R.
 pose (R' x y := exists2 x', Z2set x == x' & exists2 y', Z2set y == y' & R x' y').
 assert (R'm : forall x x' y y', Z.eq_set x x' -> Z.eq_set y y' ->
@@ -972,8 +972,8 @@ Qed.
 Definition coll A R := proj1_sig (coll_sig A R).
 Lemma coll_ax : forall A (R:set->set->Prop), 
   Proper (eq_set==>eq_set==>iff) R ->
-  forall x, x \in A -> (exists y, R x y) ->
-  exists2 y, y \in coll A R & R x y.
+  forall x, x ∈ A -> (exists y, R x y) ->
+  exists2 y, y ∈ coll A R & R x y.
 Proof (fun A R => proj2_sig (coll_sig A R)).
 
 End Collection.

@@ -114,7 +114,7 @@ Qed.
 Definition in_set x y :=
   Exist(fun j => eq_set x (elts y j)).
 
-Notation "x \in y" := (holds(in_set x y)) (at level 60).
+Notation "x ∈ y" := (holds(in_set x y)) (at level 60).
 Notation "x == y" := (holds (eq_set x y)) (at level 70).
 
 Lemma eq_elim0 : forall x y i,
@@ -124,7 +124,7 @@ rewrite eq_set_def in H; destruct H; auto.
 Qed.
 
 Lemma eq_set_ax : forall x y,
-  x == y <-> (forall z, z \in x <-> z \in y).
+  x == y <-> (forall z, z ∈ x <-> z ∈ y).
 intros.
 rewrite eq_set_def.
 split; intros.
@@ -144,7 +144,7 @@ split; intros.
   apply H.
   apply rExI; exists i; apply eq_set_refl.
 
-  assert (elts y j \in y).
+  assert (elts y j ∈ y).
    apply rExI; exists j; apply eq_set_refl.
   apply H in H0.
   apply rExE with (2:=H0); intros.
@@ -152,13 +152,13 @@ split; intros.
   apply eq_set_sym; trivial.
 Qed.
 
-Definition elts' (x:set) (i:idx x) : {y|y \in x}.
+Definition elts' (x:set) (i:idx x) : {y|y ∈ x}.
 exists (elts x i).
 abstract (apply rExI; exists i; apply eq_set_refl).
 Defined.
 
 Lemma in_reg : forall x x' y,
-  x == x' -> x \in y -> x' \in y.
+  x == x' -> x ∈ y -> x' ∈ y.
 intros.
 apply rExE with (2:=H0); intros.
 apply rExI; exists x0.
@@ -167,8 +167,8 @@ apply eq_set_sym; trivial.
 Qed.
 
 Lemma eq_intro : forall x y,
-  (forall z, z \in x -> z \in y) ->
-  (forall z, z \in y -> z \in x) ->
+  (forall z, z ∈ x -> z ∈ y) ->
+  (forall z, z ∈ y -> z ∈ x) ->
   x == y.
 intros.
 rewrite eq_set_ax.
@@ -176,9 +176,9 @@ split; intros; eauto.
 Qed.
 
 Lemma eq_elim : forall x y y',
-  x \in y ->
+  x ∈ y ->
   y == y' ->
-  x \in y'.
+  x ∈ y'.
 intros.
 rewrite eq_set_ax in H0.
 destruct (H0 x); auto.
@@ -195,7 +195,7 @@ Qed.
 
 Lemma wf_ax :
   forall (P:set->prop),
-  (forall x, (forall y, y \in x -> holds (P y)) -> holds (P x)) ->
+  (forall x, (forall y, y ∈ x -> holds (P y)) -> holds (P x)) ->
   forall x, holds (P x).
 intros P H x.
 cut (forall x', x == x' -> holds (P x'));[auto using eq_set_refl|].
@@ -211,7 +211,7 @@ Qed.
 Lemma wf_ax' : forall P : set -> Prop,
   (exists P', forall x, P x <-> holds (P' x)) ->
   (forall x : set,
-   (forall y : set, y \in x -> P y) -> P x) ->
+   (forall y : set, y ∈ x -> P y) -> P x) ->
   forall x : set, P x.
 intros.
 destruct H as (P',H).
@@ -227,7 +227,7 @@ Qed.
 Definition empty :=
   sup False (fun x => match x with end).
 
-Lemma empty_ax : forall x, ~ x \in empty.
+Lemma empty_ax : forall x, ~ x ∈ empty.
 red; intros.
 apply rCons; apply rFF. (* The only place where consistency is needed! *)
 apply rExE with (2:=H); intros.
@@ -241,7 +241,7 @@ Definition pair x y :=
   sup bool (fun b => if b then x else y).
 
 Lemma pair_ax : forall a b z,
-  z \in pair a b <-> holds (Or (eq_set z a) (eq_set z b)).
+  z ∈ pair a b <-> holds (Or (eq_set z a) (eq_set z b)).
 split; intros.
  apply rExE with (2:=H); intros.
  apply rOrI.
@@ -278,7 +278,7 @@ Definition union (x:set) :=
     (fun p => elts (elts x (projS1 p)) (projS2 p)).
 
 Lemma union_ax : forall a z,
-  z \in union a <-> holds (Ex2(fun b => in_set z b) (fun b => in_set b a)).
+  z ∈ union a <-> holds (Ex2(fun b => in_set z b) (fun b => in_set b a)).
 split; intros.
  apply rExE with (2:=H); intros.
  destruct x; simpl in *.
@@ -316,8 +316,8 @@ Definition subset (x:set) (P:set->prop) :=
     (fun y => elts x (proj1_sig y)).
 
 Lemma subset_ax : forall x P z,
-  z \in subset x P <->
-  z \in x /\ holds(Ex2(fun z' => eq_set z z') (fun z' => P z')).
+  z ∈ subset x P <->
+  z ∈ x /\ holds(Ex2(fun z' => eq_set z z') (fun z' => P z')).
 intros x P z.
 split; intros.
  rewrite <- rAnd.
@@ -350,8 +350,8 @@ Definition power (x:set) :=
          (fun y => Ex2(fun i =>  eq_set y (elts x i))(fun i=> P i))).
 
 Lemma power_ax : forall x z,
-  z \in power x <->
-  (forall y, y \in z -> y \in x).
+  z ∈ power x <->
+  (forall y, y ∈ z -> y ∈ x).
 split; intros.
  apply rExE with (2:=H); intros.
  specialize eq_elim with (1:=H0)(2:=H1); intro.
@@ -397,13 +397,13 @@ Fixpoint num (n:nat) : set :=
 
 Definition infinity := sup _ num.
 
-Lemma infty_ax1 : empty \in infinity.
+Lemma infty_ax1 : empty ∈ infinity.
 apply rExI; exists 0.
 apply eq_set_refl.
 Qed.
 
-Lemma infty_ax2 : forall x, x \in infinity ->
-  union (pair x (pair x x)) \in infinity.
+Lemma infty_ax2 : forall x, x ∈ infinity ->
+  union (pair x (pair x x)) ∈ infinity.
 intros.
 apply rExE with (2:=H); intros.
 apply rExI; exists (S x0); simpl elts.
@@ -419,8 +419,8 @@ Definition replf (x:set) (F:set->set) :=
   sup _ (fun i => F (elts x i)).
 
 Lemma replf_ax : forall x F z,
-  (forall z z', z \in x -> z == z' -> F z == F z') ->
-  (z \in replf x F <->
+  (forall z z', z ∈ x -> z == z' -> F z == F z') ->
+  (z ∈ replf x F <->
    holds(Ex2(fun y => in_set y x) (fun y=> eq_set z (F y)))).
 split; intros.
  apply rExE with (2:=H0); intros.
@@ -434,12 +434,12 @@ split; intros.
  apply H; trivial.
 Qed.
 
-Definition repl1 (x:set) (F:{y|y \in x}->set) :=
+Definition repl1 (x:set) (F:{y|y ∈ x}->set) :=
   sup _ (fun i => F (elts' x i)).
 
 Lemma repl1_ax : forall x F z,
   (forall z z', proj1_sig z == proj1_sig z' -> F z == F z') ->
-  (z \in repl1 x F <-> holds(Exist(fun y => eq_set z (F y)))).
+  (z ∈ repl1 x F <-> holds(Exist(fun y => eq_set z (F y)))).
 split; intros.
  apply rExE with (2:=H0); intros.
  apply rExI; exists (elts' x x0); trivial.
@@ -484,9 +484,9 @@ Qed.
 
 (* Collection axiom out of TTColl: *)
 Lemma collection_ax : forall A (R:set->set->prop), 
-    (forall x x' y y', x \in A -> x == x' -> y == y' ->
+    (forall x x' y y', x ∈ A -> x == x' -> y == y' ->
      holds (R x y) -> holds (R x' y')) ->
-    exists B, forall x, x \in A ->
+    exists B, forall x, x ∈ A ->
       holds(Exist(fun y => R x y)) ->
       holds(Ex2(fun y => in_set y B) (fun y => R x y)).
 intros.
@@ -512,10 +512,10 @@ destruct (HB i) as (j,Rxy).
 Qed.
 
 Lemma collection_ax' : forall A (R:set->set->prop), 
-    (forall x x' y y', x \in A -> x == x' -> y == y' ->
+    (forall x x' y y', x ∈ A -> x == x' -> y == y' ->
      holds (R x y) -> holds (R x' y')) ->
-    (forall x, x \in A -> holds(Exist(fun y => R x y))) ->
-    exists B, forall x, x \in A -> holds(Ex2(fun y => in_set y B) (fun y=> R x y)).
+    (forall x, x ∈ A -> holds(Exist(fun y => R x y))) ->
+    exists B, forall x, x ∈ A -> holds(Ex2(fun y => in_set y B) (fun y=> R x y)).
 intros.
 destruct collection_ax with (A:=A)(R:=R) as (B,HB); trivial.
 exists B; auto.
@@ -524,8 +524,8 @@ Qed.
 (* Replacement as a weaker form of collection *)
 
 Lemma repl_ax_from_collection : forall a (R:set->set->prop),
-    (forall x x' y y', x \in a -> holds (R x y) -> holds (R x' y') -> x == x' -> y == y') ->
-    exists b, forall x, x \in b <->
+    (forall x x' y y', x ∈ a -> holds (R x y) -> holds (R x' y') -> x == x' -> y == y') ->
+    exists b, forall x, x ∈ b <->
       holds(Ex2(fun y => in_set y a)(fun y =>Ex2(fun x' => eq_set x x')(fun x'=> R y x'))).
 intros a R Rfun.
 destruct collection_ax with (A:=a)
@@ -571,27 +571,27 @@ Definition repl_ex := repl_ax_from_collection.
 
 (* Deriving the existentially quantified sets *)
 
-Lemma empty_ex: exists empty, forall x, ~ x \in empty.
+Lemma empty_ex: exists empty, forall x, ~ x ∈ empty.
 exists empty.
 exact empty_ax.
 Qed.
 
 Lemma pair_ex: forall a b,
-  exists c, forall x, x \in c <-> holds(Or (eq_set x a) (eq_set x b)).
+  exists c, forall x, x ∈ c <-> holds(Or (eq_set x a) (eq_set x b)).
 intros.
 exists (pair a b).
 apply pair_ax.
 Qed.
 
 Lemma union_ex: forall a, exists b,
-    forall x, x \in b <-> holds(Ex2(fun y => in_set x y) (fun y => in_set y a)).
+    forall x, x ∈ b <-> holds(Ex2(fun y => in_set x y) (fun y => in_set y a)).
 intros.
 exists (union a).
 apply union_ax.
 Qed.
 
 Lemma power_ex: forall a, exists b,
-     forall x, x \in b <-> (forall y, y \in x -> y \in a).
+     forall x, x ∈ b <-> (forall y, y ∈ x -> y ∈ a).
 intros.
 exists (power a).
 apply power_ax.
@@ -600,11 +600,11 @@ Qed.
 (* Infinity *)
 
 Lemma infinity_ex: exists2 infinite,
-    (exists2 empty, (forall x, ~ x \in empty) & empty \in infinite) &
-    (forall x, x \in infinite ->
+    (exists2 empty, (forall x, ~ x ∈ empty) & empty ∈ infinite) &
+    (forall x, x ∈ infinite ->
      exists2 y,
-       (forall z, z \in y <-> holds(Or(eq_set z x) (in_set z x))) &
-       y \in infinite).
+       (forall z, z ∈ y <-> holds(Or(eq_set z x) (in_set z x))) &
+       y ∈ infinite).
 exists infinity.
  exists empty.
   exact empty_ax.
@@ -647,7 +647,7 @@ Fixpoint wfrec (F:(set->set)->set->set) (x:set) : set :=
 Section FixRec.
 Hypothesis F : (set->set)->set->set.
 Hypothesis Fext : forall x x' f f',
-  (forall y y', y \in x -> y == y' -> f y == f' y') ->
+  (forall y y', y ∈ x -> y == y' -> f y == f' y') ->
   x == x' ->
   F f x == F f' x'.
 
@@ -738,7 +738,7 @@ apply eq_intro; intros.
 Qed.
 
 Lemma V_def : forall x z,
-  z \in V x <-> holds(Ex2(fun y => in_set y x) (fun y => in_set z (power (V y)))).
+  z ∈ V x <-> holds(Ex2(fun y => in_set y x) (fun y => in_set z (power (V y)))).
 destruct x; simpl; intros.
 rewrite union_ax.
 unfold replf; simpl.
@@ -771,7 +771,7 @@ Ltac clause_tac :=
     (rewrite rForall; apply fa_morph; intro)).
 
 Lemma V_trans : forall x y z,
-  z \in y -> y \in V x -> z \in V x.
+  z ∈ y -> y ∈ V x -> z ∈ V x.
 intros x.
 apply wf_ax' with (x:=x).
  clause_tac.
@@ -798,7 +798,7 @@ apply eq_intro; intros.
 Qed.
 
 Lemma V_mono : forall x x',
-  x \in x' -> V x \in V x'.
+  x ∈ x' -> V x ∈ V x'.
 intros.
 rewrite (V_def x').
 apply rEx2I; exists x; trivial.
@@ -806,7 +806,7 @@ rewrite power_ax; auto.
 Qed.
 
 Lemma V_sub : forall x y y',
-  y \in V x -> y' \in power y -> y' \in V x.
+  y ∈ V x -> y' ∈ power y -> y' ∈ V x.
 intros.
 rewrite V_def in H|-*.
 apply rEx2E with (2:=H); clear H; intros.
@@ -814,7 +814,7 @@ apply rEx2I; exists x0; trivial.
 rewrite power_ax in H0,H1|-*; auto.
 Qed.
 
-Lemma V_compl : forall x z, z \in V x <-> V z \in V x. 
+Lemma V_compl : forall x z, z ∈ V x <-> V z ∈ V x. 
 intros x.
 pattern x; apply wf_ax'; clear x; intros.
  clause_tac.
@@ -837,7 +837,7 @@ split; intros.
  apply V_mono; trivial.
 Qed.
 
-Lemma V_comp2 x y : x \in power (V y) -> V x \in power (V y).
+Lemma V_comp2 x y : x ∈ power (V y) -> V x ∈ power (V y).
 intros.
 apply eq_elim with (V (singl y)).
 2:apply eq_set_sym; apply V_pow.
@@ -846,7 +846,7 @@ apply eq_elim with (1:=H).
 apply V_pow.
 Qed.
 
-Lemma V_intro : forall x, x \in power (V x).
+Lemma V_intro : forall x, x ∈ power (V x).
 intros x.
 rewrite power_ax; intros.
 rewrite V_compl; apply V_mono; trivial.
@@ -868,11 +868,11 @@ Qed.
 Lemma rk_induc :
   forall P:set->Prop,
   (exists P', forall x, P x <-> holds (P' x)) ->
-  (forall x, (forall y, y \in V x -> P y) -> P x) ->
+  (forall x, (forall y, y ∈ V x -> P y) -> P x) ->
   forall x, P x.
 intros.
 destruct H as (P',H).
-cut (forall y, V y \in power (V x) -> P y).
+cut (forall y, V y ∈ power (V x) -> P y).
  intros.
  apply H1.
  rewrite power_ax; auto.
@@ -1011,7 +1011,7 @@ apply rOrE with (2:=EM (Ex2(fun z => in_set z (V x)) (fun z => P (V z)))); destr
 Qed.
 
 Lemma coll_ax_uniq : forall A (R:set->set->prop), 
-    (forall x x' y y', x \in A -> x == x' -> y == y' ->
+    (forall x x' y y', x ∈ A -> x == x' -> y == y' ->
      holds (R x y) -> holds (R x' y')) ->
     holds(Exist(lst_rk (fun B =>
       Forall(fun x => Imp(in_set x A)

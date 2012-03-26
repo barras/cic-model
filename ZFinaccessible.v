@@ -40,11 +40,11 @@ Section Grothendieck_Universe.
 
   Variable U : set.
   Hypothesis Ug : grot_univ U.
-  Hypothesis Uinf : omega \in U.
+  Hypothesis Uinf : omega ∈ U.
 
   Definition grot_ord := subset U isOrd.
 
-  Lemma grot_ord_intro : forall x, lt x grot_ord -> x \in U.
+  Lemma grot_ord_intro : forall x, lt x grot_ord -> x ∈ U.
 intros.
 apply subset_elim1 in H; trivial.
 Qed.
@@ -56,7 +56,7 @@ rewrite H; trivial.
 Qed.
 Hint Resolve isOrd_grot.
 
-  Lemma grot_ord_inv : forall x, isOrd x -> x \in U -> lt x grot_ord.
+  Lemma grot_ord_inv : forall x, isOrd x -> x ∈ U -> lt x grot_ord.
 intros.
 apply subset_intro; trivial.
 Qed.
@@ -70,9 +70,9 @@ apply isOrd_intro; intros.
  red; intros.
  assert (isOrd x) by eauto using isOrd_grot.
  assert (isOrd y) by eauto using isOrd_grot.
- assert (x \in U) by (apply grot_ord_intro; trivial).
- assert (y \in U) by (apply grot_ord_intro; trivial).
- exists (osup2 x y). 
+ assert (x ∈ U) by (apply grot_ord_intro; trivial).
+ assert (y ∈ U) by (apply grot_ord_intro; trivial).
+ exists (x ⊔ y). 
   apply subset_intro.
    apply G_osup2; auto.
 
@@ -95,7 +95,7 @@ Qed.
 (* *)
 
   Lemma VN_in_grot :
-    forall o, lt o grot_ord -> VN o \in U.
+    forall o, lt o grot_ord -> VN o ∈ U.
 unfold VN; intros.
 apply G_TI; auto with *.
  apply grot_ord_intro; trivial.
@@ -105,7 +105,7 @@ apply G_TI; auto with *.
 Qed.
 
 
-  Lemma VN_incl_grot : VN grot_ord \incl U.
+  Lemma VN_incl_grot : VN grot_ord ⊆ U.
 red; intros.
 rewrite VN_def in H; auto.
 destruct H.
@@ -119,11 +119,11 @@ Qed.
 
   Lemma G_ord_sup : forall x F,
   ext_fun x F ->
-  x \in U ->
-  (forall y, y \in x -> lt (F y) grot_ord) ->
+  x ∈ U ->
+  (forall y, y ∈ x -> lt (F y) grot_ord) ->
   lt (osup x F) grot_ord.
 intros.
-assert (osup x F \in U).
+assert (osup x F ∈ U).
  apply G_osup; intros; auto.
  apply grot_ord_intro; auto.
 assert (isOrd (osup x F)).
@@ -138,8 +138,8 @@ red; intros.
 rewrite VN_def; trivial.
 pose (A := subset x (fun x' => exists y, R x' y)).
 pose (F := fun x' => inter
-       (subset grot_ord (fun z => exists2 y, R x' y & y \incl VN z))).
-assert (oF : forall y, y \in A -> isOrd (F y)).
+       (subset grot_ord (fun z => exists2 y, R x' y & y ⊆ VN z))).
+assert (oF : forall y, y ∈ A -> isOrd (F y)).
  intros.
  apply isOrd_inter; intros.
  apply subset_elim1 in H3; apply isOrd_inv with grot_ord; trivial.
@@ -170,7 +170,7 @@ exists (osup A F).
    apply VN_incl_grot; trivial.
 
    intros.
-   assert (exists2 z, R y z & z \in VN grot_ord).
+   assert (exists2 z, R y z & z ∈ VN grot_ord).
     unfold A in H2; rewrite subset_ax in H2; destruct H2.
     destruct H3.
     destruct H4.
@@ -192,7 +192,7 @@ red; intros.
 rewrite union_ax in H2; destruct H2.
 apply ZFrepl.repl_elim in H3; trivial.
 destruct H3.
-assert (x0 \incl VN (F x1)).
+assert (x0 ⊆ VN (F x1)).
  red; intros.
  apply VN_stable.
   intros.

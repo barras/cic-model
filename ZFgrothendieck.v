@@ -4,12 +4,12 @@ Require Import ZFstable.
 Require Import ZFlist.
 
 Record grot_univ (U:set) : Prop := {
-  G_trans : forall x y, y \in x -> x \in U -> y \in U;
-  G_pair : forall x y, x \in U -> y \in U -> pair x y \in U;
-  G_power : forall x, x \in U -> power x \in U;
-  G_union_repl : forall I R, repl_rel I R -> I \in U ->
-                (forall x y, x \in I -> R x y -> y \in U) ->
-                union (repl I R) \in U }.
+  G_trans : forall x y, y ∈ x -> x ∈ U -> y ∈ U;
+  G_pair : forall x y, x ∈ U -> y ∈ U -> pair x y ∈ U;
+  G_power : forall x, x ∈ U -> power x ∈ U;
+  G_union_repl : forall I R, repl_rel I R -> I ∈ U ->
+                (forall x y, x ∈ I -> R x y -> y ∈ U) ->
+                union (repl I R) ∈ U }.
 
 Lemma grot_univ_ext : forall U U',
   U == U' -> grot_univ U -> grot_univ U'.
@@ -40,7 +40,7 @@ Section GrothendieckUniverse.
 Variable U : set.
 Hypothesis grot : grot_univ U.
 
-Lemma G_incl : forall x y, x \in U -> y \incl x -> y \in U.
+Lemma G_incl : forall x y, x ∈ U -> y ⊆ x -> y ∈ U.
 intros.
 apply G_trans with (power x); trivial.
  rewrite power_ax; auto.
@@ -48,22 +48,22 @@ apply G_trans with (power x); trivial.
  apply G_power; trivial.
 Qed.
 
-Lemma G_subset : forall x P, x \in U -> subset x P \in U.
+Lemma G_subset : forall x P, x ∈ U -> subset x P ∈ U.
 intros.
 apply G_incl with x; trivial.
 red; intros.
 apply subset_elim1 in H0; trivial.
 Qed.
 
-Lemma G_singl : forall x, x \in U -> singl x \in U.
+Lemma G_singl : forall x, x ∈ U -> singl x ∈ U.
 unfold singl; intros; apply G_pair; auto.
 Qed.
 
 Lemma G_repl : forall A R,
   repl_rel A R ->
-  A \in U ->
-  (forall x y, x \in A -> R x y -> y \in U) ->
-  repl A R \in U.
+  A ∈ U ->
+  (forall x y, x ∈ A -> R x y -> y ∈ U) ->
+  repl A R ∈ U.
 intros.
 assert (repl_rel A (fun x y => exists2 z, R x z & y == singl z)).
  destruct H as (Rext,Rfun).
@@ -99,7 +99,7 @@ setoid_replace (repl A R) with
    exists x; trivial; reflexivity.
 Qed.
 
-Lemma G_union : forall x, x \in U -> union x \in U.
+Lemma G_union : forall x, x ∈ U -> union x ∈ U.
 intros.
 setoid_replace x with (repl x (fun y z => z==y)).
 apply G_union_repl; trivial; intros.
@@ -118,15 +118,15 @@ Qed.
 
 Lemma G_replf : forall A F,
   ext_fun A F ->
-  A \in U ->
-  (forall x, x \in A -> F x \in U) ->
-  replf A F \in U.
+  A ∈ U ->
+  (forall x, x ∈ A -> F x ∈ U) ->
+  replf A F ∈ U.
 unfold replf; intros; apply G_repl; intros; auto.
  apply repl_rel_fun; trivial.
  rewrite H3; auto.
 Qed.
 
-Lemma G_union2 : forall x y, x \in U -> y \in U -> union2 x y \in U.
+Lemma G_union2 : forall x y, x ∈ U -> y ∈ U -> x ∪ y ∈ U.
 intros.
 unfold union2.
 apply G_union.
@@ -135,15 +135,15 @@ Qed.
 
 Lemma G_sup A B :
   ext_fun A B ->
-  A \in U ->
-  (forall x, x \in A -> B x \in U) ->
-  sup A B \in U.
+  A ∈ U ->
+  (forall x, x ∈ A -> B x ∈ U) ->
+  sup A B ∈ U.
 intros.
 apply G_union; trivial.
 apply G_replf; trivial.
 Qed.
 
-Lemma G_nat x : x \in U -> ZFnats.N \incl U.
+Lemma G_nat x : x ∈ U -> ZFnats.N ⊆ U.
 red; intros.
 elim H0 using ZFnats.N_ind; intros.
  rewrite <- H2; trivial.
@@ -156,7 +156,7 @@ elim H0 using ZFnats.N_ind; intros.
  apply G_singl; trivial.
 Qed.
 
-Lemma G_prodcart : forall A B, A \in U -> B \in U -> prodcart A B \in U.
+Lemma G_prodcart : forall A B, A ∈ U -> B ∈ U -> prodcart A B ∈ U.
 intros.
 unfold prodcart.
 apply G_subset; intros; trivial.
@@ -165,7 +165,7 @@ apply G_power; trivial.
 apply G_union2; trivial.
 Qed.
 
-Lemma G_couple : forall x y, x \in U -> y \in U -> couple x y \in U.
+Lemma G_couple : forall x y, x ∈ U -> y ∈ U -> couple x y ∈ U.
 intros.
 unfold couple.
 apply G_pair; trivial.
@@ -174,7 +174,7 @@ apply G_pair; trivial.
  apply G_pair; trivial.
 Qed.
 
-  Lemma G_sum X Y : X \in U -> Y \in U -> sum X Y \in U.
+  Lemma G_sum X Y : X ∈ U -> Y ∈ U -> sum X Y ∈ U.
 unfold sum; intros.
 apply G_subset; trivial.
 apply G_prodcart; trivial.
@@ -187,10 +187,10 @@ Qed.
 Lemma G_sumcase A B f g a :
   morph1 f ->
   morph1 g ->
-  a \in sum A B ->
-  (forall a, a \in A -> f a \in U) ->
-  (forall a, a \in B -> g a \in U) ->
-  sum_case f g a \in U.
+  a ∈ sum A B ->
+  (forall a, a ∈ A -> f a ∈ U) ->
+  (forall a, a ∈ B -> g a ∈ U) ->
+  sum_case f g a ∈ U.
 intros.
 apply sum_case_ind with (6:=H1); intros; auto.
 apply morph_impl_iff1; auto with *.
@@ -198,14 +198,14 @@ do 3 red; intros.
 rewrite <- H4; trivial.
 Qed.
 
-Lemma G_rel : forall A B, A \in U -> B \in U -> rel A B \in U.
+Lemma G_rel : forall A B, A ∈ U -> B ∈ U -> rel A B ∈ U.
 intros.
 unfold rel.
 apply G_power; trivial.
 apply G_prodcart; trivial.
 Qed.
 
-Lemma G_func : forall A B, A \in U -> B \in U -> func A B \in U.
+Lemma G_func : forall A B, A ∈ U -> B ∈ U -> func A B ∈ U.
 intros.
 unfold func.
 apply G_subset; intros; trivial.
@@ -214,9 +214,9 @@ Qed.
 
 Lemma G_dep_func : forall X Y,
   ext_fun X Y ->
-  X \in U ->
-  (forall x, x \in X -> Y x \in U) ->
-  dep_func X Y \in U.
+  X ∈ U ->
+  (forall x, x ∈ X -> Y x ∈ U) ->
+  dep_func X Y ∈ U.
 intros.
 unfold dep_func.
 apply G_subset; intros; trivial.
@@ -227,7 +227,7 @@ apply G_replf; trivial.
 Qed.
 
 Lemma G_app f x :
-  f \in U -> x \in U -> app f x \in U.
+  f ∈ U -> x ∈ U -> app f x ∈ U.
 unfold app; intros.
 apply G_union.
 apply G_subset.
@@ -239,9 +239,9 @@ Qed.
 
   Lemma G_sigma A B :
     ext_fun A B ->
-    A \in U ->
-    (forall x, x \in A -> B x \in U) ->
-    sigma A B \in U.
+    A ∈ U ->
+    (forall x, x ∈ A -> B x ∈ U) ->
+    sigma A B ∈ U.
 intros.
 apply G_subset; trivial.
 apply G_prodcart; trivial.
@@ -250,9 +250,9 @@ Qed.
 
   Lemma G_cc_lam A F :
     ext_fun A F ->
-    A \in U ->
-    (forall x, x \in A -> F x \in U) ->
-    cc_lam A F \in U.
+    A ∈ U ->
+    (forall x, x ∈ A -> F x ∈ U) ->
+    cc_lam A F ∈ U.
 intros.
 unfold cc_lam.
 apply G_sup; intros; trivial.
@@ -268,7 +268,7 @@ apply G_replf; intros; auto.
 Qed.
 
   Lemma G_cc_app f x :
-    f \in U -> x \in U -> cc_app f x \in U.
+    f ∈ U -> x ∈ U -> cc_app f x ∈ U.
 unfold cc_app; intros.
 unfold rel_image.
 apply G_subset.
@@ -279,9 +279,9 @@ Qed.
 
   Lemma G_cc_prod A B :
     ext_fun A B ->
-    A \in U ->
-    (forall x, x \in A -> B x \in U) ->
-    cc_prod A B \in U.
+    A ∈ U ->
+    (forall x, x ∈ A -> B x ∈ U) ->
+    cc_prod A B ∈ U.
 intros.
 unfold cc_prod.
 apply G_replf; auto with *.
@@ -302,11 +302,11 @@ Qed.
     Proper ((eq_set==>eq_set)==>eq_set==>eq_set) F ->
     (forall o f f', isOrd o -> eq_fun o f f' -> F f o == F f' o) ->
     isOrd o ->
-    o \in U ->
-    (forall f o, ext_fun o f -> o \in U ->
-     (forall o', o' \in o -> f o' \in U) ->
-     F f o \in U) ->
-    TR F o \in U.
+    o ∈ U ->
+    (forall f o, ext_fun o f -> o ∈ U ->
+     (forall o', o' ∈ o -> f o' ∈ U) ->
+     F f o ∈ U) ->
+    TR F o ∈ U.
 intros Fm Fext oo oU FU.
 apply TR_typ with (X:=fun _ => U); auto.
  do 2 red; reflexivity.
@@ -318,9 +318,9 @@ Qed.
   Lemma G_TI F o :
     morph1 F ->
     isOrd o ->
-    o \in U ->
-    (forall x, x \in U -> F x \in U) ->
-    TI F o \in U.
+    o ∈ U ->
+    (forall x, x ∈ U -> F x ∈ U) ->
+    TI F o ∈ U.
 intros.
 apply G_TR; trivial; intros.
  do 3 red; intros.
@@ -336,7 +336,7 @@ apply G_TR; trivial; intros.
 Qed.
 
 Lemma G_osup2 x y :
-  isWf x -> x \in U -> y \in U -> osup2 x y \in U.
+  isWf x -> x ∈ U -> y ∈ U -> x ⊔ y ∈ U.
 intro wfx; revert y; induction wfx using isWf_ind.
 intros.
 rewrite osup2_def; trivial.
@@ -354,7 +354,7 @@ rewrite osup2_def; trivial.
     apply H; eauto using G_trans.
 Qed.
 
-  Lemma G_Ffix F A : A \in U -> Ffix F A \in U.
+  Lemma G_Ffix F A : A ∈ U -> Ffix F A ∈ U.
 intros.
 unfold Ffix.
 apply G_subset; trivial.
@@ -362,23 +362,23 @@ Qed.
 
 Section NonTrivial.
 
-  Hypothesis Unontriv : empty \in U.
+  Hypothesis Unontriv : empty ∈ U.
 
 End NonTrivial.
 
 
 Section Infinite.
 
-  Hypothesis Uinf : omega \in U.
+  Hypothesis Uinf : omega ∈ U.
 
-  Lemma G_inf_nontriv : empty \in U.
+  Lemma G_inf_nontriv : empty ∈ U.
 apply G_trans with omega; trivial.
 apply zero_omega.
 Qed.
   Hint Resolve G_inf_nontriv.
 
 
-  Lemma G_List A : A \in U -> List A \in U.
+  Lemma G_List A : A ∈ U -> List A ∈ U.
 intros.
 unfold List.
 apply G_TI; intros; trivial.
@@ -399,14 +399,14 @@ apply G_TI; intros; trivial.
 Qed.
 
 
-  Lemma G_N : ZFnats.N \in U.
-pose (f := fun X => union2 (singl ZFnats.zero) (replf X ZFnats.succ)).
+  Lemma G_N : ZFnats.N ∈ U.
+pose (f := fun X => singl ZFnats.zero ∪ replf X ZFnats.succ).
 assert (fm : morph1 f).
  do 2 red; intros.
  apply union2_morph; auto with *.
  apply replf_morph; trivial.
  red; intros; apply ZFnats.succ_morph; trivial.
-assert (ZFnats.N \incl TI f omega).
+assert (ZFnats.N ⊆ TI f omega).
  red; intros.
  apply ZFnats.nat2set_reflect in H.
  destruct H.
@@ -445,10 +445,10 @@ Qed.
 
 Lemma G_osup I f :
   ext_fun I f ->
-  (forall x, x \in I -> isOrd (f x)) ->
-  I \in U ->
-  (forall x, x \in I -> f x \in U) ->
-  osup I f \in U.
+  (forall x, x ∈ I -> isOrd (f x)) ->
+  I ∈ U ->
+  (forall x, x ∈ I -> f x ∈ U) ->
+  osup I f ∈ U.
 intros ef ford IU fU.
 apply osup_univ; trivial; intros.
  apply G_sup; trivial.
@@ -461,9 +461,9 @@ Qed.
 
   Lemma G_Ffix_ord F A :
     Proper (incl_set ==> incl_set) F ->
-    (forall X, X \incl A -> F X \incl A) ->
-    A \in U ->
-    Ffix_ord F A \in U.
+    (forall X, X ⊆ A -> F X ⊆ A) ->
+    A ∈ U ->
+    Ffix_ord F A ∈ U.
 intros.
 unfold Ffix_ord.
 apply G_osup; intros; trivial.
@@ -522,26 +522,26 @@ End Infinite.
 Section ZF_Universe.
 
   Hypothesis coll_ax : forall A (R:set->set->Prop), 
-    (forall x x' y y', x \in A -> x == x' -> y == y' -> R x y -> R x' y') ->
-    (forall x, x \in A -> exists y, R x y) ->
-    exists B, forall x, x \in A -> exists2 y, y \in B & R x y.
+    (forall x x' y y', x ∈ A -> x == x' -> y == y' -> R x y -> R x' y') ->
+    (forall x, x ∈ A -> exists y, R x y) ->
+    exists B, forall x, x ∈ A -> exists2 y, y ∈ B & R x y.
 
   (* Grothendieck universe is closed by collection *)
   Hypothesis G_coll : forall A (R:set->set->Prop), 
-    A \in U ->
-    (forall x x' y y', x \in A -> x == x' -> y == y' -> R x y -> R x' y') ->
-    (forall x, x \in A -> exists2 y, y \in U & R x y) ->
-    exists2 B, B \in U & forall x, x \in A -> exists2 y, y \in B & R x y.
+    A ∈ U ->
+    (forall x x' y y', x ∈ A -> x == x' -> y == y' -> R x y -> R x' y') ->
+    (forall x, x ∈ A -> exists2 y, y ∈ U & R x y) ->
+    exists2 B, B ∈ U & forall x, x ∈ A -> exists2 y, y ∈ B & R x y.
 
 
   Lemma G_ttcoll : forall A (R:set->set->Prop),
-  (forall x x' y y', x \in A -> x == x' -> y == y' -> R x y -> R x' y') ->
-  (forall x, x \in A -> exists y, R x y) ->
-  A \incl U ->
+  (forall x x' y y', x ∈ A -> x == x' -> y == y' -> R x y -> R x' y') ->
+  (forall x, x ∈ A -> exists y, R x y) ->
+  A ⊆ U ->
   exists2 X, morph1 X &
-  (forall x, x \in A -> X x \in U) /\
+  (forall x, x ∈ A -> X x ∈ U) /\
   exists2 f, morph2 f &
-    forall x, x \in A -> exists2 i, i \in X x & R x (f x i).
+    forall x, x ∈ A -> exists2 i, i ∈ X x & R x (f x i).
 intros.
 
 
@@ -555,8 +555,8 @@ End ZF_Universe.
 End GrothendieckUniverse.
 
 Lemma grot_inter : forall UU,
-  (exists x, x \in UU) ->
-  (forall x, x \in UU -> grot_univ x) ->
+  (exists x, x ∈ UU) ->
+  (forall x, x ∈ UU -> grot_univ x) ->
   grot_univ (inter UU).
 destruct 1.
 split; intros.
@@ -580,7 +580,7 @@ Qed.
 
 Lemma grot_intersection : forall (P:set->Prop) x,
   grot_univ x -> P x ->
-  grot_univ (subset x (fun y => forall U, grot_univ U -> P U -> y \in U)).
+  grot_univ (subset x (fun y => forall U, grot_univ U -> P U -> y ∈ U)).
 intros.
 split; intros.
  apply subset_intro; intros.
@@ -623,10 +623,10 @@ split; intros.
 Qed.
 
 Definition grot_succ_pred x y :=
-  grot_univ y /\ x \in y /\ forall U, grot_univ U -> x \in U -> y \incl U.
+  grot_univ y /\ x ∈ y /\ forall U, grot_univ U -> x ∈ U -> y ⊆ U.
 
 
-Definition grothendieck := forall x, exists2 U, grot_univ U & x \in U.
+Definition grothendieck := forall x, exists2 U, grot_univ U & x ∈ U.
 
 Section TarskiGrothendieck.
 
@@ -646,9 +646,9 @@ split; intros.
  split; intros.
   elim gr with x; intros.
   exists (subset x0 (fun y =>
-    forall U, grot_univ U -> x \in U -> y \in U)).
+    forall U, grot_univ U -> x ∈ U -> y ∈ U)).
   split; intros.
-   apply (grot_intersection (fun U => x \in U) x0); trivial.
+   apply (grot_intersection (fun U => x ∈ U) x0); trivial.
 
    split; intros.
     apply subset_intro; trivial.
@@ -673,7 +673,7 @@ destruct (uchoice_def (grot_succ_pred x)).
  trivial.
 Qed.
 
-Lemma grot_succ_in : forall x, x \in grot_succ x.
+Lemma grot_succ_in : forall x, x ∈ grot_succ x.
 intros.
 destruct (uchoice_def (grot_succ_pred x)).
  exact (grot_inter_unique x).

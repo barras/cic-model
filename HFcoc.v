@@ -44,7 +44,7 @@ Qed.
 Lemma cc_beta_eq:
   forall dom F x,
   eq_hf_fun dom F F ->
-  x \in dom ->
+  x ∈ dom ->
   cc_app (cc_lam dom F) x == F x.
 Proof.
 intros.
@@ -127,8 +127,8 @@ Qed.
 Lemma cc_prod_intro : forall dom f F,
   eq_hf_fun dom f f ->
   eq_hf_fun dom F F ->
-  (forall x, x \in dom -> f x \in F x) ->
-  cc_lam dom f \in cc_prod dom F.
+  (forall x, x ∈ dom -> f x ∈ F x) ->
+  cc_lam dom f ∈ cc_prod dom F.
 unfold cc_prod in |- *.
 intros.
 apply repl_intro with (lam dom f); trivial.
@@ -150,9 +150,9 @@ Qed.
 
 Lemma cc_prod_elim : forall dom f x F,
   eq_hf_fun dom F F ->
-  f \in cc_prod dom F ->
-  x \in dom ->
-  cc_app f x \in F x.
+  f ∈ cc_prod dom F ->
+  x ∈ dom ->
+  cc_app f x ∈ F x.
 intros dom f x F Fext ? ?.
 unfold cc_prod in H.
 elim repl_elim with (1:=beta_morph dom F) (2 := H); clear H; intros.
@@ -176,7 +176,7 @@ Definition props := power (singl prf_trm).
 
 Lemma cc_impredicative_lam : forall dom F,
   eq_hf_fun dom F F ->
-  (forall x, x \in dom -> F x == prf_trm) ->
+  (forall x, x ∈ dom -> F x == prf_trm) ->
   cc_lam dom F == prf_trm.
 Proof.
 unfold cc_lam in |- *; intros.
@@ -202,8 +202,8 @@ Qed.
 
 Lemma cc_impredicative_prod : forall dom F,
   eq_hf_fun dom F F ->
-  (forall x, x \in dom -> F x \in props) ->
-  cc_prod dom F \in props.
+  (forall x, x ∈ dom -> F x ∈ props) ->
+  cc_prod dom F ∈ props.
 Proof.
 unfold props in |- *; intros dom F Fext ?.
 apply power_intro; red; intros.

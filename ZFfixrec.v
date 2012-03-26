@@ -55,8 +55,8 @@ Qed.
   Lemma REC_intro : forall o o' x,
     isOrd o ->
     lt o' o ->
-    x \in F o' (REC o') ->
-    x \in REC o.
+    x ∈ F o' (REC o') ->
+    x ∈ REC o.
 intros.
 rewrite REC_eq; trivial.
 rewrite sup_ax; auto.
@@ -65,8 +65,8 @@ Qed.
 
   Lemma REC_elim : forall o x,
     isOrd o ->
-    x \in REC o ->
-    exists2 o', lt o' o & x \in F o' (REC o').
+    x ∈ REC o ->
+    exists2 o', lt o' o & x ∈ F o' (REC o').
 intros.
 rewrite REC_eq in H0; trivial.
 rewrite sup_ax in H0; auto.
@@ -83,11 +83,11 @@ Qed.
 
   Lemma REC_typ : forall n X,
     isOrd n ->
-    (forall o a, lt o n -> a \in X o -> F o a \in X (osucc o)) ->
-    (forall m G, isOrd m -> m \incl n ->
+    (forall o a, lt o n -> a ∈ X o -> F o a ∈ X (osucc o)) ->
+    (forall m G, isOrd m -> m ⊆ n ->
      ext_fun m G ->
-     (forall x, lt x m -> G x \in X (osucc x)) -> sup m G \in X m) ->
-    REC n \in X n.
+     (forall x, lt x m -> G x ∈ X (osucc x)) -> sup m G ∈ X m) ->
+    REC n ∈ X n.
 induction 1 using isOrd_ind; intros.
 rewrite REC_eq; trivial.
 apply H3 with (G:=fun o => F o (REC o)); intros; auto with *.
@@ -111,8 +111,8 @@ Section IterMonotone.
 
   Variable F : set -> set -> set.
   Hypothesis Fmorph : morph2 F.
-  Variable Fmono : forall o o', isOrd o -> isOrd o' -> o \incl o' ->
-    REC F o \incl REC F o' -> F o (REC F o) \incl F o' (REC F o').
+  Variable Fmono : forall o o', isOrd o -> isOrd o' -> o ⊆ o' ->
+    REC F o ⊆ REC F o' -> F o (REC F o) ⊆ F o' (REC F o').
 
   Lemma REC_mono : increasing (REC F).
 do 2 red; intros.
@@ -124,7 +124,7 @@ Qed.
 
   Lemma REC_incl : forall o, isOrd o ->
     forall o', lt o' o ->
-    REC F o' \incl REC F o.
+    REC F o' ⊆ REC F o.
 intros.
 apply REC_mono; trivial; auto.
 apply isOrd_inv with o; trivial.
@@ -174,7 +174,7 @@ Existing Instance REC_morph.
   Variable compatM : Proper (eq_set ==> eq_set ==> eq_set ==> iff) compat.
 
   Definition directed o F :=
-    forall x y, x \in o -> isOrd y -> y \incl x ->
+    forall x y, x ∈ o -> isOrd y -> y ⊆ x ->
     compat (osucc y) (F y) (F x).
 
   Hypothesis prd_sup_lub : forall o F g,
@@ -187,13 +187,13 @@ Existing Instance REC_morph.
   Hypothesis prd_sup : forall o F x,
   isOrd o ->
   directed o F ->
-  x \in o ->
+  x ∈ o ->
   compat (osucc x) (F x) (sup o F).
 
   Hypothesis prd_union : forall o F,
   isOrd o ->
   directed o F ->
-  sup o F \in U o.
+  sup o F ∈ U o.
 *)
 
 Section Recursor.
@@ -216,8 +216,8 @@ Let oordlt := fun o olt => isOrd_inv _ o oord olt.
 
   Definition stage_irrelevance :=
     forall o o' f g,
-    o' \incl ord ->
-    o \incl o' ->
+    o' ⊆ ord ->
+    o ⊆ o' ->
     Ty o f -> Ty o' g ->
     fcompat (T o) f g ->
     fcompat (T (osucc o)) (F o f) (F o' g).
@@ -227,17 +227,17 @@ Let oordlt := fun o olt => isOrd_inv _ o oord olt.
     rec_dom_cont : forall o, isOrd o ->
       T o == sup o (fun o' => T (osucc o'));
     rec_inv_m : forall o o',
-      isOrd o -> o \incl ord -> o == o' ->
+      isOrd o -> o ⊆ ord -> o == o' ->
       forall f f', fcompat (T o) f f' -> Q o f -> Q o' f';
     rec_inv_cont : forall o f,
       isOrd o ->
-      o \incl ord ->
+      o ⊆ ord ->
       is_cc_fun (T o) f ->
-      (forall o', o' \in o -> Q (osucc o') f) ->
+      (forall o', o' ∈ o -> Q (osucc o') f) ->
       Q o f;
     rec_body_m : morph2 F;
     rec_body_typ : forall o f,
-      isOrd o -> o \incl ord ->
+      isOrd o -> o ⊆ ord ->
       is_cc_fun (T o) f -> Q o f ->
       is_cc_fun (T (osucc o)) (F o f) /\ Q (osucc o) (F o f);
     rec_body_irrel : stage_irrelevance
@@ -254,8 +254,8 @@ Let oordlt := fun o olt => isOrd_inv _ o oord olt.
 
 (* Derived properties *)
 
-  Lemma Tmono : forall o o', isOrd o -> o' \in o ->
-    T (osucc o') \incl T o.
+  Lemma Tmono : forall o o', isOrd o -> o' ∈ o ->
+    T (osucc o') ⊆ T o.
 red; intros.
 rewrite Tcont; trivial.
 rewrite sup_ax.
@@ -264,7 +264,7 @@ rewrite sup_ax.
  do 2 red; intros; apply Tm; apply osucc_morph; trivial.
 Qed.
 
-  Lemma Ftyp' : forall o f, o \incl ord -> Ty o f -> Ty (osucc o) (F o f).
+  Lemma Ftyp' : forall o f, o ⊆ ord -> Ty o f -> Ty (osucc o) (F o f).
 intros.
 destruct H0 as (oo,(ofun,oq)); split; auto.
 Qed.
@@ -277,16 +277,16 @@ Hint Unfold fincr.
 
 Lemma fincr_cont : forall o,
   isOrd o ->
-  (forall z, z \in o -> fincr (osucc z)) ->
+  (forall z, z ∈ o -> fincr (osucc z)) ->
   fincr o.
 intros o oo incrlt.
 do 3 red; intros.
 assert (xo : isOrd x) by eauto using isOrd_inv.
 assert (yo : isOrd y) by eauto using isOrd_inv.
-pose (z:=osup2 x y).
+pose (z:=x ⊔ y).
 assert (zo : isOrd z).
  apply isOrd_osup2; trivial.
-assert (z \in o).
+assert (z ∈ o).
  apply osup2_lt; trivial.
 do 3 red in incrlt.
 apply incrlt with z; trivial.
@@ -302,8 +302,8 @@ Definition inv z := Ty z (REC F z) /\ fincr (osucc z).
 
 
 Lemma fty_step : forall o, isOrd o ->
-  o \incl ord ->
-  (forall z, z \in o -> Ty z (REC F z)) ->
+  o ⊆ ord ->
+  (forall z, z ∈ o -> Ty z (REC F z)) ->
   fincr o ->
   Ty o (REC F o).
 intros o oo ole tylt incrlt.
@@ -334,10 +334,10 @@ Qed.
 
 Lemma finc_ext x z :
   isOrd x -> isOrd z ->
-  x \incl ord ->
-  (forall w, w \in x -> Ty w (REC F w)) ->
+  x ⊆ ord ->
+  (forall w, w ∈ x -> Ty w (REC F w)) ->
   fincr x ->
-  z \incl x ->
+  z ⊆ x ->
   fcompat (T z) (REC F z) (REC F x).
 intros xo zo zle tylt incrlt inc.
 rewrite Tcont; trivial.
@@ -358,14 +358,14 @@ Qed.
 
 Lemma finc_ext2 o o' z :
   isOrd o -> isOrd o' ->
-  o \incl ord ->
-  o' \incl ord ->
-  (forall w, w \in osup2 o o' -> Ty w (REC F w)) ->
-  fincr (osup2 o o') ->
-  z \in T o ->
-  z \in T o' ->
+  o ⊆ ord ->
+  o' ⊆ ord ->
+  (forall w, w ∈ o ⊔ o' -> Ty w (REC F w)) ->
+  fincr (o ⊔ o') ->
+  z ∈ T o ->
+  z ∈ T o' ->
   cc_app (REC F o) z == cc_app (REC F o') z.
-transitivity (cc_app (REC F (osup2 o o')) z).
+transitivity (cc_app (REC F (o ⊔ o')) z).
  apply finc_ext; auto with *.
   apply isOrd_osup2; trivial.
   apply osup2_lub; trivial.
@@ -379,8 +379,8 @@ Qed.
 
 Lemma finc_step : forall o,
   isOrd o ->
-  o \incl ord ->
-  (forall z, z \in o -> Ty z (REC F z)) ->
+  o ⊆ ord ->
+  (forall z, z ∈ o -> Ty z (REC F z)) ->
   fincr o ->
   fincr (osucc o).
 unfold fincr, fdirected; intros o oo ole tylt fo.
@@ -389,12 +389,12 @@ assert (xo : isOrd x) by eauto using isOrd_inv.
 assert (yo : isOrd y) by eauto using isOrd_inv.
 apply olts_le in H.
 apply olts_le in H0.
-set (z := osup2 x y).
+set (z := x ⊔ y).
 assert (isOrd z).
  apply isOrd_osup2; eauto using isOrd_inv.
-assert (z \incl o).
+assert (z ⊆ o).
  apply osup2_lub; auto.
-assert (forall w, isOrd w -> w \incl o -> fincr w).
+assert (forall w, isOrd w -> w ⊆ o -> fincr w).
  red; red; auto.
 rewrite inter2_def in H1; destruct H1.
 transitivity (cc_app (F z (REC F z)) x0).
@@ -431,7 +431,7 @@ Qed.
 
 
 Lemma REC_inv : forall o,
-  isOrd o -> o \incl ord -> inv o.
+  isOrd o -> o ⊆ ord -> inv o.
 intros o oo ole.
 induction oo using isOrd_ind.
 split.
@@ -455,14 +455,14 @@ Qed.
 Lemma REC_step' : forall o o',
   isOrd o ->
   isOrd o' ->
-  o \incl o' ->
-  o' \incl ord ->
+  o ⊆ o' ->
+  o' ⊆ ord ->
   fcompat (T o) (REC F o) (F o' (REC F o')).
 intros.
 destruct REC_inv with o'; trivial.
 rewrite REC_eq with (o:=o) at 1; trivial.
 rewrite Tcont; trivial.
-(*assert (o \incl osucc o').
+(*assert (o ⊆ osucc o').
  admit.*)
 (* red; intros; apply isOrd_trans with o; auto.*)
 apply prd_sup_lub; intros; auto.
@@ -493,13 +493,13 @@ Qed.
 
 Lemma REC_step : forall o,
   isOrd o ->
-  o \incl ord ->
+  o ⊆ ord ->
   fcompat (T o) (REC F o) (F o (REC F o)).
 intros.
 destruct REC_inv with o; trivial.
 rewrite REC_eq with (o:=o) at 1; trivial.
 rewrite Tcont; trivial.
-assert (o \incl osucc o).
+assert (o ⊆ osucc o).
  red; intros; apply isOrd_trans with o; auto.
 apply prd_sup_lub; intros; auto.
  red; red; intros; apply Tm.
@@ -523,8 +523,8 @@ Qed.
 Lemma REC_step0 : forall o o',
   isOrd o ->
   isOrd o' ->
-  o \in o' ->
-  o' \incl ord ->
+  o ∈ o' ->
+  o' ⊆ ord ->
   fcompat (T (osucc o)) (REC F o') (F o (REC F o)).
 red; intros.
 destruct REC_inv with o'; trivial.
@@ -555,9 +555,9 @@ Qed.
   Lemma REC_ord_irrel o o' x:
     isOrd o ->
     isOrd o' ->
-    o \incl o' ->
-    o' \incl ord ->
-    x \in T o ->
+    o ⊆ o' ->
+    o' ⊆ ord ->
+    x ∈ T o ->
     cc_app (REC F o) x == cc_app (REC F o') x.
 intros.
 apply finc_ext; intros; trivial.
@@ -570,11 +570,11 @@ Qed.
 
   Lemma REC_ind : forall P x,
     Proper (eq_set==>eq_set==>eq_set==>iff) P ->
-    (forall o x, isOrd o -> o \incl ord ->
-     x \in T o ->
-     (forall o' y, lt o' o -> y \in T o' -> P o' y (cc_app (REC F ord) y)) ->
+    (forall o x, isOrd o -> o ⊆ ord ->
+     x ∈ T o ->
+     (forall o' y, lt o' o -> y ∈ T o' -> P o' y (cc_app (REC F ord) y)) ->
      P o x (cc_app (F ord (REC F ord)) x)) ->
-    x \in T ord ->
+    x ∈ T ord ->
     P ord x (cc_app (REC F ord) x).
 intros.
 revert x H1; apply isOrd_ind with (2:=oord); intros.
@@ -598,7 +598,7 @@ Qed.
 
   Lemma REC_ext G :
     is_cc_fun (T ord) G ->
-    (forall o', o' \in ord ->
+    (forall o', o' ∈ ord ->
      REC F o' == cc_lam (T o') (cc_app G) ->
      fcompat (T (osucc o')) G (F o' (cc_lam (T o') (cc_app G)))) ->
     REC F ord == G.
@@ -609,12 +609,12 @@ apply fcompat_typ_eq with (T ord); auto.
 
  apply is_cc_fun_lam.
  do 2 red; intros; apply cc_app_morph; auto with *.
-cut ((forall z, z \in ord -> Ty z (cc_lam (T z) (cc_app G))) /\
+cut ((forall z, z ∈ ord -> Ty z (cc_lam (T z) (cc_app G))) /\
      fcompat (T ord) (cc_lam (T ord) (cc_app G)) (REC F ord)).
  destruct 1; red; intros.
  symmetry; auto.
 apply isOrd_ind with (2:=oord); intros.
-assert (QG: forall z, z \in y -> Ty z (cc_lam (T z) (cc_app G))).
+assert (QG: forall z, z ∈ y -> Ty z (cc_lam (T z) (cc_app G))).
  intros.
  split;[|split].
   apply isOrd_inv with y; trivial.
@@ -662,7 +662,7 @@ red in H0; rewrite H0 with (o':=x0) (x:=x); auto.
 Qed.
 
   Lemma REC_expand : forall x,
-    x \in T ord -> cc_app (REC F ord) x == cc_app (F ord (REC F ord)) x.
+    x ∈ T ord -> cc_app (REC F ord) x == cc_app (F ord (REC F ord)) x.
 apply REC_step; auto with *.
 Qed.
 
@@ -697,15 +697,15 @@ Let oordlt := fun o olt => isOrd_inv _ o oord olt.
 (*
   Hypothesis Pcont : forall o f,
     isOrd o ->
-    o \incl ord ->
-    (forall o', o' \in o -> P (osucc o') f) ->
+    o ⊆ ord ->
+    (forall o', o' ∈ o -> P (osucc o') f) ->
     P o f.
 *)
   Hypothesis Pcont' : forall o f,
     morph1 f ->
     isOrd o ->
-    o \incl ord ->
-    (forall o', o' \in o -> P (osucc o') (f o')) ->
+    o ⊆ ord ->
+    (forall o', o' ∈ o -> P (osucc o') (f o')) ->
 (* directed... *)
     P o (sup o f).
 
@@ -714,7 +714,7 @@ Let oordlt := fun o olt => isOrd_inv _ o oord olt.
   Hypothesis Fm : morph2 F.
 
   Hypothesis Ftyp : forall o f,
-    isOrd o -> o \incl ord ->
+    isOrd o -> o ⊆ ord ->
     P o f ->
     P (osucc o) (F o f).
 (*
@@ -723,8 +723,8 @@ Let oordlt := fun o olt => isOrd_inv _ o oord olt.
 
   Definition stage_irrelevance :=
     forall o o' f g,
-    o' \incl ord ->
-    o \incl o' ->
+    o' ⊆ ord ->
+    o ⊆ o' ->
     P o f -> P o' g ->
     compat o f g ->
     compat (osucc o) (F o f) (F o' g).
@@ -732,7 +732,7 @@ Let oordlt := fun o olt => isOrd_inv _ o oord olt.
   Hypothesis Firrel : stage_irrelevance.
 *)
 
-  Lemma REC_inv_gen : forall z, isOrd z -> z \incl ord -> P z (REC F z).
+  Lemma REC_inv_gen : forall z, isOrd z -> z ⊆ ord -> P z (REC F z).
 induction 1 using isOrd_ind; intros.
 rewrite REC_eq; trivial.
 apply Pcont'; trivial.
@@ -760,8 +760,8 @@ Section HigherRecursor.
     isOrd o ->
     T o == sup o (fun o' => T (osucc o')).
 
-  Lemma Tmono' : forall o o', isOrd o -> o' \in o ->
-    T (osucc o') \incl T o.
+  Lemma Tmono' : forall o o', isOrd o -> o' ∈ o ->
+    T (osucc o') ⊆ T o.
 red; intros.
 rewrite Tcont; trivial.
 rewrite sup_ax.
@@ -774,19 +774,19 @@ Qed.
   Variable Q : set -> (set -> set) -> Prop.
   Hypothesis Qm : Proper (eq_set==>(eq_set==>eq_set)==>iff) Q.
   Hypothesis Qext : forall o,
-    isOrd o -> o \incl ord ->
+    isOrd o -> o ⊆ ord ->
     forall f f',
     eq_fun (T o) f f' ->
     Q o f -> Q o f'.
   Hypothesis Qcont : forall o f,
     morph1 f ->
     isOrd o ->
-    o \incl ord ->
-    (forall o', o' \in o -> Q (osucc o') f) ->
+    o ⊆ ord ->
+    (forall o', o' ∈ o -> Q (osucc o') f) ->
     Q o f.
   Lemma Qm' : forall o o',
    isOrd o ->
-   o \incl ord ->
+   o ⊆ ord ->
    o == o' ->
    forall f f',
    fcompat (T o) f f' -> Q o (cc_app f) -> Q o' (cc_app f').
@@ -801,9 +801,9 @@ Qed.
 
   Lemma Qcont' : forall o f,
    isOrd o ->
-   o \incl ord ->
+   o ⊆ ord ->
    is_cc_fun (T o) f ->
-   (forall o', o' \in o -> Q (osucc o') (cc_app f)) -> Q o (cc_app f).
+   (forall o', o' ∈ o -> Q (osucc o') (cc_app f)) -> Q o (cc_app f).
 intros.
 apply Qcont; trivial; intros.
 apply cc_app_morph; reflexivity.
@@ -817,19 +817,19 @@ Qed.
 
   Hypothesis Ftyp : forall o f,
     morph1 f ->
-    isOrd o -> o \incl ord ->
+    isOrd o -> o ⊆ ord ->
     Q o f ->
     Q (osucc o) (F f).
 
   Hypothesis Fext : forall o f g,
     isOrd o ->
-    o \incl ord ->
+    o ⊆ ord ->
     eq_fun (T o) f g ->
     eq_fun (T (osucc o)) (F f) (F g).
 (*
   Lemma Ftyp'' : forall o f,
    isOrd o ->
-   o \incl ord ->
+   o ⊆ ord ->
    is_cc_fun (T o) f ->
    Q o (cc_app f) ->
    is_cc_fun (T (osucc o)) (cc_lam (T (osucc o)) (F (cc_app f))) /\
@@ -858,7 +858,7 @@ Qed.
 *)
   Lemma Ftyp''' : forall o f,
    isOrd o ->
-   osucc o \incl ord ->
+   osucc o ⊆ ord ->
    is_cc_fun (T o) f ->
    Q o (cc_app f) ->
    is_cc_fun (T (osucc o)) (cc_lam (T (osucc o)) (F (cc_app f))) /\
@@ -924,11 +924,11 @@ Qed.
 
   Hint Resolve Qm' Qcont' Ftyp''' Firrel' RECf_b_morph.
 
-  Lemma RECf_recursor : forall w, w \in ord -> recursor w T
+  Lemma RECf_recursor : forall w, w ∈ ord -> recursor w T
     (fun o f => Q o (cc_app f))
     (fun o f => cc_lam (T (osucc o)) (F (cc_app f))).
 intros.
-assert (w_tr : forall y, isOrd y -> y \incl w -> y \incl ord).
+assert (w_tr : forall y, isOrd y -> y ⊆ w -> y ⊆ ord).
  red; intros.
  apply isOrd_trans with w; auto.
  red; auto.
@@ -961,11 +961,11 @@ Qed.
 
   Lemma RECf_ind : forall P x,
     Proper (eq_set==>eq_set==>eq_set==>iff) P ->
-    (forall o x, isOrd o -> o \incl ord ->
-     x \in T o ->
-     (forall o' y, lt o' o -> y \in T o' -> P o' y (RECf ord y)) ->
+    (forall o x, isOrd o -> o ⊆ ord ->
+     x ∈ T o ->
+     (forall o' y, lt o' o -> y ∈ T o' -> P o' y (RECf ord y)) ->
      P o x (F (RECf ord) x)) ->
-    x \in T ord ->
+    x ∈ T ord ->
     P ord x (RECf ord x).
 unfold RECf; intros.
 apply REC_ind with (T:=T) (Q:=fun o f => Q o (cc_app f)); eauto.
@@ -992,7 +992,7 @@ Qed.
   Lemma RECf_step : forall o w,
     lt w ord ->
     isOrd o ->
-    o \incl w ->
+    o ⊆ w ->
     eq_fun (T o) (RECf o) (cc_app (cc_lam (T(osucc w)) (F (RECf w)))).
 intros.
 unfold RECf.
@@ -1002,7 +1002,7 @@ rewrite <- H3; clear x' H3.
 fold (FF w (REC FF w)).
 assert (wo : isOrd w).
  apply isOrd_inv with ord; trivial.
-assert (wkord : forall o, o \incl w -> o \incl ord).
+assert (wkord : forall o, o ⊆ w -> o ⊆ ord).
  intros.
  transitivity w; trivial.
  red; intros; apply isOrd_trans with w; trivial.
@@ -1011,9 +1011,9 @@ apply REC_step' with (ord:=w)(T:=T)(Q:=fun o f => Q o (cc_app f));
 Qed.
 
   Lemma RECf_indep0 o o' :
-    o \in ord ->
-    o' \in ord ->
-    o \incl o' ->
+    o ∈ ord ->
+    o' ∈ ord ->
+    o ⊆ o' ->
     eq_fun (T o) (RECf o) (RECf o').
 red; intros.
 unfold RECf at 2; rewrite <- H3; clear x' H3.
@@ -1034,13 +1034,13 @@ rewrite sup_ax in H2;[destruct H2|].
 Qed.
     
   Lemma RECf_indep o o' x :
-    o \in ord ->
-    o' \in ord ->
-    x \in T o ->
-    x \in T o' ->
+    o ∈ ord ->
+    o' ∈ ord ->
+    x ∈ T o ->
+    x ∈ T o' ->
     RECf o x == RECf o' x .
 intros.
-transitivity (RECf (osup2 o o') x).
+transitivity (RECf (o ⊔ o') x).
  apply RECf_indep0; auto with *.
   apply osup2_lt; auto.
   apply osup2_incl1; eauto using isOrd_inv.
@@ -1055,16 +1055,16 @@ Qed.
   Lemma RECf_ind0 : forall P x,
     Proper (eq_set==>eq_set==>eq_set==>iff) P ->
     forall w, lt w ord ->
-    (forall o x, isOrd o -> o \incl w ->
-     x \in T o ->
-     (forall o' y, lt o' o -> y \in T o' -> P o' y (RECf w y)) ->
+    (forall o x, isOrd o -> o ⊆ w ->
+     x ∈ T o ->
+     (forall o' y, lt o' o -> y ∈ T o' -> P o' y (RECf w y)) ->
      P o x (F (RECf w) x)) ->
-    x \in T w ->
+    x ∈ T w ->
     P w x (RECf w x).
 unfold RECf; intros P x H w ltw; intros.
 assert (wo : isOrd w).
  apply isOrd_inv with ord; trivial.
-assert (wkord : forall o, o \incl w -> o \incl ord).
+assert (wkord : forall o, o ⊆ w -> o ⊆ ord).
  intros.
  transitivity w; trivial.
  red; intros; apply isOrd_trans with w; trivial.
@@ -1089,8 +1089,8 @@ intros.
 Qed.
 
   Lemma RECf_eqn o x :
-    o \in ord ->
-    x \in T o ->
+    o ∈ ord ->
+    x ∈ T o ->
     RECf o x == F (RECf o) x.
 intros.
 apply RECf_ind0 with (P:=fun _ x w => w==F(RECf o)x); intros; auto with*.
@@ -1103,12 +1103,12 @@ Qed.
 
 
   Definition RECF x :=
-    sup (subset ord (fun o' => x \in T (osucc o'))) (fun o' => F (RECf o') x).
+    sup (subset ord (fun o' => x ∈ T (osucc o'))) (fun o' => F (RECf o') x).
 
 
   Lemma RECF_def x z :
-    z \in RECF x <->
-    exists2 o', o' \in ord /\ x \in T (osucc o') & z \in F (RECf o') x.
+    z ∈ RECF x <->
+    exists2 o', o' ∈ ord /\ x ∈ T (osucc o') & z ∈ F (RECf o') x.
 unfold RECF; rewrite sup_ax.
  apply ex2_morph; red; intros; try reflexivity.
  rewrite subset_ax.
@@ -1128,12 +1128,12 @@ Qed.
 
 
   Lemma RECF_eq o' :
-    o' \in ord ->
+    o' ∈ ord ->
     eq_fun (T (osucc o')) (F (RECf o')) RECF.
 intros o'ord.
 assert (oo':isOrd o').
  eauto using isOrd_inv.
-assert (oincl' :  osucc o' \incl ord).
+assert (oincl' :  osucc o' ⊆ ord).
  red; intros.
  apply isOrd_plump with o'; eauto using isOrd_inv, olts_le.
 red; intros.
@@ -1149,7 +1149,7 @@ apply eq_intro; intros.
  revert zino''; apply eq_elim; clear z.
  assert (o''o : isOrd o'').
   eauto using isOrd_inv.
- transitivity (F (RECf (osup2 o'' o')) x).
+ transitivity (F (RECf (o'' ⊔ o')) x).
   apply Fext with (o:=o''); auto with *.
   red; intros.
   unfold RECf at 2; rewrite <- H1; clear x' H1.
@@ -1187,7 +1187,7 @@ apply eq_intro; intros.
 Qed.
 
 
-  Lemma RECF_eqn x : x \in T ord -> RECF x == F RECF x.
+  Lemma RECF_eqn x : x ∈ T ord -> RECF x == F RECF x.
 intros.
 rewrite Tcont in H; trivial.
 rewrite sup_ax in H.
@@ -1230,7 +1230,7 @@ apply Qcont; auto with *.
  intros.
  assert (oo':isOrd o').
   eauto using isOrd_inv.
- assert (oincl' :  osucc o' \incl ord).
+ assert (oincl' :  osucc o' ⊆ ord).
   red; intros.
   apply isOrd_plump with o'; eauto using isOrd_inv, olts_le.
  apply Qext with (F (RECf o')); auto.
@@ -1242,7 +1242,7 @@ apply Qcont; auto with *.
    red; intros; apply isOrd_trans with o'; trivial.
 
    unfold RECf.
-   assert (wkord : forall o, o \incl o' -> o \incl ord).
+   assert (wkord : forall o, o ⊆ o' -> o ⊆ ord).
     red; intros.
     apply isOrd_trans with o'; trivial.
     red; auto.

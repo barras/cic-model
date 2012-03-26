@@ -14,15 +14,15 @@ Module Type RealSN_addon (M : CC_Model).
   Parameter Real : X -> X -> SAT.
   Parameter Real_morph: Proper (eqX ==> eqX ==> eqSAT) Real.
 
-  Parameter Real_sort : forall P, P \in props -> eqSAT (Real props P) snSAT.
+  Parameter Real_sort : forall P, P ∈ props -> eqSAT (Real props P) snSAT.
 
   Definition piSAT A F f :=
-    interSAT (fun p:{x|x \in A} =>
+    interSAT (fun p:{x|x ∈ A} =>
       prodSAT (Real A (proj1_sig p)) (Real (F (proj1_sig p)) (f (proj1_sig p)))).
 
   Parameter Real_prod : forall dom f F,
     eq_fun dom F F ->
-    f \in prod dom F ->
+    f ∈ prod dom F ->
     eqSAT (Real (prod dom F) f) (piSAT dom F (app f)).
 
   Existing Instance Real_morph.
@@ -30,7 +30,7 @@ Module Type RealSN_addon (M : CC_Model).
 (* No empty types (False is inhabited) *)
 
   Parameter daimon : X.
-  Parameter daimon_false : daimon \in prod props (fun P => P).
+  Parameter daimon_false : daimon ∈ prod props (fun P => P).
 
 End RealSN_addon.
 
@@ -47,14 +47,14 @@ Import MM.
    of the value and term interpretation requirements.
    [x,t] \real T reads "t is a realizer of x as a value of type T".
  *)
-Notation "[ x , t ] \real A" := (x \in A  /\ inSAT t (Real A x)) (at level 60).
+Notation "[ x , t ] \real A" := (x ∈ A  /\ inSAT t (Real A x)) (at level 60).
 
 Lemma piSAT_intro : forall A B f t,
   Lc.sn t -> (* if A is empty *)
-  (forall x u, x \in A -> inSAT u (Real A x) -> inSAT (Lc.App t u) (Real (B x) (f x))) ->
+  (forall x u, x ∈ A -> inSAT u (Real A x) -> inSAT (Lc.App t u) (Real (B x) (f x))) ->
   inSAT t (piSAT A B f).
 unfold piSAT; intros.
-apply interSAT_intro' with (P:=fun x=>x \in A)
+apply interSAT_intro' with (P:=fun x=>x ∈ A)
    (F:=fun x => prodSAT (Real A x) (Real (B x) (f x))); trivial; intros.
 intros ? ?.
 apply H0; trivial.
@@ -62,11 +62,11 @@ Qed.
 
 Lemma piSAT_elim : forall A B f x t u,
   inSAT t (piSAT A B f) ->
-  x \in A ->
+  x ∈ A ->
   inSAT u (Real A x) ->
   inSAT (Lc.App t u) (Real (B x) (f x)).
 intros.
-apply interSAT_elim with (x:=exist (fun x => x \in A) x H0) in H; simpl proj1_sig in H.
+apply interSAT_elim with (x:=exist (fun x => x ∈ A) x H0) in H; simpl proj1_sig in H.
 apply H; trivial.
 Qed.
 
@@ -79,7 +79,7 @@ Lemma prod_intro_sn : forall dom f F m,
    [f x, Lc.App m u] \real F x) ->
   [lam dom f, m] \real prod dom F.
 intros.
-assert (lam dom f \in prod dom F).
+assert (lam dom f ∈ prod dom F).
  apply prod_intro; intros; trivial.
  apply H2 with SatSet.daimon.
  split; trivial.
@@ -120,7 +120,7 @@ split.
  apply prod_elim with (2:=H0); trivial.
 
  rewrite Real_prod in H1; trivial.
- apply interSAT_elim with (x:=exist (fun x => x \in dom) x H2) in H1; simpl proj1_sig in H1.
+ apply interSAT_elim with (x:=exist (fun x => x ∈ dom) x H2) in H1; simpl proj1_sig in H1.
  apply prodSAT_elim with (1:=H1); trivial.
 Qed.
 
@@ -222,7 +222,7 @@ exists List.nil; exists prop; simpl prod_list.
  reflexivity.
 
  exists (prod props (fun P => P)); exists Lc.K; intro i.
- assert (prod props (fun P => P) \in props).
+ assert (prod props (fun P => P) ∈ props).
   apply impredicative_prod; intros; auto.
   red; auto.
  split; trivial.
@@ -381,7 +381,7 @@ Qed.
 
 Lemma vcons_add_var_daimon : forall e T i j x,
   val_ok e i j ->
-  x \in int i T ->
+  x ∈ int i T ->
   T <> kind ->
   val_ok (T::e) (V.cons x i) (I.cons SatSet.daimon j).
 intros.
@@ -814,7 +814,7 @@ destruct is_srt; subst s2; simpl in *.
  unfold CProd.
  apply real_exp_K.
   apply Lc.sn_abs; trivial.
- assert (prod (int i T) (fun x => int (V.cons x i) U) \in props).
+ assert (prod (int i T) (fun x => int (V.cons x i) U) ∈ props).
   apply impredicative_prod; intros.   
    red; intros.
    rewrite H1; reflexivity.
@@ -927,7 +927,7 @@ Qed.
    Contravariance of product does not hold in set-theory.
  *)
 Definition sub_typ_covariant
-  (eta_eq : forall dom F f, f \in prod dom F -> f == lam dom (app f))
+  (eta_eq : forall dom F f, f ∈ prod dom F -> f == lam dom (app f))
   e U1 U2 V1 V2 :
   U1 <> kind ->
   eq_typ e U1 U2 ->

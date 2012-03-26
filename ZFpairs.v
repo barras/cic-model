@@ -25,7 +25,7 @@ apply union_ext; intros.
   exists (pair a b); auto.
 Qed.
 
-Definition fst p := union (subset (union p) (fun x => singl x \in p)).
+Definition fst p := union (subset (union p) (fun x => singl x ∈ p)).
 
 Instance fst_morph : morph1 fst.
 unfold fst; do 2 red; intros.
@@ -53,7 +53,7 @@ transitivity (union (singl x)).
     clear H0 x0.
     elim pair_elim with (1 := H1); intros.
    apply singl_inj; trivial.
-   assert (x \in singl z).
+   assert (x ∈ singl z).
     rewrite H0; auto.
      rewrite (singl_elim _ _ H2); reflexivity.
  apply union_singl_eq.
@@ -108,8 +108,8 @@ Qed.
 (* 2- typing *)
 
 Definition prodcart A B :=
-  subset (power (power (union2 A B)))
-    (fun x => exists2 a, a \in A & exists2 b, b \in B & x == couple a b).
+  subset (power (power (A ∪ B)))
+    (fun x => exists2 a, a ∈ A & exists2 b, b ∈ B & x == couple a b).
 
 Instance prodcart_mono :
   Proper (incl_set ==> incl_set ==> incl_set) prodcart.
@@ -150,7 +150,7 @@ apply subset_morph; intros.
 Qed.
 
 Lemma couple_intro :
-  forall x y A B, x \in A -> y \in B -> couple x y \in prodcart A B.
+  forall x y A B, x ∈ A -> y ∈ B -> couple x y ∈ prodcart A B.
 Proof.
 intros.
 unfold couple, prodcart in |- *.
@@ -170,7 +170,7 @@ apply subset_intro.
  reflexivity.
 Qed.
 
-Lemma fst_typ : forall p A B, p \in prodcart A B -> fst p \in A.
+Lemma fst_typ : forall p A B, p ∈ prodcart A B -> fst p ∈ A.
 Proof.
 unfold prodcart in |- *; intros.
 elim subset_elim2 with (1 := H); intros.
@@ -180,7 +180,7 @@ destruct H1 as (a, inA, (b, inB, eqp)).
  rewrite fst_def; trivial.
 Qed.
 
-Lemma snd_typ : forall p A B, p \in prodcart A B -> snd p \in B.
+Lemma snd_typ : forall p A B, p ∈ prodcart A B -> snd p ∈ B.
 Proof.
 unfold prodcart in |- *; intros.
 elim subset_elim2 with (1 := H); intros.
@@ -191,7 +191,7 @@ destruct H1 as (a, inA, (b, inB, eqp)).
 Qed.
 
 Lemma surj_pair :
-  forall p A B, p \in prodcart A B -> p == couple (fst p) (snd p).
+  forall p A B, p ∈ prodcart A B -> p == couple (fst p) (snd p).
 Proof.
 intros.
 unfold prodcart in H.
@@ -206,7 +206,7 @@ Qed.
 (* dependent pairs *)
 
 Definition sigma A B :=
-  subset (prodcart A (sup A B)) (fun p => snd p \in B (fst p)).
+  subset (prodcart A (sup A B)) (fun p => snd p ∈ B (fst p)).
 
 Instance sigma_morph : Proper (eq_set ==> (eq_set ==> eq_set) ==> eq_set) sigma.
 unfold sigma; do 3 red; intros.
@@ -221,7 +221,7 @@ Qed.
 
 Lemma sigma_ext : forall A A' B B',
   A == A' ->
-  (forall x x', x \in A -> x == x' -> B x == B' x') ->
+  (forall x x', x ∈ A -> x == x' -> B x == B' x') ->
   sigma A B == sigma A' B'.
 unfold sigma; intros.
 assert (peq : sup A B == sup A' B').
@@ -275,7 +275,7 @@ Qed.
 Lemma couple_intro_sigma :
   forall x y A B, 
   ext_fun A B ->
-  x \in A -> y \in B x -> couple x y \in sigma A B.
+  x ∈ A -> y ∈ B x -> couple x y ∈ sigma A B.
 intros; unfold sigma.
 apply subset_intro.
  apply couple_intro; trivial.
@@ -286,7 +286,7 @@ apply subset_intro.
   rewrite fst_def; reflexivity.
 Qed.
 
-Lemma fst_typ_sigma : forall p A B, p \in sigma A B -> fst p \in A.
+Lemma fst_typ_sigma : forall p A B, p ∈ sigma A B -> fst p ∈ A.
 Proof.
 unfold sigma in |- *; intros.
 specialize subset_elim1 with (1 := H); intros.
@@ -295,7 +295,7 @@ Qed.
 
 Lemma snd_typ_sigma : forall p y A B,
   ext_fun A B ->
-  p \in sigma A B -> y == fst p -> snd p \in B y.
+  p ∈ sigma A B -> y == fst p -> snd p ∈ B y.
 intros.
 unfold sigma in H0.
 elim subset_elim2 with (1:=H0); intros.
@@ -310,9 +310,9 @@ Qed.
 Lemma sigma_mono : forall A A' B B',
   ext_fun A B ->
   ext_fun A' B' ->
-  A \incl A' ->
-  (forall x x', x \in A -> x == x' -> B x \incl B' x') ->
-  sigma A B \incl sigma A' B'.
+  A ⊆ A' ->
+  (forall x x', x ∈ A -> x == x' -> B x ⊆ B' x') ->
+  sigma A B ⊆ sigma A' B'.
 red; intros.
 rewrite (surj_pair _ _ _ (subset_elim1 _ _ _ H3)).
 apply couple_intro_sigma; trivial.

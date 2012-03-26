@@ -303,7 +303,7 @@ Qed.
 Definition Conj : term -> term ->term.
 intros a b; left. 
 exists (fun i => let A := int a i in let B := int b i in
-  subset (union2 A B) (fun x => x \in A /\ x \in B)).
+  subset (A ∪ B) (fun x => x ∈ A /\ x ∈ B)).
 do 3 red; intros. apply subset_morph.
  rewrite H; reflexivity.
 
@@ -351,7 +351,7 @@ intros e A B t HSA HSB; intro H.
 Qed.
 
 Definition Disj : term -> term -> term.
-intros x y; left. exists (fun i => union2 (int x i)(int y i)).
+intros x y; left. exists (fun i => int x i ∪ int y i).
 do 3 red; intros. rewrite H; reflexivity.
 Defined.
 

@@ -25,7 +25,7 @@ Qed.
 (* Directed set (finite union) *)
 Lemma isOrd_dir : forall o, ZFordcl.isOrd o -> ZFplump.isDir o.
 red; intros.
-exists (union2 x y).
+exists (x ∪ y).
  apply ZFordcl.isOrd_union2_lub; trivial.
 
  split; red; auto using union2_intro1, union2_intro2.

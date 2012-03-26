@@ -68,11 +68,6 @@ replace (esub_conv s (fun k : nat => y0 k)) with (esub_conv s y0); trivial.
 apply ZFind_basic.EQ_morph; [|rewrite H|rewrite H]; reflexivity.
 Qed.
 
-Definition eq_fosub n' e s s' := forall n, n < n' ->
+Definition eq_fosub n' e s s' := forall n, (n < n')%nat ->
   eq_typ e (app_esub s (Ref n)) (app_esub s' (Ref n)) /\
   typ e (app_esub s (Ref n)) T /\ typ e (app_esub s' (Ref n)) T.
-
-
-
-
-  

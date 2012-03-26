@@ -7,7 +7,7 @@ Module Lc:=Lambda.
 
 Record family := mkFam {
   fam :> set -> SAT;
-  fam_mrph : forall x y,  x \in NAT -> x == y -> eqSAT (fam x) (fam y)
+  fam_mrph : forall x y,  x ∈ NAT -> x == y -> eqSAT (fam x) (fam y)
 }.
 
 Definition dflt_family : family.
@@ -18,7 +18,7 @@ reflexivity.
 Defined.
 
 Definition eqfam (A B:family) :=
-  forall x y, x \in NAT -> x == y -> eqSAT (A x) (B y).
+  forall x y, x ∈ NAT -> x == y -> eqSAT (A x) (B y).
 
 
 Instance prodSAT_mono : Proper (inclSAT --> inclSAT ++> inclSAT) prodSAT.
@@ -40,16 +40,16 @@ Qed.
 
 (** Denotation of the intersection of (F(n)) expressions when n:Nat *)
 Definition piNAT F :=
-  interSAT (fun p:{n|n \in NAT} => F (proj1_sig p)).
+  interSAT (fun p:{n|n ∈ NAT} => F (proj1_sig p)).
 
 Lemma piNAT_ax t F :
-  inSAT t (piNAT F) <-> sn t /\ forall n, n \in NAT -> inSAT t (F n).
+  inSAT t (piNAT F) <-> sn t /\ forall n, n ∈ NAT -> inSAT t (F n).
 split; intros.
  split.
   apply sat_sn in H; trivial.
 
   intros.
-  apply interSAT_elim with (x:=exist (fun n=>n \in NAT) n H0) in H; trivial.
+  apply interSAT_elim with (x:=exist (fun n=>n ∈ NAT) n H0) in H; trivial.
 
  destruct H.
  split; trivial.
@@ -80,7 +80,7 @@ Definition fNAT (A:family) (k:set) :=
                 (P k))).
 
 Lemma fNAT_morph : forall A B, eqfam A B ->
-  forall x y, x \in NAT -> x == y -> eqSAT (fNAT A x) (fNAT B y).
+  forall x y, x ∈ NAT -> x == y -> eqSAT (fNAT A x) (fNAT B y).
 intros.
 unfold fNAT.
 apply interSAT_morph.
@@ -215,7 +215,7 @@ Definition SU := Lc.Abs (Lc.Abs (Lc.Abs
     (Lc.App2 (Lc.Ref 0) (Lc.Ref 2) (Lc.App2 (Lc.Ref 2) (Lc.Ref 1) (Lc.Ref 0))))).
 
 Lemma fNAT_SU : forall (A:family) n t,
-  n \in NAT ->
+  n ∈ NAT ->
   inSAT t (A n) ->
   inSAT t (fNAT A n) ->
   inSAT (Lc.App SU t) (fNAT A (SUCC n)).
@@ -245,7 +245,7 @@ apply prodSAT_elim with (P n).
  apply H0; trivial.
 Qed.
 
-Lemma cNAT_SU : forall n t, n \in NAT -> inSAT t (cNAT n) -> inSAT (Lc.App SU t) (cNAT (SUCC n)). 
+Lemma cNAT_SU : forall n t, n ∈ NAT -> inSAT t (cNAT n) -> inSAT (Lc.App SU t) (cNAT (SUCC n)). 
 intros.
 rewrite cNAT_eq.
 apply fNAT_SU; trivial.
@@ -331,7 +331,7 @@ revert H2 H0; inversion_clear H1; intros.
 Qed.
 
 Lemma NCASE_fNAT f g n k (A B:family) :
-  k \in NAT ->
+  k ∈ NAT ->
   inSAT n (fNAT A k) ->
   inSAT f (B ZERO) ->
   inSAT g (piNAT(fun m => prodSAT (A m) (B (SUCC m)))) ->
@@ -423,7 +423,7 @@ destruct H as [eqn|(t1,(t2,eqn))]; rewrite eqn.
 Qed.
 
 Lemma G_sat A k m t X :
-  k \in NAT ->
+  k ∈ NAT ->
   inSAT t (fNAT A k) ->
   inSAT (Lc.App2 m m t) X ->
   inSAT (Lc.App (G m) t) X.
@@ -477,14 +477,14 @@ reflexivity.
 Qed.
 
 Definition piNATi F o :=
-  interSAT (fun p:{n|n \in NATi o} => F (proj1_sig p)).
+  interSAT (fun p:{n|n ∈ NATi o} => F (proj1_sig p)).
 
 Lemma piNATi_ax t F o :
-  inSAT t (piNATi F o) <-> sn t /\ forall n, n \in NATi o -> inSAT t (F n).
+  inSAT t (piNATi F o) <-> sn t /\ forall n, n ∈ NATi o -> inSAT t (F n).
 split; intros.
  split; intros.
   apply sat_sn in H; trivial.
- apply interSAT_elim with (x:=exist (fun n=>n \in NATi o) n H0) in H; trivial.
+ apply interSAT_elim with (x:=exist (fun n=>n ∈ NATi o) n H0) in H; trivial.
 
  destruct H.
  split; intros; trivial.
@@ -516,17 +516,17 @@ Qed.
    NATFIX m does not reduce *)
 Lemma sn_natfix o m X :
   isOrd o ->
-  inSAT m (interSAT (fun o':{o'|o' \in osucc o} => let o':=proj1_sig o' in
+  inSAT m (interSAT (fun o':{o'|o' ∈ osucc o} => let o':=proj1_sig o' in
         prodSAT (piNATi(fun n => prodSAT (cNAT n) (X o' n)) o')
                 (piNATi(fun n => prodSAT (cNAT n) (X (osucc o') n)) (osucc o')))) ->
   sn (NATFIX m).
 intros.
-assert (empty \in osucc o).
+assert (empty ∈ osucc o).
  apply isOrd_plump with o; auto with *.
   red; intros.
   apply empty_ax in H1; contradiction.
   apply lt_osucc; trivial.
-apply interSAT_elim with (x:=exist (fun o'=>o'\in osucc o) empty H1) in H0.
+apply interSAT_elim with (x:=exist (fun o'=>o'∈ osucc o) empty H1) in H0.
 simpl proj1_sig in H0.
 unfold NATFIX.
 assert (sn (Lc.Abs (Lc.App (Lc.lift 1 m) (G (Lc.Ref 0))))).
@@ -578,9 +578,9 @@ Qed.
 
 Lemma NATFIX_sat : forall o m X,
   isOrd o ->
-  (forall o o' n, isOrd o -> isOrd o' -> o \incl o' -> n \in NAT ->
+  (forall o o' n, isOrd o -> isOrd o' -> o ⊆ o' -> n ∈ NAT ->
    inclSAT (X o n) (X o' n)) ->
-  inSAT m (interSAT (fun o':{o'|o' \in osucc o} => let o':=proj1_sig o' in
+  inSAT m (interSAT (fun o':{o'|o' ∈ osucc o} => let o':=proj1_sig o' in
         prodSAT (piNATi(fun n => prodSAT (cNAT n) (X o' n)) o')
                 (piNATi(fun n => prodSAT (cNAT n) (X (osucc o') n)) (osucc o')))) ->
   inSAT (NATFIX m) (piNATi(fun n => prodSAT (cNAT n) (X o n)) o).
@@ -591,7 +591,7 @@ split.
  apply sn_natfix with (2:=H0); trivial.
 
 intros x i.
-assert (tyx : x \in NAT).
+assert (tyx : x ∈ NAT).
  apply NATi_NAT with y; trivial.
 apply TI_elim in i; auto with *.
 destruct i as (z,?,?).
@@ -617,10 +617,10 @@ apply Xmono with (osucc z); eauto using isOrd_inv.
   apply olts_le; trivial.
 apply prodSAT_elim with (cNAT x).
 2:apply cNAT_post; trivial.
-assert (z \in osucc o).
+assert (z ∈ osucc o).
  apply isOrd_trans with o; auto.
  apply H2; trivial.
-apply interSAT_elim with (x:=exist (fun o'=>o' \in osucc o) z H6) in H0.
+apply interSAT_elim with (x:=exist (fun o'=>o' ∈ osucc o) z H6) in H0.
 simpl proj1_sig in H0.
 specialize H3 with (1:=H4).
 specialize prodSAT_elim with (1:=H0) (2:=H3); intro.

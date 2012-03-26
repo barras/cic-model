@@ -2,6 +2,7 @@
 (** General purpose definitions that could make it to the standard library *)
 
 Set Implicit Arguments.
+(*Require Export Utf8_core.*)
 Require Export Peano_dec Compare_dec.
 Require Export List.
 Require Export Relations Relation_Operators Transitive_Closure.
@@ -15,7 +16,6 @@ Hint Unfold transp: core.
 
 Scheme Acc_indd := Induction for Acc Sort Prop.
 
-
 Definition indexed_relation A A' B (R:B->B->Prop) (f:A->B) (g:A'->B) :=
   (forall x, exists y, R (f x) (g y)) /\
   (forall y, exists x, R (f x) (g y)).
@@ -25,7 +25,6 @@ Lemma indexed_relation_id : forall A B (R:B->B->Prop) (F F':A->B),
   indexed_relation R F F'.
 split; intros; eauto.
 Qed.
-
 
 (**********************************************************************************)
 (** Setoid and morphisms stuff *)
@@ -229,4 +228,44 @@ Lemma clos_trans_transp : forall A R x y,
 induction 1.
  apply t_step; trivial.
  apply t_trans with y; trivial.
+Qed.
+
+(******************************************************************)
+(** More arithmetics... *)
+Require Import Omega.
+
+Lemma succ_max_distr : forall n m, S (max n m) = max (S n) (S m).
+induction n; destruct m; simpl; reflexivity.
+Qed.
+
+Lemma max_split1 : forall x y z, z < x -> z < max x y.
+induction x; simpl; intros.
+ apply False_ind; omega.
+
+ destruct y; trivial.
+  destruct z; try omega.
+   assert (z < x) by omega. specialize IHx with (1:=H0) (y:=y). omega.
+Qed.
+
+Lemma max_split2 : forall x y z, z < y -> z < max x y.
+induction x; simpl; intros; trivial.
+ destruct y; trivial.
+  apply False_ind; omega.
+ 
+  destruct z; try omega.
+   assert (z < y) by omega. specialize IHx with (1:=H0). omega.
+Qed.
+
+Lemma max_comb : forall x y z, z < max x y -> z < x \/ z < y.
+induction x; simpl; intros.
+ right; trivial.
+
+ destruct y.
+  left; trivial.
+
+  destruct z.
+   left; omega.
+
+   assert (z < max x y) by omega.
+   specialize IHx with (1:=H0). destruct IHx; [left | right]; omega.
 Qed.

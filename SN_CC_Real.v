@@ -19,7 +19,7 @@ Definition mkTY X R := couple X (cc_lam X (fun x => iSAT (R x))).
 
 Lemma mkTY_ext : forall X Y R R',
   X == Y ->
-  (forall x x', x \in X -> x == x' -> eqSAT (R x) (R' x')) ->
+  (forall x x', x ∈ X -> x == x' -> eqSAT (R x) (R' x')) ->
   mkTY X R == mkTY Y R'.
 unfold mkTY; intros.
 apply couple_morph; trivial.
@@ -31,13 +31,13 @@ Qed.
 
 (* Accessing the set of values of a type.
    The official membership relation of the model (see inX below) will be
-   x \in El T, which reads "x is a value of type T"
+   x ∈ El T, which reads "x is a value of type T"
  *)
 Definition El T := fst T.
 
 (* Accessing the realizability relation.
    inSAT t (Real T x), means that t is a realizer of x in type T. It
-   implicitely requires x \in El T. 
+   implicitely requires x ∈ El T. 
  *)
 Definition Real T x := sSAT (cc_app (snd T) x) .
 
@@ -57,8 +57,8 @@ apply fst_def.
 Qed.
 
 Lemma Real_def : forall x X R,
-  (forall x x', x \in X -> x == x' -> eqSAT (R x) (R x')) ->
-  x \in X ->
+  (forall x x', x ∈ X -> x == x' -> eqSAT (R x) (R x')) ->
+  x ∈ X ->
   eqSAT (Real (mkTY X R) x) (R x).
 intros.
 unfold Real, mkTY.
@@ -79,7 +79,7 @@ Qed.
    is the set of terms that realize f (in forall x:A. F(x)).
  *)
 Definition piSAT A (F:set->set) (f:set->set) :=
-  interSAT (fun p:{x|x \in El A} =>
+  interSAT (fun p:{x|x ∈ El A} =>
     prodSAT (Real A (proj1_sig p)) (Real (F (proj1_sig p)) (f (proj1_sig p)))).
 
 Lemma piSAT_morph : forall A B F F' f f',
@@ -102,7 +102,7 @@ Definition prod A F :=
 
 Lemma Real_prod : forall dom f F,
     eq_fun (El dom) F F ->
-    f \in El (prod dom F) ->
+    f ∈ El (prod dom F) ->
     eqSAT (Real (prod dom F) f) (piSAT dom F (cc_app f)).
 unfold prod; intros.
 rewrite El_def in H0; rewrite Real_def; trivial.
@@ -120,8 +120,8 @@ Definition app := cc_app.
 Lemma prod_intro : forall dom f F,
   ext_fun (El dom) f ->
   ext_fun (El dom) F ->
-  (forall x, x \in El dom -> f x \in El (F x)) ->
-  lam dom f \in El (prod dom F).
+  (forall x, x ∈ El dom -> f x ∈ El (F x)) ->
+  lam dom f ∈ El (prod dom F).
 intros.
 unfold lam, prod, mkTY, El.
 rewrite fst_def.
@@ -133,9 +133,9 @@ Qed.
 
 Lemma prod_elim : forall dom f x F,
   eq_fun (El dom) F F ->
-  f \in El (prod dom F) ->
-  x \in El dom ->
-  cc_app f x \in El (F x).
+  f ∈ El (prod dom F) ->
+  x ∈ El dom ->
+  cc_app f x ∈ El (F x).
 intros dom f x F _ H.
 unfold prod, mkTY, El in H.
 rewrite fst_def in H.
@@ -180,12 +180,12 @@ Definition props :=
     (fun _ => snSAT).
 
 Lemma El_props_def P :
-  P \in El props <-> exists S, P == mkProp S.
+  P ∈ El props <-> exists S, P == mkProp S.
 unfold props; rewrite El_def.
 rewrite replSAT_ax; eauto with *.
 Qed.
 
-  Lemma Real_sort : forall x, x \in El props -> eqSAT (Real props x) snSAT.
+  Lemma Real_sort : forall x, x ∈ El props -> eqSAT (Real props x) snSAT.
 intros.
 rewrite El_props_def in H; destruct H as (S,H).
 unfold props; rewrite Real_def; auto with *.
@@ -196,7 +196,7 @@ Qed.
    empty propositions. (Could be moved to ZFcoc.) *)
 Lemma cc_impredicative_prod_non_empty : forall dom F,
   ext_fun dom F ->
-  (forall x, x \in dom -> F x == singl prf_trm) ->
+  (forall x, x ∈ dom -> F x == singl prf_trm) ->
   cc_prod dom F == singl prf_trm.
 Proof.
 intros.
@@ -230,12 +230,12 @@ Qed.
 
 Lemma impredicative_prod : forall dom F,
   ext_fun (El dom) F ->
-  (forall x, x \in El dom -> F x \in El props) ->
-  prod dom F \in El props.
+  (forall x, x ∈ El dom -> F x ∈ El props) ->
+  prod dom F ∈ El props.
 intros.
 rewrite El_props_def.
 exists (piSAT dom F (fun _ => prf_trm)).
-assert (forall x, x \in El dom -> El (F x) == singl prf_trm).
+assert (forall x, x ∈ El dom -> El (F x) == singl prf_trm).
  intros.
  specialize H0 with (1:=H1).
  rewrite El_props_def in H0; destruct H0 as (S,H0).
@@ -255,8 +255,8 @@ Qed.
 
 (* All propositions are inhabited: *)
   Definition daimon := prf_trm.
-  Lemma daimon_false : prf_trm \in El (prod props (fun P => P)).
-assert (prod props (fun P => P) \in El props).
+  Lemma daimon_false : prf_trm ∈ El (prod props (fun P => P)).
+assert (prod props (fun P => P) ∈ El props).
  apply impredicative_prod; auto with *.
  do 2 red; auto.
 rewrite El_props_def in H; destruct H as (S,H).
@@ -268,7 +268,7 @@ Qed.
 Definition X:=set.
 Definition eqX := eq_set.
 Definition eqX_equiv := eq_set_equiv.
-Definition inX x y := x \in El y.
+Definition inX x y := x ∈ El y.
 Lemma in_ext : Proper (eq_set==>eq_set==>iff) inX.
 apply morph_impl_iff2; auto with *.
 unfold inX; do 4 red; intros.
@@ -276,7 +276,7 @@ rewrite <- H; rewrite <- H0; trivial.
 Qed.
 
 Definition eq_fun (x:X) (f1 f2:X->X) :=
-  forall y1 y2, y1 \in El x -> y1 == y2 -> f1 y1 == f2 y2.
+  forall y1 y2, y1 ∈ El x -> y1 == y2 -> f1 y1 == f2 y2.
 
 Lemma lam_ext :
   forall x1 x2 f1 f2,
@@ -312,7 +312,7 @@ Qed.
 Lemma beta_eq:
   forall dom F x,
   eq_fun dom F F ->
-  x \in El dom ->
+  x ∈ El dom ->
   app (lam dom F) x == F x.
 intros.
 unfold app, lam.
@@ -405,7 +405,7 @@ set (prf := tm (I.nil (Lc.Abs (Lc.Ref 0))) M) in H0.
 assert (forall S, inSAT (Lc.App prf (Lc.Abs (Lc.Ref 0))) S).
  intros.
  assert ([mkProp S, Lc.Abs (Lc.Ref 0)] \real props). 
-  assert (mkProp S \in El props).
+  assert (mkProp S ∈ El props).
    rewrite El_props_def.
    exists S; reflexivity.
   split; trivial.

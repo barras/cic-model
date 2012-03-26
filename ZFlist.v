@@ -1,3 +1,4 @@
+Require Import Wf_nat.
 Require Import ZF ZFpairs ZFnats.
 Require Import ZFrepl ZFord ZFfix.
 
@@ -9,8 +10,7 @@ Section ListDefs.
   Definition Cons := couple.
 
   Definition LISTf (X:set) :=
-    union2 (singl empty)
-      (sup A (fun x => replf X (fun l => couple x l))).
+    singl empty ∪ sup A (fun x => replf X (fun l => couple x l)).
 
 Lemma ext1 : forall x X, ext_fun X (fun l => couple x l).
 do 2 red; intros.
@@ -56,8 +56,8 @@ Qed.
   Lemma LISTf_ind : forall X (P : set -> Prop),
     Proper (eq_set ==> iff) P ->
     P Nil ->
-    (forall x l, x \in A -> l \in X -> P (Cons x l)) ->
-    forall a, a \in LISTf X -> P a.
+    (forall x l, x ∈ A -> l ∈ X -> P (Cons x l)) ->
+    forall a, a ∈ LISTf X -> P a.
 unfold LISTf; intros.
 apply union2_elim in H2; destruct H2 as [H2|H2].
  apply singl_elim in H2.
@@ -70,14 +70,14 @@ apply union2_elim in H2; destruct H2 as [H2|H2].
  rewrite H4; auto.
 Qed.
 
-  Lemma Nil_typ0 : forall X, Nil \in LISTf X.
+  Lemma Nil_typ0 : forall X, Nil ∈ LISTf X.
 intros.
 unfold Nil, LISTf.
 apply union2_intro1; apply singl_intro.
 Qed.
 
   Lemma Cons_typ0 : forall X x l,
-    x \in A -> l \in X -> Cons x l \in LISTf X.
+    x ∈ A -> l ∈ X -> Cons x l ∈ LISTf X.
 intros.
 unfold Cons, LISTf.
 apply union2_intro2.
@@ -89,8 +89,7 @@ Qed.
 
   (* LIST_case is f when l is Nil, or g when l is Cons *)
   Definition LIST_case l f g :=
-    union2 (cond_set (l == Nil) f)
-           (cond_set (l == Cons (fst l) (snd l)) g).
+    cond_set (l == Nil) f ∪ cond_set (l == Cons (fst l) (snd l)) g.
 
   Global Instance LIST_case_morph : Proper (eq_set==>eq_set==>eq_set==>eq_set) LIST_case.
 do 4 red; intros; unfold LIST_case.
@@ -126,7 +125,7 @@ Qed.
 
   Definition Lstn n := TI LISTf (nat2ordset n).
 
-  Lemma Lstn_incl_succ : forall k, Lstn k \incl Lstn (S k).
+  Lemma Lstn_incl_succ : forall k, Lstn k ⊆ Lstn (S k).
 unfold Lstn; simpl; intros.
 apply TI_incl; auto with *.
 Qed.
@@ -136,7 +135,7 @@ unfold Lstn; simpl; intros.
 apply TI_mono_succ; auto with *.
 Qed.
 
-  Lemma Lstn_incl : forall k k', k <= k' -> Lstn k \incl Lstn k'.
+  Lemma Lstn_incl : forall k k', (k <= k')%nat -> Lstn k ⊆ Lstn k'.
 induction 1; intros.
  red; auto.
  red; intros.
@@ -146,7 +145,7 @@ Qed.
 
   Definition List := TI LISTf omega.
 
-  Lemma List_intro : forall k, Lstn k \incl List.
+  Lemma List_intro : forall k, Lstn k ⊆ List.
 unfold List, Lstn; intros.
 apply TI_incl; auto with *.
 apply isOrd_sup_intro with (S k); simpl; auto.
@@ -154,7 +153,7 @@ apply lt_osucc; auto.
 Qed.
 
   Lemma List_elim : forall x,
-    x \in List -> exists k, x \in Lstn k.
+    x ∈ List -> exists k, x ∈ Lstn k.
 unfold List, Lstn; intros.
 apply TI_elim in H; auto with *.
 destruct H.
@@ -166,8 +165,8 @@ Qed.
   Lemma Lstn_case : forall k (P : set -> Prop),
     Proper (eq_set ==> iff) P ->
     P Nil ->
-    (forall x l k', k' < k -> x \in A -> l \in Lstn k' -> P (Cons x l)) ->
-    forall a, a \in Lstn k -> P a.
+    (forall x l k', (k' < k)%nat -> x ∈ A -> l ∈ Lstn k' -> P (Cons x l)) ->
+    forall a, a ∈ Lstn k -> P a.
 destruct k; intros.
  unfold Lstn in H2.
  rewrite TI_initial in H2; auto with *.
@@ -178,13 +177,12 @@ destruct k; intros.
 Qed.
 
 
-Require Import Wf_nat.
 
   Lemma List_fix : forall (P:set->Prop),
     (forall k,
-     (forall k' x, k' < k -> x \in Lstn k' -> P x) ->
-     (forall x, x \in Lstn k -> P x)) ->
-    forall x, x \in List -> P x.
+     (forall k' x, (k' < k)%nat -> x ∈ Lstn k' -> P x) ->
+     (forall x, x ∈ Lstn k -> P x)) ->
+    forall x, x ∈ List -> P x.
 intros.
 apply List_elim in H0; destruct H0.
 revert x H0.
@@ -195,8 +193,8 @@ Qed.
   Lemma List_ind : forall P : set -> Prop,
     Proper (eq_set ==> iff) P ->
     P Nil ->
-    (forall x l, x \in A -> l \in List -> P l -> P (Cons x l)) ->
-    forall a, a \in List -> P a.
+    (forall x l, x ∈ A -> l ∈ List -> P l -> P (Cons x l)) ->
+    forall a, a ∈ List -> P a.
 intros.
 elim H2 using List_fix; intros.
 elim H4 using Lstn_case; intros; eauto.
@@ -224,13 +222,13 @@ apply eq_intro; intros.
   apply Cons_typ0; auto.
 Qed.
 
-  Lemma Nil_typ : Nil \in List.
+  Lemma Nil_typ : Nil ∈ List.
 intros.
 rewrite List_eqn; apply Nil_typ0; trivial.
 Qed.
 
   Lemma Cons_typ : forall x l,
-    x \in A -> l \in List -> Cons x l \in List.
+    x ∈ A -> l ∈ List -> Cons x l ∈ List.
 intros.
 rewrite List_eqn; apply Cons_typ0; trivial.
 Qed.

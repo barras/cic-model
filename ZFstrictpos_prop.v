@@ -56,11 +56,11 @@ Lemma pos_rect : forall (P:positive->Type),
   (forall p1 p2, eq_pos p1 p1 -> eq_pos p2 p2 -> P p1 -> P p2 -> P (P_ConsRec p1 p2)) ->
   (forall A p,
    (forall x x', x == x' -> eq_pos (p x) (p x')) ->
-   (forall x, x \in A -> P (p x)) ->
+   (forall x, x ∈ A -> P (p x)) ->
    P (P_ConsNoRec A p)) ->
   (forall A p,
    (forall x x', x == x' -> eq_pos (p x) (p x')) ->
-   (forall x, x \in A -> P (p x)) ->
+   (forall x, x ∈ A -> P (p x)) ->
    P (P_Param A p)) ->
   forall p, eq_pos p p -> P p.
 intros.
@@ -98,9 +98,9 @@ Qed.
 Lemma sup_mono A A' F F' :
   ext_fun A F ->
   ext_fun A' F' ->
-  A \incl A' ->
-  (forall x, x \in A -> F x \incl F' x) ->
-  sup A F \incl sup A' F'.
+  A ⊆ A' ->
+  (forall x, x ∈ A -> F x ⊆ F' x) ->
+  sup A F ⊆ sup A' F'.
 intros eF eF' inclA inclF z tyz.
 rewrite sup_ax in tyz|-*; trivial.
 destruct tyz as (x,?,?).
@@ -110,12 +110,12 @@ Qed.
 
 Fixpoint pos_oper p X : Prop :=
   match p with
-  | P_Cst A => exists w, w \in A
+  | P_Cst A => exists w, w ∈ A
   | P_Rec => X
   | P_Sum p1 p2 => pos_oper p1 X \/ pos_oper p2 X
   | P_ConsRec p1 p2 => pos_oper p1 X /\ pos_oper p2 X
-  | P_ConsNoRec A p => exists2 x, x \in A & pos_oper (p x) X
-  | P_Param A p => forall x, x \in A -> pos_oper (p x) X
+  | P_ConsNoRec A p => exists2 x, x ∈ A & pos_oper (p x) X
+  | P_Param A p => forall x, x ∈ A -> pos_oper (p x) X
   end.
 
 Let eqfcst : forall X Y, eq_fun X (fun _ => Y) (fun _ => Y).
@@ -228,13 +228,13 @@ Qed.
 *)
 
   Lemma INDi_mono : forall o o',
-    isOrd o -> isOrd o' -> o \incl o' -> INDi p o \incl INDi p o'.
+    isOrd o -> isOrd o' -> o ⊆ o' -> INDi p o ⊆ INDi p o'.
 intros.
 apply TI_mono; auto with *.
 apply sp_mono; trivial.
 Qed.
 
-  Lemma IND_post : pos_oper' p (IND p) \incl IND p.
+  Lemma IND_post : pos_oper' p (IND p) ⊆ IND p.
 unfold IND, pos_oper'; red; intros.
 unfold P2p in H at 1|-*.
 rewrite cond_set_ax in H|-*.
@@ -247,7 +247,7 @@ rewrite P2p2P in H0.
 apply H0; trivial.
 Qed.
 
-  Lemma IND_pre : IND p \incl pos_oper' p (IND p).
+  Lemma IND_pre : IND p ⊆ pos_oper' p (IND p).
 red; intros.
 unfold IND, P2p in H.
 rewrite cond_set_ax in H.
@@ -271,7 +271,7 @@ Qed.
   Lemma INDi_IND :
     forall o,
     isOrd o ->
-    INDi p o \incl IND p.
+    INDi p o ⊆ IND p.
 induction 1 using isOrd_ind; intros.
 unfold INDi.
 rewrite TI_eq; auto.
@@ -283,12 +283,12 @@ revert H3; apply sp_mono; auto.
 apply H1; trivial.
 Qed.
 
-  Lemma IND_typ : IND p \in props.
+  Lemma IND_typ : IND p ∈ props.
 unfold IND.
 apply P2p_typ.
 Qed.
 
-  Lemma INDi_typ o : isOrd o -> INDi p o \in props.
+  Lemma INDi_typ o : isOrd o -> INDi p o ∈ props.
 intros.
 unfold props.
 apply power_intro; intros.
@@ -300,7 +300,7 @@ Qed.
   Definition IND' p :=
     P2p (exists2 o, isOrd o & p2P (INDi p o)).
 
-  Lemma IND'_def z : z \in IND' p <-> exists2 o, isOrd o & z \in INDi p o.
+  Lemma IND'_def z : z ∈ IND' p <-> exists2 o, isOrd o & z ∈ INDi p o.
 split; intros.
  unfold IND', P2p in H.
  rewrite cond_set_ax in H; destruct H.
@@ -319,18 +319,18 @@ split; intros.
  apply singl_intro.
 Qed.
 
-  Lemma INDi_IND' o : isOrd o -> INDi p o \incl IND' p.
+  Lemma INDi_IND' o : isOrd o -> INDi p o ⊆ IND' p.
 red; intros.
 rewrite IND'_def; eauto.
 Qed.
 
-  Lemma IND'_IND : IND' p \incl IND p.
+  Lemma IND'_IND : IND' p ⊆ IND p.
 red; intros.
 rewrite IND'_def in H; destruct H.
 revert H0; apply INDi_IND; trivial.
 Qed.
 
-  Lemma IND'_post : pos_oper' p (IND' p) \incl IND' p.
+  Lemma IND'_post : pos_oper' p (IND' p) ⊆ IND' p.
 red; intros.
 unfold pos_oper', P2p in H.
 unfold IND', P2p.
@@ -361,7 +361,7 @@ cut (exists2 o, isOrd o & pos_oper p (p2P (INDi p o))).
   destruct H2.
   destruct H0; trivial.
   destruct H1; trivial.
-  exists (osup2 x x0).
+  exists (x ⊔ x0).
    apply isOrd_osup2; trivial.
 
    split.
@@ -382,7 +382,7 @@ cut (exists2 o, isOrd o & pos_oper p (p2P (INDi p o))).
   destruct H1.
   destruct H0 with x; eauto.
 
-  assert (forall x, x \in A -> exists2 o, isOrd o & pos_oper (p0 x) (p2P (INDi p o))).
+  assert (forall x, x ∈ A -> exists2 o, isOrd o & pos_oper (p0 x) (p2P (INDi p o))).
    eauto.
   admit.
 Qed.
@@ -489,6 +489,6 @@ unfold p2P.
 
   unfold INDi in H4,H5|-*.
 
-Definition fsub a := forall P, a \in pos_oper p P -> b \in P.
+Definition fsub a := forall P, a ∈ pos_oper p P -> b ∈ P.
 
 (* TODO: find an ordinal o such that IND = INDi o ... *)

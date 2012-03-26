@@ -94,7 +94,7 @@ Qed.
 (** Denotation as type *)
 Definition el (t:term) (i:val) (x:X) :=
   match t with
-  | Some _ => x \in int t i
+  | Some _ => x ∈ int t i
   | None => True
   end.
 
@@ -107,7 +107,7 @@ unfold el; do 5 red; intros.
 Qed.
 
 Lemma in_int_el : forall i x T,
-  x \in int T i -> el T i x.
+  x ∈ int T i -> el T i x.
 destruct T as [(T,Tm)|]; simpl; trivial.
 Qed.
 
@@ -419,7 +419,7 @@ destruct n; simpl in *.
 Qed.
 
 Lemma vcons_add_var : forall e T i x,
-  val_ok e i -> x \in int T i -> val_ok (T::e) (V.cons x i).
+  val_ok e i -> x ∈ int T i -> val_ok (T::e) (V.cons x i).
 intros.
 apply vcons_add_var0; trivial.
 destruct T as[(T,Tm)|]; simpl in *; trivial.
@@ -450,7 +450,7 @@ Definition eq_typ (e:env) (M M':term) :=
   forall i, val_ok e i -> int M i == int M' i.
 (** Subtyping *)
 Definition sub_typ (e:env) (M M':term) :=
-  forall i x, val_ok e i -> x \in int M i -> x \in int M' i.
+  forall i x, val_ok e i -> x ∈ int M i -> x ∈ int M' i.
 (** Alternative equality (with kind=kind) *)
 Definition eq_typ' e M M' :=
   eq_typ e M M' /\ match M,M' with None,None => True|Some _,Some _=>True|_,_=>False end.
@@ -569,7 +569,7 @@ unfold eq_typ, typ, App, Abs; simpl; intros.
 rewrite int_subst_eq.
 assert (eq_fun (int T i) (fun x => int M (V.cons x i)) (fun x => int M (V.cons x i))).
  apply add_var_eq_fun with (T:=T); intros; trivial; reflexivity.
-assert (int N i \in int T i).
+assert (int N i ∈ int T i).
  destruct T as [(T,Tm)|]; [clear H2;simpl in *;auto|elim H2;reflexivity]. 
 rewrite beta_eq; auto.
 rewrite <- H0; auto.
@@ -770,8 +770,8 @@ Hint Resolve in_int_el.
 (** Consistency *)
 
 Lemma abstract_consistency M FF :
-  FF \in props ->
-  (forall x, ~ x \in FF) ->
+  FF ∈ props ->
+  (forall x, ~ x ∈ FF) ->
   ~ typ List.nil M (Prod prop (Ref 0)).
 unfold typ; red; intros.
 assert (val_ok List.nil (V.nil props)).

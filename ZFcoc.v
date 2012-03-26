@@ -8,8 +8,8 @@ Definition prf_trm := empty.
 Definition props := power (singl prf_trm).
 
 Lemma cc_impredicative_prod : forall dom F,
-  (forall x, x \in dom -> F x \in props) ->
-  cc_prod dom F \in props.
+  (forall x, x ∈ dom -> F x ∈ props) ->
+  cc_prod dom F ∈ props.
 Proof.
 unfold props in |- *; intros.
 apply power_intro; intros.
@@ -30,7 +30,7 @@ Qed.
 (** * mapping (meta-level) propositions to props back and forth *)
 
 Definition P2p (P:Prop) := cond_set P (singl prf_trm).
-Definition p2P p := prf_trm \in p.
+Definition p2P p := prf_trm ∈ p.
 
 Instance P2p_morph : Proper (iff ==> eq_set) P2p.
 do 2 red; intros; unfold P2p.
@@ -41,7 +41,7 @@ Instance p2P_morph : Proper (eq_set ==> iff) p2P.
 do 2 red; intros; apply in_set_morph; auto with *.
 Qed.
 
-Lemma P2p_typ : forall P, P2p P \in props.
+Lemma P2p_typ : forall P, P2p P ∈ props.
 unfold P2p; intros.
 apply power_intro; intros.
 rewrite cond_set_ax in H; destruct H; trivial.
@@ -56,7 +56,7 @@ split; intros.
  split; trivial; apply singl_intro.
 Qed.
 
-Lemma p2P2p : forall p, p \in props -> P2p (p2P p) == p.
+Lemma p2P2p : forall p, p ∈ props -> P2p (p2P p) == p.
 unfold p2P, P2p; intros.
 apply eq_intro; intros.
  rewrite cond_set_ax in H0; destruct H0.
@@ -72,8 +72,8 @@ apply eq_intro; intros.
 Qed.
 
 Lemma P2p_forall A (B:set->Prop) :
-   (forall x x', x \in A -> x == x' -> (B x <-> B x')) ->
-   P2p (forall x, x \in A -> B x) == cc_prod A (fun x => P2p (B x)).
+   (forall x x', x ∈ A -> x == x' -> (B x <-> B x')) ->
+   P2p (forall x, x ∈ A -> B x) == cc_prod A (fun x => P2p (B x)).
 intros.
 unfold P2p.
 apply eq_intro; intros.
@@ -109,8 +109,8 @@ Qed.
 
 Lemma cc_prod_forall A B :
    ext_fun A B ->
-   (forall x, x \in A -> B x \in props) ->
-   cc_prod A B == P2p (forall x, x \in A -> p2P (B x)).
+   (forall x, x ∈ A -> B x ∈ props) ->
+   cc_prod A B == P2p (forall x, x ∈ A -> p2P (B x)).
 intros.
 rewrite P2p_forall.
  apply cc_prod_ext; auto with *.
@@ -123,8 +123,8 @@ rewrite P2p_forall.
 Qed.
 
 Lemma cc_arr_imp A B :
-   B \in props ->
-   cc_arr A B == P2p ((exists x, x \in A) -> p2P B).
+   B ∈ props ->
+   cc_arr A B == P2p ((exists x, x ∈ A) -> p2P B).
 intros; unfold cc_arr; rewrite cc_prod_forall; intros; auto.
 apply P2p_morph.
 split; intros; eauto with *.
@@ -137,8 +137,8 @@ Definition cl_props := subset props (fun P => ~~p2P P -> p2P P).
 
 Lemma cc_cl_impredicative_prod : forall dom F,
   ext_fun dom F ->
-  (forall x, x \in dom -> F x \in cl_props) ->
-  cc_prod dom F \in cl_props.
+  (forall x, x ∈ dom -> F x ∈ cl_props) ->
+  cc_prod dom F ∈ cl_props.
 Proof.
 intros dom F eF H.
 rewrite cc_prod_forall; intros; trivial.
@@ -156,15 +156,15 @@ rewrite cc_prod_forall; intros; trivial.
 Qed.
 
 Lemma cl_props_classical P :
-  P \in cl_props ->
-  cc_arr (cc_arr P empty) empty \incl P.
+  P ∈ cl_props ->
+  cc_arr (cc_arr P empty) empty ⊆ P.
 red; intros.
 unfold cl_props in H; rewrite subset_ax in H.
 destruct H as (Pty,(P',eqP,clP)).
 unfold p2P in clP.
 rewrite <- eqP in clP; clear P' eqP.
 assert (z == empty).
- assert (cc_arr (cc_arr P empty) empty \in props).
+ assert (cc_arr (cc_arr P empty) empty ∈ props).
   apply cc_impredicative_prod; intros.
   apply power_intro; intros.
   apply empty_ax in H1; contradiction.
@@ -172,7 +172,7 @@ assert (z == empty).
  apply singl_elim in H1; trivial.
 rewrite H; apply clP.
 intro nP.
-assert (cc_lam P (fun x => x) \in cc_arr P empty).
+assert (cc_lam P (fun x => x) ∈ cc_arr P empty).
  apply cc_arr_intro; auto with *.
   do 2 red; auto.
 
@@ -190,7 +190,7 @@ Qed.
  *)
 
 (* The operator that adds the empty set to a type. *)
-Definition cc_dec x := union2 (singl empty) x.
+Definition cc_dec x := singl empty ∪ x.
 
 Instance cc_dec_morph : morph1 cc_dec.
 unfold cc_dec; do 2 red; intros.
@@ -198,7 +198,7 @@ rewrite H; reflexivity.
 Qed.
 
 Lemma cc_dec_ax : forall x z,
-  z \in cc_dec x <-> z == empty \/ z \in x.
+  z ∈ cc_dec x <-> z == empty \/ z ∈ x.
 unfold cc_dec; intros.
 split; intros.
  apply union2_elim in H; destruct H; auto.
@@ -212,7 +212,7 @@ Qed.
 
 
 Lemma cc_dec_prop :
-    forall P, P \in cc_dec props -> cc_dec P \in props.
+    forall P, P ∈ cc_dec props -> cc_dec P ∈ props.
 intros.
 rewrite cc_dec_ax in H.
 apply power_intro; intros.
@@ -224,7 +224,7 @@ Qed.
 
 
 Lemma cc_dec_cl_prop :
-    forall P, P \in cc_dec cl_props -> cc_dec P \in cl_props.
+    forall P, P ∈ cc_dec cl_props -> cc_dec P ∈ cl_props.
 intros.
 apply subset_intro.
 apply cc_dec_prop.
@@ -251,23 +251,23 @@ Section Equiv_TTRepl.
   Hypothesis cc_set : set.
   Hypothesis cc_eq_set : set -> set -> Prop.
   Hypothesis cc_eq_set_morph : Proper (eq_set==>eq_set==>iff) cc_eq_set.
-  Hypothesis cc_set_incl_U : cc_set \incl U.
+  Hypothesis cc_set_incl_U : cc_set ⊆ U.
 
 Lemma cc_ttrepl A R :
   Proper (eq_set ==> eq_set ==> iff) R ->
   (* A : Ti *)
-  A \in U ->
+  A ∈ U ->
   (* type of R + existence assumption *)
-  (forall x, x \in A -> exists2 y, y \in cc_set & R x y) ->
-  (forall x y y', x \in A -> R x y -> (R x y' <-> cc_eq_set y y')) ->
+  (forall x, x ∈ A -> exists2 y, y ∈ cc_set & R x y) ->
+  (forall x y y', x ∈ A -> R x y -> (R x y' <-> cc_eq_set y y')) ->
   (* exists f:A->set, *)
-  exists2 f, f \in cc_arr A cc_set &
+  exists2 f, f ∈ cc_arr A cc_set &
     (* forall x:A, R x (f i) *)
-    forall x, x \in A -> R x (cc_app f x).
+    forall x, x ∈ A -> R x (cc_app f x).
 
-(forall x in A, exists y \in A, exists g:y->cc_set, R x (cc_sup y g))
+(forall x in A, exists y ∈ A, exists g:y->cc_set, R x (cc_sup y g))
 
-R' x y := (z \in y <-> R x z)  (y = ens de cc_set -> \incl U)
+R' x y := (z ∈ y <-> R x z)  (y = ens de cc_set -> ⊆ U)
 
 End Equiv_TTRepl.
 *)
@@ -278,11 +278,11 @@ Section Equiv_ZF_CIC_TTColl.
    so it is closed by collection. *)
 
   Hypothesis coll_axU : forall A (R:set->set->Prop), 
-    A \in U ->
+    A ∈ U ->
     (forall x x' y y', in_set x A ->
      eq_set x x' -> eq_set y y' -> R x y -> R x' y') ->
-    exists2 B, B \in U & forall x, in_set x A -> (exists2 y, y \in U & R x y) ->
-       exists2 y, in_set y B & y \in U /\ R x y.
+    exists2 B, B ∈ U & forall x, in_set x A -> (exists2 y, y ∈ U & R x y) ->
+       exists2 y, in_set y B & y ∈ U /\ R x y.
 
   (** The inductive type of sets (cf Ens.set) and its elimination rule *)
   Hypothesis cc_set : set.
@@ -293,17 +293,17 @@ Section SetInU.
   Hypothesis cc_set_ind :
     forall P : set -> Prop,
     (forall y X f, morph1 f ->
-     (* y \in sigma X:U. U->Ens.set *)
+     (* y ∈ sigma X:U. U->Ens.set *)
      y == couple X (cc_lam X f) ->
-     X \in U ->
-     (forall x, x \in X -> f x \in cc_set) ->
+     X ∈ U ->
+     (forall x, x ∈ X -> f x ∈ cc_set) ->
      (* induction hypothesis *)
-     (forall x, x \in X -> P (f x)) ->
+     (forall x, x ∈ X -> P (f x)) ->
      P y) ->
-    forall x, x \in cc_set -> P x.
+    forall x, x ∈ cc_set -> P x.
 
 (* Sets formed by indexes in U belong to U: *)
-Lemma cc_set_incl_U : cc_set \incl U.
+Lemma cc_set_incl_U : cc_set ⊆ U.
 red; intros.
 apply cc_set_ind with (2:=H); intros.
 rewrite H1; clear H1 y.
@@ -315,7 +315,7 @@ End SetInU.
 
   (** All we need to know about cc_set is that it's included in U, so the ttcoll
      axiom is really an instance of collection for universe U. *)
-  Hypothesis cc_set_incl_U : cc_set \incl U.
+  Hypothesis cc_set_incl_U : cc_set ⊆ U.
 
 (** We prove that the model will validate TTColl (Ens.ttcoll).
    This formulation heavily uses the reification of propositions of the model
@@ -323,22 +323,22 @@ End SetInU.
 Lemma cc_ttcoll A R :
   Proper (eq_set ==> eq_set ==> iff) R ->
   (* A : Ti *)
-  A \in U ->
+  A ∈ U ->
   (* type of R + existence assumption *)
-  (forall x, x \in A -> exists2 y, y \in cc_set & R x y) ->
+  (forall x, x ∈ A -> exists2 y, y ∈ cc_set & R x y) ->
   (* exists X:Ti, *)
-  exists2 X, X \in U &
+  exists2 X, X ∈ U &
     (* exists f:X->set, *)
-    exists2 f, f \in cc_arr X cc_set &
+    exists2 f, f ∈ cc_arr X cc_set &
     (* forall x:A, exists i:X, R x (f i) *)
-    forall x, x \in A -> exists2 i, i \in X & R x (cc_app f i).
+    forall x, x ∈ A -> exists2 i, i ∈ X & R x (cc_app f i).
 intros.
-destruct coll_axU with (A:=A) (R:=fun x y => y \in cc_set /\ R x y) as (B,HB);
+destruct coll_axU with (A:=A) (R:=fun x y => y ∈ cc_set /\ R x y) as (B,HB);
   trivial.
  intros.
  rewrite <- H3; rewrite <- H4; trivial.
 
- pose (B':= inter2 B cc_set).
+ pose (B':= B ∩ cc_set).
  exists B'.
   apply G_incl with B; trivial.
   apply inter2_incl1.

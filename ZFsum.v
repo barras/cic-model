@@ -49,9 +49,9 @@ rewrite H; reflexivity.
 Qed.
 
 Definition sum X Y :=
-  subset (prodcart (succ (succ zero)) (union2 X Y))
-    (fun p => (fst p == zero /\ snd p \in X) \/
-              (fst p == succ zero /\ snd p \in Y)).
+  subset (prodcart (succ (succ zero)) (X ∪ Y))
+    (fun p => (fst p == zero /\ snd p ∈ X) \/
+              (fst p == succ zero /\ snd p ∈ Y)).
 
 Instance sum_morph : morph2 sum.
 do 3 red; unfold sum; intros.
@@ -63,9 +63,9 @@ apply subset_morph; trivial.
 Qed.
 
 Lemma sum_ind : forall X Y a (P:Prop),
-  (forall x, x \in X -> a == inl x -> P) ->
-  (forall y, y \in Y -> a == inr y -> P) ->
-  a \in sum X Y -> P.
+  (forall x, x ∈ X -> a == inl x -> P) ->
+  (forall y, y ∈ Y -> a == inr y -> P) ->
+  a ∈ sum X Y -> P.
 unfold sum, inl, inr; intros.
 elim subset_elim2 with (1:=H1); intros.
 rewrite <- H2 in H3.
@@ -73,16 +73,16 @@ clear x H2.
 destruct H3 as [(eq1,eq2)|(eq1,eq2)].
  apply H with (snd a); trivial.
  rewrite <- eq1.
- apply surj_pair with (succ (succ zero)) (union2 X Y).
+ apply surj_pair with (succ (succ zero)) (X ∪ Y).
  apply subset_elim1 with (1:=H1).
 
  apply H0 with (snd a); trivial.
  rewrite <- eq1.
- apply surj_pair with (succ (succ zero)) (union2 X Y).
+ apply surj_pair with (succ (succ zero)) (X ∪ Y).
  apply subset_elim1 with (1:=H1).
 Qed.
 
-Lemma inl_typ : forall X Y x, x \in X -> inl x \in sum X Y.
+Lemma inl_typ : forall X Y x, x ∈ X -> inl x ∈ sum X Y.
 unfold inl, sum; intros.
 apply subset_intro.
  apply couple_intro.
@@ -97,7 +97,7 @@ apply subset_intro.
   rewrite snd_def; trivial.
 Qed.
 
-Lemma inr_typ : forall X Y y, y \in Y -> inr y \in sum X Y.
+Lemma inr_typ : forall X Y y, y ∈ Y -> inr y ∈ sum X Y.
 unfold inr, sum; intros.
 apply subset_intro.
  apply couple_intro.
@@ -113,7 +113,7 @@ apply subset_intro.
 Qed.
 
 Lemma sum_mono : forall X X' Y Y',
-  X \incl X' -> Y \incl Y' -> sum X Y \incl sum X' Y'.
+  X ⊆ X' -> Y ⊆ Y' -> sum X Y ⊆ sum X' Y'.
 red; intros.
 elim H1 using sum_ind; intros.
  rewrite H3.
@@ -125,8 +125,8 @@ Qed.
 
   Definition sum_case f g x :=
     union
-   (union2 (subset (singl (f (snd x))) (fun _ => fst x == zero))
-           (subset (singl (g (snd x))) (fun _ => fst x == succ zero))).
+   (subset (singl (f (snd x))) (fun _ => fst x == zero) ∪
+    subset (singl (g (snd x))) (fun _ => fst x == succ zero)).
 
 Lemma sum_case_ext : forall A1 A2 B1 B2 B1' B2',
   eq_fun A1 B1 B1' ->
@@ -136,7 +136,7 @@ red; intros.
 unfold sum_case.
 apply union_morph.
 apply union2_morph.
- assert (fst x == zero -> snd x \in A1).
+ assert (fst x == zero -> snd x ∈ A1).
   apply sum_ind with (3:=H1); intros.
    rewrite H4; unfold inl; rewrite snd_def; trivial.
 
@@ -160,7 +160,7 @@ apply union2_morph.
   destruct H5.
   rewrite <- H2; trivial.
 
- assert (fst x == succ zero -> snd x \in A2).
+ assert (fst x == succ zero -> snd x ∈ A2).
   apply sum_ind with (3:=H1); intros.
    rewrite H4 in H5; unfold inl in H5; rewrite fst_def in H5.
    symmetry in H5; apply discr in H5; contradiction.
@@ -238,9 +238,9 @@ Qed.
 Lemma sum_case_ind0 :
   forall A B f g x (P:set->Prop),
   Proper (eq_set ==> iff) P ->
-  x \in sum A B ->
-  (forall a, a \in A -> x == inl a -> P (f (dest_sum x))) ->
-  (forall b, b \in B -> x == inr b -> P (g (dest_sum x))) ->
+  x ∈ sum A B ->
+  (forall a, a ∈ A -> x == inl a -> P (f (dest_sum x))) ->
+  (forall b, b ∈ B -> x == inr b -> P (g (dest_sum x))) ->
   P (sum_case f g x).
 intros.
 apply sum_ind with (3:=H0); intros.
@@ -317,10 +317,10 @@ Lemma sum_case_ind :
   Proper (eq_set ==> iff) P ->
   morph1 f ->
   morph1 g ->
-  (forall a, a \in A -> P (f a)) ->
-  (forall b, b \in B -> P (g b)) ->
+  (forall a, a ∈ A -> P (f a)) ->
+  (forall b, b ∈ B -> P (g b)) ->
   forall x,
-  x \in sum A B ->
+  x ∈ sum A B ->
   P (sum_case f g x).
 intros.
 apply sum_ind with (3:=H4); intros.

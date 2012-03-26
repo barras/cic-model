@@ -14,7 +14,7 @@ Lemma ecc_grot : forall n, grot_univ (ecc n).
 destruct n; apply (grot_succ_typ gr).
 Qed.
 
-Lemma ecc_in1 : forall n, props \in ecc n.
+Lemma ecc_in1 : forall n, props ∈ ecc n.
 induction n; simpl; intros.
  apply (grot_succ_in gr).
  apply G_trans with (ecc n); trivial.
@@ -23,12 +23,12 @@ induction n; simpl; intros.
   apply (grot_succ_in gr).
 Qed.
 
-Lemma ecc_in2 : forall n, ecc n \in ecc (S n).
+Lemma ecc_in2 : forall n, ecc n ∈ ecc (S n).
 simpl; intros.
 apply (grot_succ_in gr).
 Qed.
 
-Lemma ecc_incl : forall n x, x \in ecc n -> x \in ecc (S n).
+Lemma ecc_incl : forall n x, x ∈ ecc n -> x ∈ ecc (S n).
 simpl; intros.
 apply G_trans with (ecc n); trivial.
  apply (grot_succ_typ gr).
@@ -38,9 +38,9 @@ Qed.
 
 Lemma ecc_prod : forall n X Y,
   ext_fun X Y ->
-  X \in ecc n ->
-  (forall x, x \in X -> Y x \in ecc n) ->
-  cc_prod X Y \in ecc n.
+  X ∈ ecc n ->
+  (forall x, x ∈ X -> Y x ∈ ecc n) ->
+  cc_prod X Y ∈ ecc n.
 intros.
 apply G_cc_prod; trivial.
 apply ecc_grot.
@@ -48,9 +48,9 @@ Qed.
 
 Lemma ecc_prod2 : forall n X Y,
   ext_fun X Y ->
-  X \in props ->
-  (forall x, x \in X -> Y x \in ecc n) ->
-  cc_prod X Y \in ecc n.
+  X ∈ props ->
+  (forall x, x ∈ X -> Y x ∈ ecc n) ->
+  cc_prod X Y ∈ ecc n.
 intros.
 apply G_cc_prod; trivial.
  apply ecc_grot.

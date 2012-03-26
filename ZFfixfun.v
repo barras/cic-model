@@ -1,7 +1,7 @@
 Require Import ZF ZFrelations ZFnats ZFord ZFcoc.
 
 Definition incl_fam A X Y :=
-  forall a, a \in A -> X a \incl Y a.
+  forall a, a ∈ A -> X a ⊆ Y a.
 
 Instance incl_fam_trans : forall A, Transitive (incl_fam A).
 red; red; intros.
@@ -74,7 +74,7 @@ apply cc_app_morph; trivial.
 apply TR_morph0; auto with *.
 Qed.
 
-  Let m2: forall a a' o o', a \in A -> a == a' -> isOrd o -> o == o' ->
+  Let m2: forall a a' o o', a ∈ A -> a == a' -> isOrd o -> o == o' ->
     F (TIF o) a == F (TIF o') a'.
 intros.
 apply FFmono_ext; auto with *.
@@ -86,7 +86,7 @@ Qed.
 
   Lemma TIF_eq : forall o a,
     isOrd o ->
-    a \in A ->
+    a ∈ A ->
     TIF o a == sup o (fun o' => F (TIF o') a).
 intros.
 unfold TIF.
@@ -102,9 +102,9 @@ Qed.
   Lemma TIF_intro : forall o o' a x,
     isOrd o ->
     lt o' o ->
-    a \in A ->
-    x \in F (TIF o') a ->
-    x \in TIF o a.
+    a ∈ A ->
+    x ∈ F (TIF o') a ->
+    x ∈ TIF o a.
 intros.
 rewrite TIF_eq; trivial.
 rewrite sup_ax; auto.
@@ -116,9 +116,9 @@ Qed.
 
   Lemma TIF_elim : forall o x a,
     isOrd o ->
-    a \in A ->
-    x \in TIF o a ->
-    exists2 o', lt o' o & x \in F (TIF o') a.
+    a ∈ A ->
+    x ∈ TIF o a ->
+    exists2 o', lt o' o & x ∈ F (TIF o') a.
 intros.
 rewrite TIF_eq in H1; trivial.
 rewrite sup_ax in H1; auto.
@@ -126,7 +126,7 @@ do 2 red; intros; apply m2; auto with *.
 apply isOrd_inv with o; trivial.
 Qed.
 
-  Lemma TIF_mono : forall a, a \in A -> increasing (fun o => TIF o a).
+  Lemma TIF_mono : forall a, a ∈ A -> increasing (fun o => TIF o a).
 do 2 red; intros.
 apply TIF_elim in H3; intros; auto with *.
 destruct H3.
@@ -136,8 +136,8 @@ Qed.
 
   Lemma TIF_incl : forall o, isOrd o ->
     forall o', lt o' o ->
-    forall a, a \in A -> 
-    TIF o' a \incl TIF o a.
+    forall a, a ∈ A -> 
+    TIF o' a ⊆ TIF o a.
 intros.
 apply TIF_mono; trivial; auto.
 apply isOrd_inv with o; trivial.
@@ -145,7 +145,7 @@ Qed.
 
   Lemma TIF_mono_succ : forall o a,
     isOrd o ->
-    a \in A ->
+    a ∈ A ->
     TIF (osucc o) a == F (TIF o) a.
 intros.
 assert (Fext : ext_fun (osucc o) (fun o' => F (TIF o') a)).
@@ -170,7 +170,7 @@ Qed.
 
   Lemma TIF_mono_eq : forall o a,
     isOrd o ->
-    a \in A ->
+    a ∈ A ->
     TIF o a == sup o (fun o' => TIF (osucc o') a).
 intros.
 rewrite TIF_eq; auto.
@@ -206,7 +206,7 @@ Hypothesis Bm : morph1 B.
 Hypothesis Ftyp : forall X, morph1 X -> incl_fam A X B -> incl_fam A (F X) B.
 
 Definition fsub a a' x :=
-  subset (B a') (fun b => forall X, morph1 X -> incl_fam A X B -> x \in F X a -> b \in X a').
+  subset (B a') (fun b => forall X, morph1 X -> incl_fam A X B -> x ∈ F X a -> b ∈ X a').
 
 Instance fsub_morph : Proper (eq_set==>eq_set==>eq_set==>eq_set) fsub.
 unfold fsub; do 4 red; intros.
@@ -217,7 +217,7 @@ apply fa_morph; intro Xm.
 rewrite H; rewrite H0; rewrite H1; reflexivity.
 Qed.
 
-Definition Ffix a := subset (B a) (fun b => exists2 o, isOrd o & b \in TIF o a).
+Definition Ffix a := subset (B a) (fun b => exists2 o, isOrd o & b ∈ TIF o a).
 
 Lemma Ffix_in_dom : incl_fam A Ffix B.
 do 2 red; intros.
@@ -243,8 +243,8 @@ exists (osucc x); auto.
  apply isOrd_inv with y; trivial.
 Qed.
 
-Lemma Ffix_def : forall a b, a \in A ->
-  (b \in Ffix a <-> exists2 o, isOrd o & b \in TIF o a).
+Lemma Ffix_def : forall a b, a ∈ A ->
+  (b ∈ Ffix a <-> exists2 o, isOrd o & b ∈ TIF o a).
 unfold Ffix; intros.
 rewrite subset_ax.
 split; intros.
@@ -264,12 +264,12 @@ split; intros.
 Qed.
 
 Lemma fsub_elim : forall x y o a a',
-  a \in A ->
-  a' \in A ->
+  a ∈ A ->
+  a' ∈ A ->
   isOrd o ->
-  y \in TIF o a ->
-  x \in fsub a a' y ->
-  exists2 o', lt o' o & x \in TIF o' a'.
+  y ∈ TIF o a ->
+  x ∈ fsub a a' y ->
+  exists2 o', lt o' o & x ∈ TIF o' a'.
 intros.
 unfold fsub in H3; rewrite subset_ax in H3.
 destruct H3 as (?,(x',?,?)).
@@ -284,11 +284,11 @@ rewrite H4; apply H5; trivial.
 Qed.
 
 Lemma Ffix_fsub_inv : forall x y a a',
-  a \in A ->
-  a' \in A ->
-  x \in Ffix a ->
-  y \in fsub a a' x ->
-  y \in Ffix a'.
+  a ∈ A ->
+  a' ∈ A ->
+  x ∈ Ffix a ->
+  y ∈ fsub a a' x ->
+  y ∈ Ffix a'.
 intros.
 rewrite Ffix_def in H1|-*; trivial.
 destruct H1.
@@ -301,19 +301,19 @@ Section IterDep.
 
 Variable G : (set -> set -> set) -> set -> set -> set.
 Hypothesis Gm : forall a x x' g g',
-  a \in A ->
-  x \in Ffix a ->
-  (forall a' a'', a' \in A -> a' == a'' -> eq_fun (fsub a a' x) (g a') (g' a'')) ->
+  a ∈ A ->
+  x ∈ Ffix a ->
+  (forall a' a'', a' ∈ A -> a' == a'' -> eq_fun (fsub a a' x) (g a') (g' a'')) ->
   x == x' -> G g a x == G g' a x'.
 
 Definition Ffixd_rel a x y :=
   forall R:set->set->set->Prop,
   Proper (eq_set ==> eq_set ==> eq_set ==> iff) R ->
   (forall a x g,
-   a \in A ->
+   a ∈ A ->
    morph2 g ->
-   (forall a', a' \in A -> ext_fun (fsub a a' x) (g a')) ->
-   (forall a' y, a' \in A -> y \in fsub a a' x -> R a' y (g a' y)) ->
+   (forall a', a' ∈ A -> ext_fun (fsub a a' x) (g a')) ->
+   (forall a' y, a' ∈ A -> y ∈ fsub a a' x -> R a' y (g a' y)) ->
    R a x (G g a x)) ->
   R a x y.
 
@@ -325,10 +325,10 @@ rewrite <- H; rewrite <- H0; rewrite <- H1; apply H2; trivial.
 Qed.
 
   Lemma Ffixd_rel_intro : forall a x g,
-    a \in A ->
+    a ∈ A ->
     morph2 g -> 
-    (forall a', a' \in A -> ext_fun (fsub a a' x) (g a')) ->
-    (forall a' y, a' \in A -> y \in fsub a a' x -> Ffixd_rel a' y (g a' y)) ->
+    (forall a', a' ∈ A -> ext_fun (fsub a a' x) (g a')) ->
+    (forall a' y, a' ∈ A -> y ∈ fsub a a' x -> Ffixd_rel a' y (g a' y)) ->
     Ffixd_rel a x (G g a x).
 red; intros.
 apply H4; trivial; intros.
@@ -336,13 +336,13 @@ apply H2; trivial.
 Qed.
 
   Lemma Ffixd_rel_inv : forall a x o,
-    a \in A ->
-    x \in Ffix a ->
+    a ∈ A ->
+    x ∈ Ffix a ->
     Ffixd_rel a x o ->
     exists2 g,
       morph2 g /\
-      (forall a', a' \in A -> ext_fun (fsub a a' x) (g a')) /\
-      (forall a' y, a' \in A -> y \in fsub a a' x -> Ffixd_rel a' y (g a' y)) &
+      (forall a', a' ∈ A -> ext_fun (fsub a a' x) (g a')) /\
+      (forall a' y, a' ∈ A -> y ∈ fsub a a' x -> Ffixd_rel a' y (g a' y)) &
       o == G g a x.
 intros a x o tya xFx Fr.
 apply (@proj2 (Ffixd_rel a x o)).
@@ -385,7 +385,7 @@ Qed.
 
   Lemma Ffixd_rel_fun :
     forall a x y, Ffixd_rel a x y ->
-    forall y', Ffixd_rel a x y' -> x \in Ffix a -> y == y'.
+    forall y', Ffixd_rel a x y' -> x ∈ Ffix a -> y == y'.
 intros a x y H.
 apply H; intros.
  apply morph_impl_iff3; auto with *.
@@ -405,11 +405,11 @@ Qed.
 
 Require Import ZFrepl.
 
-  Lemma Ffixd_rel_def : forall o x a, isOrd o -> a \in A -> x \in TIF o a ->
+  Lemma Ffixd_rel_def : forall o x a, isOrd o -> a ∈ A -> x ∈ TIF o a ->
     exists y, Ffixd_rel a x y.
 intros o x a oo; revert x a; apply isOrd_ind with (2:=oo); intros.
 clear o oo H0.
-assert (forall a' z, a' \in A -> z \in fsub a a' x -> uchoice_pred (fun o => Ffixd_rel a' z o)).
+assert (forall a' z, a' ∈ A -> z ∈ fsub a a' x -> uchoice_pred (fun o => Ffixd_rel a' z o)).
  intros.
  destruct fsub_elim with (4:=H3) (5:=H4) as (y',lty',tyz); trivial.
  split; intros.
@@ -432,7 +432,7 @@ intros.
 apply uchoice_def; auto.
 Qed.
 
-  Lemma Ffixd_rel_choice_pred : forall o x a, isOrd o -> a \in A -> x \in TIF o a ->
+  Lemma Ffixd_rel_choice_pred : forall o x a, isOrd o -> a ∈ A -> x ∈ TIF o a ->
     uchoice_pred (fun o => Ffixd_rel a x o).
 split; intros.
  rewrite <- H2; trivial.
@@ -446,8 +446,8 @@ Qed.
 
   Lemma Frd_eqn : forall a x o,
     isOrd o ->
-    a \in A -> 
-    x \in TIF o a ->
+    a ∈ A -> 
+    x ∈ TIF o a ->
     Fixd_rec a x == G Fixd_rec a x.
 intros.
 unfold Fixd_rec.
@@ -461,7 +461,7 @@ apply Gm; auto with *.
 red; intros.
 rewrite H5 in H4|-*; clear x0 H5.
 rewrite H3 in H2, H4|-*; clear a' H3.
-assert (x' \in TIF o a'').
+assert (x' ∈ TIF o a'').
  destruct fsub_elim with (4:=H1) (5:=H4); trivial.
  apply TIF_incl with x0; auto.
 generalize (uchoice_def _ (Ffixd_rel_choice_pred _ _ _ H H2 H3)); intro.
@@ -478,19 +478,19 @@ Section Iter.
 
 Variable G : (set -> set) -> set -> set.
 Hypothesis Gm : forall a x x' g g',
-  a \in A ->
-  x \in Ffix a ->
-  (forall a', a' \in A -> eq_fun (fsub a a' x) g g') ->
+  a ∈ A ->
+  x ∈ Ffix a ->
+  (forall a', a' ∈ A -> eq_fun (fsub a a' x) g g') ->
   x == x' -> G g x == G g' x'.
 
 Definition Ffix_rel x y :=
   forall R:set->set->Prop,
   Proper (eq_set ==> eq_set ==> iff) R ->
   (forall a x g,
-   a \in A ->
-   x \in Ffix a ->
-   (forall a', a' \in A -> ext_fun (fsub a a' x) g) ->
-   (forall a' y, a' \in A -> y \in fsub a a' x -> R y (g y)) ->
+   a ∈ A ->
+   x ∈ Ffix a ->
+   (forall a', a' ∈ A -> ext_fun (fsub a a' x) g) ->
+   (forall a' y, a' ∈ A -> y ∈ fsub a a' x -> R y (g y)) ->
    R x (G g x)) ->
   R x y.
 
@@ -502,10 +502,10 @@ rewrite <- H; rewrite <- H0; apply H1; trivial.
 Qed.
 
   Lemma Ffix_rel_intro : forall a x g,
-    a \in A ->
-    x \in Ffix a ->
-    (forall a', a' \in A -> ext_fun (fsub a a' x) g) ->
-    (forall a' y, a' \in A -> y \in fsub a a' x -> Ffix_rel y (g y)) ->
+    a ∈ A ->
+    x ∈ Ffix a ->
+    (forall a', a' ∈ A -> ext_fun (fsub a a' x) g) ->
+    (forall a' y, a' ∈ A -> y ∈ fsub a a' x -> Ffix_rel y (g y)) ->
     Ffix_rel x (G g x).
 red; intros.
 apply H4 with a; trivial; intros.
@@ -513,12 +513,12 @@ apply H2 with a'; trivial.
 Qed.
 
   Lemma Ffix_rel_inv : forall a x o,
-    a \in A ->
-    x \in Ffix a ->
+    a ∈ A ->
+    x ∈ Ffix a ->
     Ffix_rel x o ->
     exists2 g,
-      (forall a', a' \in A -> ext_fun (fsub a a' x) g) /\
-      (forall a' y, a' \in A -> y \in fsub a a' x -> Ffix_rel y (g y)) &
+      (forall a', a' ∈ A -> ext_fun (fsub a a' x) g) /\
+      (forall a' y, a' ∈ A -> y ∈ fsub a a' x -> Ffix_rel y (g y)) &
       o == G g x.
 intros a x o tya xFx Fr.
 apply (@proj2 (Ffix_rel x o)).
@@ -556,7 +556,7 @@ Qed.
 
   Lemma Ffix_rel_fun :
     forall x y, Ffix_rel x y ->
-    forall a y', Ffix_rel x y' -> a \in A -> x \in Ffix a -> y == y'.
+    forall a y', Ffix_rel x y' -> a ∈ A -> x ∈ Ffix a -> y == y'.
 intros x y H.
 apply H; intros.
  apply morph_impl_iff2; auto with *.
@@ -575,11 +575,11 @@ Qed.
 
 Require Import ZFrepl.
 
-  Lemma Ffix_rel_def : forall o x a, isOrd o -> a \in A -> x \in TIF o a ->
+  Lemma Ffix_rel_def : forall o x a, isOrd o -> a ∈ A -> x ∈ TIF o a ->
     exists y, Ffix_rel x y.
 intros o x a oo; revert x a; apply isOrd_ind with (2:=oo); intros.
 clear o oo H0.
-assert (forall a z, a \in A -> z \in fsub a x -> uchoice_pred (fun o => Ffix_rel z o)).
+assert (forall a z, a ∈ A -> z ∈ fsub a x -> uchoice_pred (fun o => Ffix_rel z o)).
  intros.
  destruct fsub_elim with (4:=H3) (5:=H4) as (y',lty',tyz); trivial.
  split; intros.
@@ -600,7 +600,7 @@ intros.
 apply uchoice_def; eauto.
 Qed.
 
-  Lemma Ffix_rel_choice_pred : forall o x a, isOrd o -> a \in A -> x \in TIF o a ->
+  Lemma Ffix_rel_choice_pred : forall o x a, isOrd o -> a ∈ A -> x ∈ TIF o a ->
     uchoice_pred (fun o => Ffix_rel x o).
 split; intros.
  rewrite <- H2; trivial.
@@ -614,8 +614,8 @@ Qed.
 
   Lemma Fr_eqn : forall a x o,
     isOrd o ->
-    a \in A -> 
-    x \in TIF o a ->
+    a ∈ A -> 
+    x ∈ TIF o a ->
     Fix_rec x == G Fix_rec x.
 intros.
 unfold Fix_rec.
@@ -628,7 +628,7 @@ apply Gm with a; auto with *.
 red; intros.
 rewrite (gext _ H3 _ _ H4 H5).
 rewrite H5 in H4; clear x0 H5.
-assert (x' \in TIF o a').
+assert (x' ∈ TIF o a').
  destruct fsub_elim with (4:=H1) (5:=H4); trivial.
  apply TIF_incl with x0; auto.
 generalize (uchoice_def _ (Ffix_rel_choice_pred _ _ _ H H3 H5)); intro.
@@ -642,7 +642,7 @@ End Iter.
   Definition F_a g x := osup (sup A (fun a => fsub a x)) (fun y => osucc (g y)).
 
   Lemma F_a_morph : forall x x' g g',
-    (forall a', a' \in A -> eq_fun (fsub a' x) g g') ->
+    (forall a', a' ∈ A -> eq_fun (fsub a' x) g g') ->
     x == x' -> F_a g x == F_a g' x'.
 unfold F_a; intros.
 apply osup_morph.
@@ -667,7 +667,7 @@ apply Ffix_rel_morph; trivial.
 Qed.
 Hint Resolve Fe1.
 
-  Lemma F_a_ord : forall a x, a \in A -> x \in Ffix a -> isOrd (Fix_rec F_a x).
+  Lemma F_a_ord : forall a x, a ∈ A -> x ∈ Ffix a -> isOrd (Fix_rec F_a x).
 intros.
 rewrite Ffix_def in H0; trivial.
 destruct H0.
@@ -687,21 +687,21 @@ Hint Resolve F_a_ord.
 
 (*
   Hypothesis Fstab : forall X,
-    X \incl power A ->
-    inter (replf X F) \incl F (inter X).
+    X ⊆ power A ->
+    inter (replf X F) ⊆ F (inter X).
 *)
   Lemma F_intro : forall w,
     isOrd w ->
-    forall a x, a \in A -> x \in TIF w a ->
+    forall a x, a ∈ A -> x ∈ TIF w a ->
     forall o, isOrd o ->
-    (forall a' y, a' \in A -> y \in fsub a' x -> y \in TIF o a') ->
-    x \in F (TIF o) a.
+    (forall a' y, a' ∈ A -> y ∈ fsub a' x -> y ∈ TIF o a') ->
+    x ∈ F (TIF o) a.
 Admitted.
 (*intros.
 assert (True).
  auto.
-(*assert (inter (replf (subset (power A) (fun X => x \in F X a)) (fun X => X))
-        \incl TIF o a).
+(*assert (inter (replf (subset (power A) (fun X => x ∈ F X a)) (fun X => X))
+        ⊆ TIF o a).
  red; intros.
  apply H2.
  apply subset_intro.
@@ -762,9 +762,9 @@ apply inter_intro; intros.
 Qed.
 *)
   Lemma F_a_tot : forall a x,
-   a \in A ->
-   x \in Ffix a ->
-   x \in TIF (osucc (Fix_rec F_a x)) a.
+   a ∈ A ->
+   x ∈ Ffix a ->
+   x ∈ TIF (osucc (Fix_rec F_a x)) a.
 intros.
 rewrite Ffix_def in H0; trivial.
 destruct H0.
@@ -774,7 +774,7 @@ assert (incl_fam A (fun a => fsub a x) (TIF (Fix_rec F_a x))).
  destruct fsub_elim with (4:=H4) (5:=H6); trivial.
  assert (xo : isOrd x1).
   apply isOrd_inv with y; trivial.
- assert (z \in TIF (osucc (Fix_rec F_a z)) a0).
+ assert (z ∈ TIF (osucc (Fix_rec F_a z)) a0).
   apply H2 with x1; trivial.
  revert H9; apply TIF_mono; auto.
   apply F_a_ord with a; trivial.
@@ -800,7 +800,7 @@ Qed.
   Definition Ffix_ord a :=
     osup (Ffix a) (fun x => osucc (Fix_rec F_a x)).
 
-  Lemma Ffix_o_o : forall a, a \in A -> isOrd (Ffix_ord a).
+  Lemma Ffix_o_o : forall a, a ∈ A -> isOrd (Ffix_ord a).
 intros.
 apply isOrd_osup; eauto.
 Qed.
@@ -818,9 +818,9 @@ Qed.
 
 (*
   Lemma Ffix_post : forall a x,
-   a \in A ->
-   x \in Ffix a ->
-   x \in TIF (Ffix_ord a) a.
+   a ∈ A ->
+   x ∈ Ffix a ->
+   x ∈ TIF (Ffix_ord a) a.
 intros.
 apply TIF_intro with (Fix_rec F_a x); auto.
  unfold Ffix_ord; apply osup_intro with (x:=x); trivial.
@@ -831,7 +831,7 @@ apply TIF_intro with (Fix_rec F_a x); auto.
 Qed.
 *)
 
-  Lemma Ffix_eqn : forall a, a \in A -> Ffix a == F Ffix a.
+  Lemma Ffix_eqn : forall a, a ∈ A -> Ffix a == F Ffix a.
 intros.
 apply eq_intro; intros.
  rewrite Ffix_def in H0; trivial.
@@ -846,7 +846,7 @@ apply eq_intro; intros.
   rewrite <- TIF_mono_succ; auto.
   revert H1; apply TIF_incl; auto.
 
- assert (z \in TIF (osucc (Ffix_ord a)) a).
+ assert (z ∈ TIF (osucc (Ffix_ord a)) a).
   rewrite TIF_mono_succ; auto.
   revert H0; apply Fmono; trivial.
    admit.

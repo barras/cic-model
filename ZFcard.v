@@ -5,8 +5,8 @@ Require Import ZF.
 Definition le_card (x y:set) : Prop :=
   exists2 R : set -> set -> Prop,
     Proper (eq_set ==> eq_set ==> iff) R &
-    (forall x', x' \in x -> exists2 y', y' \in y & R x' y') /\
-    (forall x1 y1 x2 y2, x1 \in x -> x2 \in x -> y1 \in y -> y2 \in y ->
+    (forall x', x' ∈ x -> exists2 y', y' ∈ y & R x' y') /\
+    (forall x1 y1 x2 y2, x1 ∈ x -> x2 ∈ x -> y1 ∈ y -> y2 ∈ y ->
      R x1 y1 -> R x2 y2 -> y1 == y2 -> x1 == x2).
 
 Instance le_card_morph : Proper (eq_set ==> eq_set ==> iff) le_card.
@@ -49,7 +49,7 @@ Instance le_card_trans : Transitive le_card.
 red.
 destruct 1 as (R,Rm,(incl,inj));
 destruct 1 as (R',R'm,(incl',inj')).
-exists (fun x' z' => exists2 y', y' \in y & R x' y' /\ R' y' z'); [|split;intros].
+exists (fun x' z' => exists2 y', y' ∈ y & R x' y' /\ R' y' z'); [|split;intros].
  do 3 red; intros.
  apply ex2_morph.
   red; reflexivity.
@@ -70,7 +70,7 @@ Qed.
 Definition lt_card x y :=
   ~ le_card y x.
 
-Lemma incl_le_card : forall x y, x \incl y -> le_card x y.
+Lemma incl_le_card : forall x y, x ⊆ y -> le_card x y.
 intros.
 exists (fun x y => x == y); [|split;intros].
  do 3 red; intros.
@@ -85,14 +85,14 @@ Qed.
 Lemma cantor_le : forall x, lt_card x (power x).
 red; red; intros.
 destruct H as (R,Rm,(incl,Rfun)).
-pose (D := subset x (fun x' => forall x'' z, z \in power x ->
-             x'' == x' -> R z x'' -> ~ x'' \in z)).
-assert (D \in power x).
+pose (D := subset x (fun x' => forall x'' z, z ∈ power x ->
+             x'' == x' -> R z x'' -> ~ x'' ∈ z)).
+assert (D ∈ power x).
  apply power_intro; intros.
  unfold D in H.
  apply subset_elim1 with (1:=H).
 elim incl with D; trivial; intros d in_d rel_d.
-assert (~ d \in D).
+assert (~ d ∈ D).
  red; intros.
  unfold D in H0.
  elim subset_elim2 with (1:=H0); intros.
@@ -119,9 +119,9 @@ Qed.
 Definition equi_card (x y:set) : Prop :=
   exists2 R : set -> set -> Prop,
     Proper (eq_set ==> eq_set ==> iff) R &
-    (forall x', x' \in x -> exists2 y', y' \in y & R x' y') /\
-    (forall y', y' \in y -> exists2 x', x' \in x & R x' y') /\
-    (forall x1 y1 x2 y2, x1 \in x -> x2 \in x -> y1 \in y -> y2 \in y ->
+    (forall x', x' ∈ x -> exists2 y', y' ∈ y & R x' y') /\
+    (forall y', y' ∈ y -> exists2 x', x' ∈ x & R x' y') /\
+    (forall x1 y1 x2 y2, x1 ∈ x -> x2 ∈ x -> y1 ∈ y -> y2 ∈ y ->
      R x1 y1 -> R x2 y2 -> (x1 == x2 <-> y1 == y2)).
 
 Instance equi_card_morph : Proper (eq_set ==> eq_set ==> iff) equi_card.
@@ -168,7 +168,7 @@ Instance equi_card_trans : Transitive equi_card.
 red.
 destruct 1 as (R,Rm,(incl1,(incl2,bij)));
 destruct 1 as (R',R'm,(incl1',(incl2',bij'))).
-exists (fun x' z' => exists2 y', y' \in y & R x' y' /\ R' y' z').
+exists (fun x' z' => exists2 y', y' ∈ y & R x' y' /\ R' y' z').
  do 3 red; intros.
  apply ex2_morph.
   red; reflexivity.
@@ -215,13 +215,13 @@ Definition regular_card o :=
   forall x F,
   lt_card x o ->
   ext_fun x F ->
-  (forall y, y \in x -> lt_card (F y) o) ->
+  (forall y, y ∈ x -> lt_card (F y) o) ->
   lt_card (sup x F) o.
 
 Definition regular o := forall x F,
   lt_card x o ->
   ext_fun x F ->
-  (forall y, y \in x -> lt (F y) o) ->
+  (forall y, y ∈ x -> lt (F y) o) ->
   lt (sup x F) o.
 
 
@@ -231,7 +231,7 @@ Import ZFrepl.
 Definition regular_rel o := forall x R,
   lt_card x o ->
   repl_rel x R ->
-  (forall y z, y \in x -> R y z -> lt z o) ->
+  (forall y z, y ∈ x -> R y z -> lt z o) ->
   lt (union (repl x R)) o.
 
 Lemma regular_weaker : forall o,
@@ -251,7 +251,7 @@ End RegularRelational.
 Definition regular' o := forall x F,
   lt x o ->
   ext_fun x F ->
-  (forall y, y \in x -> lt (F y) o) ->
+  (forall y, y ∈ x -> lt (F y) o) ->
   lt (sup x F) o.
 
 Definition stronglyInaccessibleCard o :=
@@ -262,9 +262,9 @@ Definition stronglyInaccessibleCard o :=
 (* any functional relation from a to b cannot be surjective *)
 Definition lt_card2 a b :=
   forall R:set->set->Prop,
-  (forall x x' y y', x \in a -> y \in b -> y' \in b ->
+  (forall x x' y y', x ∈ a -> y ∈ b -> y' ∈ b ->
    R x y -> R x' y' -> x==x' -> y==y') ->
-  exists2 y, y \in b & forall x, x \in a -> ~ R x y.
+  exists2 y, y ∈ b & forall x, x ∈ a -> ~ R x y.
 
 Lemma lt_card_weaker : forall a b,
   lt_card2 a b -> lt_card a b.
@@ -478,7 +478,7 @@ Section S.
 
   Variable X:set.
 
-  Definition A0 : Type := { x:set | x \in X}.
+  Definition A0 : Type := { x:set | x ∈ X}.
 
   Definition  i0 : forall X : Type, (X -> X -> Prop) -> A0),
        (forall (X1 : Type) (R1 : X1 -> X1 -> Prop) 
@@ -529,9 +529,9 @@ Parameter Burali_Forti
 (*
 Record iso_rel R o f := {
   rel_ord : isOrd o;
-  fun_ty : forall x, f x \in o;
-  surj : forall y, y \in o -> exists x, f x == y;
-  equiv : forall x y, rel_app R x y <-> f x \in f y
+  fun_ty : forall x, f x ∈ o;
+  surj : forall y, y ∈ o -> exists x, f x == y;
+  equiv : forall x y, rel_app R x y <-> f x ∈ f y
 }.
 
 Definition wo := subset (ZFrelations.rel X X)
@@ -540,7 +540,7 @@ Definition wo := subset (ZFrelations.rel X X)
 Definition hartog := repl wo (fun R => uchoice (fun o => exists2 f, ext_fun X f & iso_rel R o f)).
 
 Hypothesis inj : set -> set.
-Hypothesis is_inj : forall o, o \in hartog
+Hypothesis is_inj : forall o, o ∈ hartog
 
 
 Require Import Plump.
@@ -682,7 +682,7 @@ rewrite H8 in H6|-*; clear o H8.
  rewrite <- H8 in H9; clear x' H8.
  assert (exists2 w, I set (rel_app R) w x & a0 == f w).
   exists (subset X (fun x'
-  exists (subset X (fun x' => rel_app R x' x /\ exists2 w, w \in a0 & order_type_assign_rel R x' w)).
+  exists (subset X (fun x' => rel_app R x' x /\ exists2 w, w ∈ a0 & order_type_assign_rel R x' w)).
    red; intros.
    apply isWO_plump with
    
@@ -910,7 +910,7 @@ Qed.
 
 Definition wo := subset (rel X X) isWellOrder.
 
-Lemma wo_def2 : forall r, r \in wo -> isWellOrder r.
+Lemma wo_def2 : forall r, r ∈ wo -> isWellOrder r.
 intros.
 apply subset_elim2 in H; destruct H.
 rewrite H; trivial.
@@ -921,9 +921,9 @@ Hint Resolve wo_def2.
 (*
 Lemma order_type_assign_rel_inv2 : forall r a x y,
   isWellOrder r ->
-  a \in X ->
+  a ∈ X ->
   order_type_assign_rel r a x ->
-  y \in x ->
+  y ∈ x ->
   exists2 b, rel_app r b a & order_type_assign_rel r b y.
 intros.
 destruct order_type_assign_rel_inv with (1:=H1) as (f,fsub,(extf,eqx)).
@@ -961,9 +961,9 @@ Qed.
 (*
 Lemma order_type_assign_rel_inv2 : forall r x,
   isWellOrder r ->
-  x \in order_type r ->
+  x ∈ order_type r ->
   forall y, isOrd y ->
-  y \incl x ->
+  y ⊆ x ->
   exists r', y == order_type r'.
 intros r x wor otr.
 intros.
@@ -972,9 +972,9 @@ rewrite sup_ax in otr;[|admit].
 destruct otr as (a,aX,aass).
 set (w := uchoice (order_type_assign_rel r a)) in *.
 pose (r' :=fun a b =>
-  uchoice (order_type_assign_rel r a) \in
+  uchoice (order_type_assign_rel r a) ∈
   uchoice (order_type_assign_rel r b) /\
-  uchoice (order_type_assign_rel r b) \incl w).
+  uchoice (order_type_assign_rel r b) ⊆ w).
 exists (inject_rel r' X X).
 unfold order_type.
 apply eq_intro; intros.
@@ -983,8 +983,8 @@ apply eq_intro; intros.
 
 (*
  assert (Hrec : forall x', lt x' x ->
-  forall y', isOrd y' -> y' \incl x' ->
-  sup X (fun a => osucc (uchoice (order_type_assign_rel (inject_rel r') X X) a)) \incl
+  forall y', isOrd y' -> y' ⊆ x' ->
+  sup X (fun a => osucc (uchoice (order_type_assign_rel (inject_rel r') X X) a)) ⊆
   y' *)
  rewrite sup_ax in H1;[|admit].
  destruct H1 as (b,bX,bass).
@@ -1005,20 +1005,20 @@ induction xord using isOrd_ind; intros.
 
 Lemma order_type_assign_rel_inv2 : forall r a x y,
   isWellOrder r ->
-  a \in X ->
+  a ∈ X ->
   order_type_assign_rel r a x ->
-  y \in x ->
+  y ∈ x ->
   exists2 b, rel_app r b a & order_type_assign_rel r b y.
 intros.
 assert (rplump :
-  forall x y z, x \in X -> (forall z, rel_app r z x -> rel_app r z y) ->
+  forall x y z, x ∈ X -> (forall z, rel_app r z x -> rel_app r z y) ->
   rel_app r y z -> rel_app r x z).
  admit.
 assert (rtrans : forall x y z, rel_app r x y -> rel_app r y z -> rel_app r x z).
  admit.
 assert (rext : forall x y, (forall z, rel_app r z x <-> rel_app r z y) -> x == y).
  admit.
-assert (rty : forall a b, rel_app r a b -> a \in X).
+assert (rty : forall a b, rel_app r a b -> a ∈ X).
  admit.
 assert (xord : isOrd x).
  apply order_type_assign_ord in H1; trivial.
@@ -1033,7 +1033,7 @@ assert (rel_app r b a).
  apply subset_elim2 in bX; destruct bX.
  rewrite H5; trivial.
 clear bX.
-pose (bs := fun b' => b' \in X /\ forall z, rel_app r z b' <-> rel_app r z b /\ f z \in y0).
+pose (bs := fun b' => b' ∈ X /\ forall z, rel_app r z b' <-> rel_app r z b /\ f z ∈ y0).
 assert (bs (uchoice bs)).
  apply uchoice_def.
  split;[|split];intros.
@@ -1123,20 +1123,20 @@ Qed.
 
 
 Lemma hartog_assign_surj : forall x,
-  x \in hartog_succ ->
-  exists2 R, R \in wo &
-   forall y, y \in x -> exists2 b, b \in X & order_type_assign_rel R b y.
+  x ∈ hartog_succ ->
+  exists2 R, R ∈ wo &
+   forall y, y ∈ x -> exists2 b, b ∈ X & order_type_assign_rel R b y.
 Admitted.
 (*
 Lemma hartog_surj : forall x,
-  x \in hartog_succ ->
-  exists2 R, R \in wo & order_type R == x.
+  x ∈ hartog_succ ->
+  exists2 R, R ∈ wo & order_type R == x.
 intros.
 destruct hartog_assign_surj with (1:=H) as (R,woR,assR).
 exists R; trivial.
  
 
-   forall y, y \in x -> exists2 b, b \in X & order_type_assign_rel R b y.
+   forall y, y ∈ x -> exists2 b, b ∈ X & order_type_assign_rel R b y.
 
 
 intros.
@@ -1158,8 +1158,8 @@ apply olts_le in xass.
 
 
 rewrite order_type_assign_rel_inv' in xass; auto.
-assert (forall y, y \in x ->
-  exists2 b, rel_app R b a & y \in osucc (uchoice (order_type_assign_rel R b))).
+assert (forall y, y ∈ x ->
+  exists2 b, rel_app R b a & y ∈ osucc (uchoice (order_type_assign_rel R b))).
  intros.
  apply xass in H.
  rewrite sup_ax in H.
@@ -1177,12 +1177,12 @@ Section BuraliForti.
 
 Variable I : set -> set -> Prop.
 Hypothesis ty_I : forall x,
-  x \in hartog_succ -> exists2 y, y \in X & I x y.
+  x ∈ hartog_succ -> exists2 y, y ∈ X & I x y.
 Hypothesis inj_I : forall x1 y1 x2 y2,
-  x1 \in hartog_succ ->
-  x2 \in hartog_succ ->
-  y1 \in X ->
-  y2 \in X ->
+  x1 ∈ hartog_succ ->
+  x2 ∈ hartog_succ ->
+  y1 ∈ X ->
+  y2 ∈ X ->
   I x1 y1 ->
   I x2 y2 ->
   y1 == y2 -> x1 == x2.
@@ -1191,9 +1191,9 @@ Hypothesis inj_I : forall x1 y1 x2 y2,
     order_type (inject_rel (fun x y => dom _ R x /\ dom _ R y /\ R x y) X X).
 
   Parameter OT_inj : forall (R1 R2:REL set),
-    (forall x, dom _ R1 x -> x \in X) ->
-    (forall x, dom _ R2 x -> x \in X) ->
-    OT R1 \incl OT R2 -> exists f, morphism _ R1 R2 f.
+    (forall x, dom _ R1 x -> x ∈ X) ->
+    (forall x, dom _ R2 x -> x ∈ X) ->
+    OT R1 ⊆ OT R2 -> exists f, morphism _ R1 R2 f.
 
   Lemma burali_forti : False.
 generalize ty_I inj_I.
@@ -1211,13 +1211,13 @@ Qed.
 Lemma hartog_bound :
   forall F,
   ext_fun X F -> 
-  (forall n, n \in X -> lt (F n) hartog_succ) ->
+  (forall n, n ∈ X -> lt (F n) hartog_succ) ->
   lt (sup X F) hartog_succ.
 Admitted.
 *)
 (*
 Lemma inj :
-  order_type R1 \incl order_type R2 ->
+  order_type R1 ⊆ order_type R2 ->
   exists f, morphism R1 R2 f.
 *)
 (*
@@ -1235,7 +1235,7 @@ split; intros.
  rewrite order_type_assign_rel_inv' in a_ass.
  apply olts_le in a_ass.
  apply burali_forti with (fun o a =>
-   exists2 w, R o w /\ w \in y &
+   exists2 w, R o w /\ w ∈ y &
    
 
 
@@ -1243,7 +1243,7 @@ split; intros.
  rewrite uchoice_ax in a_ass.
  2:apply order_type_assign_uchoice; auto.
  destruct a_ass as (z, zass, zlty).
- apply burali_forti with (fun o a => exists2 w, R o w /\ w \in y & order_type_assign_rel r a w); intros.
+ apply burali_forti with (fun o a => exists2 w, R o w /\ w ∈ y & order_type_assign_rel r a w); intros.
   elim tyR with x; trivial; intros.
 
 destruct order_type_assign_rel_inv with (1:=zass).

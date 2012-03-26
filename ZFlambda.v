@@ -1,23 +1,21 @@
+Require Import Setoid Compare_dec Wf_nat.
 Require Import Lambda.
 Require Import ZF ZFpairs ZFnats ZFord.
 Require Import Sat.
-Require Import Setoid Compare_dec Wf_nat.
 
-(* building the set of lambda-terms with constants *)
+(** * The set of lambda-terms with constants *)
 
 Module Lam.
 Section LambdaTerms.
 
+  (** Set of constants *)
   Variable A : set.
 
   Definition LAMf (X:set) :=
-    union2
-     (union2
-       (replf N (fun n => couple zero n))
-       (replf A (fun x => couple (succ zero) x)))
-     (union2
-       (replf (prodcart X X) (fun p => couple (succ (succ zero)) p))
-       (replf X (fun x => couple (succ (succ (succ zero))) x))).
+    replf N (fun n => couple zero n) ∪
+    replf A (fun x => couple (succ zero) x) ∪
+    (replf (prodcart X X) (fun p => couple (succ (succ zero)) p) ∪
+     replf X (fun x => couple (succ (succ (succ zero))) x)).
 
 Instance LAMf_mono : Proper (incl_set ==> incl_set) LAMf.
 do 2 red; intros.
@@ -57,11 +55,11 @@ Qed.
 
   Lemma LAMf_ind : forall X (P : set -> Prop),
     Proper (eq_set ==> iff) P ->
-    (forall n, n \in N -> P (Var n)) ->
-    (forall x, x \in A -> P (Cst x)) ->
-    (forall a b, a \in X -> b \in X -> P (App a b)) ->
-    (forall a, a \in X -> P (Abs a)) ->
-    forall a, a \in LAMf X -> P a.
+    (forall n, n ∈ N -> P (Var n)) ->
+    (forall x, x ∈ A -> P (Cst x)) ->
+    (forall a b, a ∈ X -> b ∈ X -> P (App a b)) ->
+    (forall a, a ∈ X -> P (Abs a)) ->
+    forall a, a ∈ LAMf X -> P a.
 unfold LAMf; intros.
 apply union2_elim in H4; destruct H4 as [H4|H4];
  apply union2_elim in H4; destruct H4.
@@ -99,7 +97,7 @@ apply union2_elim in H4; destruct H4 as [H4|H4];
 Qed.
 
   Lemma Var_typ : forall X n,
-    n \in N -> Var n \in LAMf X.
+    n ∈ N -> Var n ∈ LAMf X.
 intros.
 unfold Var, LAMf.
 apply union2_intro1; apply union2_intro1; apply replf_intro with n; auto.
@@ -110,7 +108,7 @@ apply union2_intro1; apply union2_intro1; apply replf_intro with n; auto.
 Qed.
 
   Lemma Cst_typ : forall X x,
-    x \in A -> Cst x \in LAMf X.
+    x ∈ A -> Cst x ∈ LAMf X.
 intros.
 unfold Cst, LAMf.
 apply union2_intro1; apply union2_intro2; apply replf_intro with x; auto.
@@ -121,7 +119,7 @@ apply union2_intro1; apply union2_intro2; apply replf_intro with x; auto.
 Qed.
 
   Lemma App_typ : forall X a b,
-    a \in X -> b \in X -> App a b \in LAMf X.
+    a ∈ X -> b ∈ X -> App a b ∈ LAMf X.
 intros.
 unfold App, LAMf.
 apply union2_intro2; apply union2_intro1; apply replf_intro with (couple a b); auto.
@@ -134,7 +132,7 @@ apply union2_intro2; apply union2_intro1; apply replf_intro with (couple a b); a
 Qed.
 
   Lemma Abs_typ : forall X a,
-    a \in X -> Abs a \in LAMf X.
+    a ∈ X -> Abs a ∈ LAMf X.
 intros.
 unfold Abs, LAMf.
 apply union2_intro2; apply union2_intro2; apply replf_intro with a; auto.
@@ -149,7 +147,7 @@ Require Import ZFrepl ZFfix.
 
   Definition Lamn n := TI LAMf (nat2ordset n).
 
-  Lemma Lamn_incl_succ : forall k, Lamn k \incl Lamn (S k).
+  Lemma Lamn_incl_succ : forall k, Lamn k ⊆ Lamn (S k).
 unfold Lamn; simpl; intros.
 apply TI_incl; auto with *.
 Qed.
@@ -159,7 +157,7 @@ unfold Lamn; simpl; intros.
 apply TI_mono_succ; auto with *.
 Qed.
 
-  Lemma Lamn_incl : forall k k', k <= k' -> Lamn k \incl Lamn k'.
+  Lemma Lamn_incl : forall k k', (k <= k')%nat -> Lamn k ⊆ Lamn k'.
 induction 1; intros.
  red; auto.
  red; intros.
@@ -168,7 +166,7 @@ Qed.
 
   Definition Lambda := TI LAMf omega.
 
-  Lemma Lambda_intro : forall k, Lamn k \incl Lambda.
+  Lemma Lambda_intro : forall k, Lamn k ⊆ Lambda.
 unfold Lambda, Lamn; intros.
 apply TI_incl; auto with *.
 apply isOrd_sup_intro with (S k); simpl; auto.
@@ -176,7 +174,7 @@ apply lt_osucc; auto.
 Qed.
 
   Lemma Lambda_elim : forall x,
-    x \in Lambda -> exists k, x \in Lamn k.
+    x ∈ Lambda -> exists k, x ∈ Lamn k.
 unfold Lambda, Lamn; intros.
 apply TI_elim in H; auto with *.
 destruct H.
@@ -187,11 +185,11 @@ Qed.
 
   Lemma Lamn_case : forall k (P : set -> Prop),
     Proper (eq_set ==> iff) P ->
-    (forall n, n \in N -> P (Var n)) ->
-    (forall x, x \in A -> P (Cst x)) ->
-    (forall a b k', k' < k -> a \in Lamn k' -> b \in Lamn k' -> P (App a b)) ->
-    (forall a k', k' < k -> a \in Lamn k' -> P (Abs a)) ->
-    forall a, a \in Lamn k -> P a.
+    (forall n, n ∈ N -> P (Var n)) ->
+    (forall x, x ∈ A -> P (Cst x)) ->
+    (forall a b k', (k' < k)%nat -> a ∈ Lamn k' -> b ∈ Lamn k' -> P (App a b)) ->
+    (forall a k', (k' < k)%nat -> a ∈ Lamn k' -> P (Abs a)) ->
+    forall a, a ∈ Lamn k -> P a.
 destruct k; intros.
  unfold Lamn in H4.
  rewrite TI_initial in H4; auto with *.
@@ -204,9 +202,9 @@ Qed.
 
   Lemma Lambda_fix : forall (P:set->Prop),
     (forall k,
-     (forall k' x, k' < k -> x \in Lamn k' -> P x) ->
-     (forall x, x \in Lamn k -> P x)) ->
-    forall x, x \in Lambda -> P x.
+     (forall k' x, (k' < k)%nat -> x ∈ Lamn k' -> P x) ->
+     (forall x, x ∈ Lamn k -> P x)) ->
+    forall x, x ∈ Lambda -> P x.
 intros.
 apply Lambda_elim in H0; destruct H0.
 revert x H0.
@@ -216,11 +214,11 @@ Qed.
 
   Lemma Lambda_ind : forall P : set -> Prop,
     Proper (eq_set ==> iff) P ->
-    (forall n, n \in N -> P (Var n)) ->
-    (forall x, x \in A -> P (Cst x)) ->
-    (forall a b, a \in Lambda -> b \in Lambda -> P a -> P b -> P (App a b)) ->
-    (forall a, a \in Lambda -> P a -> P (Abs a)) ->
-    forall a, a \in Lambda -> P a.
+    (forall n, n ∈ N -> P (Var n)) ->
+    (forall x, x ∈ A -> P (Cst x)) ->
+    (forall a b, a ∈ Lambda -> b ∈ Lambda -> P a -> P b -> P (App a b)) ->
+    (forall a, a ∈ Lambda -> P a -> P (Abs a)) ->
+    forall a, a ∈ Lambda -> P a.
 intros.
 elim H4 using Lambda_fix; intros.
 elim H6 using Lamn_case; intros; eauto.
@@ -253,12 +251,12 @@ apply eq_intro; intros.
   apply Lambda_elim in H0; destruct H0 as (k,H0).
   apply Lambda_elim in H1; destruct H1 as (k',H1).
   destruct (le_gt_dec k k').
-   assert (Lamn k \incl Lamn k').
+   assert (Lamn k ⊆ Lamn k').
     apply Lamn_incl; trivial.
    apply Lambda_intro with (S k'); rewrite Lamn_eq.
    apply App_typ; auto.
 
-   assert (Lamn k' \incl Lamn k).
+   assert (Lamn k' ⊆ Lamn k).
     apply Lamn_incl; auto with arith.
    apply Lambda_intro with (S k); rewrite Lamn_eq.
    apply App_typ; auto.
@@ -269,25 +267,25 @@ apply eq_intro; intros.
 Qed.
 
   Lemma Var_typ0 : forall n,
-    n \in N -> Var n \in Lambda.
+    n ∈ N -> Var n ∈ Lambda.
 intros.
 rewrite Lambda_eqn; apply Var_typ; trivial.
 Qed.
 
   Lemma Cst_typ0 : forall x,
-    x \in A -> Cst x \in Lambda.
+    x ∈ A -> Cst x ∈ Lambda.
 intros.
 rewrite Lambda_eqn; apply Cst_typ; trivial.
 Qed.
 
   Lemma App_typ0 : forall a b,
-    a \in Lambda -> b \in Lambda -> App a b \in Lambda.
+    a ∈ Lambda -> b ∈ Lambda -> App a b ∈ Lambda.
 intros.
 rewrite Lambda_eqn; apply App_typ; trivial.
 Qed.
 
   Lemma Abs_typ0 : forall a,
-    a \in Lambda -> Abs a \in Lambda.
+    a ∈ Lambda -> Abs a ∈ Lambda.
 intros.
 rewrite Lambda_eqn; apply Abs_typ; trivial.
 Qed.
@@ -298,6 +296,7 @@ End Lam.
 Import Lam.
 Import Lambda.
 
+(** * Pure lambda-terms: no constants *) 
 Definition CCLam := Lambda zero.
 
 Fixpoint iLAM (t:term) :=
@@ -307,7 +306,7 @@ Fixpoint iLAM (t:term) :=
   | App u v => Lam.App (iLAM u) (iLAM v)
   end.
 
-Lemma iLAM_typ : forall t, iLAM t \in CCLam.
+Lemma iLAM_typ : forall t, iLAM t ∈ CCLam.
 unfold CCLam; induction t; try destruct s; simpl;
  repeat
   (apply Var_typ0 || apply Cst_typ0 || apply App_typ0 || apply Abs_typ0 ||
@@ -353,7 +352,7 @@ split; intros.
  apply interSAT_elim; trivial.
 Qed.
 
-
+(** Embedding saturated sets in a set *)
 Definition iSAT S :=
   subset CCLam (fun x => exists2 t, inSAT t S & x == iLAM t).
 
@@ -381,7 +380,7 @@ Definition complSAT (P:term->Prop) :=
   interSAT (fun p:{S|forall t, sn t -> P t -> inSAT t S} => proj1_sig p).
 
 Definition sSAT x :=
-  complSAT (fun t => iLAM t \in x).
+  complSAT (fun t => iLAM t ∈ x).
 
 Instance sSAT_morph : Proper (eq_set ==> eqSAT) sSAT.
 do 2 red; intros.
@@ -401,7 +400,7 @@ unfold sSAT, complSAT.
 intros.
 rewrite <- interSAT_ax.
 split; intros.
- assert (forall t, sn t -> iLAM t \in iSAT S -> inSAT t S).
+ assert (forall t, sn t -> iLAM t ∈ iSAT S -> inSAT t S).
   intros.
   unfold iSAT in H1.
   rewrite subset_ax in H1.
@@ -430,7 +429,7 @@ Definition replSAT F :=
 
 Lemma replSAT_ax : forall f z,
   Proper (eqSAT ==> eq_set) f ->
-  (z \in replSAT f <-> exists A, z == f A).
+  (z ∈ replSAT f <-> exists A, z == f A).
 unfold replSAT.
 intros.
 rewrite repl_ax.

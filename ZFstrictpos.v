@@ -65,11 +65,11 @@ Lemma pos_rect : forall (P:positive->Type),
   (forall p1 p2, eq_pos p1 p1 -> eq_pos p2 p2 -> P p1 -> P p2 -> P (P_ConsRec p1 p2)) ->
   (forall A p,
    (forall x x', x == x' -> eq_pos (p x) (p x')) ->
-   (forall x, x \in A -> P (p x)) ->
+   (forall x, x ∈ A -> P (p x)) ->
    P (P_ConsNoRec A p)) ->
   (forall A p,
    (forall x x', x == x' -> eq_pos (p x) (p x')) ->
-   (forall x, x \in A -> P (p x)) ->
+   (forall x, x ∈ A -> P (p x)) ->
    P (P_Param A p)) ->
   forall p, eq_pos p p -> P p.
 intros.
@@ -220,8 +220,8 @@ apply TI_stable.
 Qed.
 
   Lemma INDi_mono : forall p o o',
-    eq_pos p p -> isOrd o -> isOrd o' -> o \incl o' ->
-    INDi p o \incl INDi p o'.
+    eq_pos p p -> isOrd o -> isOrd o' -> o ⊆ o' ->
+    INDi p o ⊆ INDi p o'.
 intros.
 apply TI_mono; auto with *.
 apply sp_mono; trivial.
@@ -341,7 +341,7 @@ Definition trad_sum f g :=
 Lemma cc_prod_sum_case_commut A1 A2 B1 B2 Y x x':
   ext_fun A1 B1 ->
   ext_fun A2 B2 ->
-  x \in sum A1 A2 ->
+  x ∈ sum A1 A2 ->
   x == x' ->
   sum_case (fun x => cc_prod (B1 x) (fun _ => Y))
      (fun x => cc_prod (B2 x) (fun _ => Y)) x ==
@@ -462,7 +462,7 @@ Lemma iso_arg_norec : forall P X A B Y f,
   ext_fun P A ->
   ext_fun2 P A B ->
   ext_fun2 P X f ->
-  (forall x, x \in P -> iso_fun (X x) (W_F (A x) (B x) Y) (f x)) ->
+  (forall x, x ∈ P -> iso_fun (X x) (W_F (A x) (B x) Y) (f x)) ->
   iso_fun (sigma P X)
    (W_F (sigma P A) (fun p => B (fst p) (snd p)) Y)
    (trad_sigma f).
@@ -498,7 +498,7 @@ Lemma iso_param : forall P X A B Y f,
   ext_fun P A ->
   ext_fun2 P A B ->
   ext_fun2 P X f ->
-  (forall x, x \in P -> iso_fun (X x) (W_F (A x) (B x) Y) (f x)) ->
+  (forall x, x ∈ P -> iso_fun (X x) (W_F (A x) (B x) Y) (f x)) ->
   iso_fun (cc_prod P X)
    (W_F (cc_prod P A) (fun p => sigma P (fun x => B x (cc_app p x))) Y)
    (trad_cc_prod P B f).
@@ -706,7 +706,7 @@ induction eqp; try (destruct IHeqp1; destruct IHeqp2||destruct IHeq_pos);
   intros.
   transitivity (p2 x'0); auto with *.
   symmetry; apply H0; auto with *.
- assert (Hrec : forall p p', p \in sigma A (fun x => pos_oper (p1 x) X) ->
+ assert (Hrec : forall p p', p ∈ sigma A (fun x => pos_oper (p1 x) X) ->
    p == p' ->
    trad_pos_w f (p1 (fst p)) (snd p) == trad_pos_w f' (p2 (fst p')) (snd p')).
   intros.
@@ -1038,7 +1038,7 @@ Qed.
   Let Wff_mono : Proper (incl_set ==> incl_set) Wff.
 apply Wf_mono; trivial.
 Qed.
-  Let Wff_typ : forall X, X \incl Wd -> Wff X \incl Wd.
+  Let Wff_typ : forall X, X ⊆ Wd -> Wff X ⊆ Wd.
 intros.
 apply Wf_typ; trivial.
 Qed.
@@ -1091,7 +1091,7 @@ Qed.
 
   Lemma INDi_IND : forall o,
     isOrd o ->
-    INDi p o \incl IND.
+    INDi p o ⊆ IND.
 induction 1 using isOrd_ind; intros.
 unfold INDi.
 rewrite TI_eq; auto.
@@ -1110,26 +1110,26 @@ Section InductiveUniverse.
 
   Variable U : set.
   Hypothesis Ugrot : grot_univ U.
-  Hypothesis Unontriv : omega \in U.
+  Hypothesis Unontriv : omega ∈ U.
 
-  Let Unonmt : empty \in U.
+  Let Unonmt : empty ∈ U.
 apply G_trans with omega; trivial.
 apply zero_omega.
 Qed.
 
   Inductive pos_universe : positive -> Prop :=
-    PU_Cst A : A \in U -> pos_universe (P_Cst A)
+    PU_Cst A : A ∈ U -> pos_universe (P_Cst A)
   | PU_Rec : pos_universe P_Rec
   | PU_Sum p1 p2 : pos_universe p1 -> pos_universe p2 -> pos_universe (P_Sum p1 p2)
   | PU_ConsRec p1 p2 : pos_universe p1 -> pos_universe p2 -> pos_universe (P_ConsRec p1 p2)
-  | PU_ConsNoRec A p : A \in U -> (forall x, x \in A -> pos_universe (p x)) ->
+  | PU_ConsNoRec A p : A ∈ U -> (forall x, x ∈ A -> pos_universe (p x)) ->
        pos_universe (P_ConsNoRec A p)
-  | PU_Param A p : A \in U -> (forall x, x \in A -> pos_universe (p x)) ->
+  | PU_Param A p : A ∈ U -> (forall x, x ∈ A -> pos_universe (p x)) ->
        pos_universe (P_Param A p).
 
 
   Lemma pos_univ_oper_ok p X :
-    eq_pos p p -> pos_universe p -> X \in U -> pos_oper p X \in U.
+    eq_pos p p -> pos_universe p -> X ∈ U -> pos_oper p X ∈ U.
 intros.
 revert H; elim H0; simpl; intros; trivial.
  inversion_clear H5.
@@ -1149,7 +1149,7 @@ Qed.
 
 
   Lemma G_posw1 p : eq_pos p p -> pos_universe p ->
-   pos_to_w1 p \in U.
+   pos_to_w1 p ∈ U.
 intros p_ok.
 elim p_ok using pos_rect; simpl; intros.
  inversion_clear H; trivial.
@@ -1173,7 +1173,7 @@ Qed.
 
   Lemma G_posw2 p x :
     eq_pos p p ->
-    pos_universe p -> x \in pos_to_w1 p -> pos_to_w2 p x \in U.
+    pos_universe p -> x ∈ pos_to_w1 p -> pos_to_w2 p x ∈ U.
 intros p_ok.
 revert x; elim p_ok using pos_rect; simpl; intros.
  apply G_trans with omega; trivial.
@@ -1216,7 +1216,7 @@ revert x; elim p_ok using pos_rect; simpl; intros.
   apply cc_prod_elim with (1:=H2); trivial.
 Qed.
 
-  Lemma G_IND p : eq_pos p p -> pos_universe p -> IND p \in U.
+  Lemma G_IND p : eq_pos p p -> pos_universe p -> IND p ∈ U.
 intros.
 unfold IND, INDi.
 apply G_TI; trivial.
@@ -1235,7 +1235,7 @@ apply G_TI; trivial.
  intros; apply pos_univ_oper_ok; trivial.
 Qed.
 
-  Lemma G_INDi p o : eq_pos p p -> pos_universe p -> isOrd o -> INDi p o \in U.
+  Lemma G_INDi p o : eq_pos p p -> pos_universe p -> isOrd o -> INDi p o ∈ U.
 intros.
 apply G_incl with (IND p); trivial.
  apply G_IND; trivial.
