@@ -985,5 +985,108 @@ revert k; induction e; intros.
  replace (length e + S k) with (S (length e +k)); auto with *.
 Qed.
 
+(** Dealing with kind (top sorts) *)
+
+Fixpoint cst_fun (i:val) (e:list trm) (x:X) : X :=
+  match e with
+  | List.nil => x
+  | T::f => lam (int i T) (fun y => cst_fun (V.cons y i) f x)
+  end.
+
+Instance cst_morph : Proper (eq_val ==> @eq _ ==> eqX ==> eqX) cst_fun.
+do 4 red; intros.
+subst y0.
+revert x y H.
+induction x0; simpl; intros; auto.
+apply lam_ext; intros.
+ rewrite H; reflexivity.
+
+ red; intros.
+ apply IHx0.
+ rewrite H2; rewrite H; reflexivity.
+Qed.
+
+Lemma wit_prod : forall x U,
+  (forall i, x ∈ int i U) ->
+  forall e i,
+  cst_fun i e x ∈ int i (prod_list e U).
+induction e; simpl; intros; auto.
+apply prod_intro; intros; auto.
+ red; intros.
+ rewrite H1; reflexivity.
+
+ red; intros.
+ rewrite H1; reflexivity.
+Qed.
+
+(* We could parameterize kind_ok with a val [i0], and
+   quantify over i s.t. vshift (length e) i = i0.
+   This would allow kind variables. *)
+
+Definition kind_ok T :=
+  exists e, exists2 U, eq_trm T (prod_list e U) &
+    exists x, forall i, x ∈ int i U.
+
+Instance kind_ok_morph : Proper (eq_trm ==> iff) kind_ok.
+unfold kind_ok; do 2 red; intros.
+split; intros (e,(U,eq_U,inU)); exists e;
+  exists U; trivial.
+ rewrite <- H; trivial.
+ rewrite H; trivial.
+Qed.
+
+Lemma prop_kind_ok : kind_ok prop.
+exists List.nil; exists prop; simpl prod_list.
+ reflexivity.
+
+ exists (prod props (fun P => P)); intros.
+ apply impredicative_prod; intros; auto.
+ red; auto.
+Qed.
+
+Lemma prod_kind_ok : forall T U,
+  kind_ok U ->
+  kind_ok (Prod T U).
+intros.
+destruct H as (e,(U',eq_U,wit_U)).
+exists (T::e); exists U'; simpl prod_list; trivial.
+rewrite eq_U; reflexivity.
+Qed.
+
+Lemma kind_ok_witness : forall i T,
+  kind_ok T ->
+  exists x, x ∈ int i T.
+intros.
+destruct H as (e,(U,eq_U,(wit,in_U))).
+exists (cst_fun i e wit).
+rewrite eq_U.
+apply wit_prod; trivial.
+Qed.
+
+Lemma kind_ok_lift M k :
+  kind_ok M <-> kind_ok (lift_rec 1 k M).
+unfold kind_ok; split; intros.
+ destruct H as (e,(U,?,(x,?))).
+ destruct lift_prod_list_ex with 1 k e U as (e',?).
+ exists e'.
+ exists (lift_rec 1 (length e+k) U).
+  rewrite H; trivial.
+
+  exists x; intros.
+  rewrite int_lift_rec_eq.
+  apply H0.
+
+ destruct H as (e,(U,?,(x,?))).
+ destruct subst_prod_list_ex with (Ref 0) k e U as (e',?).
+ exists e'.
+ exists (subst_rec (Ref 0) (length e+k) U).
+  rewrite <- H1.
+  rewrite <- H.
+  apply simpl_subst_lift_rec.
+
+  exists x; intros.
+  rewrite int_subst_rec_eq.
+  apply H0.
+Qed.
 
 End MakeObject.

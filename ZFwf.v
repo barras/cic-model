@@ -32,7 +32,7 @@ rewrite <- H in H1.
 apply isWf_inv with x; trivial.
 Qed.
 
-Instance isWf_morph : Proper (eq_set ==> iff) isWf.
+Global Instance isWf_morph : Proper (eq_set ==> iff) isWf.
 apply morph_impl_iff1; auto with *.
 do 4 red; intros.
 apply isWf_ext with x; auto.

@@ -122,16 +122,10 @@ split.
  exists Nat.
   reflexivity.
 
-  exists ZERO; exists ZE.
-  split.
-   simpl; unfold inX; rewrite El_def.
-   apply ZERO_typ.
-
-   apply realNat_def.
-   split.
-    apply ZERO_typ.
-
-    apply cNAT_ZE.
+  exists ZERO. (* NAT is not empty! *)
+  simpl; intros _.
+  unfold inX; rewrite El_def.
+  apply ZERO_typ.
 
  exact Lc.sn_K.
 Qed.

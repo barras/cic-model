@@ -93,6 +93,14 @@ Qed.
 
   Definition inclSAT A B := forall t, inSAT t A -> inSAT t B.
 
+  Global Instance inclSAT_ord : PreOrder inclSAT.
+split; red; intros.
+ red; trivial.
+
+ red; intros; auto.
+Qed.
+
+
   Lemma sat_sn : forall t S, inSAT t S -> sn t.
 destruct S; simpl; intros.
 apply (incl_sn _ i); trivial.
@@ -136,13 +144,6 @@ exists (Arr (proj1_sig X) (proj1_sig Y)).
 apply is_cand_Arr; apply proj2_sig.
 Defined.
 
-  Instance prodSAT_morph : Proper (eqSAT ==> eqSAT ==> eqSAT) prodSAT.
-do 3 red; intros.
-destruct x; destruct y; destruct x0; destruct y0;
-  unfold prodSAT, eqSAT in *; simpl in *; intros.
-apply eq_can_Arr; trivial.
-Qed.
-
   Lemma prodSAT_intro : forall A B m,
     (forall v, inSAT v A -> inSAT (subst v m) B) ->
     inSAT (Abs m) (prodSAT A B).
@@ -157,6 +158,20 @@ Qed.
 intros (A,A_can) (B,B_can) u v u_in v_in; simpl in *.
 red in u_in.
 auto.
+Qed.
+
+  Instance prodSAT_morph : Proper (eqSAT ==> eqSAT ==> eqSAT) prodSAT.
+do 3 red; intros.
+destruct x; destruct y; destruct x0; destruct y0;
+  unfold prodSAT, eqSAT in *; simpl in *; intros.
+apply eq_can_Arr; trivial.
+Qed.
+
+  Instance prodSAT_mono : Proper (inclSAT --> inclSAT ++> inclSAT) prodSAT.
+do 4 red; intros.
+intros u satu.
+apply H0.
+apply prodSAT_elim with (1:=H1); auto.
 Qed.
 
   Definition interSAT (A:Type) (F:A -> SAT) : SAT :=
@@ -194,6 +209,16 @@ Qed.
     forall x:A, inSAT u (F x).
 unfold inSAT, interSAT, Inter; simpl; intros.
 destruct H; trivial.
+Qed.
+
+  Lemma interSAT_mono A (F G:A->SAT):
+    (forall x, inclSAT (F x) (G x)) ->
+    inclSAT (interSAT F) (interSAT G).
+red; intros.
+split; intros.
+ apply sat_sn in H0; trivial.
+apply H.
+apply interSAT_elim with (1:=H0).
 Qed.
 
 End SatSet.

@@ -270,9 +270,9 @@ rewrite iSAT_id.
 reflexivity.
 Qed.
 
-  Definition daemon := empty.
+  Definition daimon := empty.
 
-  Lemma daemon_false : daemon ∈ prod props (fun P => P).
+  Lemma daimon_false : daimon ∈ prod props (fun P => P).
 Proof sn_proof_of_false.
 
 End SN_CC_addon.

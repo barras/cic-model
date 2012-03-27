@@ -6,11 +6,12 @@ Require ObjectSN.
 
 Module Lc := Lambda.
 
-(** Extending the CC_Model signature to form an abstract strong
-    normalization model for CC. Types are equipped with saturated sets *)
+(** * Abstract strong mormalization model *)
+
 Module Type SN_addon (M : CC_Model).
   Import M.
 
+  (** Types are equipped with a saturated set *)
   Parameter Real : X -> SAT.
   Parameter Real_morph : Proper (eqX ==> eqSAT) Real.
 
@@ -21,137 +22,34 @@ Module Type SN_addon (M : CC_Model).
      (prodSAT (Real A)
         (interSAT (fun p:{y|y∈ A} => Real (B (proj1_sig p))))).
 
-  Parameter daemon : X.
-  Parameter daemon_false : daemon ∈ prod props (fun P => P).
+  (** Every proposition is inhabited *)
+  Parameter daimon : X.
+  Parameter daimon_false : daimon ∈ prod props (fun P => P).
 
   Existing Instance Real_morph.
 
 End SN_addon.
 
-(** Now the abstract strong normalization proof. *)
+(** * The abstract strong normalization proof. *)
 
 Module MakeModel(M : CC_Model) (SN : SN_addon M).
 Import M.
 Import SN.
 
-(** We use the generic model construction upon the
+(** We use the generic model construction based on the
    abstract model
  *)
 Include ObjectSN.MakeObject(M).
 
+(** * Semantic typing relation *)
 
-(** Dealing with top sorts *)
-
-Fixpoint cst_fun (i:val) (e:list trm) (x:X) : X :=
-  match e with
-  | List.nil => x
-  | T::f => lam (int i T) (fun y => cst_fun (V.cons y i) f x)
-  end.
-
-Instance cst_morph : Proper (eq_val ==> @eq _ ==> eqX ==> eqX) cst_fun.
-do 4 red; intros.
-subst y0.
-revert x y H.
-induction x0; simpl; intros; auto.
-apply lam_ext; intros.
- rewrite H; reflexivity.
-
- red; intros.
- apply IHx0.
- rewrite H2; rewrite H; reflexivity.
-Qed.
-
-Lemma wit_prod : forall x U,
-  (forall i, x ∈ int i U) ->
-  forall e i,
-  cst_fun i e x ∈ int i (prod_list e U).
-induction e; simpl; intros; auto.
-apply prod_intro; intros; auto.
- red; intros.
- rewrite H1; reflexivity.
-
- red; intros.
- rewrite H1; reflexivity.
-Qed.
-
-(* We could parameterize non_empty with a val [i0], and
-   quantify over i s.t. vshift (length e) i = i0.
-   This would allow kind variables. *)
-Definition non_empty T :=
-  exists e, exists2 U, eq_trm T (prod_list e U) &
-    exists x, forall i, x ∈ int i U.
-
-Instance non_empty_morph : Proper (eq_trm ==> iff) non_empty.
-unfold non_empty; do 2 red; intros.
-split; intros (e,(U,eq_U,inU)); exists e;
-  exists U; trivial.
- rewrite <- H; trivial.
- rewrite H; trivial.
-Qed.
-
-Lemma prop_non_empty : non_empty prop.
-exists List.nil; exists prop; simpl prod_list.
- reflexivity.
-
- exists (prod props (fun P => P)); intros.
- apply impredicative_prod; intros; auto.
- red; auto.
-Qed.
-
-Lemma prod_non_empty : forall T U,
-  non_empty U ->
-  non_empty (Prod T U).
-intros.
-destruct H as (e,(U',eq_U,wit_U)).
-exists (T::e); exists U'; simpl prod_list; trivial.
-rewrite eq_U; reflexivity.
-Qed.
-
-Lemma non_empty_witness : forall i T,
-  non_empty T ->
-  exists x, x ∈ int i T.
-intros.
-destruct H as (e,(U,eq_U,(wit,in_U))).
-exists (cst_fun i e wit).
-rewrite eq_U.
-apply wit_prod; trivial.
-Qed.
-
-Lemma non_empty_lift M k :
-  non_empty M <-> non_empty (lift_rec 1 k M).
-unfold non_empty; split; intros.
- destruct H as (e,(U,?,(x,?))).
- destruct lift_prod_list_ex with 1 k e U as (e',?).
- exists e'.
- exists (lift_rec 1 (length e+k) U).
-  rewrite H; trivial.
-
-  exists x; intros.
-  rewrite int_lift_rec_eq.
-  apply H0.
-
- destruct H as (e,(U,?,(x,?))).
- destruct subst_prod_list_ex with (Ref 0) k e U as (e',?).
- exists e'.
- exists (subst_rec (Ref 0) (length e+k) U).
-  rewrite <- H1.
-  rewrite <- H.
-  apply simpl_subst_lift_rec.
-
-  exists x; intros.
-  rewrite int_subst_rec_eq.
-  apply H0.
-Qed.
-
-
-(** Semantic typing relation.
-   Handles the case of kind: a type that contains all "non-empty" types
+(** Handles the case of kind: a type that contains all "non-empty" types
    and that is included in no type.
  *)
 Definition in_int (i:val) (j:Lc.intt) (M T:trm) :=
   M <> kind /\
   match T with
-  | None => non_empty M /\ Lc.sn (tm j M)
+  | None => kind_ok M /\ Lc.sn (tm j M)
   | _ => int i M ∈ int i T /\ inSAT (tm j M) (Real (int i T))
   end.
 
@@ -189,7 +87,7 @@ destruct T; auto.
 elim H2; trivial.
 Qed.
 
-
+(* We do not accept kind variables yet *)
 Lemma in_int_var0 : forall i j x t T,
   x ∈ int i T ->
   inSAT t (Real (int i T)) ->
@@ -214,7 +112,7 @@ revert in_T; pattern T at 1 4; case T; simpl.
  rewrite int_cons_lift_eq; trivial.
 
  destruct 1; split; trivial.
- rewrite non_empty_lift with (k:=0) in H.
+ rewrite kind_ok_lift with (k:=0) in H.
  rewrite eq_trm_lift_ref_fv in H; auto with arith.
 Qed.
 
@@ -224,7 +122,7 @@ intros i j M [f|] (_,(_,sat)); trivial.
 apply sat_sn in sat; trivial.
 Qed.
 
-(** Environments *)
+(** * Environments *)
 Definition env := list trm.
 
 Definition val_ok (e:env) (i:val) (j:Lc.intt) :=
@@ -259,14 +157,15 @@ Lemma vcons_add_var0 : forall e T i j x,
   val_ok e i j ->
   x ∈ int i T ->
   T <> kind ->
-  val_ok (T::e) (V.cons x i) (I.cons daimon j).
+  val_ok (T::e) (V.cons x i) (I.cons SatSet.daimon j).
 intros.
 apply vcons_add_var; trivial.
 apply varSAT.
 Qed.
 
-(** Judgements *)
+(** * Judgements *)
 
+(** #<a name="MakeModel.wf"></a># *)
 Definition wf (e:env) :=
   exists i, exists j, val_ok e i j.
 Definition typ (e:env) (M T:trm) :=
@@ -286,7 +185,7 @@ unfold eq_typ; split; simpl; intros.
  rewrite H; rewrite H0; eauto.
 Qed.
 
-(** Strong normalization *)
+(** * Strong normalization *)
 
 (* This lemma shows that the abstract model construction entails
    strong normalization.
@@ -318,28 +217,29 @@ intros e T (i,(j,is_val)) [ty|ty]; apply ty in is_val;
   destruct is_val; assumption.
 Qed.
 
-Lemma typs_non_empty : forall e T i j,
+Lemma typs_kind_ok : forall e T i j,
   typs e T ->
   val_ok e i j ->
   exists x, x ∈ int i T.
 intros.
 destruct H.
  apply H in H0.
- destruct H0 as (_,(mem,_)); apply non_empty_witness; trivial.
+ destruct H0 as (_,(mem,_)); apply kind_ok_witness; trivial.
 
- exists (app daemon (int i T)).
+ exists (app daimon (int i T)).
  apply H in H0.
  destruct H0 as (_,(mem,_)); simpl in *.
- apply prod_elim with (2:=daemon_false); trivial.
+ apply prod_elim with (2:=daimon_false); trivial.
  red; intros; trivial.
 Qed.
 
+(** * Inference rules *)
 
-(** Context formation rules *)
+(** ** Context formation rules *)
 
 Lemma wf_nil : wf List.nil.
 red.
-exists vnil; exists (fun _ => daimon).
+exists vnil; exists (fun _ => SatSet.daimon).
 red; intros.
 destruct n; discriminate.
 Qed.
@@ -352,12 +252,12 @@ unfold wf; intros.
 assert (T <> kind).
  apply typs_not_kind in H0; trivial.
 destruct H as (i,(j,is_val)).
-destruct typs_non_empty with (1:=H0) (2:=is_val) as (x,non_mt).
-exists (V.cons x i); exists (I.cons daimon j).
+destruct typs_kind_ok with (1:=H0) (2:=is_val) as (x,non_mt).
+exists (V.cons x i); exists (I.cons SatSet.daimon j).
 apply vcons_add_var0; trivial.
 Qed.
 
-(** Equality rules *)
+(** ** Equality rules *)
 
 Lemma refl : forall e M, eq_typ e M M.
 red; simpl; reflexivity.
@@ -399,7 +299,7 @@ unfold eq_typ; simpl; intros.
 apply lam_ext; eauto.
 red; intros.
 rewrite <- H4.
-apply H0 with (j:=I.cons daimon j).
+apply H0 with (j:=I.cons SatSet.daimon j).
 apply vcons_add_var0; auto.
 Qed.
 
@@ -412,7 +312,7 @@ unfold eq_typ; simpl; intros.
 apply prod_ext; eauto.
 red; intros.
 rewrite <- H4.
-apply H0 with (j:=I.cons daimon j).
+apply H0 with (j:=I.cons SatSet.daimon j).
 apply vcons_add_var0; auto.
 Qed.
 
@@ -434,17 +334,17 @@ assert (int i N ∈ int i T).
 rewrite beta_eq; auto.
 rewrite <- int_subst_eq.
 rewrite <- H0; eauto.
-apply H with (j:=I.cons daimon j).
+apply H with (j:=I.cons SatSet.daimon j).
 apply vcons_add_var0; auto.
 Qed.
 
-(** Typing rules *)
+(** ** Typing rules *)
 
 Lemma typ_prop : forall e, typ e prop kind.
 red; simpl; intros.
 split; try discriminate.
 split; simpl; auto.
- apply prop_non_empty.
+ apply prop_kind_ok.
 
  apply Lc.sn_K.
 Qed.
@@ -509,7 +409,7 @@ apply in_int_intro; simpl; try discriminate.
   destruct is_val; trivial.
 
  rewrite Real_prod.
- destruct (typs_non_empty ty_T is_val) as (wit,in_T).
+ destruct (typs_kind_ok ty_T is_val) as (wit,in_T).
  apply KSAT_intro.
   destruct ty_T as [ty_T|ty_T]; apply ty_T in is_val;
     destruct is_val as (_,(_,satT)); simpl in satT; trivial.
@@ -552,7 +452,7 @@ assert (T_not_tops : T <> kind).
  destruct ty_T as [ty_T|ty_T]; apply ty_T in is_val;
    destruct is_val; trivial.
 assert (typs (T::e) U) by (destruct is_srt; subst; red; auto).
-destruct (typs_non_empty ty_T is_val) as (witT,in_T).
+destruct (typs_kind_ok ty_T is_val) as (witT,in_T).
 specialize vcons_add_var0 with (1:=is_val) (2:=in_T) (3:=T_not_tops);
   intros in_U.
 apply ty_U in in_U.
@@ -562,8 +462,8 @@ assert (Lc.sn (tm j T)).
  apply sat_sn in satT; trivial.
 split;[discriminate|destruct is_srt; subst s2; split;simpl].
  (* s2=kind *)
- (* non_empty: *)
- apply prod_non_empty.
+ (* kind_ok: *)
+ apply prod_kind_ok.
  destruct in_U as (_,(mem,_)); trivial.
 
  (* sn *)

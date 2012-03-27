@@ -785,6 +785,33 @@ induction 1; intros.
   exists (App t'1 x); auto with *.
 Qed.
 
+Lemma red1_subst_var n t k y :
+  red1 (subst_rec (Ref n) t k) y ->
+  exists2 t', red1 t t' & y = subst_rec (Ref n) t' k.
+revert k y; induction t; simpl; intros.
+ destruct (lt_eq_lt_dec k n0) as [[?|?]|?]; inversion H.
+
+ inversion_clear H.
+ apply IHt in H0; destruct H0.
+ exists (Abs x); auto with *.
+ subst M'; trivial.
+
+ inversion H.
+  destruct t1; simpl in H1; try discriminate H1.
+   destruct (lt_eq_lt_dec k n0) as [[?|?]|?]; discriminate H1.
+  exists (subst t2 t1); auto with *.
+  injection H1; clear H1; intro.
+  subst M.
+  symmetry; apply distr_subst.
+
+  apply IHt1 in H3; destruct H3.
+  exists (App x t2); auto with *.
+  subst N1; trivial.
+
+  apply IHt2 in H3; destruct H3.
+  exists (App t1 x); auto with *.
+  subst N2; trivial.
+Qed.
 
   Lemma commut_red1_subterm : commut _ subterm (transp _ red1).
 red in |- *.
@@ -823,6 +850,14 @@ apply Acc_intro; intros.
 inversion_clear H1; auto with coc.
 Qed.
 
+  Lemma sn_abs_inv t:
+    sn t -> forall m, t = Abs m -> sn m.
+induction 1; intros.
+constructor; intros.
+apply H0 with (Abs y); auto.
+subst x; red; auto with *.
+Qed.
+
   Lemma sn_K : sn K.
 apply Acc_intro; intros.
 inversion_clear H.
@@ -830,15 +865,22 @@ inversion_clear H0.
 inversion_clear H.
 Qed.
 
-
-Lemma sn_lift : forall n t k,
-  sn t -> sn (lift_rec n t k).
+  Lemma sn_lift : forall n t k,
+    sn t -> sn (lift_rec n t k).
 induction 1; intros.
 constructor; intros.
 red in H1.
 apply red_lift_inv with (2:=eq_refl _) in H1.
 destruct H1; subst y; auto with coc.
 apply H0; trivial.
+Qed.
+
+  Lemma sn_lift_inv : forall M', sn M' -> forall n M k, M' = lift_rec n M k -> sn M.
+induction 1; intros.
+constructor; intros.
+apply H0 with (lift_rec n y k) n k; trivial.
+subst x; red.
+apply red1_lift; trivial.
 Qed.
 
   Lemma sn_subst_inv_l u m k :
@@ -854,6 +896,33 @@ red in H3.
 apply H0 with (y:=subst_rec y m k) (2:=reflexivity _); trivial.
 red.
 rewrite H1; apply red1_subst_l_occur; trivial.
+Qed.
+
+  Lemma sn_subst_var n t k :
+    sn t -> sn (subst_rec (Ref n) t k).
+induction 1.
+constructor; intros.
+red in H1.
+apply red1_subst_var in H1; destruct H1.
+subst y.
+apply H0; trivial.
+Qed.
+
+  Lemma sn_app_var u n :
+    sn u -> sn (App u (Ref n)).
+induction 1; intros.
+constructor; intros.
+unfold transp in *.
+assert (sn x).
+ constructor; trivial.
+clear H.
+revert H2 H0; inversion_clear H1; intros.
+ apply sn_subst_var.
+ apply sn_abs_inv with (1:=H2); trivial.
+
+ apply H0; trivial.
+
+ inversion H.
 Qed.
 
   Lemma sn_K2_reduced1 :

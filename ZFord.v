@@ -133,15 +133,12 @@ destruct 1; trivial.
 Qed.
 Hint Resolve isOrd_wf.
 
-Global Instance isWf_morph : Proper (eq_set==>iff) isWf.
-Admitted.
-
 Lemma isOrd_ext : forall x y, x == y -> isOrd x -> isOrd y.
 destruct 2.
 unfold isOrd; rewrite H in H0,H1; auto.
 Qed.
 
-Instance isOrd_morph : Proper (eq_set ==> iff) isOrd.
+Global Instance isOrd_morph : Proper (eq_set ==> iff) isOrd.
 do 2 red; split; intros.
  apply isOrd_ext with x; trivial.
 

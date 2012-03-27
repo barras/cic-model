@@ -5,11 +5,11 @@ Require GenRealSN.
 Set Implicit Arguments.
 
 (***********************************************************************************************)
-(* Proving the SN model requirements *)
+(** * Proving the SN model requirements *)
 
 Module CCSN.
 
-(* Types are coded by a carrier set X and a realizability relation R
+(** Types are coded by a carrier set X and a realizability relation R
    assigning a reducibility candidate to each element of the
    domain.
    This means that even non-computable functions have "realizers",
@@ -70,7 +70,7 @@ rewrite cc_beta_eq; auto.
  apply iSAT_morph; auto.
 Qed.
 
-(* The realizability relation of a dependent product of domain type A
+(** The realizability relation of a dependent product of domain type A
    and co-domain family of types F for a  function f:
    it is the intersection of all reducibility candidates {x}_A -> {f(x)}_F(x)
    when x ranges A.
@@ -142,7 +142,7 @@ rewrite fst_def in H.
 apply cc_prod_elim with (dom:=El dom) (F:=fun x => El(F x)); trivial.
 Qed.
 
-(* The type of propositions:
+(** The type of propositions:
    - propositions are types and do not interact with their surrounding context (they
      are neutral), so the set of realizers of any proposition is SN;
    - all propositions are non-empty (and have the same values as True), but their set of
@@ -335,7 +335,7 @@ End ___.
 
 (***********************************************************************************************)
 
-(* Building the generic model *)
+(** * Building the generic model *)
 Module SN := GenRealSN.MakeModel CCSN CCSN.
 Import SN.
 
@@ -343,10 +343,12 @@ Module Lc := Lambda.
 
 (***********************************************************************************************)
 
-(* Consistency out of the strong normalization model *)
+(** * Consistency out of the strong normalization model *)
 
-(* Property of substitutivity: whenever a term-denotation contains
-   a free var, then it comes from the term-valuation *)
+(** Property of substitutivity: whenever a term-denotation contains
+   a free var, then it comes from the term-valuation (but we can't tell which
+   var, short of using Markov rule, hence the double negation.
+   *)
 Lemma tm_closed : forall k j M,
   Lc.occur k (tm j M) -> ~ forall n, ~ Lc.occur k (j n).
 red; intros.
@@ -362,7 +364,7 @@ destruct (Lc.eqterm (Lc.lift_rec 1 (Lc.subst_rec (Lc.Abs (Lc.Ref 0)) (j a) k) k)
 elim H; trivial.
 Qed.
 
-(* If t belongs to all reducibility candidates, then it has a free variable *)
+(** If t belongs to all reducibility candidates, then it has a free variable *)
 Lemma neutral_not_closed :
   forall t, (forall S, inSAT t S) -> exists k, Lc.occur k t.
 intros.
@@ -376,9 +378,9 @@ exists x0.
 apply Lc.red_closed with x; auto.
 Qed.
 
-(* Another consistency proof.
+(** Another consistency proof. *)
 
-   What is original is that it is based on the strong normalization model which
+(** What is original is that it is based on the strong normalization model which
    precisely inhabits all types and propositions. We get out of this by noticing that
    non provable propositions contain no closed realizers. So, by a substitutivity
    invariant (realizers of terms typed in the empty context cannot introduce free
@@ -437,10 +439,10 @@ inversion_clear H2.
  inversion H2.
 Qed.
 
-Print Assumptions consistency. (* confluence not proven *)
+Print Assumptions consistency.
 
 (***********************************************************************************************)
-(* Strong Normalization on actual syntax *)
+(** * Strong Normalization on actual syntax *)
 
 Require TypeJudge.
 
@@ -543,7 +545,7 @@ End LiftAndSubstEquiv.
 
 Hint Resolve int_not_kind Ty.eq_typ_not_kind.
 
-(* Proof that beta-reduction at the Lc level simulates beta-reduction
+(** Proof that beta-reduction at the Lc level simulates beta-reduction
    at the Tm level. One beta at the Tm level may require several
    (but not zero) steps at the Lc level, because of the encoding
    of type-carrying lambda abstractions.
@@ -583,7 +585,7 @@ apply H0; trivial.
  intro; apply H1; apply Tm.exp_sort_mem with (1:=H2); trivial.
 Qed.
 
-(* Soundness of the typing rules *)
+(** Soundness of the typing rules *)
 
 Lemma int_sound : forall e M M' T,
   Ty.eq_typ e M M' T ->
@@ -648,7 +650,8 @@ induction 1; simpl; intros.
   rewrite Ty.unmark_subst0 with (1:=H2).
   rewrite int_subst; fold (interp N); eauto.
   fold (interp U).
-  apply SN.typ_beta; eauto.
+  apply SN.typ_app with (V:=interp T); eauto.
+  apply SN.typ_abs; eauto.
   destruct s1; red; auto.
 
   rewrite Ty.unmark_subst0 with (1:=Ty.typ_refl2 _ _ _ _ H1).
@@ -693,7 +696,7 @@ apply interp_wf in wfe.
 apply int_sound in H; destruct H; auto.
 Qed.
 
-(* The main theorem: strong normalization *)
+(** The main theorem: strong normalization *)
 Theorem strong_normalization : forall e M M' T,
   Ty.eq_typ e M M' T ->
   Tm.sn (Ty.unmark_app M).
@@ -707,7 +710,7 @@ apply SN.model_strong_normalization in ty; trivial.
 apply sn_sound; trivial.
 Qed.
 
-(* Print the assumptions made to derive strong normalization of CC:
+(** Print the assumptions made to derive strong normalization of CC:
    the axioms of ZF. (In fact we don't need full replacement, only the
    functional version, so we should be able to have the SN theorem without
    assumption.)
