@@ -11,8 +11,8 @@ Parameter X : Type.
 Parameter inX : X -> X -> Prop.
 Parameter eqX : X -> X -> Prop.
 Parameter eqX_equiv : Equivalence eqX.
-Notation "x ∈ y" := (inX x y) (at level 60).
-Notation "x == y" := (eqX x y) (at level 70).
+Notation "x ∈ y" := (inX x y).
+Notation "x == y" := (eqX x y).
 
 Parameter in_ext: Proper (eqX ==> eqX ==> iff) inX.
 

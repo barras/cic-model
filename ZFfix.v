@@ -31,7 +31,7 @@ apply H1 in H2; trivial.
 Qed.
 
   Lemma TI_incl : forall o, isOrd o ->
-    forall o', lt o' o ->
+    forall o', o' < o ->
     TI F o' ⊆ TI F o.
 intros.
 apply TI_mono; trivial; auto.
@@ -814,14 +814,10 @@ Section KnasterTarski.
 Variable A : set.
 Variable F : set -> set.
 
-Record fp_props : Prop :=
- { typ : forall x, x ⊆ A -> F x ⊆ A;
-(*   morph : morph1 F;*)
-   mono : forall x x',
-     x' ⊆ A -> x ⊆ x' -> F x ⊆ F x'}.
+Hypothesis Fmono : Proper (incl_set==>incl_set) F.
+Hypothesis Ftyp : forall x, x ⊆ A -> F x ⊆ A.
 
-Hypothesis Ffix : fp_props.
-
+(*
 Lemma fx_mrph : forall x x', x ⊆ A -> x == x' -> F x == F x'.
 intros.
 apply eq_intro; intros.
@@ -835,6 +831,7 @@ Qed.
 
 Let Ftyp := Ffix.(typ).
 Let Fmono := Ffix.(mono).
+*)
 
 Definition is_lfp x :=
   F x == x /\ forall y, y ⊆ A -> F y ⊆ y -> x ⊆ y.
@@ -865,17 +862,14 @@ red in H1. red in H1.
 rewrite H0.
 apply subset_elim1 in H.
 apply H1.
-apply Fmono with x; trivial.
- rewrite <- H0; red; intros.
- apply power_elim with x; trivial.
-
- rewrite H0; auto with *.
+revert H2; apply Fmono.
+rewrite H0; reflexivity.
 Qed.
 
-Definition least_fp := inter M'.
+Definition FIX := inter M'.
 
-Lemma lfp_typ : least_fp ⊆ A.
-unfold least_fp, M'.
+Lemma lfp_typ : FIX ⊆ A.
+unfold FIX, M'.
 red; intros.
 apply inter_elim with (1:=H).
 apply subset_intro.
@@ -884,25 +878,21 @@ apply subset_intro.
  apply post_fix_A.
 Qed.
 
-Lemma lower_bound : forall x, x ∈ M' -> least_fp ⊆ x.
-unfold least_fp, M'; red; intros.
+Lemma lower_bound : forall x, x ∈ M' -> FIX ⊆ x.
+unfold FIX, M'; red; intros.
 apply inter_elim with (1:=H0); auto.
 Qed.
 
-Lemma post_fix2 : forall x, x ∈ M' -> F least_fp ⊆ F x.
+Lemma post_fix2 : forall x, x ∈ M' -> F FIX ⊆ F x.
 intros.
 apply Fmono.
- apply subset_elim1 in H.
- red; intros.
- apply power_elim with x; trivial.
-
- apply lower_bound; trivial.
+apply lower_bound; trivial.
 Qed.
 
 
-Lemma post_fix_lfp : post_fix least_fp.
+Lemma post_fix_lfp : post_fix FIX.
 red; red; intros.
-unfold least_fp.
+unfold FIX.
 apply inter_intro.
 2:exists A; apply member_A.
 intros.
@@ -911,7 +901,7 @@ apply post_fix2 with (1:=H0).
 trivial.
 Qed.
 
-Lemma incl_f_lfp : F least_fp ∈ M'.
+Lemma incl_f_lfp : F FIX ∈ M'.
 unfold M'; intros.
 apply subset_intro.
  apply power_intro.
@@ -920,24 +910,38 @@ apply subset_intro.
 
  red; intros.
  apply Fmono.
-  apply lfp_typ.
-
-  apply post_fix_lfp; trivial.
+ apply post_fix_lfp; trivial.
 Qed.
 
-Lemma knaster_tarski : is_lfp least_fp.
-split.
- apply eq_intro; intros.
-  apply (post_fix_lfp z H); trivial.
+Lemma FIX_eqn : F FIX == FIX.
+apply incl_eq.
+ apply post_fix_lfp.
 
-  apply (lower_bound (F least_fp)); trivial.
-  apply incl_f_lfp; trivial.
+ apply lower_bound.
+ apply incl_f_lfp.
+Qed.
+
+Lemma knaster_tarski : is_lfp FIX.
+split.
+ apply FIX_eqn.
 
  intros.
  apply lower_bound.
  unfold M'.
  apply subset_intro; trivial.
  apply power_intro; trivial.
+Qed.
+
+Lemma TI_FIX : forall o, isOrd o -> TI F o ⊆ FIX.
+induction 1 using isOrd_ind.
+red; intros.
+apply TI_elim in H2; trivial.
+2:apply Fmono_morph; trivial.
+destruct H2.
+specialize H1 with (1:=H2).
+apply Fmono in H1.
+apply H1 in H3.
+revert H3; apply post_fix_lfp.
 Qed.
 
 End KnasterTarski.

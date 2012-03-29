@@ -269,7 +269,7 @@ Definition X:=set.
 Definition eqX := eq_set.
 Definition eqX_equiv := eq_set_equiv.
 Definition inX x y := x ∈ El y.
-Lemma in_ext : Proper (eq_set==>eq_set==>iff) inX.
+Instance in_ext : Proper (eq_set==>eq_set==>iff) inX.
 apply morph_impl_iff2; auto with *.
 unfold inX; do 4 red; intros.
 rewrite <- H; rewrite <- H0; trivial.

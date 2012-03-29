@@ -526,8 +526,8 @@ Qed.
 
 Lemma NATFIX_sat : forall o m X,
   isOrd o ->
-  (forall o o' n, isOrd o -> isOrd o' -> o ⊆ o' -> n ∈ NAT ->
-   inclSAT (X o n) (X o' n)) ->
+  (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ NATi y ->
+   inclSAT (X y n) (X y' n)) ->
   inSAT m (interSAT (fun o':{o'|o' ∈ osucc o} => let o':=proj1_sig o' in
         prodSAT (piNATi(fun n => prodSAT (cNAT n) (X o' n)) o')
                 (piNATi(fun n => prodSAT (cNAT n) (X (osucc o') n)) (osucc o')))) ->
@@ -563,6 +563,9 @@ apply Xmono with (osucc z); eauto using isOrd_inv.
  apply isOrd_plump with z; trivial.
   eauto using isOrd_inv.
   apply olts_le; trivial.
+
+ unfold NATi; rewrite ZFfix.TI_mono_succ; auto with *.
+ eauto using isOrd_inv.
 apply prodSAT_elim with (cNAT x).
 2:apply cNAT_post; trivial.
 assert (z ∈ osucc o).

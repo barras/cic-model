@@ -8,6 +8,8 @@ Module Lc := Lambda.
 
 (** * Abstract strong mormalization model (supporting strong eliminations) *)
 
+Reserved Notation "[ x , t ] \real A" (at level 60).
+
 Module Type RealSN_addon (M : CC_Model).
   Import M.
 
@@ -47,7 +49,7 @@ Import MM.
    of the value and term interpretation requirements.
    [x,t] \real T reads "t is a realizer of x as a value of type T".
  *)
-Notation "[ x , t ] \real A" := (x ∈ A  /\ inSAT t (Real A x)) (at level 60).
+Notation "[ x , t ] \real A" := (x ∈ A  /\ inSAT t (Real A x)).
 
 Lemma real_daimon : forall x t T,
   [x,t] \real T -> [x,SatSet.daimon] \real T.
