@@ -1,5 +1,5 @@
 Require Export basic.
-Require Import ZF ZFnats.
+Require Import ZF.
 
 (** Theory about well-founded sets *)
 
@@ -62,7 +62,7 @@ Qed.
 
 (** The class of well-founded sets form a model of IZF+foundation axiom *)
 
-Lemma isWf_zero: isWf zero.
+Lemma isWf_zero: isWf empty.
 apply isWf_intro; intros.
 apply empty_ax in H; contradiction.
 Qed.
@@ -103,24 +103,6 @@ intros.
 apply isWf_incl with x; trivial.
 red; intros.
 apply subset_elim1 in H0; trivial.
-Qed.
-
-Lemma isWf_succ : forall n, isWf n -> isWf (succ n).
-intros.
-apply isWf_intro; intros.
-elim le_case with (1:=H0); clear H0; intros.
- apply isWf_ext with n; trivial.
- symmetry; trivial.
-
- apply isWf_inv with n; trivial.
-Qed.
-
-Lemma isWf_N : isWf N.
-apply isWf_intro; intros.
-elim H using N_ind; intros.
- apply isWf_ext with n; trivial.
- apply isWf_zero.
- apply isWf_succ; trivial.
 Qed.
 
 Require Import ZFrepl.
@@ -390,27 +372,6 @@ intros.
 generalize (trClos_intro1 _ H0).
 pattern x at 1 3; elim H0 using isWf_ind; intros; eauto.
 Qed.
-(*
-Lemma isWf_tr_ind x (P : set -> Prop) :
-  (forall a, a ∈ trClos x -> (forall b b', b ∈ trClos a -> b' ∈ b -> P b')-> P a) ->
-  isWf x ->  P x.
-intros.
-cut (forall z, z ∈ trClos x -> P z); [eauto|].
-revert H; elim H0 using isWf_ind; intros.
-apply H2; intros; trivial.
-
-
-Lemma isWf_tr_ind x (P : set -> Prop) :
-  (forall a, a ∈ trClos x -> (forall b b', b ∈ a -> b' ∈ trClos b -> P b')-> P a) ->
-  isWf x ->  P x.
-intros.
-generalize (trClos_intro1 _ H0).
-pattern x at 1 3; elim H0 using isWf_ind; intros.
-apply H; intros; trivial.
-apply H2 with 
-; eauto.
-Qed.
-*)
 
 (** Transfinite iteration on a well-founded set (not using higher-order) *)
 
@@ -771,7 +732,7 @@ Qed.
     Proper (eq_set ==> eq_set ==> iff) P ->
     isWf x ->
     (forall y, isWf y ->
-     (forall x, lt x y -> P x (WFR x)) ->
+     (forall x, x ∈ y -> P x (WFR x)) ->
      P y (F WFR y)) ->
     P x (WFR x).
 intros x P Pm wfx Hrec.
@@ -805,11 +766,10 @@ End WellFoundedSets.
 
 Hint Resolve isWf_morph.
 
-(** Transfinite iteration on well-founded sets *)
-(*Module F.
-
-Section TRF.
-
+(*
+(** Transfinite iteration on well-founded sets (higher-order version) *)
+Module F.
+Section WFR.
 Variable A : Type.
 Variable eqA : A -> A -> Prop.
 Hypothesis symA : Symmetric eqA.

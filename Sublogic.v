@@ -1,6 +1,8 @@
 Require Export basic.
 Require Import Logics.
 
+Reserved Notation "# T" (at level 200).
+
 Set Implicit Arguments.
 
 (***************************************************************************)
@@ -11,7 +13,7 @@ Module Type Sublogic.
   Parameter TrI : forall P:Prop, P -> Tr P.
   Parameter TrP : forall P:Prop, Tr (Tr P) -> Tr P.
   Parameter TrMono : forall (P Q:Prop), (P->Q)->Tr P->Tr Q.
-
+  Notation "# T" := (Tr T).
 End Sublogic.
 
 (** Family of sublogic *)

@@ -571,3 +571,25 @@ elim H1 using N_ind; intros.
 
  rewrite natrec_S; auto.
 Qed.
+
+(** * Well-foundation results *)
+
+Require Import ZFwf.
+
+Lemma isWf_succ : forall n, isWf n -> isWf (succ n).
+intros.
+apply isWf_intro; intros.
+elim le_case with (1:=H0); clear H0; intros.
+ apply isWf_ext with n; trivial.
+ symmetry; trivial.
+
+ apply isWf_inv with n; trivial.
+Qed.
+
+Lemma isWf_N : isWf N.
+apply isWf_intro; intros.
+elim H using N_ind; intros.
+ apply isWf_ext with n; trivial.
+ apply isWf_zero.
+ apply isWf_succ; trivial.
+Qed.

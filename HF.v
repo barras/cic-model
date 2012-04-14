@@ -1,3 +1,4 @@
+(** Set theory without infinity axiom: hereditarily finite sets *)
 
 Require Export Setoid Morphisms.
 Require Import List.
@@ -151,7 +152,7 @@ elim forall_elt_false_elim with (fun x => negb (P x)) x; intros.
    symmetry  in |- *; trivial.
 Qed.
 
-(* Equality *)
+(** Equality *)
 
 Fixpoint eq_hf (x y: hf) {struct x} : bool :=
   forall_elt (fun x1 => exists_elt (fun y1 => eq_hf x1 y1) y) x &&
@@ -247,7 +248,7 @@ fold (Eq_hf x x0) (Eq_hf y y0).
 rewrite H; rewrite H0; reflexivity.
 Qed.
 
-(* Membership *)
+(** Membership *)
 
 Definition in_hf (x y: hf) : bool := exists_elt (fun y1 => eq_hf x y1) y.
 
@@ -482,7 +483,7 @@ Qed.
 
 
 
-(* Cancelling redundancies *)
+(** Cancelling redundancies *)
 
 Lemma cancel_repeat : forall a l,
   In_hf a (HF l) -> Eq_hf (HF(a::l)) (HF l).
@@ -657,7 +658,7 @@ Qed.
 
 Hint Resolve In_hf_head In_hf_head_hf In_hf_head_hf In_hf_tail_hf.
 
-(* Notations *)
+(** Notations *)
 
 Notation "{ l }" := (HF l) (at level 0, l at level 99).
 
@@ -676,7 +677,7 @@ Notation morph1 := (Proper (Eq_hf ==> Eq_hf)).
 Notation morph2 := (Proper (Eq_hf ==> Eq_hf ==> Eq_hf)).
 Notation morph3 := (Proper (Eq_hf ==> Eq_hf ==> Eq_hf ==> Eq_hf)).
 
-(* set theoretical operators *)
+(** Set theoretical operators *)
 
 Definition empty := HF nil.
 Definition singl x := HF (x:::nil).
@@ -887,7 +888,7 @@ symmetry; apply union_ext; intros.
 Qed.
 
 
-(* power properties *)
+(** power properties *)
 
 Lemma power_intro :
   forall x y, Incl_hf x y -> x ∈ power y.
@@ -1186,7 +1187,7 @@ apply singl_ext; intros.
 Qed.
 
 
-(* replacement properties *)
+(** replacement properties *)
 
 Lemma repl_intro : forall a f y x,
   eq_hf_fun a f f ->
@@ -1269,12 +1270,12 @@ apply eq_hf_intro; simpl; intros.
     apply in_hf_intro with x0; trivial; reflexivity.
 Qed.
 
-(* bool *)
+(** bool *)
 Definition hf_false := empty.
 Definition hf_true := singl hf_false.
 Definition hf_bool := pair hf_false hf_true.
 
-(* couples *)
+(** couples *)
 Definition couple x y := pair (singl x) (pair x y).
 Definition fst p := union (subset (union p) (fun x => in_hf (singl x) p)).
 Definition snd p :=
@@ -1417,7 +1418,7 @@ Eval compute in
  (eq_hf hf_negb {couple hf_true hf_false:::couple hf_false hf_true ::: nil}).
 *)
 
-(* regularity *)
+(** regularity *)
 
 Lemma raw_choose_elt : forall x, {y | In y (hf_elts x)}+{x==empty}.
 intros ([|h l]); simpl; [right;compute;reflexivity|left;exists h; auto].

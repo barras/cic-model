@@ -47,7 +47,7 @@ Import MM.
 
 (** We first introduce the realizability relation, which the conjunction
    of the value and term interpretation requirements.
-   [x,t] \real T reads "t is a realizer of x as a value of type T".
+   [[x,t]] \real T reads "t is a realizer of x as a value of type T".
  *)
 Notation "[ x , t ] \real A" := (x ∈ A  /\ inSAT t (Real A x)).
 
@@ -288,10 +288,10 @@ Definition wf (e:env) :=
 Definition typ (e:env) (M T:trm) :=
   forall i j, val_ok e i j -> in_int i j M T.
 Definition eq_typ (e:env) (M M':trm) :=
-  (forall i j, val_ok e i j -> int i M == int i M').
+  forall i j, val_ok e i j -> int i M == int i M'.
 Definition sub_typ (e:env) (M M':trm) :=
   forall i j, val_ok e i j ->
-  (forall x t, [x,t] \real int i M -> [x,t] \real int i M').
+  forall x t, [x,t] \real int i M -> [x,t] \real int i M'.
 
 Definition eq_typ' e M N := eq_typ e M N /\ conv_term M N.
 
@@ -565,6 +565,8 @@ destruct 1; destruct 1; split.
  apply conv_term_beta; trivial.
 Qed.
 
+(** #<a name="RealSnTyping"></a>
+# *)
 (** ** Typing rules *)
 
 Lemma typ_prop : forall e, typ e prop kind.

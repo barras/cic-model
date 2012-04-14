@@ -236,7 +236,8 @@ red; rewrite cc_dec_ax; left; reflexivity.
 Qed.
 
 
-(** #<a name="EquivTTColl"/># *)
+(** #<a name="EquivTTColl"/>
+# *)
 (** * Correspondance between ZF universes and (Coq + TTColl) universes *)
 
 Section Universe.

@@ -35,11 +35,11 @@ Qed.
 
 Definition set :=
   { f : Z.set -> Prop |
-    Tr(exists u, f u) /\
+    (#exists u, f u) /\
     (forall a a', f a -> f a' -> Z.eq_set a a') }.
 
 Lemma set_intro : forall (f:Z.set->Prop) (P:set->Prop),
-  Tr(exists u, f u) ->
+  (#exists u, f u) ->
   (forall a a', f a -> f a' -> Z.eq_set a a') ->
   (forall Hex Huniq, P (exist _ f (conj Hex Huniq))) ->
   sig P.
@@ -50,8 +50,8 @@ Qed.
 
 Inductive in_set_ (x y:set) : Prop :=
  InSet
-  (_:Tr(exists2 x', proj1_sig x x' &
-        exists2 y', proj1_sig y y' & Z.in_set x' y')).
+  (_:#exists2 x', proj1_sig x x' &
+      exists2 y', proj1_sig y y' & Z.in_set x' y').
 
 Definition in_set := in_set_.
 
@@ -64,8 +64,8 @@ Qed.
 Global Hint Resolve inset_isL.
 
 Lemma in_set_elim : forall x y, in_set x y <->
-  Tr(exists2 x', proj1_sig x x' &
-     exists2 y', proj1_sig y y' & Z.in_set x' y').
+  #exists2 x', proj1_sig x x' &
+   exists2 y', proj1_sig y y' & Z.in_set x' y'.
 split; intros.
  destruct H; trivial.
  constructor; trivial.
@@ -248,7 +248,7 @@ unfold eq_set in |- *; split; intros.
   elim (H0 y); auto.
 Qed.
 
-Lemma Z2set_surj : forall x, Tr(exists y, x == Z2set y).
+Lemma Z2set_surj : forall x, #exists y, x == Z2set y.
 intros.
 destruct (proj2_sig x).
 Tdestruct H.
@@ -277,7 +277,7 @@ Qed.
 Lemma ex2_equiv (P Q:_->Prop) (P' Q':_->Prop) :
   (forall x x', x == Z2set x' -> (P x <-> P' x')) ->
   (forall x x', x == Z2set x' -> (Q x <-> Q' x')) ->
-  (Tr(ex2 P Q) <-> Tr(ex2 P' Q')).
+  ((#ex2 P Q) <-> (#ex2 P' Q')).
 split; intros.
  Tdestruct H1.
  Tdestruct (Z2set_surj x) as (x',?).
@@ -295,7 +295,7 @@ Lemma set_intro' (P:set->Prop) (P':set->Prop) :
   (forall x, isL (P x)) ->
   Proper (eq_set ==> iff) P ->
   (forall z, (forall x, x ∈ z <-> P x) -> P' z) ->
-  Tr(exists z, forall x, Z.in_set x z <-> P (Z2set x)) ->
+  (#exists z, forall x, Z.in_set x z <-> P (Z2set x)) ->
   sig P'.
 intros.
 apply set_intro with (fun z => forall x, Z.in_set x z <-> P (Z2set x)); trivial.
@@ -319,8 +319,8 @@ Qed.
 
 (** empty set *)
 
-Lemma empty_sig : { empty | forall x, x ∈ empty -> Tr False }.
-apply set_intro' with (P:=fun _ => Tr False); intros; auto.
+Lemma empty_sig : { empty | forall x, x ∈ empty -> #False }.
+apply set_intro' with (P:=fun _ => #False); intros; auto.
  do 2 red; reflexivity.
 
  rewrite H in H0; trivial.
@@ -331,12 +331,12 @@ apply set_intro' with (P:=fun _ => Tr False); intros; auto.
 Qed.
 
 Definition empty := proj1_sig empty_sig.
-Lemma empty_ax: forall x, x ∈ empty -> Tr False.
+Lemma empty_ax: forall x, x ∈ empty -> #False.
 Proof proj2_sig empty_sig.
 
 (** pair *)
 
-Let pair_spec a b x := Tr(x == a \/ x == b).
+Let pair_spec a b x := #(x == a \/ x == b).
 
 Let pair_spec_morph a b :
   Proper (eq_set ==> iff) (pair_spec a b).
@@ -365,12 +365,12 @@ apply set_intro' with (P:=pair_spec a b); unfold pair_spec; intros; auto.
 Qed.
 
 Definition pair a b := proj1_sig (pair_sig a b).
-Lemma pair_ax: forall a b x, x ∈ pair a b <-> Tr(x == a \/ x == b).
+Lemma pair_ax: forall a b x, x ∈ pair a b <-> #(x == a \/ x == b).
 Proof fun a b => proj2_sig (pair_sig a b).
 
 (** union *)
 
-Let union_spec a x := Tr(exists2 y, x ∈ y & y ∈ a).
+Let union_spec a x := #exists2 y, x ∈ y & y ∈ a.
 
 Let union_spec_morph a :
   Proper (eq_set==>iff) (union_spec a).
@@ -398,12 +398,12 @@ Qed.
 
 Definition union a := proj1_sig (union_sig a).
 Lemma union_ax: forall a x,
-  x ∈ union a <-> Tr(exists2 y, x ∈ y & y ∈ a).
+  x ∈ union a <-> #exists2 y, x ∈ y & y ∈ a.
 Proof fun a => proj2_sig (union_sig a).
 
 (** subset *)
 
-Let subset_spec a P x := x ∈ a /\ Tr(exists2 x', x == x' & P x').
+Let subset_spec a P x := x ∈ a /\ #exists2 x', x == x' & P x'.
 
 Let subset_spec_morph a P :
   Proper (eq_set ==> iff) (subset_spec a P).
@@ -417,13 +417,13 @@ Qed.
 
 Lemma subset_sig: forall a P,
   { subset | forall x, x ∈ subset <->
-             (x ∈ a /\ Tr(exists2 x', x==x' & P x')) }.
+             (x ∈ a /\ #exists2 x', x==x' & P x') }.
 intros a P.
 apply set_intro' with (P:=subset_spec a P); unfold subset_spec; intros; auto.
  apply subset_spec_morph; trivial.
 
  Tdestruct (Z2set_surj a) as (a',?).
- Tdestruct (Z.subset_ex a' (fun z => Tr(exists2 z', z' == Z2set z & P z'))) as (w,?).
+ Tdestruct (Z.subset_ex a' (fun z => #exists2 z', z' == Z2set z & P z')) as (w,?).
  Texists w; intros.
  rewrite H0.
  apply and_iff_morphism.
@@ -442,7 +442,7 @@ Qed.
 
 Definition subset a P := proj1_sig (subset_sig a P).
 Lemma subset_ax : forall a P x,
-    x ∈ subset a P <-> (x ∈ a /\ Tr(exists2 x', x==x' & P x')).
+    x ∈ subset a P <-> (x ∈ a /\ #exists2 x', x==x' & P x').
 Proof fun a P => proj2_sig (subset_sig a P).
 
 (** power set *)
@@ -483,7 +483,7 @@ Proof fun a => proj2_sig (power_sig a).
 
 Definition uchoice_pred (P:set->Prop) :=
   (forall x x', x == x' -> P x -> P x') /\
-  Tr(exists x, P x) /\
+  (#exists x, P x) /\
   (forall x x', P x -> P x' -> x == x').
 
 Definition uchoice (P : set -> Prop) (Hp : uchoice_pred P) : set.
@@ -500,7 +500,7 @@ split; intros.
 Defined.
 
 Lemma uchoice_ax : forall P h x,
-  (x ∈ uchoice P h <-> Tr(exists2 z, P z & x ∈ z)).
+  (x ∈ uchoice P h <-> #exists2 z, P z & x ∈ z).
 split; intros.
  destruct H.
  Tdestruct H.
@@ -553,7 +553,7 @@ destruct H0 as (?,(?,?)); split;[|split]; intros.
 Qed.
 
 
-Lemma uchoice_ext : forall (P:set->Prop) h x, Tr(P x) -> x == uchoice P h.
+Lemma uchoice_ext : forall (P:set->Prop) h x, (#P x) -> x == uchoice P h.
 intros.
 apply eq_set_ax;intros.
 rewrite uchoice_ax.
@@ -567,7 +567,7 @@ split; intros.
  rewrite (H4 x x1); auto.
 Qed.
 
-Lemma uchoice_def : forall P h, Tr(P (uchoice P h)).
+Lemma uchoice_def : forall P h, #P (uchoice P h).
 intros.
 destruct h.
 destruct a.
@@ -627,7 +627,7 @@ Lemma repl0 : forall (a:set) (R:set->set->Prop), set.
 intros a R.
 exists
  (fun a' => forall x,
-  Z.in_set x a' <-> Tr(exists2 y, Z2set y ∈ a & exists2 x', Z.eq_set x x' & downR R y x')).
+  Z.in_set x a' <-> #exists2 y, Z2set y ∈ a & exists2 x', Z.eq_set x x' & downR R y x').
 split; intros.
  Tdestruct (Z2set_surj a).
  assert (R'fun := fun x0 x' y y' (_:Z.in_set x0 x) => downR_fun R x0 x' y y').
@@ -686,7 +686,7 @@ Lemma repl_sig :
     Proper (incl_set ==> (eq_set ==> eq_set ==> iff) ==> incl_set) repl /\
     forall a (R:set->set->Prop),
     (forall x x' y y', x ∈ a -> R x y -> R x' y' -> x == x' -> y == y') ->
-    forall x, x ∈ repl a R <-> Tr(exists2 y, y ∈ a & exists2 x', x == x' & R y x') }.
+    forall x, x ∈ repl a R <-> #exists2 y, y ∈ a & exists2 x', x == x' & R y x' }.
 exists repl0; split.
  exact repl0_mono.
 split; intros.
@@ -730,7 +730,7 @@ Proof (proj1 (proj2_sig repl_sig)).
 Lemma repl_ax:
     forall a (R:set->set->Prop),
     (forall x x' y y', x ∈ a -> R x y -> R x' y' -> x == x' -> y == y') ->
-    forall x, x ∈ repl a R <-> Tr(exists2 y, y ∈ a & exists2 x', x == x' & R y x').
+    forall x, x ∈ repl a R <-> #exists2 y, y ∈ a & exists2 x', x == x' & R y x'.
 Proof proj2 (proj2_sig repl_sig).
 
 (** infinite set (natural numbers) *)
@@ -862,13 +862,13 @@ Module ClassicCollection.
 
 Section Classic.
 
-Hypothesis EM : forall P, Tr(P \/ (P -> Tr False)).
+Hypothesis EM : forall P, #(P \/ (P -> #False)).
 
 Lemma coll_sig : forall A (R:set->set->Prop), 
   {coll| Proper (eq_set==>eq_set==>iff) R ->
      forall x, x ∈ A ->
-     Tr(exists y, R x y) ->
-     Tr(exists2 y, y ∈ coll & R x y) }.
+     (#exists y, R x y) ->
+     (#exists2 y, y ∈ coll & R x y) }.
 intros A R.
 pose (R' x y := exists2 x', Z2set x == x' & exists2 y', Z2set y == y' & R x' y').
 assert (R'm : Proper (Z.eq_set==>Z.eq_set==>iff) R').
@@ -885,8 +885,8 @@ assert (R'm : Proper (Z.eq_set==>Z.eq_set==>iff) R').
   symmetry; trivial.
 apply set_intro with
   (Z.lst_rk(fun B => exists2 A', Z2set A' == A & forall x, Z.in_set x A' ->
-      Tr(exists y, R' x y) ->
-      Tr(exists2 y, Z.in_set y B & R' x y))); intros.
+      (#exists y, R' x y) ->
+      (#exists2 y, Z.in_set y B & R' x y))); intros.
  Tdestruct (Z2set_surj A) as (A',e).
  Tdestruct (Z.coll_ax_uniq EM A' R' R'm) as (B,HB); eauto.
  Texists B.
@@ -913,7 +913,7 @@ apply set_intro with
  destruct Bok as (A',eA,Bok).
  Tdestruct (Z2set_surj x) as (x',ex).
  rewrite ex in H0; rewrite <- eA in H0; apply in_inZ in H0.
- assert (Tr(exists y, R' x' y)).
+ assert (#exists y, R' x' y).
   Tdestruct H1 as (y,Rxy).
   Tdestruct (Z2set_surj y) as (y',ey).
   Texists y'; exists x; [|exists y]; auto with *.
@@ -932,8 +932,8 @@ Qed.
 Definition coll A R := proj1_sig (coll_sig A R).
 Lemma coll_ax : forall A (R:set->set->Prop), 
   Proper (eq_set==>eq_set==>iff) R ->
-  forall x, x ∈ A -> Tr(exists y, R x y) ->
-  Tr(exists2 y, y ∈ coll A R & R x y).
+  forall x, x ∈ A -> (#exists y, R x y) ->
+  #exists2 y, y ∈ coll A R & R x y.
 Proof (fun A R => proj2_sig (coll_sig A R)).
 
 End Classic.
@@ -951,8 +951,9 @@ Module IZF_R <: IZF_R_sig CoqSublogicThms := Skolem CoqSublogicThms.
 Module ZF <: ZF_sig ClassicSublogicThms.
  Include Skolem ClassicSublogicThms.
  Import ClassicSublogicThms.
- Lemma EM : forall P, Tr(P \/ (P -> Tr False)).
-intros P nem.
+ Lemma EM : forall P, #(P \/ (P -> #False)).
+Unset Printing Notations.
+cbv beta; intros P nem.
 apply nem.
 right; intros p _.
 apply nem.
@@ -962,7 +963,7 @@ Qed.
  Lemma coll_ax : forall A R, 
     Proper (eq_set==>eq_set==>iff) R ->
     forall x, x ∈ A ->
-      Tr(exists y, R x y) -> Tr(exists2 y, y ∈ coll A R & R x y).
+      (#exists y, R x y) -> (#exists2 y, y ∈ coll A R & R x y).
  Proof ClassicCollection.coll_ax EM.
 End ZF.
 

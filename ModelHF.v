@@ -1,7 +1,13 @@
 
+(** A finitary model of the calculus of construction: hereditarily
+    finite sets.
+ *)
+
 Require Import Bool List.
 Require Import HFcoc.
 Require Import Models GenModelSyntax.
+
+(** * Instance of the abstract model *)
 
 Module HF_Coc_Model <: CC_Model.
 
@@ -80,6 +86,9 @@ Module Soundness := GenModelSyntax.MakeModel(HF_Coc_Model).
 Import Soundness.
 Import T.
 
+(** * Principles supported by the model *)
+
+(** Deciding whether [f] is true for all valuations *)
 Fixpoint forall_int_env (e:Env.env) (f:(nat->hf)->bool) {struct e} : bool :=
   match e with
     nil => f (fun _ => empty)
@@ -87,6 +96,7 @@ Fixpoint forall_int_env (e:Env.env) (f:(nat->hf)->bool) {struct e} : bool :=
       (fun i_f => forall_elt (fun x => f (V.cons x i_f)) (int (int_trm T) i_f))
   end.
 
+(** Deciding whether a context is satisfiable *)
 Definition valid_context (e:Env.env) : bool :=
   negb (forall_int_env e (fun _ => false)).
 
@@ -99,6 +109,7 @@ Require Import Term TypeJudge.
 
 Definition int_clos T := int (int_trm T) vnil.
 
+(** ** Consistency of CC *)
   Lemma cc_consistency : forall M M', ~ eq_typ nil M M' FALSE.
 apply non_provability.
  intros.
@@ -107,13 +118,17 @@ apply non_provability.
 Qed.
 
 
-(* Properties not validated by the model *)
+(** ** Properties not validated by the model *)
 Eval vm_compute in (int_clos FALSE). (*consistency *)
 
-(* Properties validated by the model *)
+(** ** Properties validated by the model *)
 Eval vm_compute in (int_clos TRUE).
-Eval vm_compute in (int_clos INAT). (* NAT is inhabited *)
-Eval vm_compute in (int_clos EM). (* excluded-middle *)
-Eval vm_compute in (int_clos PI). (* proof-irrelevance *)
-Eval vm_compute in (int_clos (EXT prop prop)). (* extensionality of funs of Prop -> Prop *)
 
+(** NAT is inhabited *)
+Eval vm_compute in (int_clos INAT). 
+(** excluded-middle: *)
+Eval vm_compute in (int_clos EM). 
+(** proof-irrelevance: *)
+Eval vm_compute in (int_clos PI).
+(** extensionality of funs of Prop -> Prop *)
+Eval vm_compute in (int_clos (EXT prop prop)). 

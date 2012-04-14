@@ -233,6 +233,8 @@ destruct H.
  red; intros; trivial.
 Qed.
 
+(** #<a name="TypingRules"></a># *)
+
 (** * Inference rules *)
 
 (** ** Context formation rules *)

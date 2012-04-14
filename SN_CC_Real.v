@@ -142,7 +142,7 @@ rewrite fst_def in H.
 apply cc_prod_elim with (dom:=El dom) (F:=fun x => El(F x)); trivial.
 Qed.
 
-(** The type of propositions:
+(** ** The type of propositions:
    - propositions are types and do not interact with their surrounding context (they
      are neutral), so the set of realizers of any proposition is SN;
    - all propositions are non-empty (and have the same values as True), but their set of
@@ -153,7 +153,7 @@ Qed.
    (e.g. Y).
  *)
 
-(* Injecting reducibility candidates into propositions *)
+(** Injecting reducibility candidates into propositions *)
 Definition mkProp S := mkTY (singl empty) (fun _ => S).
 
 Instance mkProp_morph : Proper (eqSAT ==> eq_set) mkProp.
@@ -171,7 +171,7 @@ rewrite Real_def; auto with *.
 rewrite H; apply singl_intro.
 Qed.
 
-(* The sort of propositions *)
+(** The sort of propositions *)
 Definition props :=
   mkTY
     (* The domain of props *)

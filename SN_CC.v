@@ -282,15 +282,111 @@ End SN_CC_addon.
 ----
 *)
 
+
+Require GenModelSN.
+Module SN := GenModelSN.MakeModel SN_CC_Model SN_CC_addon.
+
+(** ** Extendability *)
+Definition cst (x:set) : SN.trm.
+left; exists (fun _ =>x) (fun _ =>Lambda.K).
+ do 2 red; reflexivity.
+ do 2 red; reflexivity.
+ red; reflexivity.
+ red; reflexivity.
+Defined.
+
+Definition mkSET (x:set) := cst (mkTY x snSAT).
+
+Lemma mkSET_kind e x :
+  (exists w, in_set w x) ->
+  SN.typ e (mkSET x) SN.kind.
+intros (w,?); red; intros.
+split;[discriminate|].
+simpl.
+split;[|apply Lambda.sn_K].
+exists nil; exists (mkSET x).
+ reflexivity.
+
+ exists w; simpl; intros _.
+ unfold SN_CC_Model.inX, mkTY, El.
+ rewrite fst_def; trivial.
+Qed.
+
+Lemma cst_typ e x y :
+  in_set x y ->
+  SN.typ e (cst x) (mkSET y).
+red; intros.
+apply SN.in_int_intro; try discriminate.
+ simpl.
+ unfold SN_CC_Model.inX, mkTY, El.
+ rewrite fst_def; trivial.
+
+ unfold SN_CC_addon.Real, Real, SN.tm, SN.int, mkSET, cst, SN.iint, SN.itm.
+ unfold mkTY; rewrite snd_def.
+ rewrite iSAT_id.
+ apply Lambda.sn_K.
+Qed.
+
+Lemma cst_typ_inv x y :
+  SN.typ nil (cst x) (mkSET y) ->
+  in_set x y.
+intros.
+assert (SN.val_ok nil (SN.V.nil empty) (SN.I.nil Lambda.K)).
+ red; intros.
+ destruct n; inversion H0.
+apply H in H0.
+apply SN.in_int_not_kind in H0.
+2:discriminate.
+destruct H0 as (H0,_ ); simpl in H0.
+unfold SN_CC_Model.inX, mkTY, El in H0.
+rewrite fst_def in H0; trivial.
+Qed.
+
+Lemma cst_eq_typ e x y :
+  x == y ->
+  SN.eq_typ e (cst x) (cst y).
+red; simpl; intros; trivial.
+Qed.
+
+Lemma cst_eq_typ_inv x y :
+  SN.eq_typ nil (cst x) (cst y) ->
+  x == y.
+intros.
+assert (SN.val_ok nil (SN.V.nil empty) (SN.I.nil Lambda.K)).
+ red; intros.
+ destruct n; inversion H0.
+apply H in H0.
+simpl in H0; trivial.
+Qed.
+
+Lemma mkSET_eq_typ e x y :
+  x == y ->
+  SN.eq_typ e (mkSET x) (mkSET y).
+red; simpl; intros; trivial.
+unfold mkTY; rewrite H; reflexivity.
+Qed.
+
+Lemma mkSET_eq_typ_inv x y :
+  SN.eq_typ nil (mkSET x) (mkSET y) ->
+  x == y.
+intros.
+assert (SN.val_ok nil (SN.V.nil empty) (SN.I.nil Lambda.K)).
+ red; intros.
+ destruct n; inversion H0.
+apply H in H0.
+simpl in H0; trivial.
+apply couple_injection in H0; destruct H0; trivial.
+Qed.
+
+
 (** * Mapping semantic entities to the syntactic ones. *)
 
-Require GenModelSN TypeJudge.
-
+(** syntax *)
+Require TypeJudge.
 Module Ty := TypeJudge.
 Module Tm := Term.
 Module Lc := Lambda.
 
-Module SN := GenModelSN.MakeModel SN_CC_Model SN_CC_addon.
 
 (** Terms *)
 Fixpoint int_trm t :=

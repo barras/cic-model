@@ -537,7 +537,7 @@ Qed.
 
 Section NatFixpoint.
 
-(* NAT : the least fixpoint (using continuity) *)
+(** NAT : the least fixpoint (using continuity) *)
 
   Definition NAT := NATi omega.
 
@@ -652,7 +652,7 @@ Hint Resolve NATfun_ext.
 
 Section NatConvergence.
 
-(* Convergence (using closure property of ordinal) *)
+(** Convergence (using closure property of ordinal) *)
 
 Require Import ZFrank.
 
@@ -739,10 +739,10 @@ End Nat_theory.
 Hint Resolve NATf_mono Fmono_morph NATfun_ext.
 
 (*******************************************************************************)
-(* Applications *)
+(** ** Applications *)
 
 Module Example.
-(* Abel's counter-example: *)
+(** Abel's counter-example: *)
 
 Definition U o := cc_arr (cc_arr NAT (NATi (osucc o))) NAT.
 
