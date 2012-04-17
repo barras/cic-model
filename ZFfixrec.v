@@ -1,8 +1,6 @@
 Require Import ZF ZFrelations ZFnats ZFord ZFfix.
-
 Require Import ZFstable.
 Require Import ZFfunext.
-Require Import ZFcoc.
 
 (* Specialized version of transfinite recursion where the case of limit
    ordinals is union and the stage ordinal is fed to the step function.  *)

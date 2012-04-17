@@ -178,7 +178,7 @@ constructor; intros.
 Qed.
 
 (** We show there is an iso between the intended type (Wi)
-   and the encoding (W0.W2 A' B'):
+   and the encoding (W0.W A' B'):
    tr (f:X->Y) : W0.W_F A' B' X --> U_a (W_Fd (A a) (B a) Y) 
    See also more refined result below.
  *)
@@ -530,8 +530,8 @@ apply eq_intro; intros.
  destruct H3.
  rewrite <- H3 in H4; clear x0 H3.
  rewrite TI_mono_succ in H1; auto.
- unfold W_ord in H1; fold (W0.W2 A' B') in H1.
- rewrite <- W0.W2_eqn in H1; trivial.
+ unfold W_ord in H1; fold (W0.W A' B') in H1.
+ rewrite <- W0.W_eqn in H1; trivial.
  rewrite <- H2.
  apply in_reg with (TRF tr W_ord x).
   apply TI_elim in H1; auto with *.
@@ -1636,7 +1636,7 @@ split; intros.
   destruct h.
   rewrite H3.
   generalize (ty2 _ H2).
-  apply W0.Wi_W; trivial.
+  apply W0.Wi_W'; trivial.
 
   apply W0.Wf_intro; trivial.
   apply in_reg with (1:=symmetry eqw).
@@ -1653,7 +1653,7 @@ split; intros.
  split.
   rewrite H1.
   generalize (ty2 _ H0).
-  apply W0.Wi_W; trivial.
+  apply W0.Wi_W'; trivial.
 
   exists z;[reflexivity|].
   intros.
@@ -1664,7 +1664,7 @@ split; intros.
    rewrite <- H4 in H3; apply W0.W_F_elim in H3; trivial.
    destruct H3 as (_,(?,_)); auto.
 
-   rewrite W0.Wi_W; [apply Ffix_inA|trivial|trivial].
+   rewrite W0.Wi_W'; [apply Ffix_inA|trivial|trivial].
 
    rewrite H2; apply Ffix_inA; trivial.
 Qed.

@@ -180,7 +180,7 @@ Qed.
 
 
   Let WFf := W_F (w1 p) (w2 p).
-  Let Wp2 := W2 (w1 p) (w2 p).
+  Let Wp2 := W (w1 p) (w2 p).
 
 Definition wf' f := comp_iso (wf p) (WFmap (w2 p) f).
 
@@ -218,7 +218,7 @@ apply iso_fun_inj with Wp2 (wf' isow).
   apply (iso_funm isof); trivial.
   rewrite <- H0; trivial.
 
- apply iso_change_rhs with (1:=symmetry (W2_eqn _ _ Bext)).
+ apply iso_change_rhs with (1:=symmetry (W_eqn _ _ Bext)).
  apply wf'iso; trivial.
 
  unfold IND, INDi; red; intros.

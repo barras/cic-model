@@ -655,6 +655,15 @@ apply in_int_el.
 rewrite <- H; trivial.
 Qed.
 
+  Lemma var_eq_NATi : forall e O,
+    typ_ord (tenv e) O ->
+    var_equals e O ->
+    var_equals e (NatI O).
+unfold var_equals; intros.
+simpl.
+apply NATi_morph; apply H0; trivial.
+Qed.
+
   Lemma var_eq_OSucc : forall e O,
     var_equals e O ->
     var_equals e (OSucc O).

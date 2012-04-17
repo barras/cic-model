@@ -1048,7 +1048,7 @@ Qed.
 
 
   Let WFf := W_F (pos_to_w1 p) (pos_to_w2 p).
-  Let Wp2 := W2 (pos_to_w1 p) (pos_to_w2 p).
+  Let Wp2 := W (pos_to_w1 p) (pos_to_w2 p).
 
   Lemma IND_eq : IND == pos_oper p IND.
 pose (isow := TI_iso (pos_oper p) (fun f => trad_pos_w f p) IND_clos_ord).
@@ -1077,7 +1077,7 @@ apply iso_fun_inj with Wp2 (trad_pos_w isow p).
 
  apply trad_w_iso_fun with (p:=p) in isof; trivial.
  apply iso_change_rhs with (2:=isof).
- symmetry; apply W2_eqn; trivial.
+ symmetry; apply W_eqn; trivial.
 
  unfold IND, INDi; red; intros.
  rewrite <- TI_mono_succ; auto with *.

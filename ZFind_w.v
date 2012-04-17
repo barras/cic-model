@@ -1,6 +1,6 @@
-Require Import ZF ZFpairs ZFsum ZFnats ZFrelations ZFord ZFfix (*ZFstable*).
+Require Import ZF ZFpairs ZFsum ZFnats ZFrelations ZFord ZFfix ZFstable.
 Require Import ZFgrothendieck.
-Require Import ZFcoc ZFlist.
+Require Import ZFlist.
 Import ZFrepl.
 
 (** In this file we develop the theory of W-types:
@@ -519,13 +519,13 @@ Qed.
 
 (** The fixpoint of Wf (we have shown that Wf is monotone, bounded and stable) *)
 
-Definition W := Ffix Wf Wdom.
+Definition W' := Ffix Wf Wdom.
 
-Lemma Wtyp : W ⊆ Wdom.
+Lemma W'typ : W' ⊆ Wdom.
 apply Ffix_inA.
 Qed.
 
-Lemma Wi_W : forall o, isOrd o -> TI Wf o ⊆ W.
+Lemma Wi_W' : forall o, isOrd o -> TI Wf o ⊆ W'.
 apply TI_Ffix; auto.
 Qed.
 
@@ -552,14 +552,14 @@ rewrite TI_mono_succ; auto.
 apply Wf_intro; trivial.
 Qed.
 
-Lemma W_ind : forall (P:set->Prop),
+Lemma W'_ind : forall (P:set->Prop),
   Proper (eq_set ==> iff) P ->
   (forall o' x, isOrd o' -> x ∈ W_F (TI Wf o') ->
    (forall i, i ∈ B (fst x) -> P (cc_app (snd x) i)) ->
    P (Wsup x)) ->
-  forall a, a ∈ W -> P a.
+  forall a, a ∈ W' -> P a.
 intros.
-unfold W in H1; rewrite Ffix_def in H1; auto.
+unfold W' in H1; rewrite Ffix_def in H1; auto.
 destruct H1.
 revert a H2.
 apply isOrd_ind with (2:=H1); intros.
@@ -571,7 +571,7 @@ apply H0 with o'; eauto.
 apply isOrd_inv with y; eauto.
 Qed.
 
-(** The closure ordinal of Wf *)
+(** The closure ordinal of Wf (and W_F) *)
 
   Definition W_ord := Ffix_ord Wf Wdom.
 
@@ -580,30 +580,30 @@ apply Ffix_o_o; auto.
 Qed.
 Hint Resolve W_o_o.
 
-  Lemma W_post : forall a,
-   a ∈ W ->
+  Lemma W'_post : forall a,
+   a ∈ W' ->
    a ∈ TI Wf W_ord.
 apply Ffix_post; eauto.
 apply Wf_stable.
 Qed.
 
-  Lemma W_clos : W == TI Wf W_ord.
+  Lemma W'_clos : W' == TI Wf W_ord.
 apply incl_eq.
- red; intros; apply W_post; trivial.
+ red; intros; apply W'_post; trivial.
 
- apply Wi_W; trivial.
+ apply Wi_W'; trivial.
 Qed.
 
-  Lemma W_eqn : W == Wf W.
+  Lemma W'_eqn : W' == Wf W'.
 apply Ffix_eqn; eauto.
 apply Wf_stable.
 Qed.
 
 (** * The fixpoint of the W_type operator *)
 
-(** We get W2 the fixpoint of W_F by isomorphism *)
+(** We get W the fixpoint of W_F by isomorphism *)
 
-  Definition W2 := TI W_F W_ord.
+  Definition W := TI W_F W_ord.
 
 Let g f := comp_iso (WFmap f) Wsup.
 
@@ -616,7 +616,7 @@ apply iso_fun_trans with (W_F (TI Wf o)).
  apply WFmap_iso; trivial.
 
  apply W_F_Wf_iso.
- transitivity W; [apply Wi_W;trivial|apply Wtyp].
+ transitivity W'; [apply Wi_W';trivial|apply W'typ].
 Qed.
 
 Let g_ext : forall X f f',
@@ -644,21 +644,21 @@ apply TI_iso_fun; intros; auto.
  apply W_F_Wf_iso'; trivial.
 Qed.
 
-  Lemma W2_eqn : W2 == W_F W2.
+  Lemma W_eqn : W == W_F W.
 cut (TI Wf W_ord == Wf (TI Wf W_ord)).
  apply <- TI_iso_fixpoint; auto with *.
   apply W_F_Wf_iso'; trivial.
   apply W_F_mono.
-assert (W == TI Wf W_ord).
+assert (W' == TI Wf W_ord).
  apply incl_eq.
-  red; intros; apply W_post; trivial.
-  apply Wi_W; auto.
+  red; intros; apply W'_post; trivial.
+  apply Wi_W'; auto.
 assert (Wfm := Fmono_morph _ Wf_mono).
 rewrite <- H.
-apply W_eqn.
+apply W'_eqn.
 Qed.
 
-(** Recursor on W2 *)
+(** Recursor on W *)
 
 Require Import ZFfunext ZFfixrec.
 
@@ -877,7 +877,7 @@ apply G_List; trivial.
 apply G_sup; trivial.
 Qed.
 
-  Lemma G_W : W ∈ U.
+  Lemma G_W' : W' ∈ U.
 apply G_subset; trivial.
 apply G_Wdom.
 Qed.
@@ -896,7 +896,7 @@ apply G_Wdom.
 Qed.
 
 
-  Lemma G_W2 : W2 ∈ U.
+  Lemma G_W : W ∈ U.
 apply G_TI; intros; trivial.
  do 2 red; intros; apply sigma_ext; intros; auto with *.
  apply cc_prod_morph; auto with *.
@@ -936,3 +936,57 @@ red; auto.
 Qed.
 
 Hint Resolve wfm1.
+
+(** A specific instance of W-type: the type of sets (cf Ens.set) *)
+
+Section Sets.
+
+Hypothesis U : set.
+Hypothesis Ugrot : grot_univ U.
+
+  Definition sets := W U (fun X =>X).
+
+  Let sm : ext_fun U (fun X => X).
+do 2 red; trivial.
+Qed.
+
+  Lemma sets_ind :
+    forall P : set -> Prop,
+    (forall y X f, morph1 f ->
+     (* y ∈ sigma X:U. U->Ens.set *)
+     y == couple X (cc_lam X f) ->
+     X ∈ U ->
+     (forall x, x ∈ X -> f x ∈ sets) ->
+     (* induction hypothesis *)
+     (forall x, x ∈ X -> P (f x)) ->
+     P y) ->
+    forall x, x ∈ sets -> P x.
+unfold sets,W;intros.
+assert (isOrd (W_ord U (fun X => X))).
+ apply W_o_o; trivial.
+revert x H0; elim H1 using isOrd_ind; intros.
+apply TI_elim in H4; auto with *.
+2:apply Fmono_morph; apply W_F_mono; trivial.
+destruct H4 as (o',?,?).
+apply W_F_elim in H5; auto with *.
+destruct H5 as (?,(?,?)).
+apply H with (fst x) (cc_app (snd x)); intros; trivial.
+ apply cc_app_morph; reflexivity.
+
+ generalize (H6 _ H8); apply TI_incl; auto with *.
+  apply W_F_mono; trivial.
+
+  apply H2; trivial.
+
+ apply H3 with o'; auto.
+Qed.
+
+  Lemma sets_incl_U : sets ⊆ U.
+red; intros.
+apply sets_ind with (2:=H); intros.
+rewrite H1; clear H1 y.
+apply G_couple; trivial.
+apply G_cc_lam; auto.
+Qed.
+
+End Sets.
