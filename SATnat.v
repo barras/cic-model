@@ -298,7 +298,7 @@ rewrite piNAT_ax in H2|-*; intros.
 destruct H2 as (sng,H2).
 split; intros.
  do 2 apply Lc.sn_abs.
- apply sn_app_var.
+ apply Lc.sn_app_var.
  apply Lc.sn_lift; trivial.
 apply prodSAT_intro; intros.
 unfold Lc.subst; simpl Lc.subst_rec.

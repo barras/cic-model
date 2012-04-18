@@ -21,13 +21,20 @@ all:: coq
 
 coq:: $(ALLVO)
 
-DOCV=$(shell sed -n -e "s|.*HREF=\"\([^\./\"]\+\)\.html\".*|\1.v|p" template/html/index.html)
+DOCHTML=$(shell cat libs.txt)
+DOCV=$(DOCHTML:.html=.v)
+#DOCV=$(shell sed -n -e "s|.*HREF=\"\([^\./\"]\+\)\.html\".*|\1.v|p" template/html/index.html)
 DOCVO=$(DOCV:.v=.vo)
+
+ALLV:=$(DOCV)
 
 .PHONY: html
 
-src-html:: $(DOCVO)
+dist-html:: $(DOCVO)
+	rm -fr html
+	mkdir html
 	$(MAKE) html
+
 html::
 	mkdir -p html/full
 	$(COQDOC) -utf8 -html -d html -g --coqlib http://coq.inria.fr/stdlib template/coqdoc.v $(ALLV)

@@ -226,6 +226,7 @@ Qed.
 
 (** Nat *)
 Require Import SATnat.
+Opaque cNAT.
 
 Definition Nat : trm.
 (*begin show*)
@@ -292,7 +293,6 @@ revert H0; apply NATi_NAT; trivial.
 Qed.
 
 (* Zero *)
-
 
 Definition Zero : trm.
 (* begin show *)
@@ -476,6 +476,35 @@ rewrite <- (fun e1 e2 => NATCASE_morph (int0 fZ i) (int0 fZ i) e1
 Qed.
 Existing Instance NATi_morph.
 
+(* Need to change the definition  of fNAT and cNAT *)
+(** Admitted: *)
+Lemma NCASE_fNAT' o f g n k (A B:family) :
+  isOrd o ->
+  k ∈ NATi (osucc o) ->
+  inSAT n (fNAT A k) ->
+  inSAT f (B ZERO) ->
+  inSAT g (piNATi(fun m => prodSAT (A m) (B (SUCC m)))o) ->
+  inSAT (NCASE f g n) (B k).
+unfold NCASE; intros.
+rewrite fNAT_def in H1.
+apply H1 with (P:=B); intros; trivial.
+rewrite piNATi_ax in H3; intros.
+destruct H3 as (sng,H3).
+rewrite piNAT_ax.
+split; intros.
+ do 2 apply Lc.sn_abs.
+ apply Lc.sn_app_var.
+ apply Lc.sn_lift; trivial.
+admit.
+(*apply prodSAT_intro; intros.
+unfold Lc.subst; simpl Lc.subst_rec.
+apply prodSAT_intro; intros.
+unfold Lc.subst; simpl Lc.subst_rec.
+repeat rewrite Lc.simpl_subst; trivial.
+do 2 rewrite Lc.lift0.
+apply prodSAT_elim with (2:=H4); auto.*)
+Qed.
+
 Lemma typ_natcase : forall o e O P fZ fS n,
   isOrd o ->
   typ e O (Ordt o) ->
@@ -529,7 +558,52 @@ apply Real_intro; intros.
    apply NATCASE_morph; auto with *.
    red; intros.
    rewrite H12; reflexivity.
+ apply NCASE_fNAT' with (o:=int0 O i) (A:=cNAT) (B:=mkFam B Bm) (k:=int0 n i); trivial.
+  unfold B; simpl in H1|-*.
+  rewrite NATCASE_ZERO.
+  trivial.
 
+  rewrite piNATi_ax.
+  split; intros.
+   apply typ_abs in H2.
+    3:discriminate.
+    2:left.
+    2:apply typ_natI with o; trivial.
+   apply H2 in H4.
+   apply in_int_sn in H4.
+   eapply Lc.subterm_sn.
+   eapply Lc.subterm_sn.
+   eexact H4.
+   apply Lc.sbtrm_app_l.
+   apply Lc.sbtrm_app_r.
+
+   apply prodSAT_intro.
+   intros.
+   rewrite <- tm_subst_cons.
+   unfold B; simpl.
+   rewrite NATCASE_SUCC.
+   2:intros ? e'; rewrite e'; reflexivity.
+   assert (val_ok (NatI O :: e) (V.cons n0 i) (I.cons v j)).
+    apply vcons_add_var; trivial.
+    2:discriminate.
+    rewrite realNati_def; auto with *.
+   apply H2 in H12.
+   apply in_int_not_kind in H12.
+   2:discriminate.
+   destruct H12 as (_,H12).
+   simpl in H12.
+   rewrite int_lift_eq in H12.
+   revert H12; apply inSAT_morph; trivial.
+   apply Real_morph; auto with *.
+   apply cc_app_morph; [reflexivity|].
+   unfold app, lam; rewrite cc_beta_eq; auto with *.
+   rewrite El_def.
+   rewrite int_lift_eq; trivial.
+Qed.
+
+(*
+ apply NCASE_fNAT with (A:=cNAT) (B:=mkFam B Bm) (k:=int0 n i); trivial.
+(*
  unfold NATi in H3; rewrite TI_mono_succ in H3; auto with *.
  rewrite fNAT_def in H8.
  unfold NCASE.
@@ -545,22 +619,34 @@ apply Real_intro; intros.
 
    apply prodSAT_intro; intros.
    unfold Lc.subst; simpl Lc.subst_rec.
+   rewrite Lc.simpl_subst_rec; auto.
    apply prodSAT_intro; intros.
    unfold Lc.subst; simpl Lc.subst_rec.
-   rewrite Lc.simpl_subst_rec; auto.
    rewrite Lc.simpl_subst_rec; auto.
    rewrite Lc.lift_rec0.
    rewrite Lc.simpl_subst; auto.
    rewrite Lc.lift0.
+   apply inSAT_exp.
+    apply sat_sn in H11; auto.
+
+    rewrite <- tm_subst_cons.
+    unfold B; simpl.
+    rewrite NATCASE_SUCC.
+   
+
+    unfold Lc.subst; simpl Lc.subst_rec.
+    rewrite Lc.simpl_subst_rec; auto.
 
 simpl.
 
  apply NCASE_fNAT with (A:=cNAT) (B:=mkFam B Bm) (k:=int0 n i); trivial.
+*)
   revert H3; apply NATi_NAT; auto.
 
   unfold B; simpl in H1|-*.
   rewrite NATCASE_ZERO.
   trivial.
+
   rewrite piNAT_ax.
   split; intros.
    apply typ_abs in H2.
@@ -577,55 +663,31 @@ simpl.
 
    apply prodSAT_intro.
    intros.
-   trivial.
-   apply in_int_not_kind in H4.
+   rewrite <- tm_subst_cons.
+   unfold B; simpl.
+   rewrite NATCASE_SUCC.
+   2:intros ? e'; rewrite e'; reflexivity.
+   assert (val_ok (NatI O :: e) (V.cons n0 i) (I.cons v j)).
+    apply vcons_add_var; trivial.
+    2:discriminate.
+    rewrite realNati_def; auto with *.
+    split; trivial.
+    admit. (* n0 not in NATi(O)! *)
+   apply H2 in H12.
+   apply in_int_not_kind in H12.
    2:discriminate.
-   apply Lc.sn_abs.
-
-  assert (val_ok (NatI O :: e) (V.cons (int0 n i) i) (I.cons daimon j)).
-   apply vcons_add_var; trivial.
-   2:discriminate.
-   rewrite realNati_def; auto with *.
-   split; trivial.
-   apply varSAT.
-
-
-Lemma NCASE_fNAT f g n k (A B:family) :
-  k ∈ NAT ->
-  inSAT n (fNAT A k) ->
-  inSAT f (B ZERO) ->
-  inSAT g (piNAT(fun m => prodSAT (A m) (B (SUCC m)))) ->
-  inSAT (NCASE f g n) (B k).
-unfold NCASE; intros.
-rewrite fNAT_def in H0.
-apply H0 with (P:=B); intros; trivial.
-rewrite piNAT_ax in H2|-*; intros.
-destruct H2 as (sng,H2).
-split; intros.
- do 2 apply Lc.sn_abs.
- apply sn_app_var.
- apply Lc.sn_lift; trivial.
-apply prodSAT_intro; intros.
-unfold Lc.subst; simpl Lc.subst_rec.
-apply prodSAT_intro; intros.
-unfold Lc.subst; simpl Lc.subst_rec.
-repeat rewrite Lc.simpl_subst; trivial.
-do 2 rewrite Lc.lift0.
-apply prodSAT_elim with (2:=H4); auto.
+   destruct H12 as (_,H12).
+   simpl in H12.
+   rewrite int_lift_eq in H12.
+   revert H12; apply inSAT_morph; trivial.
+   apply Real_morph; auto with *.
+   apply cc_app_morph; [reflexivity|].
+   unfold app, lam; rewrite cc_beta_eq; auto with *.
+   rewrite El_def.
+   rewrite int_lift_eq.
+   admit. (* n0 not in NATi(O)! *)
 Qed.
-
-
-  exact H1.
-  auto.
-
-impl_int_lift1.
- in H6; trivial.
-
-   red; intros.
-   unfold SUCC; apply inr_morph; trivial.
-
-   rewrite simpl_int_lift1; auto.*)
-Qed.
+*)
 
 Lemma typ_natcase' : forall o e O P fZ fS n T,
   isOrd o ->
@@ -1869,7 +1931,7 @@ split.
  assert (osucc (int i O) ∈ El (int i (Ordt (osucc o)))).
   simpl; rewrite El_def.
   apply lt_osucc_compat; trivial.
-  destruct tyord_inv with (2:=H1)(3:=H2); trivial.
+  destruct tyord_inv with (2:=H1)(3:=H2) as (_,(?,_)); trivial.
  split; trivial.
  unfold int at 1, Ordt, cst, iint.
  rewrite Real_def; auto with *.
@@ -1879,7 +1941,7 @@ split.
 
   simpl.
   apply lt_osucc_compat; trivial.
-  destruct tyord_inv with (2:=H1)(3:=H2); trivial.
+  destruct tyord_inv with (2:=H1)(3:=H2) as (_,(?,_)); trivial.
 Qed.
 
   Lemma typ_var_mono : forall e n t T,
