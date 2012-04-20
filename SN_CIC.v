@@ -1,3 +1,9 @@
+(** Strong normalization of the model of CC+NAT in the type-based
+  termination presentation.
+
+  This is work in progress, several lemmas of this module are admitted.
+*)
+
 Require Import List Bool Models.
 Require SN_CC_Real.
 Import ZFgrothendieck.
@@ -495,15 +501,18 @@ split; intros.
  do 2 apply Lc.sn_abs.
  apply Lc.sn_app_var.
  apply Lc.sn_lift; trivial.
-admit.
+(* begin show *)
+Admitted.
+(* end show *)
 (*apply prodSAT_intro; intros.
 unfold Lc.subst; simpl Lc.subst_rec.
 apply prodSAT_intro; intros.
 unfold Lc.subst; simpl Lc.subst_rec.
 repeat rewrite Lc.simpl_subst; trivial.
 do 2 rewrite Lc.lift0.
-apply prodSAT_elim with (2:=H4); auto.*)
+apply prodSAT_elim with (2:=H4); auto.
 Qed.
+*)
 
 Lemma typ_natcase : forall o e O P fZ fS n,
   isOrd o ->
@@ -2080,13 +2089,12 @@ split; trivial.
 apply nat_fix_equals with eps U; trivial.
 Qed.
 
-
+(*
 (************************************************************************)
 (** Two examples of derived principles:
     - the standard recursor for Nat
     - subtraction with size information
 *)
-(*
 Section Example.
 
 Definition nat_ind_typ :=

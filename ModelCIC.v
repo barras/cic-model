@@ -204,7 +204,7 @@ apply lt_osucc.
 apply H; trivial.
 Qed.
 
-(** Nat *)
+(** * Nat *)
 
 Definition Nat := cst NAT.
 
@@ -389,6 +389,8 @@ apply typ_natcase with O; trivial.
 Qed.
 
 (********************************************************************************)
+(** * Variance *)
+
 (** Occurrences *)
 
 Module Beq.
@@ -467,7 +469,7 @@ Ltac noc_tac :=
 
 
 (********************************************************************************)
-(** Judgements with variance *)
+(** ** Judgements with variance *)
 
 
 (** Mark stage-irrelevant functions (domain information have to be repeated) *)
@@ -851,7 +853,7 @@ Qed.
 
 
 (*****************************************************************************)
-(** Recursor (without case analysis) *)
+(** ** Recursor (without case analysis) *)
 
 (* NatFix O M is a fixpoint of domain Nati O with body M *)
 Definition NatFix (O M:term) : term.
@@ -1207,7 +1209,7 @@ End NatFixRules.
 Print Assumptions typ_nat_fix.
 
 (****************************************************************************************)
-(** Compound judgements : typing + variance *)
+(** ** Compound judgements : typing + variance *)
 
 Definition typ_inv e M T :=
   var_equals e M /\ typ (tenv e) M T.
@@ -1228,6 +1230,7 @@ destruct H1; split.
  rewrite <- H; rewrite <- H0; auto.
 Qed.
 
+(** ** Inference rules *)
 
 (** Inclusion relation between judgements *)
   Lemma typ_inv_mono : forall e M T, typ_inv e M T -> typ_mono e M T.
@@ -1242,7 +1245,7 @@ apply H in H1.
 rewrite H1; reflexivity.
 Qed.
 
-(** Inference rules *)
+(** Subsumption *)
   Lemma typ_inv_subsumption e M T T' :
     typ_inv e M T -> sub_typ (tenv e) T T' -> T <> kind -> typ_inv e M T'.
 destruct 1; split; trivial.
@@ -1504,6 +1507,20 @@ apply typ_inv_subsumption with (2:=H4).
  destruct u as [(u,um)|]; simpl; trivial; discriminate.
 Qed.
 
+  Lemma typ_inv_fix' : forall e O U M T,
+    sub_typ (tenv e) (Prod (NatI O) (subst_rec O 1 U)) T ->
+    typ_ord (tenv e) O ->
+    var_equals e O ->
+    var_mono (push_var (push_ord e (OSucc O)) (NatI (OSucc (Ref 0)))) U ->
+    typ_ext (push_fun (push_ord e (OSucc O)) (NatI (Ref 0)) U) M
+      (NatI (OSucc (Ref 1))) (lift1 1 (subst_rec (OSucc (Ref 0)) 1 (lift_rec 1 2 U))) ->
+    typ_inv e (NatFix O M) T.
+intros.
+apply typ_inv_subsumption with (2:=H).
+2:discriminate.
+apply typ_inv_fix; trivial.
+Qed.
+
 
 (************************************************************************)
 (** Two examples of derived principles:
@@ -1722,20 +1739,6 @@ Definition minus O :=
        (Ref(*n*)1)))).
 
 Definition minus_typ O := Prod (NatI O) (Prod (NatI Infty) (NatI (lift 2 O))).
-
-Lemma typ_inv_fix' : forall e O U M T,
-  sub_typ (tenv e) (Prod (NatI O) (subst_rec O 1 U)) T ->
-  typ_ord (tenv e) O ->
-  var_equals e O ->
-  var_mono (push_var (push_ord e (OSucc O)) (NatI (OSucc (Ref 0)))) U ->
-  typ_ext (push_fun (push_ord e (OSucc O)) (NatI (Ref 0)) U) M
-    (NatI (OSucc (Ref 1))) (lift1 1 (subst_rec (OSucc (Ref 0)) 1 (lift_rec 1 2 U))) ->
-  typ_inv e (NatFix O M) T.
-intros.
-apply typ_inv_subsumption with (2:=H).
-2:discriminate.
-apply typ_inv_fix; trivial.
-Qed.
 
 Lemma minus_def e O :
   typ_ord (tenv e) O ->
@@ -1992,4 +1995,6 @@ Qed.
 
 End Example.
 
+(* begin hide *)
 Print Assumptions minus_def.
+(* end hide *)
