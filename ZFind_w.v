@@ -52,12 +52,16 @@ split; intros.
  rewrite cc_eta_eq with (1:=H) in eq1; trivial.
 Qed.
 
-Lemma W_F_mono : Proper (incl_set ==> incl_set) W_F.
+Instance W_F_mono : Proper (incl_set ==> incl_set) W_F.
 do 3 red; intros.
 apply W_F_elim in H0; destruct H0 as (?,(?,?)).
 rewrite H2.
 apply W_F_intro; auto.
 do 2 red; intros; apply cc_app_morph; auto with *.
+Qed.
+
+Instance W_F_morph : morph1 W_F.
+apply Fmono_morph; auto with *.
 Qed.
 
 Lemma W_F_stable : stable W_F.
@@ -443,14 +447,18 @@ unfold Wf in H.
 rewrite replf_ax in H; trivial.
 Qed.
 
-Lemma Wf_mono : Proper (incl_set ==> incl_set) Wf.
+Instance Wf_mono : Proper (incl_set ==> incl_set) Wf.
 do 3 red; intros.
 apply Wf_elim in H0; destruct H0 as (f,?,?).
 rewrite H1; apply Wf_intro; trivial.
 clear H1; revert f H0.
 apply W_F_mono; trivial.
 Qed.
-Hint Resolve Wf_mono Fmono_morph.
+
+Instance Wf_morph : morph1 Wf.
+apply Fmono_morph; auto with *.
+Qed.
+Hint Resolve Wf_mono Wf_morph.
 
 Lemma Wf_typ : forall X,
   X ⊆ Wdom -> Wf X ⊆ Wdom.
@@ -470,7 +478,7 @@ assert (forall a, a ∈ X -> z ∈ Wf a).
  intros.
  apply inter_elim with (1:=H).
  rewrite replf_ax.
- 2:red;red;intros;apply Fmono_morph; trivial.
+ 2:red;red;intros;apply Wf_morph; trivial.
  exists a; auto with *.
 rewrite replf_ax; auto.
 destruct inter_wit with (2:=H).
@@ -483,8 +491,7 @@ apply W_F_stable.
 apply inter_intro.
  intros.
  rewrite replf_ax in H4.
- 2:red;red;intros;apply Fmono_morph; auto.
- 2:apply W_F_mono.
+ 2:red;red;intros;apply W_F_morph; auto.
  destruct H4.
  rewrite H5; clear y H5.
  specialize H0 with (1:=H4).
@@ -498,8 +505,7 @@ apply inter_intro.
 
  exists (W_F x).
  rewrite replf_ax.
- 2:red;red;intros;apply Fmono_morph;auto.
- 2:apply W_F_mono.
+ 2:red;red;intros;apply W_F_morph;auto.
  exists x; auto with *.
 Qed.
 
@@ -537,7 +543,6 @@ Lemma TI_Wf_elim : forall a o,
   a == Wsup x.
 intros.
 apply TI_elim in H0; trivial.
-2:apply Fmono_morph; trivial.
 destruct H0.
 apply Wf_elim in H1.
 eauto.
@@ -648,12 +653,10 @@ Qed.
 cut (TI Wf W_ord == Wf (TI Wf W_ord)).
  apply <- TI_iso_fixpoint; auto with *.
   apply W_F_Wf_iso'; trivial.
-  apply W_F_mono.
 assert (W' == TI Wf W_ord).
  apply incl_eq.
   red; intros; apply W'_post; trivial.
   apply Wi_W'; auto.
-assert (Wfm := Fmono_morph _ Wf_mono).
 rewrite <- H.
 apply W'_eqn.
 Qed.
@@ -768,7 +771,7 @@ Let Qcont : forall o f : set,
  (forall o' : set, o' ∈ o -> Q (osucc o') f) -> Q o f.
 intros.
 red; intros.
-apply TI_elim in H3; auto.
+apply TI_elim in H3; auto with *.
 destruct H3.
 rewrite <- TI_mono_succ in H4; eauto using isOrd_inv.
 generalize (H2 _ H3 _ H4).
@@ -833,7 +836,7 @@ intros.
 unfold WREC.
 apply REC_ind with (2:=WREC_recursor); auto.
 intros.
-apply TI_elim in H4; auto.
+apply TI_elim in H4; auto with *.
 destruct H4 as (o',?,?).
 apply H0 with o'; eauto using isOrd_inv.
 red; auto.
@@ -966,7 +969,7 @@ assert (isOrd (W_ord U (fun X => X))).
  apply W_o_o; trivial.
 revert x H0; elim H1 using isOrd_ind; intros.
 apply TI_elim in H4; auto with *.
-2:apply Fmono_morph; apply W_F_mono; trivial.
+2:apply W_F_morph; trivial.
 destruct H4 as (o',?,?).
 apply W_F_elim in H5; auto with *.
 destruct H5 as (?,(?,?)).

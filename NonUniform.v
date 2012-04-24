@@ -409,6 +409,7 @@ Admitted.
 End NoPayload.
 
 (*********************************************************************************)
+(* begin hide *)
 
 Module WithPayload.
 
@@ -732,3 +733,4 @@ Admitted.
 
 End WithPayload.
 
+(* end hide *)

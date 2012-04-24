@@ -331,8 +331,8 @@ Section Equiv_ZF_CIC_TTColl.
         (exists2 y, y ∈ U & R x y) ->
         exists2 y, y ∈ B & R x y.
 
-  (** The inductive type of sets (cf Ens.set and
-      #<a href="ZFind_w.html#sets">ZFind_w.sets</a>#) and the fact that
+  (* The inductive type of sets (cf Ens.set and
+      #<a href="ZFind_w.html##sets">ZFind_w.sets</a>#) and the fact that
       it is included in the universe of its index. *)
   Hypothesis sets : set.
   Hypothesis sets_incl_U : sets ⊆ U.
