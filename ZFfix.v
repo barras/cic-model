@@ -613,68 +613,64 @@ Hint Resolve F_a_ord.
   Lemma F_intro : forall w,
     isOrd w ->
     forall a, a ∈ TI F w ->
-    forall o, isOrd o ->
-    (forall y, y ∈ fsub a -> y ∈ TI F o) ->
-    a ∈ F (TI F o).
+    a ∈ F (fsub a).
 intros.
-assert (inter (replf (subset (power Ffix) (fun X => a ∈ F X)) (fun X => X))
-        ⊆ TI F o).
- red; intros.
- apply H2.
+assert (fx_ok : Ffix ∈ subset (power Ffix) (fun X => a ∈ F X)).
  apply subset_intro.
-  apply inter_elim with (1:=H3).
+  apply power_intro; trivial.
+
+  apply TI_elim in H0; auto.
+  destruct H0.
+  revert H1; apply Fmono.
+  apply TI_Ffix; trivial.
+  apply isOrd_inv with w; trivial.
+assert (inter (replf (subset (power Ffix) (fun X => a ∈ F X)) (fun X => X)) ⊆ fsub a).
+ red; intros.
+ apply subset_intro.
+  apply inter_elim with (1:=H1).
   rewrite replf_ax.
   2:red;red;auto.
   exists Ffix; auto with *.
-  apply subset_intro; auto with *.
-   apply power_intro; trivial.
-
-   apply TI_elim in H0; auto.
-   destruct H0.
-   revert H4; apply Fmono.
-   apply TI_Ffix; trivial.
-   apply isOrd_inv with w; trivial.
 
   intros.
-  apply inter_elim with (1:=H3).
+  apply inter_elim with (1:=H1).
   rewrite replf_ax.
   2:red;red;auto.
   exists X; auto with *.
   apply subset_intro; trivial.
   apply power_intro; trivial.
-apply (Fmono _ _ H3).
+
+apply Fmono in H1.
+apply H1.
 apply Fstab.
  red; intros.
- rewrite replf_ax in H4.
- 2:red;red;auto.
- destruct H4.
- rewrite H5; apply subset_elim1 in H4; trivial.
- revert H4; apply power_mono; apply Ffix_inA.
-apply inter_intro; intros.
- rewrite replf_ax in H4.
- 2:red;red;auto.
- destruct H4.
- rewrite H5; clear y H5.
- rewrite replf_ax in H4.
- 2:red;red;trivial.
- destruct H4.
- rewrite <- H5 in H4; clear x0 H5.
- apply subset_elim2 in H4.
- destruct H4.
- rewrite H4; trivial.
+ rewrite replf_ax in H2.
+ 2:do 2 red; trivial.
+ destruct H2.
+ apply subset_elim1 in H2.
+ rewrite H3; revert H2; apply power_mono.
+ apply Ffix_inA.
 
  apply TI_elim in H0; auto.
  destruct H0.
- exists (F (TI F x)).
- rewrite replf_ax.
- 2:red;red;auto.
- exists (TI F x); auto with *.
- rewrite replf_ax.
- 2:red;red;trivial.
- exists (TI F x); auto with *.
- apply subset_intro; trivial.
- apply power_intro; apply TI_Ffix.
- apply isOrd_inv with w; trivial.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H3; auto.
+  destruct H3 as (x',?,?).
+  rewrite replf_ax in H3.
+  2:do 2 red; trivial.
+  destruct H3 as (x'',?,?).
+  rewrite H4; rewrite H5.
+  apply subset_elim2 in H3; destruct H3.
+  rewrite H3; trivial.
+
+  exists (F Ffix).
+  rewrite replf_ax.
+  2:red;red;auto.
+  exists Ffix; auto with *.
+  rewrite replf_ax.
+  2:red;red;trivial.
+  exists Ffix; auto with *.
 Qed.
 
   Lemma F_a_tot : forall a,
@@ -683,6 +679,9 @@ Qed.
 intros.
 rewrite Ffix_def in H; destruct H.
 revert a H0; apply isOrd_ind with (2:=H); intros.
+assert (ao : isOrd (Fix_rec F_a a)).
+ apply F_a_ord; rewrite Ffix_def; exists y; trivial.
+rewrite TI_mono_succ; auto.
 assert (fsub a ⊆ TI F (Fix_rec F_a a)).
  red; intros.
  destruct fsub_elim with (2:=H3) (3:=H4); trivial.
@@ -691,18 +690,15 @@ assert (fsub a ⊆ TI F (Fix_rec F_a a)).
  assert (z ∈ TI F (osucc (Fix_rec F_a z))).
   apply H2 with x0; trivial.
  revert H7; apply TI_mono; auto.
-  apply F_a_ord; rewrite Ffix_def; exists y; auto.
-
   apply isOrd_succ; apply F_a_ord; rewrite Ffix_def; exists x0; trivial.
 
   red; intros.
   rewrite Fr_eqn with (o:=y); auto.
   unfold F_a.
   apply osup_intro with (x:=z); trivial.
-rewrite TI_mono_succ; auto.
-2:apply F_a_ord; rewrite Ffix_def; exists y; trivial.
+apply Fmono in H4.
+apply H4.
 apply F_intro with y; trivial.
-apply F_a_ord; rewrite Ffix_def; exists y; trivial.
 Qed.
 
 (** The closure ordinal *)
