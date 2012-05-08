@@ -29,7 +29,7 @@ Existing Instance V.lams_morph.
 (* Term valuations *)
 Module I := Lambda.I.
 
-(** Terms *)
+(** Pseudo-terms *)
 
 Record inftrm := {
   iint : val -> X;
@@ -95,6 +95,13 @@ Definition tm (j:Lc.intt) (M:trm) :=
   | None => dummy_trm
   end.
 
+Instance tm_morph : Proper (Lc.eq_intt ==> eq_trm ==> @eq Lc.term) tm.
+unfold tm; do 3 red; intros.
+destruct x0; destruct y0; simpl in *; (contradiction||reflexivity||auto).
+destruct H0; simpl in *.
+apply H1; trivial.
+Qed.
+
 Definition dummy_int : X.
 Proof props.
 
@@ -103,6 +110,13 @@ Definition int (i:val) (M:trm) :=
   | Some f => iint f i
   | None => dummy_int
   end.
+
+Instance int_morph : Proper (eq_val ==> eq_trm ==> eqX) int.
+unfold int; do 3 red; intros.
+destruct x0; destruct y0; simpl in *; (contradiction||reflexivity||auto).
+destruct H0; simpl in *.
+apply H0; trivial.
+Qed.
 
 Lemma eq_trm_intro : forall T T',
   (forall i, int i T == int i T') ->
@@ -113,13 +127,6 @@ destruct T as [T|]; destruct T' as [T'|]; simpl; intros; trivial.
 split; red; intros.
  rewrite H2; auto.
  rewrite H2; auto.
-Qed.
-
-Instance tm_morph : Proper (Lc.eq_intt ==> eq_trm ==> @eq Lc.term) tm.
-unfold tm; do 3 red; intros.
-destruct x0; destruct y0; simpl in *; (contradiction||reflexivity||auto).
-destruct H0; simpl in *.
-apply H1; trivial.
 Qed.
 
 Lemma tm_substitutive : forall u t j k,
@@ -146,12 +153,26 @@ destruct a; simpl.
  rewrite Lc.simpl_subst; trivial; rewrite Lc.lift0; trivial.
 Qed.
 
-Instance int_morph : Proper (eq_val ==> eq_trm ==> eqX) int.
-unfold int; do 3 red; intros.
-destruct x0; destruct y0; simpl in *; (contradiction||reflexivity||auto).
-destruct H0; simpl in *.
-apply H0; trivial.
+(** Property of substitutivity: whenever a term-denotation contains
+   a free var, then it comes from the term-valuation (but we can't tell which
+   var, short of using Markov rule, hence the double negation.
+   *)
+Lemma tm_closed : forall k j M,
+  Lc.occur k (tm j M) -> ~ forall n, ~ Lc.occur k (j n).
+red; intros.
+rewrite Lc.occur_subst in H.
+rewrite <- tm_substitutive in H.
+rewrite <- tm_liftable in H.
+apply H; clear H.
+apply tm_morph; auto with *.
+red; red; intros.
+generalize (H0 a).
+rewrite Lc.occur_subst; intro.
+destruct (Lc.eqterm (Lc.lift_rec 1 (Lc.subst_rec (Lc.Abs (Lc.Ref 0)) (j a) k) k) (j a)); auto.
+contradiction.
 Qed.
+
+(** Pseudo-term constructors *)
 
 Definition cst (x:X) (t:Lc.term)
   (H0 : Lc.liftable (fun _ => t)) (H1 : Lc.substitutive (fun _ => t)) : trm.

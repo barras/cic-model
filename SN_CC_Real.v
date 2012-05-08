@@ -72,9 +72,9 @@ Qed.
 
 (** The realizability relation of a dependent product of domain type A
    and co-domain family of types F for a  function f:
-   it is the intersection of all reducibility candidates {x}_A -> {f(x)}_F(x)
+   it is the intersection of all reducibility candidates {x}A -> {f(x)}F(x)
    when x ranges A.
-   Note: {x}_A -> {f(x)}_F(x) is the set of that map any realizer of x (in A) to a
+   Note: {x}A -> {f(x)}F(x) is the set of that map any realizer of x (in A) to a
    realizer of f(x) (in F(x)). So the intersection of these sets when x ranges El(A)
    is the set of terms that realize f (in forall x:A. F(x)).
  *)
@@ -344,25 +344,6 @@ Module Lc := Lambda.
 (***********************************************************************************************)
 
 (** * Consistency out of the strong normalization model *)
-
-(** Property of substitutivity: whenever a term-denotation contains
-   a free var, then it comes from the term-valuation (but we can't tell which
-   var, short of using Markov rule, hence the double negation.
-   *)
-Lemma tm_closed : forall k j M,
-  Lc.occur k (tm j M) -> ~ forall n, ~ Lc.occur k (j n).
-red; intros.
-rewrite Lc.occur_subst in H.
-rewrite <- tm_substitutive in H.
-rewrite <- tm_liftable in H.
-apply H; clear H.
-apply tm_morph; auto with *.
-red; red; intros.
-generalize (H0 a).
-rewrite Lc.occur_subst; intro.
-destruct (Lc.eqterm (Lc.lift_rec 1 (Lc.subst_rec (Lc.Abs (Lc.Ref 0)) (j a) k) k) (j a)); auto.
-elim H; trivial.
-Qed.
 
 (** If t belongs to all reducibility candidates, then it has a free variable *)
 Lemma neutral_not_closed :

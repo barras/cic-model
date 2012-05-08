@@ -1,9 +1,11 @@
-Require Import ZF ZFpairs ZFsum ZFrelations ZFcoc ZFord ZFfix.
+Require Import ZF ZFpairs ZFsum ZFrelations ZFcoc ZFord ZFfix ZFfixfun.
 Require Import ZFstable ZFiso ZFind_w ZFspos.
 
 (** Inductive families. Indexes are modelled as a constraint over an inductive
     type defined without considering the index values.
  *)
+
+Require Import ZFind_wd.
 
 Section InductiveFamily.
 
@@ -16,35 +18,103 @@ Variable Arg : set.
  *)
 Record dpositive := mkDPositive {
   carrier :> positive;
+  dpos_oper : (set -> set) -> set -> set;
   w3 : set -> set -> set;
   w4 : set -> set -> Prop
 }.
 
+Definition eqdpos (p1 p2:dpositive) :=
+  eqpos p1 p2 /\
+  (forall X X' a a', (eq_set==>eq_set)%signature X X' -> a==a' -> dpos_oper p1 X a == dpos_oper p2 X' a') /\
+  (forall x x' i i', x==x' -> i==i' -> w3 p1 x i == w3 p2 x' i') /\
+  (forall x x' i i', x==x' -> i==i' -> (w4 p1 x i <-> w4 p2 x' i')).
+
 Record isDPositive (p:dpositive) := {
   dpos_pos : isPositive p;
+  dpm : Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) (dpos_oper p);
+  dpmono : mono_fam Arg (dpos_oper p);
   w3m : morph2 (w3 p);
   w4m : Proper (eq_set==>eq_set==>iff) (w4 p);
-  w3typ : forall x i, x ∈ w1 p -> i ∈ w2 p x -> w3 p x i ∈ Arg
+  w3typ : forall x i, x ∈ w1 p -> i ∈ w2 p x -> w3 p x i ∈ Arg;
+  dpm_iso : forall X a,
+    ext_fun Arg X ->
+    a ∈ Arg ->
+    dpos_oper p X a == subset (pos_oper p (sup Arg X))
+      (fun w => let w := wf p w in
+       w4 p (fst w) a /\ forall i, i ∈ w2 p (fst w) -> cc_app (snd w) i ∈ X (w3 p (fst w) i))
 }.
 
-Require Import ZFind_wd.
+Definition dINDi p := TIF Arg (dpos_oper p).
 
-Definition dpos_oper (p:dpositive) (X:set->set) (a:set) :=
-  W_Fd (w1 p) (w2 p) (w3 p) (w4 p) X a.
+Existing Instance dpm.
+Hint Resolve dpmono.
+
+Lemma dINDi_succ_eq : forall p o a,
+  isDPositive p -> isOrd o -> a ∈ Arg -> dINDi p (osucc o) a == dpos_oper p (dINDi p o) a.
+intros.
+unfold dINDi.
+apply TIF_mono_succ; auto with *.
+Qed.
+
+Lemma INDi_mono : forall p o o',
+  isDPositive p -> isOrd o -> isOrd o' -> o ⊆ o' ->
+  incl_fam Arg (dINDi p o) (dINDi p o').
+intros.
+red; intros.
+assert (tm := TIF_mono); red in tm.
+unfold dINDi.
+apply tm; auto with *.
+Qed.
+
+Definition dIND (p:dpositive) := dINDi p (IND_clos_ord p).
+
+Lemma dIND_eq : forall p a, isDPositive p -> a ∈ Arg -> dIND p a == dpos_oper p (dIND p) a.
+unfold dIND; intros.
+Admitted.
+
+Lemma dINDi_dIND : forall p o,
+  isDPositive p ->
+  isOrd o ->
+  forall a, a ∈ Arg ->
+  dINDi p o a ⊆ dIND p a.
+induction 2 using isOrd_ind; intros.
+unfold dINDi.
+rewrite TIF_eq; auto with *.
+red; intros.
+rewrite sup_ax in H4.
+ destruct H4.
+ rewrite dIND_eq; trivial.
+ revert H5; apply H; auto.
+  apply TIF_morph; reflexivity.
+
+  unfold dIND, dINDi.
+  do 2 red; intros; apply TIF_morph; auto with *.
+
+  red; intros.
+  apply H2; trivial.
+
+ do 2 red; intros; apply dpm; auto with *.
+ red; intros.
+ apply TIF_morph; auto with *.
+Qed.
+
 
 (** Library of dependent positive operators *)
-(*
-Definition lift_pos (p:positive) : dpositive :=
-  mkDPositive p (fun _ _ => empty) (fun _ _ => True)
-*)
 
 (** Constraint on the index: corresponds to the conclusion of the constructor *)
 Definition dpos_inst i :=
-  mkDPositive (pos_cst (singl empty)) (fun _ _ => empty) (fun _ a => i==a).
+  mkDPositive (pos_cst (singl empty)) (fun _ a => cond_set (i==a) (singl empty))
+    (fun _ _ => empty) (fun _ a => i==a).
 
 Lemma isDPos_inst i : isDPositive (dpos_inst i).
 constructor; simpl; intros.
  apply isPos_cst.
+
+ do 4 red; intros.
+ rewrite H0; reflexivity.
+
+ do 2 red; intros.
+ reflexivity.
 
  do 3 red; reflexivity.
 
@@ -52,36 +122,80 @@ constructor; simpl; intros.
  rewrite H0; reflexivity.
 
  apply empty_ax in H0; contradiction.
+
+ apply eq_set_ax; intros z.
+ rewrite cond_set_ax; rewrite subset_ax.
+ split; destruct 1; split; trivial.
+  exists z; auto with *.
+  split; intros; trivial.
+  apply empty_ax in H3; contradiction.
+
+  destruct H2 as (?,_,(?,_)); trivial.
 Qed.
 
-Definition dpos_cst A := mkDPositive (pos_cst A) (fun _ _ => empty) (fun _ _ => True).
+Definition dpos_cst A := mkDPositive (pos_cst A) (fun _ _ => A) (fun _ _ => empty) (fun _ _ => True).
 
 Lemma isDPos_cst A : isDPositive (dpos_cst A).
 constructor; simpl; intros.
  apply isPos_cst.
+
+ do 4 red; reflexivity.
+
+ do 2 red; intros; reflexivity.
 
  do 3 red; reflexivity.
 
  do 3 red; reflexivity.
 
  apply empty_ax in H0; contradiction.
+
+ apply eq_set_ax; intros z.
+ rewrite subset_ax.
+ split;[split|destruct 1]; trivial.
+ exists z;[reflexivity|].
+ split; intros; trivial.
+ apply empty_ax in H2; contradiction.
 Qed.
 
-Definition dpos_rec j := mkDPositive pos_rec (fun _ _ => j) (fun _ _ => True).
+Definition dpos_rec j := mkDPositive pos_rec (fun X _ => X j) (fun _ _ => j) (fun _ _ => True).
 
 Lemma isDPos_rec j : j ∈ Arg -> isDPositive (dpos_rec j).
 constructor; simpl; intros; trivial.
  apply isPos_rec.
 
+ do 4 red; intros.
+ apply H0; reflexivity.
+
+ do 2 red; intros.
+ apply H2; trivial.
+
  do 3 red; reflexivity.
 
  do 3 red; reflexivity.
+
+ apply subset_ext; intros.
+  destruct H3.
+  rewrite sup_ax in H2; trivial.
+  destruct H2 as (b,?,?).
+  assert (h := H4 _ (singl_intro empty)).
+  unfold trad_reccall,comp_iso in h.
+  rewrite snd_def in h; rewrite cc_beta_eq in h; trivial.
+  apply singl_intro.
+
+  rewrite sup_ax; trivial.
+  exists j; trivial.
+
+  exists x; [reflexivity|].
+  split;[trivial|intros].
+  unfold trad_reccall, comp_iso.
+  rewrite snd_def; rewrite cc_beta_eq; trivial.
 Qed.
 
 Require Import ZFsum.
 
 Definition dpos_sum (F G:dpositive) :=
   mkDPositive (pos_sum F G)
+    (fun X a => sum (dpos_oper F X a) (dpos_oper G X a))
     (fun x i => sum_case (fun x1 => w3 F x1 i) (fun x2 => w3 G x2 i) x)
     (fun x i => (forall x1, x == inl x1 -> w4 F x1 i) /\
                 (forall x2, x == inr x2 -> w4 G x2 i)).
@@ -90,9 +204,19 @@ Lemma isDPos_sum F G :
   isDPositive F ->
   isDPositive G ->
   isDPositive (dpos_sum F G).
-intros (Fp,F3m,F4m,Fty) (Gp,G3m,G4m,Gty).
+intros (Fp,Fdm,Fdmo,F3m,F4m,Fty,Fdep) (Gp,Gdm,Gdmo,G3m,G4m,Gty,Gdep).
 constructor; simpl; intros.
  apply isPos_sum; trivial.
+
+ do 4 red; intros.
+ apply sum_morph.
+  apply Fdm; trivial.
+  apply Gdm; trivial.
+
+ do 2 red; intros.
+ apply sum_mono.
+  apply Fdmo; trivial.
+  apply Gdmo; trivial.
 
  do 3 red; intros.
  apply sum_case_morph; trivial.
@@ -131,10 +255,48 @@ constructor; simpl; intros.
   rewrite sum_case_inr0 in H0; eauto.
   revert H0; apply eq_elim; symmetry; apply G2m; trivial.
   rewrite H2; rewrite dest_sum_inr; reflexivity.
+
+(*
+ apply eq_intro; intros.
+  apply subset_intro.
+   apply sum_ind with (3:=H1); intros.
+    rewrite H3; apply inl_typ.
+    rewrite Fdep in H2; trivial.
+    apply subset_elim1 in H2; trivial.
+
+    rewrite H3; apply inr_typ.
+    rewrite Gdep in H2; trivial.
+    apply subset_elim1 in H2; trivial.
+
+    split;[split|]; intros.
+     assert (z == inl (couple x1 (snd (dest_sum z)))).
+      apply sum_ind with (3:=H1); intros.
+       unfold trad_sum, comp_iso in 
+
+     admit.
+
+     unfold trad_sum,comp_iso in H4.
+     unfold sum_sigma_iso in H4.
+     rewrite sum_case_inl0 in H4.
+      rewrite fst_def in H4.
+      apply discr_sum in H4; contradiction.
+
+      exists (wf F x).
+      unfold sum_isomap.
+      rewrite sum_case_inl0; eauto.
+      apply inl_morph.
+      symmetry; apply (iso_funm (w_iso F Fp (sup Arg X))).
+       apply subset_elim1 in H2; trivial.
+       rewrite H3; rewrite dest_sum_inl; reflexivity.
+
+  apply sum_ind with (3:=H1); intros.
+*)
+ admit.
 Qed.
 
 Definition dpos_consrec (F G:dpositive) :=
   mkDPositive (pos_consrec F G)
+    (fun X a => prodcart (dpos_oper F X a) (dpos_oper G X a))
     (fun x => sum_case (w3 F (fst x)) (w3 G (snd x)))
     (fun x i => w4 F (fst x) i /\ w4 G (snd x) i).
 
@@ -142,9 +304,19 @@ Lemma isDPos_consrec F G :
   isDPositive F ->
   isDPositive G ->
   isDPositive (dpos_consrec F G).
-intros (Fp,F3m,F4m,Fty) (Gp,G3m,G4m,Gty).
+intros (Fp,Fdm,Fdmo,F3m,F4m,Fty) (Gp,Gdm,Gdmo,G3m,G4m,Gty).
 constructor; simpl; intros.
  apply isPos_consrec; trivial.
+
+ do 4 red; intros.
+ apply prodcart_morph.
+  apply Fdm; trivial.
+  apply Gdm; trivial.
+
+ do 2 red; intros.
+ apply prodcart_mono.
+  apply Fdmo; trivial.
+  apply Gdmo; trivial.
 
  do 3 red; intros.
  apply sum_case_morph; trivial.
@@ -177,17 +349,15 @@ constructor; simpl; intros.
 
   apply Gty; trivial.
   apply snd_typ in H; trivial.
+
+ admit.
 Qed.
 
 Definition dpos_norec (A:set) (F:set->dpositive) :=
   mkDPositive (pos_norec A F)
+    (fun X a => sigma A (fun y => dpos_oper (F y) X a))
     (fun x i => w3 (F (fst x)) (snd x) i)
     (fun x i => w4 (F (fst x)) (snd x) i).
-
-Definition eqdpos (p1 p2:dpositive) :=
-  eqpos p1 p2 /\
-  (forall x x' i i', x==x' -> i==i' -> w3 p1 x i == w3 p2 x' i') /\
-  (forall x x' i i', x==x' -> i==i' -> (w4 p1 x i <-> w4 p2 x' i')).
 
 Lemma isDPos_norec A F :
   Proper (eq_set ==> eqdpos) F ->
@@ -202,19 +372,41 @@ constructor; simpl; intros.
   intros.
   apply H0; trivial.
 
- do 3 red; intros.
- assert (ef := fst_morph _ _ H1).
- assert (es := snd_morph _ _ H1).
- apply H in ef.
- destruct ef as (?,(?,?)).
- apply H4; trivial.
+ do 4 red; intros.
+ apply sigma_morph; auto with *.
+ red; intros.
+ apply H; trivial.
+
+ do 2 red; intros.
+ apply sigma_mono; auto with *.
+  do 2 red; intros. 
+  apply H in H6.
+  apply H6; auto with *.
+
+  do 2 red; intros. 
+  apply H in H6.
+  apply H6; auto with *.
+
+  intros.
+  transitivity (dpos_oper (F x) Y a).
+   apply H0; trivial.
+
+   red; intro; apply eq_elim.
+   apply (H _ _ H6); auto with *.
 
  do 3 red; intros.
  assert (ef := fst_morph _ _ H1).
  assert (es := snd_morph _ _ H1).
  apply H in ef.
- destruct ef as (?,(?,?)).
+ destruct ef as (?,(?,(?,?))).
  apply H5; trivial.
+
+ do 3 red; intros.
+ assert (ef := fst_morph _ _ H1).
+ assert (es := snd_morph _ _ H1).
+ apply H in ef.
+ destruct ef as (?,(?,(?,?))).
+ apply H6; trivial.
 
  assert (fty := fst_typ_sigma _ _ _ H1).
  apply snd_typ_sigma with (y:=fst x) in H1; auto with *.
@@ -223,13 +415,15 @@ constructor; simpl; intros.
   do 2 red; intros.
   apply H in H4.
   apply H4.
+
+ admit.
 Qed.
 
 Definition dpos_param (A:set) (F:set->dpositive) :=
   mkDPositive (pos_param A F)
+    (fun X a => cc_prod A (fun y => dpos_oper (F y) X a))
     (fun x i => w3 (F (fst i)) (cc_app x (fst i)) (snd i))
     (fun x i => forall k, k ∈ A -> w4 (F k) (cc_app x k) i).
-
 
 Lemma isDPos_param A F :
   Proper (eq_set ==> eqdpos) F ->
@@ -244,12 +438,25 @@ constructor; simpl; intros.
   intros.
   apply H0; trivial.
 
+ do 4 red; intros.
+ apply cc_prod_ext; auto with *.
+ red; intros.
+ apply H; trivial.
+
+ do 2 red; intros.
+ apply cc_prod_covariant; intros; auto with *.
+  do 2 red; intros. 
+  apply H in H6.
+  apply H6; auto with *.
+
+  apply H0; trivial.
+
  do 3 red; intros.
  assert (ef := fst_morph _ _ H2).
  assert (es := snd_morph _ _ H2).
  apply H in ef.
- destruct ef as (?,(?,?)).
- apply H4; trivial.
+ destruct ef as (?,(?,(?,?))).
+ apply H5; trivial.
  apply cc_app_morph; trivial.
  apply fst_morph; trivial.
 
@@ -267,6 +474,8 @@ constructor; simpl; intros.
   do 2 red; intros.
   apply H; trivial.
   rewrite H4; reflexivity.
+
+ admit.
 Qed.
 
 
@@ -303,49 +512,20 @@ apply isDPos_sum.
    apply isDPos_inst.
 Qed.
 
-Definition nil := couple (inl empty) (cc_lam empty (fun _ => empty)).
+Definition nil := inl empty.
 
 Lemma nil_typ A X :
   morph1 X ->
   nil ∈ dpos_oper (vect A) X zero.
-unfold dpos_oper; simpl; intros.
-unfold W_Fd.
-apply couple_intro_sigma.
- admit.
-
- apply subset_intro.
-  apply inl_typ.
-  apply singl_intro.
-
-  split; intros; auto with *.
-  apply discr_sum in H0; contradiction.
-
- apply cc_prod_intro'; intros.
-  do 2 red; reflexivity.
-
-  do 2 red; intros.
-  apply H.
-  apply sum_case_morph; auto with *.
-   red; intros; reflexivity.
-
-   red; intros.
-   apply sum_case_morph; trivial.
-    red; reflexivity.
-
-    red; intros.
-    apply sum_case_morph; auto with *.
-     red; intros; apply fst_morph; trivial.
-     red; reflexivity.
-
-  rewrite sum_case_inl; auto with *.
-  do 2 red; reflexivity.
-
- apply empty_ax in H0; contradiction.
+simpl; intros.
+apply inl_typ.
+rewrite cond_set_ax; split.
+ apply singl_intro.
+ reflexivity.
 Qed.
 
 Definition cons k x l :=
-  couple (inr (couple k (couple x (couple empty empty))))
-   (cc_lam (sum empty (sum (singl empty) empty)) (fun _ => l)).
+  inr (couple k (couple x (couple l empty))).
 
 Lemma cons_typ A X k x l :
   morph1 X ->
@@ -353,59 +533,65 @@ Lemma cons_typ A X k x l :
   x ∈ A ->
   l ∈ X k ->
   cons k x l ∈ dpos_oper (vect A) X (succ k).
-unfold dpos_oper; simpl; intros.
-unfold W_Fd.
-apply couple_intro_sigma.
+simpl; intros.
+apply inr_typ.
+apply couple_intro_sigma; trivial.
  admit.
 
- apply subset_intro.
-  apply inr_typ.
-  apply couple_intro_sigma; trivial.
-  apply couple_intro; trivial.
-  apply couple_intro; apply singl_intro.
-
-  split; intros.
-   symmetry in H3; apply discr_sum in H3; contradiction.
-
-   apply inr_inj in H3.
-   rewrite <- H3; rewrite fst_def.
-   auto with *.
-
- apply cc_prod_intro'; intros.
-  auto with *.
-
-  admit.
-
-  rewrite sum_case_inr; auto with *.
-  do 2 red; intros; reflexivity.
-
-  rewrite sum_case_inr.
-   assert (x0 == inr (inl empty)).
-    apply sum_ind with (3:=H3); intros.
-     apply empty_ax in H4; contradiction.
-
-     rewrite H5; apply inr_morph.
-     apply sum_ind with (3:=H4); intros.
-      rewrite H7.
-      apply singl_elim in H6.
-      rewrite H6; reflexivity.
-
-      apply empty_ax in H6; contradiction.
-   rewrite sum_case_inr0 with (x:=x0).
-   2:exists (inl empty); trivial.
-   rewrite sum_case_inl0 with (x:=dest_sum x0).
-    rewrite fst_def; trivial.
-
-    exists empty.
-    rewrite H4; rewrite dest_sum_inr; reflexivity.
-
-   do 2 red; intros.
-   apply sum_case_morph; auto with *.
-    red; reflexivity.
-
-    red; intros; apply sum_case_morph; auto with *.
-     red; intros; apply fst_morph; trivial.
-     red; reflexivity.
+ apply couple_intro; trivial.
+ apply couple_intro; trivial.
+ rewrite cond_set_ax; split.
+  apply singl_intro.
+  reflexivity.
 Qed.
 
 End Vectors.
+
+
+Module Wd.
+
+Section Wd.
+(** Parameters of W-types *)
+Variable A : set.
+Variable B : set -> set.
+Hypothesis Bext : ext_fun A B.
+
+(** Index type *)
+Variable Arg : set.
+
+(** Constraints on the subterms *)
+Hypothesis f : set -> set -> set.
+Hypothesis fm : morph2 f.
+Hypothesis ftyp : forall x i,
+  x ∈ A -> i ∈ B x -> f x i ∈ Arg.
+
+(** Instance introduced by the constructors *)
+Hypothesis g : set -> set.
+Hypothesis gm : morph1 g.
+
+Definition Wdp : dpositive :=
+  dpos_norec A (fun x => dpos_consrec (dpos_param (B x) (fun i => dpos_rec (f x i))) (dpos_inst (g x))).
+
+Definition Wsup x h := couple x (couple (cc_lam (B x) h) empty).
+
+Lemma sup_typ X x h :
+  morph1 X ->
+  morph1 h ->
+  x ∈ A ->
+  (forall i, i ∈ B x -> h i ∈ X (f x i)) ->
+  Wsup x h ∈ dpos_oper Wdp X (g x).
+simpl; intros.
+apply couple_intro_sigma; trivial.
+ admit.
+
+ apply couple_intro.
+  apply cc_prod_intro; intros; auto with *.
+  do 2 red; intros; apply H; apply fm; auto with *. 
+
+  rewrite cond_set_ax; split.
+   apply singl_intro.
+   reflexivity.
+Qed.
+
+End Wd.
+End Wd.

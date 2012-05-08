@@ -7,8 +7,10 @@ Require Import basic.
 Require Export ZFdef.
 Require Import EnsEm Sublogic.
 
-Module Skolem (L:SublogicTheory) <: IZF_R_sig L.
+Module Skolem (L:SublogicTheory). (*<: IZF_R_sig L *)
 
+(** We assume we have a model of set theory with existential axioms in
+    sublogic L. We could do the same with the abstract signature... *)
 Module Z := Ensembles L.
 Import L.
 
@@ -33,6 +35,9 @@ split; intros.
  apply Z.in_reg with y; trivial.
 Qed. 
 
+(** * Existential sets and their relation with regular sets *)
+
+(** The type of existential sets *)
 Definition set :=
   { f : Z.set -> Prop |
     (#exists u, f u) /\
@@ -48,6 +53,7 @@ exists (exist (fun _ => _ /\ _) f (conj H H0)); trivial. (* regression of unific
 (*exists (exist _ f (conj H H0)); trivial.*)
 Qed.
 
+(** Membership. (Uses an inductive to avoid unwanted unfolding...) *)
 Inductive in_set_ (x y:set) : Prop :=
  InSet
   (_:#exists2 x', proj1_sig x x' &
@@ -73,6 +79,7 @@ Qed.
 
 Notation "x ∈ y" := (in_set x y).
 
+(** Equality *)
 Definition eq_set a b := forall x, x ∈ a <-> x ∈ b.
 
 Notation "x == y" := (eq_set x y).
@@ -119,6 +126,7 @@ destruct H2.
 eauto.
 Qed.
 
+(** Lifting sets to existential sets *)
 Definition Z2set (x:Z.set) : set.
 exists (fun a => Z.eq_set a x).
 split.
@@ -149,7 +157,7 @@ split; intros.
  rewrite <- H2; trivial.
 Qed.
 
-
+(** Perservation of equality and membership by lifting *)
 Lemma inZ_in : forall a b, Z.in_set a b -> Z2set a ∈ Z2set b.
 unfold Z2set, in_set; simpl.
 intros.
@@ -221,6 +229,7 @@ Instance Z2set_morph : Proper (Z.eq_set ==> eq_set) Z2set.
 exact Zeq_eq.
 Qed.
 
+(** Compatibility axiom *)
 Lemma in_reg : forall a a' b, a == a' -> a ∈ b -> a' ∈ b.
 intros.
 rewrite in_set_elim in H0.
@@ -248,6 +257,7 @@ unfold eq_set in |- *; split; intros.
   elim (H0 y); auto.
 Qed.
 
+(** Surjectivity of lifting *)
 Lemma Z2set_surj : forall x, #exists y, x == Z2set y.
 intros.
 destruct (proj2_sig x).
@@ -316,6 +326,7 @@ apply set_intro with (fun z => forall x, Z.in_set x z <-> P (Z2set x)); trivial.
   rewrite <- H4; trivial.
 Qed.
 
+(** * Skolemizing Zermelo axioms *)
 
 (** empty set *)
 
@@ -479,7 +490,8 @@ Lemma power_ax:
   forall a x, x ∈ power a <-> (forall y, y ∈ x -> y ∈ a).
 Proof fun a => proj2_sig (power_sig a).
 
-(* uchoice *)
+(** uchoice holds, but we need to give the proof that P is a specification to
+    the Skolem symbol. *)
 
 Definition uchoice_pred (P:set->Prop) :=
   (forall x x', x == x' -> P x -> P x') /\
@@ -576,162 +588,6 @@ Tin; apply p with x; trivial.
 apply uchoice_ext; trivial.
 Tin; trivial.
 Qed.
-
-(* replacement *)
-
-Definition funDom (R:set -> set -> Prop) x :=
-  forall x' y y', R x y -> R x' y' -> x == x' -> y == y'.
-Definition downR (R:set -> set -> Prop) x' y' :=
-  exists2 x, x == Z2set x' /\ funDom R x & exists2 y, y == Z2set y' & R x y.
-
-Lemma downR_morph : Proper
-  ((eq_set ==> eq_set ==> iff) ==> Z.eq_set ==> Z.eq_set ==> iff) downR.
-do 4 red; intros.
-unfold downR.
-apply Zeq_eq in H0.
-apply Zeq_eq in H1.
-apply ex2_morph; red; intros.
- apply and_iff_morphism.
-  rewrite H0; reflexivity.
-
-  unfold funDom.
-  split; intros.
-   rewrite <- (fun e1 => H a a e1 y2 y2) in H3; auto with *.
-   rewrite <- (fun e1 => H x' x' e1 y' y') in H4; eauto with *.
-
-   rewrite (fun e1 => H a a e1 y2 y2) in H3; auto with *.
-   rewrite (fun e1 => H x' x' e1 y' y') in H4; eauto with *.
-
- apply ex2_morph; red; intros.
-  rewrite H1; reflexivity.
-  apply H; reflexivity.
-Qed.
-
-Lemma downR_fun : forall R x x' y y',
-  downR R x y ->
-  downR R x' y' ->
-  Z.eq_set x x' ->
-  Z.eq_set y y'.
-intros.
-destruct H as (xx,(eqx,fdomx), (yy,eqy,rel)).
-destruct H0 as (xx',(eqx',_), (yy',eqy',rel')).
-apply eq_Zeq.
-rewrite <- eqy; rewrite <- eqy'.
-red in fdomx.
-apply fdomx with xx'; trivial.
-rewrite eqx; rewrite eqx'.
-apply Zeq_eq; trivial.
-Qed.
-
-Lemma repl0 : forall (a:set) (R:set->set->Prop), set.
-intros a R.
-exists
- (fun a' => forall x,
-  Z.in_set x a' <-> #exists2 y, Z2set y ∈ a & exists2 x', Z.eq_set x x' & downR R y x').
-split; intros.
- Tdestruct (Z2set_surj a).
- assert (R'fun := fun x0 x' y y' (_:Z.in_set x0 x) => downR_fun R x0 x' y y').
- Tdestruct (Z.repl_ex x (downR R) R'fun); intros.
- Texists x0; intros.
- rewrite H0.
- apply Tr_morph; apply ex2_morph; red; intros.
- 2:reflexivity.
- split; intros.
-  rewrite H.
-  apply inZ_in; trivial.
-
-  apply in_inZ.
-  rewrite <- H; trivial.
-
- rewrite Z.eq_set_ax; intros.
- rewrite H.
- rewrite H0.
- reflexivity.
-Defined.
-
-Definition incl_set x y := forall z, z ∈ x -> z ∈ y.
-
-Lemma repl0_mono :
-  Proper (incl_set ==> (eq_set ==> eq_set ==> iff) ==> incl_set) repl0.
-do 4 red; simpl; intros.
-rewrite in_set_elim in *.
-Tdestruct H1.
-destruct H2.
-simpl in *; intros.
-Tdestruct (Z2set_surj y).
-assert (R'fun := fun x x' y y' (_:Z.in_set x x3) => downR_fun y0 x x' y y').
-Tdestruct (Z.repl_ex x3 (downR y0) R'fun).
-Texists x1; trivial.
-exists x4; trivial.
- intro; rewrite H5.
- apply Tr_morph; apply ex2_morph; red; intros; auto with *.
- rewrite H4.
- symmetry; apply in_equiv.
-
- rewrite H5.
- rewrite H2 in H3.
- clear x2 H1 H2 x4 H5.
- Tdestruct H3.
- destruct H2.
- Texists x2.
-  apply in_inZ.
-  rewrite <- H4; apply H; trivial.
-
-  exists x4; trivial.
-  rewrite <- (fun e1 => downR_morph _ _ H0 x2 x2 e1 x4 x4); auto with *.
-Qed. 
-
-Lemma repl_sig :
-  { repl |
-    Proper (incl_set ==> (eq_set ==> eq_set ==> iff) ==> incl_set) repl /\
-    forall a (R:set->set->Prop),
-    (forall x x' y y', x ∈ a -> R x y -> R x' y' -> x == x' -> y == y') ->
-    forall x, x ∈ repl a R <-> #exists2 y, y ∈ a & exists2 x', x == x' & R y x' }.
-exists repl0; split.
- exact repl0_mono.
-split; intros.
- rewrite in_set_elim in H0.
- Tdestruct H0.
- destruct H1; simpl in *.
- rewrite H1 in H2.
- Tdestruct H2.
- destruct H3.
- destruct H4.
- destruct H4.
- destruct H5.
- Texists x4.
-  rewrite H4; trivial.
- exists x5; trivial.
- apply Eq_proj in H0.
- rewrite H0; rewrite H5.
- apply Zeq_eq; trivial.
-
- Tdestruct H0.
- destruct H1.
- apply In_intro; simpl; intros.
- rewrite H4; clear H4.
- Tdestruct (Z2set_surj x0).
- Texists x2.
-  rewrite <- H4; trivial.
- exists x'.
-  reflexivity.
- exists x0.
-  split; intros; eauto.
-  red; eauto.
- exists x1; auto.
- rewrite <- H1.
- apply Eq_proj; trivial.
-Defined.
-
-Definition repl := proj1_sig repl_sig.
-Lemma repl_mono : 
-  Proper (incl_set ==> (eq_set ==> eq_set ==> iff) ==> incl_set) repl.
-Proof (proj1 (proj2_sig repl_sig)).
-Lemma repl_ax:
-    forall a (R:set->set->Prop),
-    (forall x x' y y', x ∈ a -> R x y -> R x' y' -> x == x' -> y == y') ->
-    forall x, x ∈ repl a R <-> #exists2 y, y ∈ a & exists2 x', x == x' & R y x'.
-Proof proj2 (proj2_sig repl_sig).
 
 (** infinite set (natural numbers) *)
 
@@ -854,6 +710,244 @@ rewrite H2,H4 in H3.
 apply in_inZ in H3; eauto.
 Qed.
 
+(** * Skolemizing Replacement *)
+
+Definition funDom (R:set -> set -> Prop) x :=
+  forall x' y y', R x y -> R x' y' -> x == x' -> y == y'.
+Definition downR (R:set -> set -> Prop) x' y' :=
+  exists2 x, x == Z2set x' /\ funDom R x & exists2 y, y == Z2set y' & R x y.
+
+Lemma downR_morph : Proper
+  ((eq_set ==> eq_set ==> iff) ==> Z.eq_set ==> Z.eq_set ==> iff) downR.
+do 4 red; intros.
+unfold downR.
+apply Zeq_eq in H0.
+apply Zeq_eq in H1.
+apply ex2_morph; red; intros.
+ apply and_iff_morphism.
+  rewrite H0; reflexivity.
+
+  unfold funDom.
+  split; intros.
+   rewrite <- (fun e1 => H a a e1 y2 y2) in H3; auto with *.
+   rewrite <- (fun e1 => H x' x' e1 y' y') in H4; eauto with *.
+
+   rewrite (fun e1 => H a a e1 y2 y2) in H3; auto with *.
+   rewrite (fun e1 => H x' x' e1 y' y') in H4; eauto with *.
+
+ apply ex2_morph; red; intros.
+  rewrite H1; reflexivity.
+  apply H; reflexivity.
+Qed.
+
+Lemma downRm : forall R x x' y y',
+  Z.eq_set x x' ->
+  Z.eq_set y y' ->
+  downR R x y ->
+  downR R x' y'.
+intros.
+destruct H1 as (xx,(eqx,fdomx), (yy,eqy,rel)).
+exists xx.
+ split; trivial.
+ rewrite eqx.
+ rewrite eq_equiv; trivial.
+exists yy; trivial.
+rewrite eqy.
+rewrite eq_equiv; trivial.
+Qed.
+
+Lemma downR_fun : forall R x y y',
+  downR R x y ->
+  downR R x y' ->
+  Z.eq_set y y'.
+intros.
+destruct H as (xx,(eqx,fdomx), (yy,eqy,rel)).
+destruct H0 as (xx',(eqx',_), (yy',eqy',rel')).
+apply eq_Zeq.
+rewrite <- eqy; rewrite <- eqy'.
+red in fdomx.
+apply fdomx with xx'; trivial.
+rewrite eqx; rewrite eqx'.
+reflexivity.
+Qed.
+
+Module Type ExReplacement.
+Parameter repl_ex : forall a (R:Z.set->Z.set->Prop),
+  (forall x x' y y', Z.in_set x a -> Z.eq_set x x' -> Z.eq_set y y' -> R x y -> R x' y') ->
+  (forall x y y', Z.in_set x a -> R x y -> R x y' -> Z.eq_set y y') ->
+  #exists b, forall x, Z.in_set x b <-> #exists2 y, Z.in_set y a & R y x.
+End ExReplacement.
+
+Module SkolemReplacement (Repl : ExReplacement).
+
+Lemma repl0 : forall (a:set) (R:set->set->Prop), set.
+intros a R.
+exists
+ (fun a' => forall x,
+  Z.in_set x a' <-> #exists2 y, Z2set y ∈ a & downR R y x).
+split; intros.
+ Tdestruct (Z2set_surj a).
+ assert (R'm := fun x0 x' y y' (_:Z.in_set x0 x) => downRm R x0 x' y y').
+ assert (R'fun := fun x0 y y' (_:Z.in_set x0 x) => downR_fun R x0 y y').
+ Tdestruct (Repl.repl_ex x (downR R) R'm R'fun); intros.
+ Texists x0; intros.
+ rewrite H0.
+ apply Tr_morph; apply ex2_morph; red; intros.
+ 2:reflexivity.
+ split; intros.
+  rewrite H.
+  apply inZ_in; trivial.
+
+  apply in_inZ.
+  rewrite <- H; trivial.
+
+ rewrite Z.eq_set_ax; intros.
+ rewrite H.
+ rewrite H0.
+ reflexivity.
+Defined.
+
+Definition incl_set x y := forall z, z ∈ x -> z ∈ y.
+
+Lemma repl0_mono :
+  Proper (incl_set ==> (eq_set ==> eq_set ==> iff) ==> incl_set) repl0.
+do 4 red; simpl; intros.
+rewrite in_set_elim in *.
+Tdestruct H1.
+destruct H2.
+simpl in *; intros.
+Tdestruct (Z2set_surj y).
+assert (R'm := fun x x' y y' (_:Z.in_set x x3) => downRm y0 x x' y y').
+assert (R'fun := fun x y y' (_:Z.in_set x x3) => downR_fun y0 x y y').
+Tdestruct (Repl.repl_ex x3 (downR y0) R'm R'fun).
+Texists x1; trivial.
+exists x4; trivial.
+ intro; rewrite H5.
+ apply Tr_morph; apply ex2_morph; red; intros; auto with *.
+ rewrite H4.
+ symmetry; apply in_equiv.
+
+ rewrite H5.
+ rewrite H2 in H3.
+ clear x2 H1 H2 x4 H5.
+ Tdestruct H3.
+ Texists x2.
+  apply H in H1.
+  rewrite H4 in H1; rewrite in_equiv in H1; trivial.
+
+  revert H2; apply iff_impl; apply downR_morph; auto with *.
+Qed. 
+
+Lemma repl_sig :
+  { repl |
+    Proper (incl_set ==> (eq_set ==> eq_set ==> iff) ==> incl_set) repl /\
+    forall a (R:set->set->Prop),
+    (forall x x' y y', x ∈ a -> x == x' -> y == y' -> R x y -> R x' y') ->
+    (forall x y y', x ∈ a -> R x y -> R x y' -> y == y') ->
+    forall x, x ∈ repl a R <-> #exists2 y, y ∈ a & R y x }.
+exists repl0; split.
+ exact repl0_mono.
+split; intros.
+ rewrite in_set_elim in H1.
+ Tdestruct H1.
+ destruct H2; simpl in *.
+ rewrite H2 in H3.
+ Tdestruct H3.
+ destruct H4.
+ destruct H5.
+ destruct H4.
+ Texists x3.
+  rewrite H4; trivial.
+ revert H6; apply H; auto with *.
+  rewrite H4; trivial.
+
+  apply Eq_proj in H1.
+  rewrite H1; trivial.
+
+ Tdestruct H1.
+ apply In_intro; simpl; intros.
+ rewrite H4; clear H4.
+ Tdestruct (Z2set_surj x0).
+ Texists x1.
+  rewrite <- H4; trivial.
+ exists x0.
+  split; intros; eauto.
+  red; intros.
+  apply H0 with x0; trivial.
+  revert H6; apply H; auto with *.
+  rewrite <- H7; trivial.
+
+  exists x; trivial.
+  apply Eq_proj; trivial.
+Defined.
+
+Definition repl := proj1_sig repl_sig.
+Lemma repl_mono : 
+  Proper (incl_set ==> (eq_set ==> eq_set ==> iff) ==> incl_set) repl.
+Proof (proj1 (proj2_sig repl_sig)).
+Lemma repl_ax:
+    forall a (R:set->set->Prop),
+    (forall x x' y y', x ∈ a -> x == x' -> y == y' -> R x y -> R x' y') ->
+    (forall x y y', x ∈ a -> R x y -> R x y' -> y == y') ->
+    forall x, x ∈ repl a R <-> #exists2 y, y ∈ a & R y x.
+Proof proj2 (proj2_sig repl_sig).
+
+End SkolemReplacement.
+
+(*
+(** Replacement can be skolemized in the general case only using TTColl *)
+Module TTCollRepl : ExReplacement.
+Definition repl_ex := Z.repl_ex.
+End TTCollRepl.
+Include SkolemReplacement TTCollRepl.
+*)
+
+(** * Collection *)
+
+(** ** Keeping existential version of collection in intutionistic logic. *)
+
+Definition downR' (R:set -> set -> Prop) x' y' :=
+  exists2 x, x == Z2set x' & exists2 y, y == Z2set y' & R x y.
+
+Lemma downR'_morph : Proper
+  ((eq_set ==> eq_set ==> iff) ==> Z.eq_set ==> Z.eq_set ==> iff) downR'.
+do 4 red; intros.
+unfold downR'.
+apply Zeq_eq in H0.
+apply Zeq_eq in H1.
+apply ex2_morph; red; intros.
+ rewrite H0; reflexivity.
+
+ apply ex2_morph; red; intros.
+  rewrite H1; reflexivity.
+  apply H; reflexivity.
+Qed.
+
+Lemma coll_ex : forall A (R:set->set->Prop), 
+    Proper (eq_set ==> eq_set ==> iff) R ->
+    #exists B, forall x, x ∈ A ->
+         (#exists y, R x y) -> #exists2 y, y ∈ B & R x y.
+intros.
+Tdestruct (Z2set_surj A) as (A',?).
+Tdestruct (Z.coll_ex A' _ (downR'_morph R R H)) as (B,HB).
+Texists (Z2set B).
+intros.
+rewrite H0 in H1.
+Tdestruct (Z2set_surj x) as (x',?).
+rewrite H3 in H1; rewrite in_equiv in H1.
+assert (#exists y, downR' R x' y).
+ Tdestruct H2 as (y,?).
+ Tdestruct (Z2set_surj y) as (y',?).
+ Texists y'; red; eauto.
+Tdestruct (HB _ H1 H4) as (y,?,(x'',?,(y',?,?))).
+Texists y'.
+ rewrite H7; rewrite in_equiv; trivial.
+
+ rewrite H3; rewrite <- H6; trivial.
+Qed.
+
+(** ** Skolemizing Collection in classical logic *)
+
 Module ClassicCollection.
 
 (** Proving that collection can be skolemized in classical ZF:
@@ -864,6 +958,10 @@ Section Classic.
 
 Hypothesis EM : forall P, #(P \/ (P -> #False)).
 
+(** We need to provide a spec that is more specific than what appears here
+    (it is not uniquely satifiable). Instead, we specify coll as the
+    smallest Veblen universe that satisfies collection. This is why we need
+    excluded-middle. *)
 Lemma coll_sig : forall A (R:set->set->Prop), 
   {coll| Proper (eq_set==>eq_set==>iff) R ->
      forall x, x ∈ A ->
@@ -941,9 +1039,31 @@ End ClassicCollection.
 
 End Skolem.
 
-(** Several instances *)
+(** * Instance *)
 
-Module IZF_R <: IZF_R_sig CoqSublogicThms := Skolem CoqSublogicThms.
+
+(** Several useful instances *)
+
+(** Model of IZF_R *)
+
+Module IZF_R <: IZF_R_sig CoqSublogicThms.
+  Import CoqSublogic.
+  Include Skolem CoqSublogicThms.
+  Definition intuit : forall P:Prop, Tr P -> P := fun P h => h.
+  Module Re <: ExReplacement.
+    Definition repl_ex := Z.intuit_repl_ax intuit.
+  End Re.
+  Include SkolemReplacement Re.
+End IZF_R.
+
+Let IZFRpack := (IZF_R.repl_mono,IZF_R.repl_ax,IZF_R.wf_ax).
+Print Assumptions IZFRpack. (* TTrepl *)
+
+(** Model of IZF_C *)
+
+Module IZF_C <: IZF_C_sig CoqSublogicThms := Skolem CoqSublogicThms.
+Let IZFCpack := (IZF_C.coll_ex,IZF_C.wf_ax).
+Print Assumptions IZFCpack. (* TTcoll (with intuitionistic equality on sets) *)
 
 (** A model of ZF, based only on TTColl (no ecluded-middle in the
     metatheory).
@@ -952,7 +1072,6 @@ Module ZF <: ZF_sig ClassicSublogicThms.
  Include Skolem ClassicSublogicThms.
  Import ClassicSublogicThms.
  Lemma EM : forall P, #(P \/ (P -> #False)).
-Unset Printing Notations.
 cbv beta; intros P nem.
 apply nem.
 right; intros p _.
@@ -967,9 +1086,7 @@ Qed.
  Proof ClassicCollection.coll_ax EM.
 End ZF.
 
-Let IZFRpack := (IZF_R.repl_mono,IZF_R.repl_ax,IZF_R.wf_ax).
-Let ZFpack := (ZF.repl_mono,ZF.repl_ax,ZF.coll_ax).
-Print Assumptions IZFRpack. (* TTcoll *)
+Let ZFpack := ZF.coll_ax.
 Print Assumptions ZFpack. (* TTColl (with classical equality on sets) *)
 (* Eval cbv beta delta - [ ZF.Z.eq_set Proper respectful iff ] iota in ZF.Z.ttcoll.
  *)

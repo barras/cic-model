@@ -46,12 +46,11 @@ Qed.
 
 Definition incl_set x y := forall z, z ∈ x -> z ∈ y.
 
-Notation "x ⊆ y" := (incl_set x y) (at level 70).
+Notation "x ⊆ y" := (incl_set x y).
 
 Instance incl_set_pre : PreOrder incl_set.
 split; do 2 red; intros; eauto.
 Qed.
-
 
 Instance incl_set_morph : Proper (eq_set ==> eq_set ==> iff) incl_set.
 apply morph_impl_iff2; auto with *.
@@ -64,6 +63,11 @@ intros.
 apply eq_intro; auto.
 Qed.
 
+Instance Fmono_morph F : Proper (incl_set==>incl_set) F -> morph1 F.
+do 2 red; intros.
+apply incl_eq; apply H; rewrite H0; reflexivity.
+Qed.
+Hint Resolve Fmono_morph.
 
 (** Extensional equivalences *)
 
@@ -404,28 +408,34 @@ Definition replf a (F:set->set) :=
 
 Instance replf_mono_raw :
   Proper (incl_set ==> (eq_set ==> eq_set) ==> incl_set) replf.
-Admitted.
-(*unfold replf.
+unfold replf.
 do 4 red; intros.
+assert (xm : morph1 x0).
+ do 2 red; intros.
+ transitivity (y0 y1); auto.
+ symmetry; apply H0; reflexivity.
+assert (ym : morph1 y0).
+ do 2 red; intros.
+ transitivity (x0 x1); auto.
+ symmetry; apply H0; reflexivity.
 rewrite repl_ax in H1.
  rewrite repl_ax.
   destruct H1.
-  destruct H2.
   exists x1; auto.
-  exists x2; trivial.
-  rewrite H3; apply H0; reflexivity.
+  rewrite H2; apply H0; reflexivity.
 
   intros.
-  rewrite H3; rewrite H4; transitivity (x0 x1).
-   symmetry; apply H0; reflexivity.
+  rewrite <- H4; rewrite H5; auto.
 
-   apply H0; trivial.
+  intros.
+  rewrite H3; rewrite H4; reflexivity.
 
  intros.
- rewrite H3; rewrite H4; transitivity (y0 x'); auto.
- symmetry; auto with *.
+ rewrite <- H4; rewrite H5; auto.
+
+ intros.
+ rewrite H3; rewrite H4; reflexivity.
 Qed.
-*)
 
 Instance replf_morph_raw :
   Proper (eq_set ==> (eq_set ==> eq_set) ==> eq_set) replf.
@@ -442,22 +452,19 @@ Qed.
 Lemma replf_ax : forall a F z,
   ext_fun a F ->
   (z ∈ replf a F <-> exists2 x, x ∈ a & z == F x).
-Admitted.
-(*unfold replf; intros.
+unfold replf; intros.
 rewrite repl_ax; intros.
  split; intros.
   destruct H0.
-  destruct H1.
   exists x; trivial.
-  rewrite H1; trivial.
 
   destruct H0.
   exists x; trivial.
-  exists z; trivial; reflexivity.
 
- rewrite H1; rewrite H2; auto.
+ rewrite <- H2; rewrite H3; auto.
+
+ rewrite H2; trivial.
 Qed.
-*)
 
 Lemma replf_intro : forall a F y x,
   ext_fun a F -> x ∈ a -> y == F x -> y ∈ replf a F.
@@ -725,7 +732,7 @@ Qed.
 (** Union of 2 sets *)
 Definition union2 x y := union (pair x y).
 
-Infix "∪" := union2 (at level 50).
+Infix "∪" := union2.
 
 Lemma union2_intro1: forall x y z, z ∈ x -> z ∈ union2 x y.
 Proof.
@@ -846,6 +853,39 @@ Qed.
 Hint Resolve sup_incl.
 
 
+Lemma replf_is_sup A F :
+  ext_fun A F ->
+  replf A F == sup A (fun x => singl (F x)).
+intros.
+assert (fm : ext_fun A (fun x => singl (F x))).
+ do 2 red; intros; apply singl_morph; apply H; trivial.
+apply eq_intro; intros.
+ rewrite sup_ax; trivial.
+ rewrite replf_ax in H0; trivial.
+ revert H0; apply ex2_morph; red; intros; auto with *.
+ split; intros.
+  apply singl_elim in H0; trivial.
+  rewrite H0; apply singl_intro.
+
+ rewrite replf_ax; trivial.
+ rewrite sup_ax in H0; trivial.
+ revert H0; apply ex2_morph; red; intros; auto with *.
+ split; intros.
+  rewrite H0; apply singl_intro.
+  apply singl_elim in H0; trivial.
+Qed.
+
+Lemma union_is_sup a :
+  union a == sup a (fun x => x).
+apply eq_intro; intros.
+ rewrite sup_ax;[|do 2 red; auto].
+ apply union_elim in H; destruct H.
+ eauto.
+
+ rewrite sup_ax in H;[|do 2 red; auto].
+ destruct H; eauto using union_intro.
+Qed.
+
 (** Russel's paradox *)
 
 Section Russel.
@@ -955,7 +995,7 @@ Qed.
 
 Definition inter2 x y := inter (pair x y).
 
-Infix "∩" := inter2 (at level 40).
+Infix "∩" := inter2.
 
 Instance inter2_morph: morph2 inter2.
 do 3 red; intros; apply inter_morph; apply pair_morph; trivial.
@@ -977,9 +1017,14 @@ Lemma inter2_incl1 : forall x y, x ∩ y ⊆ x.
 red; intros.
 rewrite inter2_def in H; destruct H; trivial.
 Qed.
+
 Lemma inter2_incl2 : forall x y, x ∩ y ⊆ y.
 red; intros.
 rewrite inter2_def in H; destruct H; trivial.
+Qed.
+
+Lemma inter2_incl a x y : a ⊆ x -> a ⊆ y -> a ⊆ x ∩ y.
+red; intros; rewrite inter2_def; split; auto.
 Qed.
 
 Lemma incl_inter2 x y: x ⊆ y -> x ∩ y == x.

@@ -374,6 +374,7 @@ pattern x at 1 3; elim H0 using isWf_ind; intros; eauto.
 Qed.
 
 (** Transfinite iteration on a well-founded set (not using higher-order) *)
+(** #<a name="WithoutHigherOrder"></a># *)
 
 Section TransfiniteRecursion.
 

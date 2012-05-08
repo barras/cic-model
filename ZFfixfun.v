@@ -1,5 +1,10 @@
-Require Import ZF ZFrelations ZFnats ZFord ZFcoc.
+(** Construction of a function (a.k.a a family of sets) over a fixed domain by
+    transfinite iteration. No fixpoint theorem here.
+ *)
 
+Require Import ZF ZFrelations ZFnats ZFord.
+    
+(** Order on families *)
 Definition incl_fam A X Y :=
   forall a, a ∈ A -> X a ⊆ Y a.
 
@@ -8,6 +13,7 @@ red; red; intros.
 transitivity (y a); auto with *.
 Qed.
 
+(** Monotonicity *)
 Definition mono_fam A F :=
   forall X Y, morph1 X -> morph1 Y -> incl_fam A X Y -> incl_fam A (F X) (F Y).
 
@@ -32,6 +38,7 @@ apply incl_eq.
 Qed.
 Hint Resolve FFmono_ext.
 
+(** Definition of the TIF iterator *)
   Let F' f o := cc_lam A (fun a => sup o (fun o' => F (cc_app (f o')) a)).
 
   Let F'm : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) F'.
@@ -43,9 +50,9 @@ apply sup_morph; trivial.
 red; intros.
 apply FFmono_ext; trivial.
  apply cc_app_morph; reflexivity.
-
+(**)
  apply cc_app_morph; reflexivity.
-
+(**)
  red; intros.
  apply cc_app_morph; auto with *.
 Qed.
@@ -59,9 +66,9 @@ apply sup_morph; auto with *.
 red; intros.
 apply FFmono_ext; trivial.
  apply cc_app_morph; reflexivity.
-
+(**)
  apply cc_app_morph; reflexivity.
-
+(**)
  red; intros.
  apply cc_app_morph; auto with *.
 Qed.
@@ -80,7 +87,7 @@ intros.
 apply FFmono_ext; auto with *.
  apply TIF_morph; auto with *.
  apply TIF_morph; auto with *.
-
+(**)
  red; intros; apply TIF_morph; auto.
 Qed.
 
@@ -126,6 +133,7 @@ do 2 red; intros; apply m2; auto with *.
 apply isOrd_inv with o; trivial.
 Qed.
 
+  (** Monotonicity of TIF *)
   Lemma TIF_mono : forall a, a ∈ A -> increasing (fun o => TIF o a).
 do 2 red; intros.
 apply TIF_elim in H3; intros; auto with *.
@@ -183,6 +191,7 @@ rewrite <- TIF_mono_succ; trivial.
  apply isOrd_inv with o; trivial.
 Qed.
 
+  (** Property related to fixpoints: any post-fixpoint [fx] contains all stages *)
   Lemma TIF_pre_fix : forall fx o,
      morph1 fx ->
      isOrd o ->
@@ -198,7 +207,7 @@ revert H7; apply Fmono; auto with *.
 apply TIF_morph; auto with *.
 Qed.
 
-
+(*
 Section BoundedOperator.
 
 Variable B : set -> set.
@@ -472,7 +481,7 @@ revert H1; apply TIF_Ffix; trivial.
 Qed.
 
 End IterDep.
-
+*)
 (*
 Section Iter.
 
@@ -859,8 +868,9 @@ apply eq_intro; intros.
  exists (osucc (Ffix_ord a)); auto.
 Qed.
 *)
+(*
 End BoundedOperator.
-
+*)
 
 End IterMonotone.
 

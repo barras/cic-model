@@ -1,4 +1,5 @@
 Require Export basic.
+Require Import Sublogic.
 
 (** This module defines interfaces implementing various flavour
    of set theory, from Zermelo to IZF_R and IZF_C (ZF)
@@ -6,10 +7,11 @@ Require Export basic.
 Reserved Notation "x ∈ y" (at level 60).
 Reserved Notation "x == y" (at level 70).
 Reserved Notation "x ⊆ y" (at level 70).
+Reserved Infix "∪" (at level 50).
+Reserved Infix "∩" (at level 40).
 
 (************************************************************************)
 (** * A generic set theory signature *)
-Require Import Sublogic.
 
 Module Type SetTheory.
 
@@ -123,9 +125,9 @@ Parameter
     (forall x x', x==x' -> forall y y', y==y' -> (R x y <-> R' x' y')) ->
     forall z, z ∈ repl a R -> z ∈ repl a' R')
  (repl_ax: forall a (R:set->set->Prop),
-    (forall x x' y y', x ∈ a -> R x y -> R x' y' -> x == x' -> y == y') ->
-    forall x, x ∈ repl a R <->
-      #exists2 y, y ∈ a & exists2 x', x == x' & R y x').
+    (forall x x' y y', x ∈ a -> x == x' -> y == y' -> R x y -> R x' y') ->
+    (forall x y y', x ∈ a -> R x y -> R x y' -> y == y') ->
+    forall x, x ∈ repl a R <-> #exists2 y, y ∈ a & R y x).
 
 End IZF_R_sig.
 
@@ -139,8 +141,9 @@ Import L.
 
 Parameter
  (repl_ex : forall a (R:set->set->Prop),
-    (forall x x' y y', x ∈ a -> R x y -> R x' y' -> x == x' -> y == y') ->
-    #exists b, forall x, x ∈ b <-> #exists2 y, y ∈ a & exists2 x', x == x' & R y x').
+    (forall x x' y y', x ∈ a -> x == x' -> y == y' -> R x y -> R x' y') ->
+    (forall x y y', x ∈ a -> R x y -> R x y' -> y == y') ->
+    #exists b, forall x, x ∈ b <-> #exists2 y, y ∈ a & R y x).
 
 End IZF_R_HalfEx_sig.
 
@@ -153,8 +156,9 @@ Import L.
 
 Parameter
  (repl_ex : forall a (R:set->set->Prop),
-    (forall x x' y y', x ∈ a -> R x y -> R x' y' -> x == x' -> y == y') ->
-    #exists b, forall x, x ∈ b <-> #exists2 y, y ∈ a & exists2 x', x == x' & R y x').
+    (forall x x' y y', x ∈ a -> x == x' -> y == y' -> R x y -> R x' y') ->
+    (forall x y y', x ∈ a -> R x y -> R x y' -> y == y') ->
+    #exists b, forall x, x ∈ b <-> #exists2 y, y ∈ a & R y x).
 
 End IZF_R_Ex_sig.
 
@@ -189,10 +193,9 @@ Parameter
 
 End ZF_sig.
 
+
 (************************************************************************)
-(*
- -----
- *)
+(* begin hide *)
 
 Module Type Choice_Sig (L:SublogicTheory) (S:SetTheory).
 Import L S.
@@ -201,3 +204,5 @@ Parameter
   (choose_morph : forall x x', x == x' -> choose x == choose x')
   (choose_ax : forall a, (#exists x, x ∈ a) -> choose a ∈ a).
 End Choice_Sig.
+
+(* end hide *)

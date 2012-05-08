@@ -3,20 +3,6 @@ Require Import ZF.
 
 Instance repl_mono_raw :
   Proper (incl_set ==> (eq_set ==> eq_set ==> iff) ==> incl_set) repl.
-(*
-do 4 red; intros.
-rewrite repl_ax; intros.
- rewrite repl_ax in H1; intros.
-  destruct H1.
-  destruct H2.
-  exists x1; auto.
-  exists x2; trivial.
-  revert H3; apply basic.iff_impl.
-  apply H0; reflexivity.
-
-  ...
-rewrite H0.
-*)
 Proof repl_mono.
 
 Instance repl_morph_raw :
@@ -34,18 +20,6 @@ Qed.
 Definition repl_rel a (R:set->set->Prop) :=
   (forall x x' y y', x ∈ a -> x == x' -> y == y' -> R x y -> R x' y') /\
   (forall x y y', x ∈ a -> R x y -> R x y' -> y == y').
-Lemma repl_rel_compat_lemma : forall a R,
-  repl_rel a R ->
-  (forall x x' y y', x ∈ a -> R x y -> R x' y' -> x == x' -> y == y').
-intros.
-destruct H.
-apply H4 with x; trivial.
-apply H with x' y'; trivial.
- rewrite <- H3; trivial.
- symmetry; trivial.
- reflexivity.
-Qed. 
-
 
 Lemma repl_rel_fun : forall x f,
   ext_fun x f -> repl_rel x (fun a b => b == f a).
@@ -57,26 +31,20 @@ Qed.
 Lemma repl_intro : forall a R y x,
   repl_rel a R -> y ∈ a -> R y x -> x ∈ repl a R.
 Proof.
-intros a R y x Rfun H1 H2.
-elim repl_ax with (1:=repl_rel_compat_lemma _ _ Rfun) (a := a) (x := x); intros.
+intros a R y x (Rm,Rfun) H1 H2.
+elim repl_ax with (1:=Rm) (2:=Rfun) (a := a) (x := x); intros.
 apply H0.
 exists y; trivial.
-exists x; trivial; reflexivity.
 Qed.
 
 Lemma repl_elim : forall a R x,
   repl_rel a R -> x ∈ repl a R -> exists2 y, y ∈ a & R y x.
 Proof.
-intros a R x Rfun H1.
-elim repl_ax with (1:=repl_rel_compat_lemma _ _ Rfun) (a:=a) (x:=x); intros.
+intros a R x (Rm,Rfun) H1.
+elim repl_ax with (1:=Rm) (2:=Rfun) (a:=a) (x:=x); intros.
 apply H in H1; clear H H0.
 destruct H1.
 exists x0; trivial.
-destruct H0.
-destruct Rfun as (Rm,_).
-apply Rm with x0 x1; trivial.
- reflexivity.
- symmetry; trivial.
 Qed.
 
 Lemma repl_ext : forall p a R,

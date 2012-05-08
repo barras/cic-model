@@ -9,48 +9,18 @@ Section ListDefs.
   Definition Nil := empty.
   Definition Cons := couple.
 
-  Definition LISTf (X:set) :=
-    singl empty ∪ sup A (fun x => replf X (fun l => couple x l)).
-
-Lemma ext1 : forall x X, ext_fun X (fun l => couple x l).
-do 2 red; intros.
-rewrite H0; reflexivity.
-Qed.
-
-Lemma ext2 : forall X, ext_fun A (fun x => replf X (fun l => couple x l)).
-do 2 red; intros.
-apply replf_morph_raw; auto with *.
-red; intros.
-rewrite H0; rewrite H1; reflexivity.
-Qed.
-
-Hint Resolve ext1 ext2.
+  Definition LISTf (X:set) := singl empty ∪ prodcart A X.
 
 Instance LISTf_mono : Proper (incl_set ==> incl_set) LISTf.
 do 2 red; intros.
 unfold LISTf.
-apply union2_mono.
- red; auto.
-
- red; intros.
- rewrite sup_ax in H0|-*; trivial.
- destruct H0.
- exists x0; trivial.
- rewrite replf_ax in H1|-*; trivial.
- destruct H1.
- exists x1; auto.
+apply union2_mono; auto with *.
+apply prodcart_mono; auto with *.
 Qed.
 
 Instance LISTf_morph : Proper (eq_set ==> eq_set) LISTf.
-do 2 red; intros.
-apply eq_intro; intros.
- apply (LISTf_mono x y); trivial. 
- red; intros.
- rewrite <- H; auto.
-
- apply (LISTf_mono y x); trivial. 
- red; intros.
- rewrite H; auto.
+apply Fmono_morph.
+apply LISTf_mono.
 Qed.
 
   Lemma LISTf_ind : forall X (P : set -> Prop),
@@ -63,11 +33,10 @@ apply union2_elim in H2; destruct H2 as [H2|H2].
  apply singl_elim in H2.
  rewrite H2; trivial.
 
- rewrite sup_ax in H2; trivial.
- destruct H2.
- rewrite replf_ax in H3; trivial.
- destruct H3.
- rewrite H4; auto.
+ rewrite surj_pair with (1:=H2).
+ apply H1.
+  apply fst_typ in H2; trivial.
+  apply snd_typ in H2; trivial.
 Qed.
 
   Lemma Nil_typ0 : forall X, Nil ∈ LISTf X.
@@ -81,12 +50,8 @@ Qed.
 intros.
 unfold Cons, LISTf.
 apply union2_intro2.
-rewrite sup_ax; trivial.
-exists x; trivial.
-rewrite replf_ax; trivial.
-exists l; auto with *.
+apply couple_intro; trivial.
 Qed.
-
   (* LIST_case is f when l is Nil, or g when l is Cons *)
   Definition LIST_case l f g :=
     cond_set (l == Nil) f ∪ cond_set (l == Cons (fst l) (snd l)) g.
@@ -122,6 +87,65 @@ intuition.
  unfold Cons; rewrite fst_def; rewrite snd_def; reflexivity.
 Qed.
 
+(*
+Require Import ZFcont.
+  Lemma LISTf_cont : continuous omega LISTf.
+red; intros.
+unfold LISTf.
+rewrite <- sup_cont.
+ rewrite <- cst_cont.
+ 2:exists zero; apply zero_omega.
+ apply union2_morph; auto with *.
+ rewrite sigma_nodep.
+
+  Lemma prodcart_cont : forall o F G,
+    ext_fun o F ->
+    ext_fun o G ->
+    prodcart (sup o F) (sup o G) == sup o (fun y => prodcart (F y) (G y)).
+intros.
+apply eq_intro; intros.
+ rewrite sup_ax; trivial.
+ 2:do 2 red; intros; apply prodcart_morph; auto.
+ assert (h1 := fst_typ _ _ _ H1).
+ assert (h2 := snd_typ _ _ _ H1).
+ rewrite sup_ax in h1, h2; trivial.
+ destruct h1; destruct h2.
+ exists (x ⊔ x0).
+  apply osup2_lt; trivial.
+isOrd_dir.
+
+ assert (snd z ∈ sup dom (f (fst z))).
+  apply snd_typ_sigma with (2:=H0); auto with *.
+  do 2 red; intros.
+  apply sup_morph; auto with *.
+  red; intros; apply H; trivial.
+ rewrite sup_ax in H1.
+ 2:do 2 red; intros; apply H;auto with *.
+ destruct H1.
+ exists x; trivial.
+ rewrite surj_pair with (1:=subset_elim1 _ _ _ H0).
+ apply couple_intro_sigma; trivial.
+  do 2 red; intros; apply H; auto with *.
+ apply fst_typ_sigma in H0; trivial.
+
+ rewrite sup_ax in H0; trivial.
+ destruct H0.
+ rewrite surj_pair with (1:=subset_elim1 _ _ _ H1).
+ apply couple_intro_sigma; trivial.
+  do 2 red; intros.
+  apply sup_morph; auto with *.
+  red; intros; apply H; trivial.
+
+  apply fst_typ_sigma in H1; trivial.
+
+  rewrite sup_ax.
+  2:do 2 red; intros; apply H; auto with *.
+  exists x; trivial.
+  apply snd_typ_sigma with (2:=H1); auto with *.
+  do 2 red; intros; apply H; auto with *.
+Qed.
+
+*)
 
   Definition Lstn n := TI LISTf (nat2ordset n).
 
@@ -247,11 +271,6 @@ elim H0 using List_ind; intros.
 Qed.
 
 Instance List_morph : morph1 List.
-do 2 red; intros.
-apply eq_intro; intros.
- revert z H0; apply List_mono.
- rewrite H; auto with *.
-
- revert z H0; apply List_mono.
- rewrite H; auto with *.
+apply Fmono_morph.
+apply List_mono.
 Qed.

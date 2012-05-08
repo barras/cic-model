@@ -1,6 +1,7 @@
 Require Import Classical.
 Require Import ZFnats.
 
+(** Classical ordinals: hereditarily transitive well-founded sets *)
 Definition isOrd x :=
   forall P : set -> Prop,
   (forall y,

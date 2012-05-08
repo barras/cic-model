@@ -163,6 +163,12 @@ apply Z.in_reg with x; trivial.
 rewrite <- H0; auto.
 Qed.
 
+Lemma in_equiv a b : in_set (Z2set a) (Z2set b) <-> Z.in_set a b.
+split; intros.
+ apply in_inZ; trivial.
+ apply inZ_in; trivial.
+Qed.
+
 Lemma eq_Zeq : forall x y, Z2set x == Z2set y -> Z.eq_set x y.
 intros.
 rewrite Z.eq_set_ax; split; intros.
@@ -198,6 +204,12 @@ split; intros.
  simpl.
  transitivity y; trivial.
  symmetry; trivial.
+Qed.
+
+Lemma eq_equiv x y : Z2set x == Z2set y <-> Z.eq_set x y.
+split; intros.
+ apply eq_Zeq; trivial.
+ apply Zeq_eq; trivial.
 Qed.
 
 Instance Z2set_morph : Proper (Z.eq_set ==> eq_set) Z2set.
@@ -577,44 +589,57 @@ apply ex2_morph; red; intros.
   apply H; reflexivity.
 Qed.
 
-Lemma downR_fun : forall R x x' y y',
-  downR R x y ->
-  downR R x' y' ->
+Lemma downRm : forall R x x' y y',
   Z.eq_set x x' ->
+  Z.eq_set y y' ->
+  downR R x y ->
+  downR R x' y'.
+intros.
+destruct H1 as (xx,(eqx,fdomx), (yy,eqy,rel)).
+exists xx.
+ split; trivial.
+ rewrite eqx.
+ rewrite eq_equiv; trivial.
+exists yy; trivial.
+rewrite eqy.
+rewrite eq_equiv; trivial.
+Qed.
+
+Lemma downR_fun : forall R x y y',
+  downR R x y ->
+  downR R x y' ->
   Z.eq_set y y'.
 intros.
-destruct H as (xx,(eqx,fdomx),(yy,eqy,rel)).
-destruct H0 as (xx',(eqx',_),(yy',eqy',rel')).
+destruct H as (xx,(eqx,fdomx), (yy,eqy,rel)).
+destruct H0 as (xx',(eqx',_), (yy',eqy',rel')).
 apply eq_Zeq.
 rewrite <- eqy; rewrite <- eqy'.
 red in fdomx.
 apply fdomx with xx'; trivial.
 rewrite eqx; rewrite eqx'.
-apply Zeq_eq; trivial.
+reflexivity.
 Qed.
 
 Lemma repl0 : forall (a:set) (R:set->set->Prop), set.
 intros a R.
 exists
  (fun a' => forall x,
-  Z.in_set x a' <-> exists2 y, Z2set y ∈ a & exists2 x', Z.eq_set x x' & downR R y x').
+  Z.in_set x a' <-> exists2 y, Z2set y ∈ a & downR R y x).
 split; intros.
- elim (Z2set_surj a); intros.
- elim Z.repl_ex with x (downR R); intros.
-  exists x0; intros.
-  rewrite H0.
-  split; intros.
-   destruct H1.
-   exists x2; trivial.
-   rewrite H.
-   apply inZ_in; trivial.
+ destruct (Z2set_surj a).
+ assert (R'm := fun x0 x' y y' (_:Z.in_set x0 x) => downRm R x0 x' y y').
+ assert (R'fun := fun x0 y y' (_:Z.in_set x0 x) => downR_fun R x0 y y').
+ destruct (Z.repl_ex x (downR R) R'm R'fun); intros.
+ exists x0; intros.
+ rewrite H0.
+ apply ex2_morph; red; intros.
+ 2:reflexivity.
+ split; intros.
+  rewrite H.
+  apply inZ_in; trivial.
 
-   destruct H1.
-   exists x2; trivial.
-   apply in_inZ.
-   rewrite <- H; trivial.
-
-  apply downR_fun with (1:=H1)(2:=H2); trivial.
+  apply in_inZ.
+  rewrite <- H; trivial.
 
  rewrite Z.eq_set_ax; intros.
  rewrite H.
@@ -629,76 +654,71 @@ Lemma repl0_mono :
 do 4 red; simpl; intros.
 rewrite in_set_elim in *.
 destruct H1.
-exists x1; trivial.
-clear z H1.
 destruct H2.
 simpl in *; intros.
-elim (Z2set_surj y); intros.
-destruct (Z.repl_ex x3 (downR y0)).
- intros.
- apply downR_fun with (1:=H5) (2:=H6); trivial.
-
+destruct (Z2set_surj y).
+assert (R'm := fun x x' y y' (_:Z.in_set x x3) => downRm y0 x x' y y').
+assert (R'fun := fun x y y' (_:Z.in_set x x3) => downR_fun y0 x y y').
+destruct (Z.repl_ex x3 (downR y0) R'm R'fun).
+exists x1; trivial.
 exists x4; trivial.
- intro; rewrite H4.
+ intro; rewrite H5.
  apply ex2_morph; red; intros; auto with *.
- rewrite H3.
- split; intros.
-  apply inZ_in; trivial.
-  apply in_inZ; trivial.
-
  rewrite H4.
- rewrite H1 in H2.
- clear x2 H1 x4 H4.
- destruct H2.
- destruct H2.
- exists x2.
-  apply in_inZ.
-  rewrite <- H3; apply H; trivial.
+ symmetry; apply in_equiv.
 
-  exists x4; trivial.
-  rewrite <- (fun e1 => downR_morph _ _ H0 x2 x2 e1 x4 x4); auto with *.
+ rewrite H5.
+ rewrite H2 in H3.
+ clear x2 H1 H2 x4 H5.
+ destruct H3.
+ exists x2.
+  apply H in H1.
+  rewrite H4 in H1; rewrite in_equiv in H1; trivial.
+
+  revert H2; apply iff_impl; apply downR_morph; auto with *.
 Qed. 
 
 Lemma repl_sig :
   { repl |
     Proper (incl_set ==> (eq_set ==> eq_set ==> iff) ==> incl_set) repl /\
     forall a (R:set->set->Prop),
-    (forall x x' y y', x ∈ a -> R x y -> R x' y' -> x == x' -> y == y') ->
-    forall x, x ∈ repl a R <-> (exists2 y, y ∈ a & exists2 x', x == x' & R y x') }.
+    (forall x x' y y', x ∈ a -> x == x' -> y == y' -> R x y -> R x' y') ->
+    (forall x y y', x ∈ a -> R x y -> R x y' -> y == y') ->
+    forall x, x ∈ repl a R <-> exists2 y, y ∈ a & R y x }.
 exists repl0; split.
  exact repl0_mono.
 split; intros.
- rewrite in_set_elim in H0.
- destruct H0.
- destruct H1; simpl in *.
- elim (proj1 (H1 x0) H2); intros.
+ rewrite in_set_elim in H1.
+ destruct H1.
+ destruct H2; simpl in *.
+ rewrite H2 in H3.
+ destruct H3.
  destruct H4.
  destruct H5.
- destruct H5.
- destruct H6.
- rewrite <- H5 in H3; clear x2 H5.
- apply Zeq_eq in H4.
- rewrite <- H4 in H6; clear x3 H4.
- exists x4; trivial.
- exists x5; trivial.
- rewrite H6.
- apply Eq_proj; trivial.
+ destruct H4.
+ exists x3.
+  rewrite H4; trivial.
+ revert H6; apply H; auto with *.
+  rewrite H4; trivial.
 
- destruct H0.
+  apply Eq_proj in H1.
+  rewrite H1; trivial.
+
  destruct H1.
  apply In_intro; simpl; intros.
- apply (proj2 (H4 x')); clear H4.
- elim (Z2set_surj x0); intros.
- exists x2.
+ rewrite H4; clear H4.
+ destruct (Z2set_surj x0).
+ exists x1.
   rewrite <- H4; trivial.
- exists x'.
-  reflexivity.
  exists x0.
   split; intros; eauto.
-  red; eauto.
- exists x1; auto.
- rewrite <- H1.
- apply Eq_proj; trivial.
+  red; intros.
+  apply H0 with x0; trivial.
+  revert H6; apply H; auto with *.
+  rewrite <- H7; trivial.
+
+  exists x; trivial.
+  apply Eq_proj; trivial.
 Defined.
 
 Definition repl := proj1_sig repl_sig.
@@ -707,8 +727,9 @@ Lemma repl_mono :
 Proof (proj1 (proj2_sig repl_sig)).
 Lemma repl_ax:
     forall a (R:set->set->Prop),
-    (forall x x' y y', x ∈ a -> R x y -> R x' y' -> x == x' -> y == y') ->
-    forall x, x ∈ repl a R <-> (exists2 y, y ∈ a & exists2 x', x == x' & R y x').
+    (forall x x' y y', x ∈ a -> x == x' -> y == y' -> R x y -> R x' y') ->
+    (forall x y y', x ∈ a -> R x y -> R x y' -> y == y') ->
+    forall x, x ∈ repl a R <-> exists2 y, y ∈ a & R y x.
 Proof proj2 (proj2_sig repl_sig).
 
 (* infinite set (natural numbers) *)
@@ -741,9 +762,8 @@ apply set_intro with
   rewrite H1.
   split; intros.
    destruct H2.
-   destruct H3.
-   destruct H4.
-   rewrite H3; trivial.
+   destruct H.
+   destruct H3; trivial.
 
    exists y.
     red in H2.
@@ -796,16 +816,12 @@ apply set_intro with
        rewrite <- H4.
        rewrite pair_ax in H6; destruct H6; trivial.
 
-    exists y; trivial.
-    reflexivity.
+    split; auto with *.
 
-   split; trivial; reflexivity.
+  rewrite <- H2; rewrite <- H3; trivial.
 
-  destruct H2.
-  destruct H3.
-  transitivity x0; trivial.
-   symmetry; trivial.
-  transitivity x'; trivial.
+  destruct H2; destruct H3.
+  rewrite <- H2; trivial.
 
  rewrite Z.eq_set_ax; split; intros.
   rewrite H0; rewrite H in H1; trivial.

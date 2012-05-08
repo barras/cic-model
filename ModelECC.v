@@ -294,12 +294,16 @@ red in |- *; destruct s2; simpl in |- *.
 
   destruct (eq_nat_dec n n0); intros; try discriminate.
   subst n0.
-  apply u_card_prod2; intros; auto.
+  apply u_card_prod; intros; auto.
    red; intros.
    apply int_morph; trivial.
    red; destruct i0; simpl; trivial; reflexivity.
 
-   apply (H _ H2).
+   elim n; intros.
+    apply u_card_incl_prop.
+    apply (H _ H2).
+
+    apply u_card_incl; trivial.
 
    red in H0; simpl in H0.
    apply H0.
@@ -484,6 +488,9 @@ Module ECC <: ECC_Model.
   Lemma u_card_in2 : forall n, u_card n ∈ u_card (S n).
   Proof ecc_in2.
 
+  Lemma u_card_incl_prop : forall x, x ∈ props -> x ∈ u_card 0.
+  Proof ecc_incl_prop.
+
   Lemma u_card_incl : forall n x, x ∈ u_card n -> x ∈ u_card (S n).
   Proof ecc_incl.
 
@@ -493,14 +500,14 @@ Module ECC <: ECC_Model.
     (forall x, x ∈ X -> Y x ∈ u_card n) ->
     CC.prod X Y ∈ u_card n.
   Proof ecc_prod.
-
+(*
   Lemma u_card_prod2 : forall n X Y,
     CC.eq_fun X Y Y ->
     X ∈ props ->
     (forall x, x ∈ X -> Y x ∈ u_card n) ->
     CC.prod X Y ∈ u_card n.
   Proof ecc_prod2.
-
+*)
 End ECC.
 
 Module ECC_Sound := MakeModel ECC.

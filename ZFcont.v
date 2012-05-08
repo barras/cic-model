@@ -2,10 +2,262 @@ Require Export basic.
 Require Import ZF ZFpairs ZFsum ZFfix ZFnats ZFord ZFstable ZFrank ZFrelations.
 Import ZFrepl.
 
-(* Continuity *)
+(** Geeralized continuity *)
 
 Definition continuous o F :=
   forall X, ext_fun o X -> F (sup o X) == sup o (fun z => F (X z)).
+
+Section Convergence.
+
+Variable o :set.
+Hypothesis oo : limitOrd o.
+Hypothesis F : set->set.
+Hypothesis Fm : morph1 F.
+Hypothesis Fcont : continuous o F.
+
+Lemma Fcont_mono :
+  (exists x, x ∈ o) -> Proper (incl_set==>incl_set) F.
+do 2 red; intros.
+destruct H as (w,?).
+assert (wo : isOrd w).
+ apply isOrd_inv with o; auto.
+assert (d : ~ w == osucc w).
+ intro.
+ apply (lt_antirefl w); trivial.
+ apply eq_elim with (osucc w); auto with *.
+ apply lt_osucc; trivial.
+pose (X:=fun o' => cond_set (o'==w) x ∪ cond_set (o'==osucc w) y).
+assert (Xm : morph1 X).
+ do 2 red; intros.
+ unfold X.
+ rewrite H1; reflexivity.
+red; intros.
+setoid_replace y with (sup o X).
+ rewrite (Fcont X); auto with *.
+ rewrite sup_ax.
+ 2:do 2 red; intros; apply Fm; auto with *.
+ exists w; trivial.
+ revert H1; apply eq_elim; apply Fm.
+ unfold X; apply eq_set_ax; intros z'.
+ rewrite union2_ax.
+ rewrite cond_set_ax.
+ rewrite cond_set_ax.
+ split; auto with *.
+ destruct 1 as [(?,?)|(?,?)]; trivial.
+ contradiction.
+
+ apply eq_set_ax; intros z'.
+ rewrite sup_ax; auto with *.
+ split; intros.
+  exists (osucc w).
+   apply oo; auto.
+  revert H2; apply eq_elim.
+  unfold X; apply eq_set_ax; intros z''.
+  rewrite union2_ax.
+  rewrite cond_set_ax.
+  rewrite cond_set_ax.
+  split; auto with *.
+  destruct 1 as [(?,?)|(?,?)]; trivial.
+  symmetry in H3; contradiction.
+
+  destruct H2.
+  apply union2_elim in H3; destruct H3; rewrite cond_set_ax in H3; destruct H3; auto. 
+Qed.
+
+Lemma cont_least_fix : F (TI F o) == TI F o.
+rewrite TI_eq; auto.
+red in Fcont.
+rewrite Fcont; auto.
+apply eq_set_ax; intros z.
+rewrite sup_ax; auto.
+2:do 2 red; intros; apply Fm; apply Fm; apply TI_morph; trivial.
+rewrite sup_ax; auto.
+split; destruct 1.
+ exists (osucc x).
+  apply oo; trivial.
+  rewrite TI_mono_succ; trivial.
+   apply Fcont_mono; eauto.
+   apply isOrd_inv with o; auto.
+
+ assert (isOrd x) by eauto using isOrd_inv.
+ assert (Fmono : Proper (incl_set==>incl_set) F).
+  apply Fcont_mono; eauto.
+ exists x; trivial.
+ rewrite <- TI_mono_succ; auto.
+ revert H0; apply Fmono.
+ apply TI_incl; auto.
+Qed.
+
+End Convergence.
+(*
+Section ConvergenceOmega.
+
+Variable F :set -> set.
+Hypothesis Fm : morph1 F.
+Hypothesis Fcont : continuous N F.
+
+
+Let Fmono : Proper (incl_set ==> incl_set) F.
+do 2 red; intros.
+pose (X:=natrec x (fun _ _ => y)).
+assert (Xm : morph1 X).
+ do 2 red; intros.
+ unfold X.
+ apply natrec_morph; auto with *.
+ do 2 red; reflexivity.
+red; intros.
+setoid_replace y with (sup N X).
+ rewrite (Fcont X); auto with *.
+ rewrite sup_ax.
+ 2:do 2 red; intros; apply Fm; auto with *.
+ exists zero; [apply zero_typ|].
+ revert H0; apply eq_elim; apply Fm.
+ unfold X; rewrite natrec_0; reflexivity.
+
+ apply eq_set_ax; intros z'.
+ rewrite sup_ax; auto with *.
+ split; intros.
+  exists (succ zero).
+   apply succ_typ; apply zero_typ.
+  revert H1; apply eq_elim.
+  unfold X; rewrite natrec_S; auto with *.
+   do 3 red; reflexivity.
+   apply zero_typ.
+  destruct H1.
+  revert H2; apply N_ind with (4:=H1); intros.
+   rewrite <- H3 in H5; auto.
+
+   unfold X in H2; rewrite natrec_0 in H2; auto.
+
+   unfold X in H4; rewrite natrec_S in H4; auto.
+   do 3 red; reflexivity.
+Qed.
+
+  Let Data n := TI F (natrec zero (fun _=>osucc) n).
+
+  Lemma Data_eq : TI F omega == sup N Data.
+apply incl_eq.
+ red; intros.
+ apply TI_elim in H; auto.
+ destruct H.
+ rewrite sup_ax.
+  exists (TI succ x).
+apply isOrd_ind with (x:=x); intros.
+2:apply isOrd_inv with omega; trivial.
+
+
+ elim isOrd_omega using isOrd_ind; intros.
+ red; intros.
+ apply TI_elim in H2; auto with *.
+ destruct H2.
+
+; red; intros.
+ revert 
+
+
+elim isOrd_oemga 
+
+
+  Let G n := TI F (nat2ordset n).
+
+  Lemma G_incl_succ : forall k, G k ⊆ G (S k).
+unfold G; simpl; intros.
+apply TI_incl; auto with *.
+Qed.
+
+  Lemma G_eq : forall k, G (S k) == F (G k).
+unfold G; simpl; intros.
+apply TI_mono_succ; auto with *.
+Qed.
+
+  Lemma G_incl : forall k k', (k <= k')%nat -> G k ⊆ G k'.
+induction 1; intros.
+ red; auto.
+ red; intros.
+ apply (G_incl_succ m z); auto.
+Qed.
+
+  Lemma G_intro : forall k, G k ⊆ TI F omega.
+unfold G; intros.
+apply TI_incl; auto with *.
+apply isOrd_sup_intro with (S k); simpl; auto.
+apply lt_osucc; auto.
+Qed.
+
+  Lemma G_elim : forall x,
+    x ∈ TI F omega -> exists k, x ∈ G k.
+unfold G; intros.
+apply TI_elim in H; auto with *.
+destruct H.
+apply isOrd_sup_elim in H; destruct H.
+exists x1.
+apply TI_intro with x0; auto with *.
+Qed.
+
+  Lemma G_fix : forall (P:set->Prop),
+    (forall k,
+     (forall k' x, (k' < k)%nat -> x ∈ G k' -> P x) ->
+     (forall x, x ∈ G k -> P x)) ->
+    forall x, x ∈ TI F omega -> P x.
+intros.
+apply G_elim in H0; destruct H0.
+revert x H0.
+Require Import Wf_nat.
+elim (lt_wf x0); intros.
+eauto.
+Qed.
+
+  Lemma List_eqn : TI F omega == F (TI F omega).
+apply eq_intro; intros.
+ apply G_elim in H; destruct H.
+ apply G_incl_succ in H.
+ rewrite G_eq in H.
+ eapply Fmono with (G x); trivial.
+ apply G_intro.
+
+ elim H using LISTf_ind; intros.
+  do 2 red; intros.
+  rewrite H0; reflexivity.
+
+  apply List_intro with 1; rewrite Lstn_eq.
+  apply Nil_typ0; trivial.
+
+  apply List_elim in H1; destruct H1 as (k,H1).
+  apply List_intro with (S k); rewrite Lstn_eq.
+  apply Cons_typ0; auto.
+Qed.
+
+
+
+Lemma cont_least_fix_omega : F (TI F omega) == TI F omega.
+rewrite TI_eq; auto.
+red in Fcont.
+rewrite Fcont; auto.
+apply eq_set_ax; intros z.
+rewrite sup_ax; auto.
+2:do 2 red; intros; apply Fm; apply Fm; apply TI_morph; trivial.
+rewrite sup_ax; auto.
+split; destruct 1.
+ exists (osucc x).
+  apply oo; trivial.
+  rewrite TI_mono_succ; trivial.
+   apply Fcont_mono; eauto.
+   apply isOrd_inv with o; auto.
+
+ assert (isOrd x) by eauto using isOrd_inv.
+ assert (Fmono : Proper (incl_set==>incl_set) F).
+  apply Fcont_mono; eauto.
+ exists x; trivial.
+ rewrite <- TI_mono_succ; auto.
+ revert H0; apply Fmono.
+ apply TI_incl; auto.
+Qed.
+
+
+
+End ConvergenceOmega.
+*)
+(** A small libary of continuous functions *)
 
 Lemma cst_cont : forall X o, (exists y, lt y o) -> X == sup o (fun _ => X).
 intros.
@@ -38,6 +290,25 @@ apply eq_intro; intros.
  rewrite sup_ax in H1; auto.
  destruct H1.
  apply sum_mono with (F x) (G x); auto.
+Qed.
+
+  Lemma sup_cont : forall o F G,
+    ext_fun o F ->
+    ext_fun o G ->
+    sup o F ∪ sup o G == sup o (fun y => F y ∪ G y).
+intros.
+apply eq_set_ax; intros z.
+rewrite union2_ax.
+repeat rewrite sup_ax; auto with *.
+ split; intros.
+  destruct H1 as [(o',?,?)|(o',?,?)]; exists o'; trivial.
+   apply union2_intro1; trivial.
+   apply union2_intro2; trivial.
+
+  destruct H1 as (o',?,?).
+  apply union2_elim in H2; destruct H2;[left|right]; exists o'; trivial.
+
+ do 2 red; intros; apply union2_morph; auto.
 Qed.
 
   Lemma sigma_cont dom A f :

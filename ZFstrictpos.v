@@ -166,7 +166,7 @@ Qed.
 
 Lemma sp_morph : forall p, eq_pos p p -> morph1 (pos_oper p).
 intros.
-apply ZFfix.Fmono_morph.
+apply Fmono_morph.
 apply sp_mono; trivial.
 Qed.
 

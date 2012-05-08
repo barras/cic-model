@@ -1,6 +1,6 @@
 Require Import basic.
 
-(* In this file we show that Coq universes allows to build
+(** In this file we show that Coq universes allows to build
    Grothendieck universes.
    We take two copies of the set type, and we embed the
    "big set" of all the "small sets" (that we call U),
@@ -9,13 +9,17 @@ Require Import basic.
 
 Require Ens0.
 Require Ens.
-Module S := Ens0.IZF_R. (* small sets *)
-Module B := Ens.IZF_R. (* big sets *)
 
+(** Level 1: small sets *)
+Module S := Ens0.IZF_R.
+(** Level 2 : big sets *)
+Module B := Ens.IZF_R.
+
+(** Notations for big sets *)
 Notation "x ∈ y" := (B.in_set x y) (at level 60).
 Notation "x == y" := (B.eq_set x y) (at level 70).
 
-(* This definition implies that the universe of indexes of small
+(** This definition implies that the universe of indexes of small
    sets is lower than (or equal to) the universes of indexes of
    large sets (Ens0.Tlo <= Ens.Tlo)
  *)
@@ -23,6 +27,8 @@ Fixpoint injU (a:S.set) : B.set :=
   match a with
     S.sup X f => B.sup X (fun i => injU (f i))
   end.
+
+(** Soundness of lifting *)
 
 Lemma lift_eq : forall x y, S.eq_set x y -> injU x == injU y.
 intros.
@@ -83,20 +89,20 @@ apply B.eq_elim with y; trivial.
 apply B.in_reg with x; trivial.
 Qed.
 
-(* Now the universe of small sets is lower than (or equal to)
+(** With the following, the universe of small sets is lower than (or equal to)
    the universe of indexes of big sets (Ens0.Thi <= Ens.Tlo).
  *)
 Definition U : B.set := B.sup S.set injU.
-
-Lemma U_elim : forall x, x ∈ U -> exists x', x == injU x'.
-destruct 1.
-exists x0; trivial.
-Qed.
 
 Lemma U_intro : forall x, injU x ∈ U.
 red; intros.
 exists x.
 apply B.eq_set_refl.
+Qed.
+
+Lemma U_elim : forall x, x ∈ U -> exists x', x == injU x'.
+destruct 1.
+exists x0; trivial.
 Qed.
 
 Lemma injU_elim : forall x y, x ∈ injU y -> x ∈ U.
@@ -105,7 +111,7 @@ exists (f x0).
 assumption.
 Qed.
 
-(* Equivalence of all set-theoretical constructions *)
+(** Equivalence of all set-theoretical constructions *)
 
 Lemma pair_equiv : forall x y,
   B.pair (injU x) (injU y) == injU (S.pair x y).
@@ -348,7 +354,7 @@ destruct S.repl_ax with x (fun x y => R (injU x) (injU y)) as (b,Hb).
   apply B.eq_set_sym; trivial.
 Qed.
 
-(* If the small sets are closed under collection, then so
+(** If the small sets are closed under collection, then so
    is U. *)
 Lemma U_coll : forall a R,
   Proper (B.eq_set==>B.eq_set==>iff) R ->
@@ -389,7 +395,7 @@ destruct S.coll_ax_ttcoll with a' (fun x y => R (injU x) (injU y)).
     apply B.eq_set_refl.
 Qed.
 
-(* Grothendieck universe *)
+(** Grothendieck universe *)
 Record grot_univ (U:B.set) : Prop := {
   G_trans : forall x y, y ∈ x -> x ∈ U -> y ∈ U;
   G_pair : forall x y, x ∈ U -> y ∈ U -> B.pair x y ∈ U;
@@ -409,8 +415,10 @@ constructor.
  apply U_repl.
 Qed.
 
+(* begin hide *)
 (* Weak Grothendieck universe: closure only under
-   *functional* replacement.
+   *functional* replacement. Uses *relational* replacement
+   on small sets.
  *)
 Record grot_univ1 (U:B.set) : Prop := {
   G_trans1 : forall x y, y ∈ x -> x ∈ U -> y ∈ U;
@@ -494,3 +502,4 @@ constructor.
    apply B.eq_set_trans with (1:=H3).
    apply B.eq_set_sym; trivial.
 Qed.
+(* end hide *)

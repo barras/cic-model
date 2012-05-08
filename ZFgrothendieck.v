@@ -176,12 +176,12 @@ Qed.
 
   Lemma G_sum X Y : X ∈ U -> Y ∈ U -> sum X Y ∈ U.
 unfold sum; intros.
-apply G_subset; trivial.
-apply G_prodcart; trivial.
- apply G_nat with X; trivial.
- do 2 apply ZFnats.succ_typ; apply ZFnats.zero_typ.
+apply G_union2; apply G_prodcart; trivial.
+ apply G_singl; apply G_nat with X; trivial.
+ apply ZFnats.zero_typ.
 
- apply G_union2; trivial.
+ apply G_singl; apply G_nat with X; trivial.
+ apply ZFnats.succ_typ;  apply ZFnats.zero_typ.
 Qed.
 
 Lemma G_sumcase A B f g a :
@@ -388,14 +388,7 @@ apply G_TI; intros; trivial.
  apply G_union2; trivial.
   apply G_pair; trivial; apply G_trans with omega; trivial; apply zero_omega.
 
-  apply G_sup; trivial.  
-   do 2 red; intros; apply replf_morph; auto with *.
-   red; intros; apply couple_morph; trivial.
-
-   intros.
-   apply G_replf; intros; trivial.
-    do 2 red; intros; apply couple_morph; auto with *.
-   apply G_couple; eauto using G_trans.
+  apply G_prodcart; trivial.  
 Qed.
 
 

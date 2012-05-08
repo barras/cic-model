@@ -530,6 +530,43 @@ intros; rewrite eq_set_ax; split; apply repl1_mono; intros; auto.
  apply eq_set_sym; trivial.
 Qed.
 
+Section WellFoundedRecursion.
+Variable f : set -> set.
+Hypothesis fm : Proper (eq_set==>eq_set) f.
+
+Fixpoint WFR (x:set) (p:Acc in_set x) {struct p} : set :=
+  f (repl1 x (fun (y:el x) =>
+               WFR (proj1_sig y) (Acc_inv p (proj2_sig y)))).
+(*
+Definition toWf x := subset x (Acc in_set).
+
+Lemma toWf_ok x : Acc in_set (toWf x).
+constructor; intros.
+unfold toWf in H; rewrite subset_ax in H.
+destruct H as (_,(y',?,?)).
+apply subset_elim2 in H; destruct H.
+
+Definition WFR' x :=
+  WFR
+*)
+Lemma WFR_eqn x p : WFR x p == f (repl1 x (fun y => WFR _ (Acc_inv p (proj2_sig y)))).
+destruct p; simpl.
+apply eq_set_refl.
+Qed.
+
+Lemma WFR_irrel x p x' p' : x==x' -> WFR x p == WFR x' p'.
+revert x p x' p'.
+fix WFRi 2.
+destruct p; simpl; intros.
+apply eq_set_trans with (2:=eq_set_sym _ _ (WFR_eqn x' p')).
+apply fm; apply repl1_morph; intros; trivial.
+apply WFRi; trivial.
+Qed.
+
+End WellFoundedRecursion.
+
+
+
 (** Relational replacement *)
 
 (** We only use the following instance of TTRepl for replacement: *)
@@ -547,6 +584,21 @@ Record repl_dom a (R:set->set->Prop) := mkRi {
     If L is classical logic, we would have a model of ZF in Coq+TTRepl.
  *)
 Hypothesis intuit : forall P:Prop, (#P) -> P.
+
+Lemma weak_uniq_R : forall a (R:set->set->Prop),
+    (forall x x' y y', x ∈ a -> x == x' -> y == y' -> R x y -> R x' y') ->
+    (forall x y y', x ∈ a -> R x y -> R x y' -> y == y') ->
+    (forall x x' y y', x ∈ a -> R x y -> R x' y' -> x == x' -> y == y').
+intros.
+apply H0 with x; trivial.
+revert H3; apply H.
+ apply in_reg with x; trivial.
+
+ apply eq_set_sym; trivial.
+
+ apply eq_set_refl.
+Qed.
+
 Lemma intuit_repl_ax a (R:set->set->Prop) :
     (forall x x' y y', x ∈ a -> x == x' -> y == y' -> R x y -> R x' y') ->
     (forall x y y', x ∈ a -> R x y -> R x y' -> y == y') ->
@@ -713,57 +765,71 @@ split; intros.
 Qed.
 
 Lemma repl_from_collection : forall a (R:set->set->Prop),
-    (forall x x' y y', x ∈ a -> R x y -> R x' y' -> x == x' -> y == y') ->
-    exists b, forall x, x ∈ b <->
-                 #exists2 y, y ∈ a & exists2 x', x == x' & R y x'.
-intros a R Rfun.
+    (forall x x' y y', x ∈ a -> x == x' -> y == y' -> R x y -> R x' y') ->
+    (forall x y y', x ∈ a -> R x y -> R x y' -> y == y') ->
+    exists b, forall x, x ∈ b <-> #exists2 y, y ∈ a & R y x.
+intros a R Rm Ru.
+assert (Rfun : forall x x' y y', x ∈ a -> R x y -> R x' y' -> x == x' -> y == y').
+ apply weak_uniq_R; trivial.
 destruct (collection_ax a (mkRel R) (mkRel_morph R)) as (B,HB).
 exists (subset B (fun y => exists2 x, x ∈ a & R x y)); split; intros.
  rewrite subset_ax in H; destruct H.
  Tdestruct H0 as (y,?,(x',?,?)).
  Texists x'; trivial.
- exists y; auto.
+ revert H2; apply Rm; trivial.
+  apply eq_set_refl.
+  apply eq_set_sym; trivial.
 
- Tdestruct H as (x',?,(y,?,?)).
+ Tdestruct H as (x',?,?).
  rewrite subset_ax; split.
   elim HB with x' using Tr_ind; clear HB; trivial.
    intros (y',?,(x'',?,(y'',?,?))).
    apply in_reg with y'; trivial.
    apply eq_set_trans with y''; trivial.
-   apply eq_set_trans with y;[|apply eq_set_sym; trivial].
    apply Rfun with x'' x'; trivial.
     apply in_reg with x'; trivial.
     apply eq_set_sym; trivial.
 
-   Texists y.
+   Texists x.
    exists x'; [apply eq_set_refl|].
-   exists y; auto using eq_set_refl.
+   exists x; auto using eq_set_refl.
 
- Texists y; trivial.
+ Texists x; trivial.
+  apply eq_set_refl.
  exists x'; auto.
 Qed.
 
+(* begin hide *)
 (** ttrepl_needed_for_replacement proof not completed *)
 Lemma ttrepl_needed_for_replacement : ttrepl eq_set.
 red; red; intros.
-(* Note quite: we need a set [a] with an injection from X to elements of a *)
+(* Not quite: we need a set [a] with an injection from X to elements of a *)
 assert (exists2 a, X = idx a & forall i i', elts a i == elts a i' -> i=i') by admit.
 destruct H1 as (a,?,elinj); subst X.
 pose (R' x y := exists2 i, x == elts a i & exists2 y', y == y' & R i y').
-assert (R'fun : forall x x' y y', x ∈ a -> R' x y -> R' x' y' -> x == x' -> y == y').
+assert (R'm : forall x x' y y', x ∈ a -> x == x' -> y == y' -> R' x y -> R' x' y').
+ intros.
+ destruct H4 as (i,?,(y0,?,?)).
+ exists i.
+  apply eq_set_trans with x; trivial.
+  apply eq_set_sym; trivial.
+ exists y0; trivial.
+ apply eq_set_trans with y; trivial.
+ apply eq_set_sym; trivial.
+assert (R'u : forall x y y', x ∈ a -> R' x y -> R' x y' -> y == y').
  intros.
  destruct H2 as (i,?,(z,?,?)).
  destruct H3 as (i',?,(z',?,?)).
  apply eq_set_trans with z; trivial.
  apply eq_set_trans with z'.
-  2:apply eq_set_sym; trivial.
+ 2:apply eq_set_sym; trivial.
+ apply H0 with i'; trivial.
  assert (elts a i == elts a i').
   apply eq_set_trans with x; [apply eq_set_sym; trivial|].
-  apply eq_set_trans with x'; trivial.
- apply elinj in H9.
- apply H0 with i'; trivial.
+  trivial.
+ apply elinj in H8.
  subst i'; trivial.
-destruct (repl_from_collection a R' R'fun).
+destruct (repl_from_collection a R' R'm R'u).
 exists (fun y => union (subset x (fun z => R y z))).
 intro.
 destruct H with x0.
@@ -776,7 +842,6 @@ apply eq_set_ax; split; intros.
   rewrite H1.
   Texists (elts a x0).
    Texists x0; apply eq_set_refl.
-  exists x1;[apply eq_set_refl|].
   exists x0;[apply eq_set_refl|].
   exists x1; trivial.
   apply eq_set_refl.
@@ -792,7 +857,7 @@ apply eq_set_ax; split; intros.
  apply eq_set_trans with x3; trivial.
  apply H0 with x0; trivial.
 Qed.
-
+(* end hide *)
 
 (* Deriving the existentially quantified sets *)
 
@@ -869,7 +934,7 @@ Qed.
 
 (* Better use intuit_repl_ax ? *)
 Definition repl_ex :=
-  fun a R Rm => TrI(repl_from_collection a R Rm).
+  fun a R Rm Ru => TrI(repl_from_collection a R Rm Ru).
 
 Definition coll_ex :=
   fun a R Rm => TrI(collection_ax a R Rm).

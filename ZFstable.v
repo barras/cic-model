@@ -45,7 +45,7 @@ apply eq_intro.
 Qed.
 Hint Resolve increasing_is_ext.
 
-(* Stable functions *)
+(** Stable functions *)
 
 Definition stable2 F :=
   forall X Y, F X ∩ F Y ⊆ F (X ∩ Y).
@@ -75,6 +75,7 @@ apply inter_intro.
   red; red; intros; apply H; trivial.
 Qed.
 
+(** Library of stable operators *)
 Lemma cst_stable : forall A, stable (fun _ => A).
 red; red; intros.
 apply inter_elim with (1:=H) (y:=A).
@@ -394,7 +395,7 @@ apply cc_prod_intro.
 Qed.
 
 
-(* Stability of ordinal-indexed families *)
+(** Stability of ordinal-indexed families *)
 
 Definition stable2_ord F :=
   forall x, isOrd x ->

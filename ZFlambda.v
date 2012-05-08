@@ -12,6 +12,24 @@ Section LambdaTerms.
   Variable A : set.
 
   Definition LAMf (X:set) :=
+    prodcart (singl zero) N ∪
+    prodcart (singl (succ zero)) A ∪
+    (prodcart (singl (succ (succ zero))) (prodcart X X) ∪
+     prodcart (singl (succ (succ (succ zero)))) X).
+
+Instance LAMf_mono : Proper (incl_set ==> incl_set) LAMf.
+do 2 red; intros.
+unfold LAMf.
+do 2 apply union2_mono; apply prodcart_mono; auto with *.
+apply prodcart_mono; trivial.
+Qed.
+
+Instance LAMf_morph : Proper (eq_set ==> eq_set) LAMf.
+apply Fmono_morph; apply LAMf_mono.
+Qed.
+
+(*
+  Definition LAMf (X:set) :=
     replf N (fun n => couple zero n) ∪
     replf A (fun x => couple (succ zero) x) ∪
     (replf (prodcart X X) (fun p => couple (succ (succ zero)) p) ∪
@@ -47,12 +65,46 @@ apply eq_intro; intros.
  red; intros.
  rewrite H; auto.
 Qed.
-
+*)
   Definition Var n := couple zero n.
   Definition Cst x := couple (succ zero) x.
   Definition App a b := couple (succ (succ zero)) (couple a b).
   Definition Abs a := couple (succ (succ (succ zero))) a.
 
+  Lemma LAMf_ind : forall X (P : set -> Prop),
+    Proper (eq_set ==> iff) P ->
+    (forall n, n ∈ N -> P (Var n)) ->
+    (forall x, x ∈ A -> P (Cst x)) ->
+    (forall a b, a ∈ X -> b ∈ X -> P (App a b)) ->
+    (forall a, a ∈ X -> P (Abs a)) ->
+    forall a, a ∈ LAMf X -> P a.
+unfold LAMf; intros.
+apply union2_elim in H4; destruct H4 as [H4|H4];
+ apply union2_elim in H4; destruct H4.
+  rewrite surj_pair with (1:=H4).
+  rewrite (singl_elim _ _ (fst_typ _ _ _ H4)).
+  apply H0.
+  apply snd_typ in H4; trivial.
+
+  rewrite surj_pair with (1:=H4).
+  rewrite (singl_elim _ _ (fst_typ _ _ _ H4)).
+  apply H1.
+  apply snd_typ in H4; trivial.
+
+  rewrite surj_pair with (1:=H4).
+  rewrite (singl_elim _ _ (fst_typ _ _ _ H4)).
+  apply snd_typ in H4.
+  rewrite surj_pair with (1:=H4).
+  apply H2.
+   apply fst_typ in H4; trivial.
+   apply snd_typ in H4; trivial.
+
+  rewrite surj_pair with (1:=H4).
+  rewrite (singl_elim _ _ (fst_typ _ _ _ H4)).
+  apply H3.
+  apply snd_typ in H4; trivial.
+Qed.
+(*
   Lemma LAMf_ind : forall X (P : set -> Prop),
     Proper (eq_set ==> iff) P ->
     (forall n, n ∈ N -> P (Var n)) ->
@@ -95,51 +147,38 @@ apply union2_elim in H4; destruct H4 as [H4|H4];
    do 2 red; intros.
    rewrite H6; reflexivity.
 Qed.
-
+*)
   Lemma Var_typ : forall X n,
     n ∈ N -> Var n ∈ LAMf X.
 intros.
 unfold Var, LAMf.
-apply union2_intro1; apply union2_intro1; apply replf_intro with n; auto.
- do 2 red; intros.
- rewrite H1; reflexivity.
-
- reflexivity.
+apply union2_intro1; apply union2_intro1.
+apply couple_intro;[apply singl_intro|trivial].
 Qed.
 
   Lemma Cst_typ : forall X x,
     x ∈ A -> Cst x ∈ LAMf X.
 intros.
 unfold Cst, LAMf.
-apply union2_intro1; apply union2_intro2; apply replf_intro with x; auto.
- do 2 red; intros.
- rewrite H1; reflexivity.
-
- reflexivity.
+apply union2_intro1; apply union2_intro2.
+apply couple_intro;[apply singl_intro|trivial].
 Qed.
 
   Lemma App_typ : forall X a b,
     a ∈ X -> b ∈ X -> App a b ∈ LAMf X.
 intros.
 unfold App, LAMf.
-apply union2_intro2; apply union2_intro1; apply replf_intro with (couple a b); auto.
- do 2 red; intros.
- rewrite H2; reflexivity.
-
- apply couple_intro; trivial.
-
- reflexivity.
+apply union2_intro2; apply union2_intro1.
+apply couple_intro;[apply singl_intro|trivial].
+apply couple_intro; trivial.
 Qed.
 
   Lemma Abs_typ : forall X a,
     a ∈ X -> Abs a ∈ LAMf X.
 intros.
 unfold Abs, LAMf.
-apply union2_intro2; apply union2_intro2; apply replf_intro with a; auto.
- do 2 red; intros.
- rewrite H1; reflexivity.
-
- reflexivity.
+apply union2_intro2; apply union2_intro2.
+apply couple_intro;[apply singl_intro|trivial].
 Qed.
 
 
@@ -228,7 +267,6 @@ elim H6 using Lamn_case; intros; eauto.
  apply H3; eauto.
   apply Lambda_intro in H8; trivial.
 Qed.
- 
 
   Lemma Lambda_eqn : Lambda == LAMf Lambda.
 apply eq_intro; intros.
@@ -434,8 +472,8 @@ unfold replSAT.
 intros.
 rewrite repl_ax.
  split; intros.
-  destruct H0 as (y,isSet,(z',eq_z,img)).
-  rewrite <- eq_z in img; exists (sSAT y); trivial.
+  destruct H0 as (y,isSet,img).
+  exists (sSAT y); trivial.
 
   destruct H0.
   exists (iSAT x).
@@ -443,12 +481,13 @@ rewrite repl_ax.
    unfold iSAT in H1.
    apply subset_elim1 in H1; trivial.
 
-   exists z; try reflexivity.
    rewrite iSAT_id; trivial.
 
  intros.
- rewrite H1; rewrite H2.
- rewrite H3; reflexivity.
+ rewrite <- H2; rewrite <- H1; trivial.
+
+ intros.
+ rewrite H1; rewrite H2; reflexivity.
 Qed.
 
 

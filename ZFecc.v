@@ -36,6 +36,15 @@ apply G_trans with (ecc n); trivial.
  apply ecc_in2.
 Qed.
 
+Lemma ecc_incl_prop : forall x, x ∈ props -> x ∈ ecc 0.
+simpl; intros.
+apply G_trans with props; trivial.
+ apply (grot_succ_typ gr).
+
+ apply grot_succ_in.
+ exact gr.
+Qed.
+
 Lemma ecc_prod : forall n X Y,
   ext_fun X Y ->
   X ∈ ecc n ->

@@ -1,12 +1,11 @@
-Require Import ZF ZFrelations ZFnats ZFord ZFfix.
-Require Import ZFstable.
-Require Import ZFfunext.
-
-(* Specialized version of transfinite recursion where the case of limit
+(** Specialized version of transfinite recursion where the case of limit
    ordinals is union and the stage ordinal is fed to the step function.  *)
+
+Require Import ZF ZFrelations ZFnats ZFord ZFfunext.
+
 Section TransfiniteIteration.
 
-  (* (F o x) produces value for stage o+1 given x the value for stage o *)
+  (** (F o x) produces value for stage o+1 given x the value for stage o *)
   Variable F : set -> set -> set.
   Hypothesis Fmorph : morph2 F.
 
@@ -28,6 +27,7 @@ red; intros.
 apply Fmorph; auto.
 Qed.
 
+  (** Definition of the recursor *)
   Definition REC := TR G.
 
   Instance REC_morph : morph1 REC.
@@ -70,6 +70,22 @@ rewrite REC_eq in H0; trivial.
 rewrite sup_ax in H0; auto.
 Qed.
 
+  Lemma REC_mono : increasing REC.
+do 2 red; intros.
+apply REC_elim in H2; intros; auto with *.
+destruct H2.
+apply REC_intro with x0; auto with *.
+apply H1 in H2; trivial.
+Qed.
+
+  Lemma REC_incl : forall o, isOrd o ->
+    forall o', lt o' o ->
+    REC o' ⊆ REC o.
+intros.
+apply REC_mono; trivial; auto.
+apply isOrd_inv with o; trivial.
+Qed.
+
   Lemma REC_initial : REC zero == empty.
 apply empty_ext; red; intros.
 apply REC_elim in H.
@@ -103,7 +119,8 @@ Qed.
 End TransfiniteIteration.
 Hint Resolve REC_fun_ext.
 
-(* When the operator is monotone, we have additional properties: *)
+(*
+(** When the operator is monotone, we have additional properties: *)
 
 Section IterMonotone.
 
@@ -111,22 +128,6 @@ Section IterMonotone.
   Hypothesis Fmorph : morph2 F.
   Variable Fmono : forall o o', isOrd o -> isOrd o' -> o ⊆ o' ->
     REC F o ⊆ REC F o' -> F o (REC F o) ⊆ F o' (REC F o').
-
-  Lemma REC_mono : increasing (REC F).
-do 2 red; intros.
-apply REC_elim in H2; intros; auto with *.
-destruct H2.
-apply REC_intro with x0; auto with *.
-apply H1 in H2; trivial.
-Qed.
-
-  Lemma REC_incl : forall o, isOrd o ->
-    forall o', lt o' o ->
-    REC F o' ⊆ REC F o.
-intros.
-apply REC_mono; trivial; auto.
-apply isOrd_inv with o; trivial.
-Qed.
 
 
   Lemma REC_mono_succ : forall o,
@@ -162,9 +163,12 @@ rewrite <- REC_mono_succ.
 Qed.
 
 End IterMonotone.
-
+*)
 Existing Instance REC_morph.
 
+(** Building a function by transfinite iteration. The domain of the
+    function grows along the iteration process.
+ *)
 
 (* Attempt to abstract over the lattice of object built by recursion:
 
@@ -196,20 +200,21 @@ Existing Instance REC_morph.
 
 Section Recursor.
 
-  (* The maximal ordinal we are allowed to apply the recursive function *)
+  (** The maximal ordinal we are allowed to iterate over *)
   Variable ord : set.
   Hypothesis oord : isOrd ord.
 
 Let oordlt := fun o olt => isOrd_inv _ o oord olt.
 
-  (* The domain of the function to build: *)
+  (** The domain of the function to build (indexed by ordinals): *)
   Variable T : set -> set.
 
-  (* The invariant (e.g. typing) *)
+  (** An invariant (e.g. typing) *)
   Variable Q : set -> set -> Prop.
 
   Let Ty o f := isOrd o /\ is_cc_fun (T o) f /\ Q o f.
 
+  (** The step function *)
   Variable F : set -> set -> set.
 
   Definition stage_irrelevance :=
@@ -220,6 +225,7 @@ Let oordlt := fun o olt => isOrd_inv _ o oord olt.
     fcompat (T o) f g ->
     fcompat (T (osucc o)) (F o f) (F o' g).
 
+  (** Assumptions *)
   Record recursor := mkRecursor {
     rec_dom_m    : morph1 T;
     rec_dom_cont : forall o, isOrd o ->
@@ -427,7 +433,7 @@ transitivity (cc_app (F z (REC F z)) x0).
   apply osup2_incl2; auto.
 Qed.
 
-
+(** Invariant [inv] holds for any ordinal up to [ord]. *)
 Lemma REC_inv : forall o,
   isOrd o -> o ⊆ ord -> inv o.
 intros o oo ole.
@@ -450,7 +456,7 @@ split.
   apply H0; trivial.
 Qed.
 
-Lemma REC_step' : forall o o',
+Lemma REC_step : forall o o',
   isOrd o ->
   isOrd o' ->
   o ⊆ o' ->
@@ -488,57 +494,29 @@ apply prd_sup_lub; intros; auto.
   apply isOrd_trans with o; auto.
   apply ole_lts; auto.
 Qed.
-
-Lemma REC_step : forall o,
-  isOrd o ->
-  o ⊆ ord ->
-  fcompat (T o) (REC F o) (F o (REC F o)).
-intros.
-destruct REC_inv with o; trivial.
-rewrite REC_eq with (o:=o) at 1; trivial.
-rewrite Tcont; trivial.
-assert (o ⊆ osucc o).
- red; intros; apply isOrd_trans with o; auto.
-apply prd_sup_lub; intros; auto.
- red; red; intros; apply Tm.
- rewrite H5; reflexivity.
-
- apply Ftyp'; auto.
- apply REC_inv; eauto using isOrd_inv.
-
- red; auto.
-
- red; intros.
- apply H2.
-  apply isOrd_trans with o; auto.
-
-  apply lt_osucc; trivial.
-
-  rewrite inter2_def; split; trivial.
-  revert H5; apply Tmono; auto.
-Qed.
-
+(*
 Lemma REC_step0 : forall o o',
   isOrd o ->
   isOrd o' ->
   o ∈ o' ->
   o' ⊆ ord ->
-  fcompat (T (osucc o)) (REC F o') (F o (REC F o)).
+  fcompat (T (osucc o)) (F o (REC F o)) (REC F o').
 red; intros.
 destruct REC_inv with o'; trivial.
 do 2 red in H5.
 transitivity (cc_app (F o' (REC F o')) x).
- apply REC_step; auto.
- apply Tmono with (o':=o); auto.
-
  apply H5.
-  apply lt_osucc; trivial.
   apply isOrd_trans with o'; auto.
+  apply lt_osucc; trivial.
+
   rewrite inter2_def; split; trivial.
   apply Tmono with (o':=o); auto.
   apply isOrd_trans with o'; auto.
-Qed.
 
+ symmetry; apply REC_step; auto with *.
+ apply Tmono with (o':=o); auto.
+Qed.
+*)
 
 Section REC_Eqn.
 
@@ -576,7 +554,7 @@ Qed.
     P ord x (cc_app (REC F ord) x).
 intros.
 revert x H1; apply isOrd_ind with (2:=oord); intros.
-rewrite (REC_step' y ord H1 oord H2 (fun _ x => x) x); trivial.
+rewrite (REC_step y ord H1 oord H2 (fun _ x => x) x); trivial.
 apply H0; trivial.
 intros.
 assert (fcompat (T o') (REC F o') (REC F ord)).
@@ -643,10 +621,18 @@ destruct H4.
 assert (tyRx0 : Ty x0 (REC F x0)).
  apply REC_inv; eauto using isOrd_inv.
 red in H0; rewrite H0 with (o':=x0) (x:=x); auto.
- rewrite (fun h => REC_step0 x0 y h H1 H4 H2 x); trivial.
- 2:eauto using isOrd_inv.
- apply Firrel; auto with *.
- apply H3; trivial.
+ transitivity (cc_app (F y (REC F y)) x).
+  apply Firrel; auto with *.
+   apply REC_inv; trivial.
+
+   destruct (H3 _ H4) as (_,?).
+   red; intros.
+   rewrite (H6 x1 H7).
+   apply REC_ord_irrel; auto with *.
+   apply isOrd_inv with y; trivial.
+
+  symmetry; apply REC_step; auto with *.
+  revert H5; apply Tmono; trivial.
 
  destruct tyRx0 as (_,(Rx0fun,_)).
  destruct H3 with x0 as (_,?); trivial.
@@ -679,7 +665,8 @@ End REC_Eqn.
 
 End Recursor.
 
-
+(* begin hide *)
+Module Hidden.
 (* Building a function by recursion over an ordinal. The step function is given
    the ordinal (to determine the domain of the function used for recursive calls)
    but the result shouldn't depend on it. This is called "stage irrelevance". *)
@@ -1004,7 +991,7 @@ assert (wkord : forall o, o ⊆ w -> o ⊆ ord).
  intros.
  transitivity w; trivial.
  red; intros; apply isOrd_trans with w; trivial.
-apply REC_step' with (ord:=w)(T:=T)(Q:=fun o f => Q o (cc_app f));
+apply REC_step with (ord:=w)(T:=T)(Q:=fun o f => Q o (cc_app f));
   intros; eauto with *.
 Qed.
 
@@ -1248,3 +1235,5 @@ apply Qcont; auto with *.
 Qed.
 
 End HigherRecursor.
+End Hidden.
+(* end hide *)

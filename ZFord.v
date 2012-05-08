@@ -847,7 +847,6 @@ rewrite <- H2 in H3.
 elim lt_antirefl with o; trivial.
 Qed.
 
-
 Lemma isOrd_inter2 : forall x y,
   isOrd x -> isOrd y -> isOrd (x ∩ y).
 intros.
@@ -910,7 +909,6 @@ apply eq_intro; intros.
   transitivity (x ∩ y); trivial.
   apply inter2_incl2.
 Qed.
-
 
 (** * Transfinite recursion *)
 
@@ -2169,39 +2167,6 @@ unfold F; rewrite <- H3; trivial.
 Qed.
 
 End LimOrd.
-
-Lemma replf_is_sup A F :
-  ext_fun A F ->
-  replf A F == sup A (fun x => singl (F x)).
-intros.
-assert (fm : ext_fun A (fun x => singl (F x))).
- do 2 red; intros; apply singl_morph; apply H; trivial.
-apply eq_intro; intros.
- rewrite sup_ax; trivial.
- rewrite replf_ax in H0; trivial.
- revert H0; apply ex2_morph; red; intros; auto with *.
- split; intros.
-  apply singl_elim in H0; trivial.
-  rewrite H0; apply singl_intro.
-
- rewrite replf_ax; trivial.
- rewrite sup_ax in H0; trivial.
- revert H0; apply ex2_morph; red; intros; auto with *.
- split; intros.
-  rewrite H0; apply singl_intro.
-  apply singl_elim in H0; trivial.
-Qed.
-
-Lemma union_is_sup a :
-  union a == sup a (fun x => x).
-apply eq_intro; intros.
- rewrite sup_ax;[|do 2 red; auto].
- apply union_elim in H; destruct H.
- eauto.
-
- rewrite sup_ax in H;[|do 2 red; auto].
- destruct H; eauto using union_intro.
-Qed.
 
 Lemma isOrd_union : forall x,
   (forall y, y ∈ x -> isOrd y) ->

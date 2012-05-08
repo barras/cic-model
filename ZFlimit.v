@@ -1,4 +1,5 @@
-Require Import ZF ZFpairs ZFnats ZFord ZFfix.
+Require Import ZF ZFpairs ZFnats ZFord.
+Require ZFfix. (* limited dependency... *)
 
 Section Limit.
 
@@ -147,10 +148,10 @@ Lemma TIlim o :
   isOrd o ->
   TI F o == lim o (fun o' => F(TI F o')).
 intros oo.
-rewrite TI_eq; auto using Fmono_morph.
+rewrite TI_eq; auto.
 rewrite lim_def_mono; auto with *.
 red; intros.
-apply Fm; apply TI_mono; trivial.
+apply Fm; apply ZFfix.TI_mono; trivial.
 Qed.
 
 End LimitTI.

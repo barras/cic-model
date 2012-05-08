@@ -233,7 +233,7 @@ destruct H.
  red; intros; trivial.
 Qed.
 
-(** #<a name="TypingRules"></a># *)
+(** #<a name="MakeModel.TypingRules"></a># *)
 
 (** * Inference rules *)
 

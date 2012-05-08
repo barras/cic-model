@@ -700,50 +700,11 @@ exists (power a).
 apply power_ax.
 Qed.
 
-Lemma repl_ex:
-    forall a (R:set->set->Prop),
-    (forall x x' y y', x ∈ a -> R x y -> R x' y' -> x == x' -> y == y') ->
-    exists b, forall x, x ∈ b <-> (exists2 y, y ∈ a & (exists2 x', x == x' & R y x')).
-intros.
-elim repl_ax with a
-  (fun y' x' => exists2 y, y == y' & exists2 x, x' == x & R y x); intros.
- exists x; intros.
- rewrite H0; clear x H0.
- split; intros.
-  destruct H0.
-  destruct H1.
-  exists x1; trivial.
-  apply in_reg with x; trivial.
-  apply eq_set_sym; trivial.
-
-  destruct H0.
-  exists x; trivial.
-  exists x; trivial.
-  apply eq_set_refl.
-
- destruct H3.
- destruct H4.
- exists x0.
-  apply eq_set_trans with x; trivial.
-
-  exists x1; trivial.
-  apply eq_set_trans with y; trivial.
-  apply eq_set_sym; trivial.
-
- destruct H1.
- destruct H3.
- destruct H2.
- destruct H5.
- apply eq_set_trans with x1; trivial.
- apply eq_set_trans with x3.
- 2:apply eq_set_sym; trivial.
- apply H with x0 x2; trivial.
-  apply in_reg with x; trivial.
-  apply eq_set_sym; trivial.
-
-  apply eq_set_trans with x; trivial.
-  apply eq_set_sym; trivial.
-Qed.
+Lemma repl_ex: forall a (R:set->set->Prop),
+    (forall x x' y y', x ∈ a -> x == x' -> y == y' -> R x y -> R x' y') ->
+    (forall x y y', x ∈ a -> R x y -> R x y' -> y == y') ->
+    exists b, forall x, x ∈ b <-> (exists2 y, y ∈ a & R y x).
+Proof repl_ax.
 
 (* Collection *)
 Section Collection.

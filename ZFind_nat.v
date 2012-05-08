@@ -683,15 +683,32 @@ Qed.
 intros.
 unfold NATf.
 unfold sum.
-apply VN_subset; trivial.
-unfold ZFpairs.prodcart.
-apply VN_subset; trivial.
-apply VNlim_power; trivial.
-apply VNlim_power; trivial.
+assert (zero ∈ VN o).
+ apply VN_incl with X; trivial.
+ red; intros.
+ apply empty_ax in H0; contradiction.
+assert (forall Y Z, Y ∈ VN o -> Z ∈ VN o -> ZFpairs.prodcart Y Z ∈ VN o).
+ intros.
+ unfold ZFpairs.prodcart.
+ apply VN_subset; trivial.
+ apply VNlim_power; trivial.
+ apply VNlim_power; trivial.
+ apply VN_union; trivial.
+ apply VNlim_pair; trivial.
 apply VN_union; trivial.
-apply VNlim_pair; eauto.
-apply VN_union; trivial.
-apply VNlim_pair; eauto.
+apply VNlim_pair; trivial.
+ apply H1; eauto.
+ apply VNlim_pair; trivial.
+
+ apply H1; auto.
+ apply VNlim_pair; trivial.
+  apply VN_union; trivial.
+  apply VNlim_pair; trivial.
+  apply VNlim_pair; trivial.
+
+  apply VN_union; trivial.
+  apply VNlim_pair; trivial.
+  apply VNlim_pair; trivial.
 Qed.
 
   Hypothesis zer_o : zero ∈ VN o.

@@ -274,7 +274,7 @@ Qed.
 
 (** Dependent product *)
 (** The realizability relation of a dependent product.
-   It is the intersection of all reducibility candidates {x}_F -> {f(x)}_G(x)
+   It is the intersection of all reducibility candidates {x}F -> {f(x)}G(x)
    when x ranges A. *)
 Definition piSAT0 A B (F:A->SAT) (G:A->B->SAT) (f:A->B) :=
   interSAT (fun x => prodSAT (F x) (G x (f x))).

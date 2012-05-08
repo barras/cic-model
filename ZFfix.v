@@ -9,18 +9,7 @@ Section IterMonotone.
   Variable F : set -> set.
   Variable Fmono : Proper (incl_set ==> incl_set) F.
 
-  Instance Fmono_morph: morph1 F.
-do 2 red; intros.
-apply eq_intro; intros.
- apply Fmono with x; trivial.
- red; intros.
- rewrite <- H; trivial.
-
- apply Fmono with y; trivial.
- red; intros.
- rewrite H; trivial.
-Qed.
-Hint Resolve Fmono_morph.
+  Let Fm := Fmono_morph _ Fmono.
 
   Lemma TI_mono : increasing (TI F).
 do 2 red; intros.
@@ -339,7 +328,7 @@ Lemma fsub_elim : forall x y o,
 intros.
 unfold fsub in H1; rewrite subset_ax in H1.
 destruct H1 as (?,(x',?,?)).
-apply TI_elim in H0; trivial.
+apply TI_elim in H0; auto.
 destruct H0.
 exists x0; trivial.
 rewrite H2; apply H3; trivial.
@@ -454,7 +443,7 @@ Require Import ZFrepl.
   Lemma Ffix_rel_def : forall o a, isOrd o -> a ∈ TI F o -> exists y, Ffix_rel a y.
 intros o a oo; revert a; apply isOrd_ind with (2:=oo); intros.
 clear o oo H0.
-apply TI_elim in H2; trivial.
+apply TI_elim in H2; auto.
 destruct H2.
 assert (xo : isOrd x).
  apply isOrd_inv with y; trivial.
@@ -722,6 +711,13 @@ apply TI_intro with (Fix_rec F_a a); auto.
  apply F_a_tot; trivial.
 Qed.
 
+  Lemma Ffix_closure : Ffix == TI F Ffix_ord.
+apply incl_eq.
+ red; intros; apply Ffix_post; trivial.
+
+ apply TI_Ffix; trivial.
+Qed.
+
 (** We prove it is a fixpoint *)
   Lemma Ffix_eqn : Ffix == F Ffix.
 apply eq_intro; intros.
@@ -738,6 +734,7 @@ apply Fmono with (TI F x).
   red; intros; apply Ffix_post; trivial.
  rewrite Ffix_def; exists (osucc Ffix_ord); auto.
 Qed.
+
 
 End BoundedOperator.
 
@@ -830,7 +827,7 @@ Let Fmono := Ffix.(mono).
 *)
 
 Definition is_lfp x :=
-  F x == x /\ forall y, y ⊆ A -> F y ⊆ y -> x ⊆ y.
+  F x == x /\ forall y, (*y ⊆ A ->*) F y ⊆ y -> x ⊆ y.
 
 Definition pre_fix x := x ⊆ F x.
 Definition post_fix x := F x ⊆ x.
@@ -922,17 +919,28 @@ split.
  apply FIX_eqn.
 
  intros.
+ transitivity (y ∩ A). 
+ 2:apply inter2_incl1.
  apply lower_bound.
  unfold M'.
  apply subset_intro; trivial.
- apply power_intro; trivial.
+  apply power_intro.
+  apply inter2_incl2.
+
+  red.
+  apply inter2_incl.
+   transitivity (F y); trivial.
+   apply Fmono.
+   apply inter2_incl1.
+
+   apply Ftyp.
+   apply inter2_incl2.
 Qed.
 
 Lemma TI_FIX : forall o, isOrd o -> TI F o ⊆ FIX.
 induction 1 using isOrd_ind.
 red; intros.
-apply TI_elim in H2; trivial.
-2:apply Fmono_morph; trivial.
+apply TI_elim in H2; auto.
 destruct H2.
 specialize H1 with (1:=H2).
 apply Fmono in H1.
