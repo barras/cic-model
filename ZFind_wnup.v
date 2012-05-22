@@ -1436,6 +1436,7 @@ do 2 red; intros.
 unfold csa, cs.
 rewrite H; reflexivity.
 Qed.
+Existing Instance csam.
 
 Lemma a'2a : typ_fun csa (A' (Arg' a') (A'' a')) (A' (Arg' a) (A'' a)).
 red; intros.
@@ -1475,6 +1476,7 @@ apply replf_morph; trivial.
 red; intros.
 rewrite H1; reflexivity.
 Qed.
+Existing Instance cswm.
 
 Notation Fa := (W0.Wf (A' (Arg' a) (A'' a)) (B' (B'' a))).
 Notation Fa' := (W0.Wf (A' (Arg' a') (A'' a')) (B' (B'' a'))).

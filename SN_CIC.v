@@ -1015,7 +1015,7 @@ rewrite Real_prod in H4; trivial.
    apply sat_sn in H4; trivial.
    intros.
    rewrite <- H0 in H6.
-   specialize interSAT_elim with (1:=H4) (x:=exist (fun x=>_) x0 H6); simpl proj1_sig; intros.
+   specialize interSAT_elim with (1:=H4) (x:=exist (fun x=> x ∈ El(int0 T i)) x0 H6); simpl proj1_sig; intros.
    revert H7; apply prodSAT_mono.
     do 2 red; intros.
     rewrite <- H0 in H7; trivial.
@@ -1457,7 +1457,7 @@ apply interSAT_morph.
 split; intros.
  destruct x as (n,xty); simpl proj1_sig.
  simpl in xty; rewrite El_def in xty.
- exists (exist (fun n=>_) n xty); simpl proj1_sig.
+ exists (exist (fun n=>n ∈ NATi o) n xty); simpl proj1_sig.
  apply prodSAT_morph; auto.
  rewrite Real_def; auto with *.
  intros; apply fam_mrph; trivial.
@@ -1466,7 +1466,7 @@ split; intros.
  destruct y as (n,xty); simpl proj1_sig.
  assert (nty : n ∈ El (mkTY (NATi o) cNAT)).
   rewrite El_def; trivial.
- exists (exist (fun n=>_) n nty); simpl proj1_sig.
+ exists (exist (fun n=>n ∈ El(mkTY (NATi o) cNAT)) n nty); simpl proj1_sig.
  apply prodSAT_morph; auto.
  rewrite Real_def; auto with *.
  intros; apply fam_mrph; trivial.

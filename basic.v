@@ -3,7 +3,7 @@
 
 Set Implicit Arguments.
 (*Require Export Utf8_core.*)
-Require Export Peano_dec Compare_dec.
+Require Export Peano_dec Compare_dec Max.
 Require Export List.
 Require Export Relations Relation_Operators Transitive_Closure.
 Require Import Wellfounded.
