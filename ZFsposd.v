@@ -1,4 +1,4 @@
-Require Import ZF ZFpairs ZFsum ZFrelations ZFcoc ZFord ZFfix ZFfixfun.
+Require Import ZF ZFpairs ZFsum ZFrelations ZFord ZFfix ZFfixfun.
 Require Import ZFstable ZFiso ZFind_w ZFspos.
 
 (** Inductive families. Indexes are modelled as a constraint over an inductive

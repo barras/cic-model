@@ -1,4 +1,4 @@
-Require Import ZF ZFpairs ZFsum ZFrelations ZFcoc ZFord ZFfix.
+Require Import ZF ZFpairs ZFsum ZFrelations ZFord ZFfix.
 Require Import ZFstable ZFiso ZFind_w.
 
 (** Here we define the (semantic) notion of strictly positiveness.

@@ -48,6 +48,88 @@ do 2 red; intros.
 apply H1; auto.
 Qed.
 
+Module OtherCollectionAxioms.
+
+Definition streicher_ttcoll :=
+  forall (A:Tlo) (X:Thi) (e:X->A),
+  (forall y:A, exists x:X, e x = y) ->
+  exists (C:Tlo) (f:C->X),
+    forall y:A, exists x:C, e (f x) = y.
+
+Lemma ttcoll_impl1 E :
+  streicher_ttcoll -> ttcoll E.
+red; intros.
+clear E H0.
+red in H.
+pose (X':= {x:X|exists y:set, R x y}).
+pose (Y := { a:X' & { y:set | R (proj1_sig a) y}}).
+destruct (H X' Y (fun y => projT1 y)) as (C,(f,Hf)).
+ destruct y as (x,(y,?)).
+ exists (existT (fun a=>{y:set|R(proj1_sig a) y}) (exist _ x (ex_intro _ y r)) (exist (fun y => R x y) y r)).
+ simpl.
+ reflexivity.
+
+ exists C.
+ exists (fun c => proj1_sig (projT2 (f c))).
+ intros.
+ destruct (Hf (exist _ i H0)) as (c,?).
+ exists c.
+ assert (h := proj2_sig (projT2 (f c))).
+ simpl in h.
+ pattern (projT1 (f c)) in h at 1.
+ rewrite H1 in h.
+ simpl in h.
+ trivial.
+Qed.
+(*
+Lemma ttcoll_impl2 :
+  ttcoll (fun _ _ => False) -> streicher_ttcoll.
+red; intros.
+red in H.
+assert (exists R, X= { a:A & { y:set | R a y}}).
+ admit.
+destruct H1 as (R,?).
+subst X.
+destruct (H A R) as (Y,(g,?)).
+ do 2 red; intros; contradiction.
+exists {a:A & {y:Y|R a (g y)}}.
+exists (fun t:{a:A&{y:Y|R a (g y)}} =>
+  existT (fun a =>{y:set|R a y}) (projT1 t)
+   (exist (fun y => R (projT1 t) y) (g (proj1_sig (projT2 t))) (proj2_sig (projT2 t)))).
+intros.
+destruct (H1 y).
+pose (X':= {x:X|exists y:set, R x y}).
+pose (Y := { a:X' & { y:set | R (proj1_sig a) y}}).
+destruct (H X' Y (fun y => projT1 y)) as (C,(f,Hf)).
+ destruct y as (x,(y,?)).
+ exists (existT (fun a=>{y:set|R(proj1_sig a) y}) (exist _ x (ex_intro _ y r)) (exist (fun y => R x y) y r)).
+ simpl.
+ reflexivity.
+
+ exists C.
+ exists (fun c => proj1_sig (projT2 (f c))).
+ intros.
+ destruct (Hf (exist _ i H1)) as (c,?).
+ exists c.
+ assert (h := proj2_sig (projT2 (f c))).
+ simpl in h.
+ pattern (projT1 (f c)) in h at 1.
+ rewrite H2 in h.
+ simpl in h.
+ trivial.
+Qed.
+*)
+
+Definition miquel_dom A (P:A->Prop) (R:A->Type->Prop) :=
+  (forall x B B' (f:B->B'),
+   (forall b1 b2, f b1 = f b2 -> b1 = b2) ->
+   R x B -> R x B') ->
+  (forall x, P x -> exists B, R x B) ->
+  exists B, forall x, P x -> R x B.
+
+End OtherCollectionAxioms.
+
+
 (** TTColl is a consequence of choice *)
 
 Record ttcoll_dom (X:Tlo) (R:X->set->Prop) : Tlo := mkCi {

@@ -1,5 +1,5 @@
 Require Import ZF.
-Require Import ZFstable ZFpairs ZFsum ZFrelations ZFcoc ZFord ZFfix ZFlimit.
+Require Import ZFstable ZFpairs ZFsum ZFrelations ZFord ZFfix ZFlimit.
 Require Import ZFiso ZFfixrec.
 Require Import ZFind_w ZFspos.
 Require Import ZFlist.

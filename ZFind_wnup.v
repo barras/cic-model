@@ -1,6 +1,5 @@
 Require Import ZF ZFpairs ZFsum ZFnats ZFrelations ZFord ZFfix ZFstable.
-Require Import ZFcoc ZFlist.
-Require Import ZFfixfun.
+Require Import ZFlist ZFfixfun.
 Import ZFrepl.
 Existing Instance TIF_morph.
 

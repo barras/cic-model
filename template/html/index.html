@@ -1,12 +1,13 @@
-<center><H1>Sets in Coq, Coq in Sets</H1></center>
+<center><H1>Intuitionistic Set Theory and Type Theories with Inductive Families</H1></center>
 <HR>
-<A HREF="sets-in-coq.tgz">Download proofs (.tgz)</A>
+<A HREF="../cic-model.tgz">Download proofs (.tgz)</A>
 <HR>
 
-<UL>
 
 <H3>Intuitionistic Zermelo-Fraenkel</H3>
 
+General libraries:
+<ul>
 <LI><A HREF="ZFdef.html">Signatures of IZF</A>
 <LI><A HREF="ZF.html">Introduction/Elimination Rules of IZF Axioms</A>
 <LI><A HREF="ZFrepl.html">Relationnal Replacement Axiom</A>
@@ -15,50 +16,70 @@
 <LI><A HREF="ZFsum.html">Disjoint Sum</A>
 <LI><A HREF="ZFnats.html">Natural Numbers</A>
 <LI><A HREF="ZFord.html">Ordinal Numbers</A>
-<LI><A HREF="ZFordcl.html">Classical Ordinal Numbers</A>
 <LI><A HREF="ZFfix.html">Fixpoint Theorem</A>
 <LI><A HREF="ZFgrothendieck.html">Grothendieck Universes</A>
 <LI><A HREF="ZFlambda.html">Lambda terms</A>
-
+<LI><A HREF="ZFiso.html">Isomorphisms</A>
 <LI><A HREF="ZFcard.html">Cardinal Numbers</A>
-
+</ul>
+<br>
+Type theoretical constructions:
+<ul>
 <LI><A HREF="ZFcoc.html">Semantics of CC in ZF</A>
 <LI><A HREF="ZFecc.html">Semantics of CC&omega; in Tarski-Grothendieck Set Theory</A>
 <LI><A HREF="ZFind_nat.html">Inductive Type Nat</A>
-<LI><A HREF="ZFind_ord.html">Inductive Type Ord</A>
-
+<LI><A HREF="ZFind_w.html">Inductive Type W</A>
+<LI><A HREF="ZFind_wd.html">Inductive families (dependent W-types)</A>
+<LI><A HREF="ZFind_wnup.html">Non-uniform parameters</A>
+<LI><A HREF="ZFnest.html">Nested inductive definitions</A>
+</ul>
+<br>
+Modeling set theory in type theory:
+<ul>
 <LI><A HREF="Choice.html">Type Theoretical Axiom of Choice</A>
+<LI><A HREF="EnsEm.html">Model of IZF and ZF in Coq</A>
+<LI><A HREF="ZFskolEm.html">Skolemization of IZF (with support for classical versions)</A>
 <LI><A HREF="Ens.html">Model of IZF in Coq</A>
 <LI><A HREF="EnsUniv.html">Building a Grothendieck Universe in Coq</A>
 
 <LI><A HREF="ZFskol.html">Skolemization of IZF</A>
+</ul>
 
 <HR>
 <H3>Hereditarily Finite Set Theory</H3>
 
+<ul>
 <LI><A HREF="HF.html">Hereditarily Finite Sets</A>
 <LI><A HREF="HFrelation.html">HF Relations</A>
 <LI><A HREF="HFcoc.html">Semantics of CC in HF</A>
+</ul>
 
 <HR>
-<H3>Calculus of Constructions</H3>
+<H3>Syntax: Calculus of Constructions</H3>
+
+<ul>
 <LI><A HREF="Term.html">Terms</A>
 <LI><A HREF="Conv.html">Conversion</A>
 <LI><A HREF="Env.html">Environments</A>
 <LI><A HREF="Types.html">Typing Rules</A>
 <LI><A HREF="TypeJudge.html">Typing Rules (judgemental equality + Adams' proof)</A>
+</ul>
 
 <HR>
-<H3>Calculus of Constructions with Universes</H3>
-<LI><A HREF="TermECC.html">Terms</A>
+<H3>Syntax: Calculus of Constructions with Universes</H3>
+
+<ul><LI><A HREF="TermECC.html">Terms</A>
 <LI><A HREF="ConvECC.html">Conversion</A>
 <LI><A HREF="EnvECC.html">Environments</A>
 <LI><A HREF="TypeECC.html">Typing Rules</A>
 <LI><A HREF="TypeJudgeECC.html">Typing Rules (judgemental equality)</A>
+</ul>
 
 <HR>
 
 <H3>Models of the Calculus of Constructions (pure and with universes)</H3>
+
+<ul>
 <LI><A HREF="Models.html">Abstract Models of CC and CC&omega;</A>
 <LI><A HREF="GenModel.html">Soundness of Abstract Models of CC</A>
 <LI><A HREF="GenModelSyntax.html">Mapping CC Syntax to the Abstract Model of CC</A>
@@ -69,16 +90,38 @@
 
 <LI><A HREF="ModelCIC.html">Model of CC with Natural Numbers
     (with type-based termination for fixpoints)</A>
+</ul>
 
-
+<hr>
+<h3>Strong Normalization models</h3>
+Theory of Reducibility candidates and Saturated Sets:
+<ul>
 <LI><A HREF="Lambda.html">Pure Lambda Terms</A>
 <LI><A HREF="Can.html">Reducibility Candidates and Operations</A>
 <LI><A HREF="Sat.html">Generic Interface of Saturated Sets</A>
+</ul>
+<br>
+Simple strong elimination models (weak elimination only):
+<ul>
+<LI><A HREF="ObjectSN.html">Pseudo-syntax for strong normalization models</A>
 <LI><A HREF="GenModelSN.html">Soundness of Abstract Strong
     Normalization Models of CC</A>
 <LI><A HREF="SN_CC.html">Another Proof of Strong Normalization for the
     Calculus of Constructions</A>
-
+</ul>
+<br>
+Supporting strong elimination:
+<ul>
+<LI><A HREF="GenRealSN.html">Soundness of Abstract Strong
+    Normalization Models of CC (strong elimination)</A>
+<LI><A HREF="SN_CC_Real.html">Yet another Proof of Strong Normalization for the
+    Calculus of Constructions (compatible with strong elimination</A>
+<LI><A HREF="SATnat.html">Reducibility theory of natural numbers</A>
+<LI><A HREF="SN_NAT.html">Proof of Strong Normalization for the
+    Calculus of Constructions extended with natural numbers (recursor)</A>
+<LI><A HREF="SN_CIC.html">Proof of Strong Normalization for the
+    Calculus of Constructions extended with natural numbers (type-based termination)</A>
+</ul>
 
 <HR>
 
@@ -95,5 +138,5 @@
 
 <HR>
 
-<A HREF=../../index.html><IMG SRC="../../icones_coq/action_top.gif"></A>
+<A HREF=../../index.html><em><span style="font-size: smaller;">Back to upper level</span></em></A>
 

@@ -6,6 +6,7 @@ COQC=$(COQBIN)coqc $(COQFLAGS)
 COQ=$(COQBIN)coqtop $(COQFLAGS) -batch
 COQDEP=$(COQBIN)coqdep -c
 COQDOC=$(COQBIN)coqdoc
+COQMK=$(COQBIN)coq_makefile
 
 OPT=-opt
 COQFLAGS=-q $(OPT) $(COQINCLUDES)
@@ -28,7 +29,18 @@ DOCVO=$(DOCV:.v=.vo)
 
 ALLV:=$(DOCV)
 
-.PHONY: html
+.PHONY: html dist-v graph
+
+dist-v::
+	rm -fr cic-model
+	mkdir cic-model
+	cp $(DOCV) template/Make cic-model/
+	mkdir cic-model/template
+	cp template/Library.v cic-model/template/
+	echo $(DOCV) >> cic-model/Make
+	(cd cic-model && $(COQMK) -f Make > Makefile)
+	tar zcvf cic-model.tgz cic-model
+	(cd cic-model && $(MAKE) && $(MAKE) clean)
 
 dist-html:: $(DOCVO)
 	rm -fr html
@@ -45,13 +57,30 @@ html::
 	/bin/cp html/coqdoc.css html/full/
 	perl -pi -e "s/(<div id=\"header\">)/\1<script src=\"headings.js\"><\/script>/" $(ALLHTML) $(ALLHTMLFULL)
 
+graph::	deps.png deps.imap graph.html
+
+deps.g:	.depend libs.txt
+	./graph.sh lib2graph
+
+deps.dot: deps.g
+	./graph.sh graph2dot
+
+.dot.png:
+	dot -Tpng $< > $@
+
+.dot.imap:
+	dot -Tcmapx $< > $@
+
+graph.html: g.html deps.imap
+	sed -e "/--IMAP--/ r deps.imap" g.html > $@
+
 Ens0.v: Ens.v
 	cp Ens.v Ens0.v
 EnsEm0.v: EnsEm.v
 	cp EnsEm.v EnsEm0.v
 
 
-.SUFFIXES: .v .vo .ml .mli .cmo .cmi .html
+.SUFFIXES: .v .vo .ml .mli .cmo .cmi .html .dot .imap .png
 
 .ml.cmo:
 	$(CAMLC) -pp "camlp5o pa_oop.cmo" $<
