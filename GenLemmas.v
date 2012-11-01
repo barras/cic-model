@@ -6,6 +6,7 @@ Require Import SN_CC_Real.
 Import ZF CCSN SN.
 Import List.
 
+Reserved Notation "[ x , t ] \real A" (at level 60).
 
 (***************************************************************************************)
 (*This following lemmas should be put in ObjectSN, about properties of lift and subst*)
@@ -224,51 +225,44 @@ revert HB; apply real_morph.
 Qed.
 
 Lemma weakening_bind : forall A B e C D,
-  C <> kind ->
-  closed_trm C ->
-  D <> kind ->
-  closed_trm D ->
   typ (C :: e) A D ->
-  typ (C :: B :: e) (lift_rec 1 1 A) D.
-red; intros A B e C D HSC HC HSD HD HA i j Hok.
+  typ ((lift 1 C) :: B :: e) (lift_rec 1 1 A) (lift_rec 1 1 D).
+red; intros A B e C D HA i j Hok.
 assert (val_ok (C :: e) (V.lams 1 (V.shift 1) i) (I.lams 1 (I.shift 1) j)).
-red in Hok |- *; intros. destruct n.
- simpl in H. specialize Hok with (n:=0) (T:=T) (1:=H).
- injection H; clear H; intros H; subst T.
-   apply in_int_not_kind in Hok; [|destruct C; [discriminate|trivial]].
-   apply in_int_intro; [|discriminate|destruct C; [discriminate|trivial]].
-   revert Hok; apply real_morph.
-    unfold V.lams, V.shift; simpl; reflexivity.
-    
-    unfold lift. do 2 rewrite int_lift_rec_eq. apply HC.
-    
+ red in Hok |- *; intros. destruct n.
+  simpl in H. injection H; clear H; intros H; subst T.
+  assert (value (lift 1 C) = value (lift 1 C)) by trivial.
+  specialize Hok with (n:=0) (T:=(lift 1 C)) (1:=H). clear H.
+  destruct C; destruct Hok as (_, Hok). 
+   do 4 red in Hok. split; [discriminate|do 2 red].
+   simpl int in Hok |- *. simpl tm in Hok |- *.
+   do 2 rewrite V.lams0 in Hok. rewrite V.lams0. rewrite V.lams_shift. exact Hok.
 
-    unfold I.lams, I.shift; simpl; reflexivity.
+   do 6 red in Hok. split; [discriminate|do 3 red; simpl tm; trivial].
 
- simpl in H. specialize Hok with (n:= (S (S n))) (T:=T) (1:=H). destruct T.
-  apply in_int_not_kind in Hok; [|discriminate].
-  apply in_int_intro; [|discriminate|discriminate].
-  revert Hok; apply real_morph.
-   unfold V.lams, V.shift; simpl.
-   replace (n-0) with n; [reflexivity|omega].
+  specialize Hok with (n:=(S (S n))) (T:=T) (1:=H); clear H.
+  destruct Hok as (_, Hok). split; [discriminate|].
+  destruct T; [do 2 red in Hok|-*|do 3 red in Hok |-*].
+   simpl int in Hok |- *. simpl tm in Hok |- *.
+   rewrite V.lams0 in Hok |- *. rewrite V.shift_split.
+   rewrite V.lams_shift. do 2 rewrite <- V.shift_split.
+   revert Hok; apply real_morph; [|reflexivity|].
+    unfold V.lams, V.shift; simpl.
+    replace (n-0) with n; [reflexivity|omega].
 
-   unfold lift; do 2 rewrite int_lift_rec_eq.
-   do 2 rewrite V.lams0. rewrite V.shift_split. rewrite V.shift_lams.
-   rewrite V.lams0. do 2 rewrite <- V.shift_split; reflexivity.
+    unfold I.lams, I.shift; simpl.
+    replace (n-0) with n; [reflexivity|omega].
 
-   unfold I.lams, I.shift; simpl.
+   rewrite kind_ok_lift with (k:=0).
+   rewrite eq_trm_lift_ref_fv; [|omega]. 
+   unfold I.lams, I.shift; simpl in Hok |- *.
    replace (n-0) with n; [trivial|omega].
 
-  destruct Hok as (_, (H1, H2)).
-  split; [discriminate|].
-   split; [rewrite kind_ok_lift with (k:=0); simpl; apply H1 |].
-    simpl tm in H2 |- *. unfold I.lams; unfold I.shift; simpl.
-    replace (n-0) with n by omega; trivial.
-
-apply red_typ with (1:=H) in HA; [|trivial]. destruct HA as (HSA, HA).
-apply in_int_intro; [|destruct A; [discriminate|trivial]|trivial].
-revert HA; apply real_morph; 
-  [rewrite int_lift_rec_eq|apply HD|rewrite tm_lift_rec_eq]; reflexivity.
+red in HA. specialize HA with (1:=H). clear H.
+destruct HA as (HSA, HA). 
+split; [case_eq A; intros; [discriminate|contradiction]|clear HSA].
+destruct D; rewrite tm_lift_rec_eq; 
+  [red; do 2 rewrite int_lift_rec_eq|do 2 red; rewrite <- kind_ok_lift]; trivial.
 Qed.
 
 
