@@ -187,10 +187,11 @@ assert (morph2 (fun _ => succ)).
  do 3 red; intros x y H0 x1 y1 H1; rewrite H1; reflexivity.
 do 2 red; intros; simpl.
 replace (fun k : nat => i k) with i; trivial.
-do 2 rewrite (NATREC_Succ _ _ _ H zero_typ).
-red in H0; simpl in H0; specialize H0 with (1:=H1).
+do 2 rewrite (NATREC_Succ _ _ _ H zero_typ); 
+try zero_typ; try apply H.
 do 2 rewrite NATREC_0. 
-rewrite (NATREC_Succ _ _ _ H H0); reflexivity.
+red in H0; simpl in H0; specialize H0 with (1:=H1).
+rewrite (NATREC_Succ _ _ _ H H0). reflexivity.
 Qed.
 
 
