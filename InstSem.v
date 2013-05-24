@@ -653,16 +653,20 @@ Lemma Exst_typ : forall e A,
   typ e (Exst A) prop.
 intros e A HA; unfold Exst.
 apply typ_prod; [right; trivial|left; apply typ_prop|].
+setoid_replace Nat with (lift 1 Nat) using relation eq_trm;[|
+  simpl; split; red; reflexivity].
 apply typ_prod; [right|right
   |setoid_replace prop with (lift 2 prop) using relation eq_trm at 2;
     [apply typ_var|simpl; split; red; reflexivity]]; trivial.
-apply typ_prod; [right; trivial|left; apply typ_N|].
+apply typ_prod; [right; trivial
+  |left; setoid_replace kind with (lift 1 kind) using relation eq_trm;
+    [apply weakening; apply typ_N|simpl; split; red; reflexivity]|].
 apply typ_prod; [right|right
   |setoid_replace prop with (lift 3 prop) using relation eq_trm at 2;
     [apply typ_var|simpl; split; red; reflexivity]]; trivial.
 rewrite subst0_lift.
- apply weakening_bind; [discriminate| |discriminate| |trivial]; 
-   red; simpl; reflexivity.
+setoid_replace prop with (lift_rec 1 1 prop) using relation eq_trm at 2;
+  [apply weakening_bind; trivial|simpl; split; red; reflexivity].
 Qed.
 
 Lemma Exst_intro : forall e A p a, 
@@ -685,10 +689,15 @@ fold (typ e (Abs prop (Abs (Prod Nat (Prod (subst (Ref 0) (lift_rec 2 1 A)) (Ref
   (App (App (Ref 0) (lift 2 a)) (lift 2 p)))) (Exst A)).
 apply typ_abs; [left; apply typ_prop| |discriminate].
 apply typ_abs; [right| |discriminate].
- apply typ_prod; [right; trivial|left; apply typ_N|].
+ setoid_replace Nat with (lift 1 Nat) using relation eq_trm;[|
+   simpl; split; red; reflexivity].
+ apply typ_prod; [right; trivial|left;
+   setoid_replace (lift 1 Nat) with Nat using relation eq_trm;[apply typ_N|
+     simpl; split; red; reflexivity]|].
   apply typ_prod; [right; trivial|right|].
-   rewrite subst0_lift; apply weakening_bind; [discriminate| |discriminate| |trivial];
-     red; simpl; reflexivity.
+   setoid_replace prop with (lift_rec 1 1 prop) using relation eq_trm at 2;
+     [|simpl; split; red; reflexivity].
+   rewrite subst0_lift; apply weakening_bind; trivial.
 
    setoid_replace prop with (lift 3 prop) using relation eq_trm at 2;
      [apply typ_var; trivial|simpl; split; red; reflexivity].
@@ -1359,18 +1368,28 @@ apply Impl_intro; [|discriminate|].
 
  apply H; clear H.
  apply typ_abs; [right| |discriminate].
-  apply typ_prod; [right; trivial|left; apply typ_N|].
+  setoid_replace Nat with (lift 1 Nat) using relation eq_trm;
+    [|simpl; split; red; reflexivity].
+  apply typ_prod; [right; trivial|left;
+   setoid_replace (lift 1 Nat) with Nat using relation eq_trm;
+    [apply typ_N|simpl; split; red; reflexivity]|].
    apply typ_prod; [right; trivial
-     |right; apply weakening_bind; [discriminate| |discriminate| |trivial];
-       red; simpl; reflexivity|].
+     |right; setoid_replace prop with (lift_rec 1 1 prop) using relation eq_trm;
+              [apply weakening_bind;trivial|simpl; split; red; reflexivity]|].
     setoid_replace prop with (lift 1 prop) using relation eq_trm;
       [|simpl; split; red; reflexivity].
     apply weakening. 
-    apply weakening_bind; 
-      [discriminate|red; simpl; reflexivity|discriminate|red; simpl; reflexivity|].
-    apply typ_subst with (A:=Nat); [discriminate|discriminate
-      |apply weakening_bind; [discriminate|red; simpl; reflexivity
-        |discriminate|red; simpl; reflexivity|trivial]|].
+    setoid_replace prop with (lift_rec 1 1 prop) using relation eq_trm;
+      [|simpl; split; red; reflexivity].
+    apply weakening_bind.
+    apply typ_subst with (A:=lift 1 Nat); [discriminate|discriminate
+      | |].
+     setoid_replace (lift 1 prop) with (lift_rec 1 1 prop) using relation eq_trm;
+       [|simpl; split; red; reflexivity].
+     apply weakening_bind; trivial.
+
+     setoid_replace (lift 1 Nat) with Nat using relation eq_trm;
+       [|simpl; split; red; reflexivity].
      apply typ_Add2; [|apply typ_S1; apply typ_0].
       setoid_replace Nat with (lift 1 Nat) using relation eq_trm at 2;
         [apply typ_var; trivial|simpl; split; red; reflexivity].
