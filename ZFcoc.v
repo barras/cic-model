@@ -7,6 +7,16 @@ Require Import ZFgrothendieck.
 Definition prf_trm := empty.
 Definition props := power (singl prf_trm).
 
+Lemma empty_in_props : empty ∈ props.
+apply power_intro; intros.
+apply empty_ax in H; contradiction.
+Qed.
+
+Lemma one_in_props : singl prf_trm ∈ props.
+apply power_intro; auto.
+Qed.
+Hint Resolve empty_in_props one_in_props.
+
 Lemma props_proof_irrelevance x P :
   P ∈ props -> x ∈ P -> x == empty.
 intros.
@@ -255,29 +265,25 @@ split; intros.
   apply union2_intro2; trivial.
 Qed.
 
-
 Lemma cc_dec_prop :
-    forall P, P ∈ cc_dec props -> cc_dec P ∈ props.
+    forall P, P ∈ props -> cc_dec P ∈ props.
 intros.
-rewrite cc_dec_ax in H.
 apply power_intro; intros.
 rewrite cc_dec_ax in H0.
 destruct H0;[rewrite H0;apply singl_intro|].
-destruct H; [rewrite H in H0; apply empty_ax in H0;contradiction|].
 apply power_elim with (1:=H); trivial.
 Qed.
 
 
 Lemma cc_dec_cl_prop :
-    forall P, P ∈ cc_dec cl_props -> cc_dec P ∈ cl_props.
+    forall P, P ∈ cl_props -> cc_dec P ∈ cl_props.
 intros.
 apply subset_intro.
-apply cc_dec_prop.
-rewrite cc_dec_ax in H|-*; destruct H; auto.
-apply subset_elim1 in H; auto.
+ apply cc_dec_prop.
+ apply subset_elim1 in H; auto.
 
-intros _.
-red; rewrite cc_dec_ax; left; reflexivity.
+ intros _.
+ red; rewrite cc_dec_ax; left; reflexivity.
 Qed.
 
 

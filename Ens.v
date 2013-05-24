@@ -372,8 +372,7 @@ Qed.
 
 Definition power (x:set) :=
   sup (idx x->Prop)
-   (fun P => subset x
-         (fun y => exists2 i, eq_set y (elts x i) & P i)).
+   (fun P => subset x (fun y => exists2 i, eq_set y (elts x i) & P i)).
 
 Lemma power_ax : forall x z,
   in_set z (power x) <->
