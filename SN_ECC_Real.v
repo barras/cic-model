@@ -1,6 +1,6 @@
 Require Export Relations Wellfounded.
 Require Import Sat.
-Require Import ZF ZFcoc ZFuniv ZFecc.
+Require Import ZF ZFcoc ZFuniv_real ZFecc.
 Require Import ZFlambda.
 
 (** Strong normalization proof of the Extended Calculus of Constructions.
@@ -12,12 +12,10 @@ Require Import ZFlambda.
 
 Set Implicit Arguments.
 
-(** * Building the CC abstract SN model *)
-
 Require Import Models.
-Module SN_ECC_Model <: CC_Model.
+Module SN_CC_Model <: CC_Model.
 
-Definition X := set.
+Definition X:=set.
 Definition inX x y := x ∈ El y.
 Definition eqX := eq_set.
 Lemma eqX_equiv : Equivalence eqX.
@@ -29,120 +27,95 @@ unfold inX, El, eqX in *.
 rewrite H; rewrite H0; reflexivity.
 Qed.
 
-Definition props := sn_props.
-Definition app := cc_app.
-Definition lam := sn_lam.
-Definition prod := sn_prod.
-
 Definition eq_fun (x:X) (f1 f2:X->X) :=
   forall y1 y2, inX y1 x -> y1 == y2 -> f1 y1 == f2 y2.
 
-Lemma eq_fun_El x f1 f2 : eq_fun x f1 f2 -> ZF.eq_fun (El x) f1 f2.
-do 2 red; intros.
-apply H; auto.
-Qed.
-Hint Resolve eq_fun_El.
+
+Definition lam := lam.
+Definition app := app.
 
 Lemma lam_ext :
   forall x1 x2 f1 f2,
   x1 == x2 ->
   eq_fun x1 f1 f2 ->
   lam x1 f1 == lam x2 f2.
-unfold lam, sn_lam, eqX; intros.
-apply cc_lam_ext; auto.
-unfold El; rewrite H; reflexivity.
+intros.
+apply cc_lam_ext; trivial.
+apply El_morph; trivial.
 Qed.
 
-Lemma app_ext: Proper (eqX ==> eqX ==> eqX) app.
-Proof cc_app_morph.
+Definition app_ext := cc_app_morph.
 
 Lemma prod_ext :
   forall x1 x2 f1 f2,
   x1 == x2 ->
   eq_fun x1 f1 f2 ->
   prod x1 f1 == prod x2 f2.
-unfold prod, sn_prod, eqX, mkTY, El; intros.
+unfold prod, eqX, mkTY; intros.
 apply couple_morph.
  apply cc_prod_ext; intros.
-  rewrite H; reflexivity.
+  apply El_morph; trivial.
+  red; intros.
+  apply El_morph; auto.
+
+ apply cc_lam_ext.
+  apply cc_dec_morph.
+  apply cc_prod_ext; intros.
+   apply El_morph; trivial.
+   red; intros.
+   apply El_morph; auto.
 
   red; intros.
-  apply union2_morph; auto with *.
-  apply fst_morph; apply H0; auto.
-  red; auto.
-
- apply iSAT_morph.
- unfold piSAT, Real.
- apply prodSAT_morph.
-  apply sSAT_morph; apply snd_morph; trivial.
-
+  apply iSAT_morph.
+  unfold piSAT.
   apply interSAT_morph_subset; simpl; intros.
-   unfold El; rewrite H; reflexivity.
+   rewrite H; reflexivity.
 
-   apply sSAT_morph; apply snd_morph; apply H0; auto; reflexivity.
+   apply prodSAT_morph.
+    apply Real_morph; auto with *.
+
+    apply Real_morph; auto with *.
+    rewrite H2; reflexivity.
 Qed.
 
-Lemma prod_intro : forall dom f F,
-  eq_fun dom f f ->
-  eq_fun dom F F ->
-  (forall x, inX x dom -> inX (f x) (F x)) ->
-  inX (lam dom f) (prod dom F).
-Proof sn_prod_intro.
-
-Lemma prod_elim : forall dom f x F,
-  eq_fun dom F F ->
-  inX f (prod dom F) ->
-  inX x dom ->
-  inX (app f x) (F x).
-intros.
-eapply sn_prod_elim; eauto.
-Qed.
-
-Lemma impredicative_prod : forall dom F,
-  eq_fun dom F F ->
-  (forall x, inX x dom -> inX (F x) props) ->
-  inX (prod dom F) props.
-Proof sn_impredicative_prod.
+Definition prod_intro := prod_intro.
+Definition prod_elim := prod_elim.
+Definition prod := prod.
+Definition props := sn_props.
+Definition impredicative_prod := impredicative_prod.
 
 Lemma beta_eq:
   forall dom F x,
   eq_fun dom F F ->
   inX x dom ->
   app (lam dom F) x == F x.
-unfold app, lam, inX, eqX; intros.
-apply cc_beta_eq; auto.
+unfold app, lam, inX, eqX, El; intros.
+apply cc_beta_eq; trivial.
 Qed.
 
-End SN_ECC_Model.
-
-Import SN_ECC_Model.
+End SN_CC_Model.
+Import SN_CC_Model.
 
 (***********************************************************************)
 (** Building the SN addon *)
 
-Module SN_ECC_addon.
+Module SN_CC_addon.
 
-  Definition Real : X -> SAT := Real.
+  Definition Real : X -> X -> SAT := Real.
 
-  Lemma Real_morph : Proper (eqX ==> eqSAT) Real.
-do 2 red; intros.
-apply sSAT_morph.
-apply snd_morph; trivial.
+  Lemma Real_morph : Proper (eqX ==> eqX ==> eqSAT) Real.
+Proof Real_morph.
+
+  Lemma Real_sort P : inX P props -> eqSAT (Real props P) snSAT.
+intros.
+apply Real_sort_sn; trivial.
 Qed.
 
-  Lemma Real_sort : eqSAT (Real props) snSAT.
-apply Real_sort_sn.
-Qed.
-
-  Lemma Real_prod : forall A B,
-    eqSAT (Real (prod A B))
-     (prodSAT (Real A)
-        (interSAT (fun p:{y|inX y A} => Real (B (proj1_sig p))))).
-unfold Real, ZFuniv.Real, prod, sn_prod, piSAT, mkTY; intros.
-rewrite snd_def.
-rewrite iSAT_id.
-reflexivity.
-Qed.
+  Lemma Real_prod : forall dom f F,
+    eq_fun dom F F ->
+    inX f (prod dom F) ->
+    eqSAT (Real (prod dom F) f) (piSAT dom F (app f)).
+Proof Real_prod.
 
   Definition daimon := empty.
 
@@ -150,15 +123,19 @@ Qed.
 red; auto.
 Qed.
 
-End SN_ECC_addon.
+Definition piSAT A (F:set->set) (f:set->set) :=
+  interSAT (fun p:{x|x ∈ El A} =>
+    prodSAT (Real A (proj1_sig p)) (Real (F (proj1_sig p)) (f (proj1_sig p)))).
+
+End SN_CC_addon.
 
 (***********************************************************************)
 (*
 ----
 *)
 
-Require GenModelSN.
-Module SN := GenModelSN.MakeModel SN_ECC_Model SN_ECC_addon.
+Require GenRealSN.
+Module SN := GenRealSN.MakeModel SN_CC_Model SN_CC_addon.
 
 (** ** Extendability *)
 Definition cst (x:set) : SN.trm.
@@ -169,7 +146,7 @@ left; exists (fun _ =>x) (fun _ =>Lambda.K).
  red; reflexivity.
 Defined.
 
-Definition mkSET (x:set) := cst (mkTY x snSAT).
+Definition mkSET (x:set) := cst (mkTY x (fun _ => snSAT)).
 
 Lemma mkSET_kind e x :
   SN.typ e (mkSET x) SN.kind.
@@ -184,37 +161,26 @@ exists nil; exists (mkSET x).
  apply singl_intro.
 Qed.
 
+Notation and_split := GenRealSN.and_split.
+
 Lemma cst_typ e x y :
   in_set x y ->
   SN.typ e (cst x) (mkSET y).
 red; intros.
-apply SN.in_int_intro; try discriminate.
+apply SN.in_int_intro; intros; try discriminate.
+apply and_split; intros.
  simpl.
- apply Elt_El.
- unfold mkTY, Elt.
- rewrite fst_def; trivial. 
+ red; rewrite El_def.
+ apply union2_intro2; trivial.
 
- unfold SN_ECC_addon.Real, Real, SN.tm, SN.int, mkSET, cst, SN.iint, SN.itm.
- unfold mkTY; rewrite snd_def.
- rewrite iSAT_id.
- apply Lambda.sn_K.
-Qed.
+Opaque inSAT.
+ simpl.
+ unfold SN_CC_addon.Real; rewrite Real_def.
+  apply Lambda.sn_K.
 
-Lemma cst_typ_inv x y :
-  SN.typ nil (cst x) (mkSET y) ->
-  x == empty \/ in_set x y.
-intros.
-assert (SN.val_ok nil (SN.V.nil empty) (SN.I.nil Lambda.K)).
- red; intros.
- destruct n; inversion H0.
-apply H in H0.
-apply SN.in_int_not_kind in H0.
-2:discriminate.
-destruct H0 as (H0,_ ); simpl in H0.
-apply union2_elim in H0; destruct H0.
- apply singl_elim in H0; auto.
+  reflexivity.
 
- unfold Elt, mkTY in H0; rewrite fst_def in H0; auto.
+  apply union2_intro2; trivial.
 Qed.
 Lemma cst_eq_typ e x y :
   x == y ->
@@ -237,7 +203,7 @@ Lemma mkSET_eq_typ e x y :
   x == y ->
   SN.eq_typ e (mkSET x) (mkSET y).
 red; simpl; intros; trivial.
-unfold mkTY; rewrite H; reflexivity.
+apply mkTY_ext; auto with *.
 Qed.
 
 Lemma mkSET_eq_typ_inv x y :
@@ -248,7 +214,7 @@ assert (SN.val_ok nil (SN.V.nil empty) (SN.I.nil Lambda.K)).
  red; intros.
  destruct n; inversion H0.
 apply H in H0.
-simpl in H0; trivial.
+simpl in H0.
 apply couple_injection in H0; destruct H0; trivial.
 Qed.
 
@@ -259,34 +225,30 @@ Definition type (n:nat) : SN.trm := cst (sn_sort (ecc (S n))).
 Lemma typ_prop_type0 e :
   SN.typ e SN.prop (type 0).
 red; intros.
-apply SN.in_int_intro.
+apply SN.in_int_intro; intros; try discriminate.
+apply and_split; intros.
  apply sn_sort_in_type; trivial.
  apply ecc_incl.
  apply ecc_in1.
 
- simpl SN.int; simpl SN.tm.
- unfold SN_ECC_addon.Real; rewrite Real_sort_sn.
+ simpl.
+ unfold SN_CC_addon.Real; rewrite Real_sort_sn; trivial.
  apply snSAT_intro.
  apply Lambda.sn_K.
-
- discriminate.
- discriminate.
 Qed.
 
 Lemma typ_type_type e n :
   SN.typ e (type n) (type (S n)).
 red; intros.
-apply SN.in_int_intro.
+apply SN.in_int_intro; intros; try discriminate.
+apply and_split; intros.
  apply sn_sort_in_type; trivial.
  apply ecc_in2.
 
  simpl SN.int; simpl SN.tm.
- unfold SN_ECC_addon.Real; rewrite Real_sort_sn.
+ unfold SN_CC_addon.Real; rewrite Real_sort_sn; trivial.
  apply snSAT_intro.
  apply Lambda.sn_K.
-
- discriminate.
- discriminate.
 Qed.
 
 Lemma typ_prop_cumul e T :
@@ -295,14 +257,16 @@ Lemma typ_prop_cumul e T :
 red; intros.
 apply H in H0.
 destruct H0.
-split; trivial.
 destruct H1.
-split.
+apply SN.in_int_intro; intros; trivial; try discriminate.
+apply and_split; intros.
  revert H1; apply sort_incl.
  transitivity (ecc 0); red; intros; [apply ecc_incl_prop|apply ecc_incl]; trivial.
 
  revert H2; simpl SN.int.
- unfold SN_ECC_addon.Real, props, sn_props; do 2 rewrite Real_sort_sn; trivial.
+ unfold SN_CC_addon.Real, props, sn_props.
+ rewrite Real_sort_sn; trivial.
+ rewrite Real_sort_sn; trivial.
 Qed.
 
 Lemma typ_type_cumul e T n :
@@ -311,14 +275,16 @@ Lemma typ_type_cumul e T n :
 red; intros.
 apply H in H0.
 destruct H0.
-split; trivial.
 destruct H1.
-split.
+apply SN.in_int_intro; intros; trivial; try discriminate.
+apply and_split; intros.
  revert H1; apply sort_incl.
  red; intros; apply ecc_incl; trivial.
 
  revert H2; simpl SN.int.
- unfold SN_ECC_addon.Real, props, sn_props; do 2 rewrite Real_sort_sn; trivial.
+ unfold SN_CC_addon.Real, props, sn_props.
+ rewrite Real_sort_sn; trivial.
+ rewrite Real_sort_sn; trivial.
 Qed.
 
 Lemma typ_type_cumul_le e T m n :
@@ -336,27 +302,28 @@ Lemma typ_predicative_prod e T U n :
 unfold SN.typ; intros.
 specialize H with (1:=H1).
 destruct H as (?,(?,?)); trivial.
-split;[discriminate|].
-split.
- apply sn_predicative_prod; trivial.
+apply SN.in_int_intro; intros; try discriminate.
+apply and_split; intros.
+ apply predicative_prod; trivial.
   red; red; intros.
   rewrite H5; reflexivity.
 
   intros.
-  specialize SN.vcons_add_var0 with (1:=H1) (2:=H4) (3:=H);
+  specialize SN.vcons_add_var_daimon with (1:=H1) (2:=H4) (3:=H);
     intros in_U.
   apply H0 in in_U.
   apply SN.in_int_not_kind in in_U;[|discriminate].
   destruct in_U; trivial.
 
-  specialize SN.vcons_add_var0 with (1:=H1) (2:=empty_El _) (3:=H);
+  specialize SN.vcons_add_var_daimon with (1:=H1) (2:=empty_El _) (3:=H);
     intros in_U.
   apply H0 in in_U.
-  destruct in_U  as (_,(_,satU)).
-  unfold SN_ECC_addon.Real in *; simpl SN.int in *.
-  rewrite Real_sort_sn in *.
-  simpl in satU|-*.
+  destruct in_U  as (_,(in_U,satU)).
+  unfold SN_CC_addon.Real in *; simpl SN.int in *.
+  rewrite Real_sort_sn in H3,satU|-*; auto.
   rewrite SN.tm_subst_cons in satU.
+Transparent inSAT.
+  simpl in satU.
   apply Lambda.sn_subst in satU.
   apply KSAT_intro with (A:=snSAT); auto.
 Qed.
@@ -507,11 +474,13 @@ Lemma typ_sort_type_ok e T s :
   SN.typ e T (interp (TermECC.Srt s)) ->
   SN.type_ok e T.
 split; trivial.
-split.
+intros; apply and_split; intros.
  apply H0 in H1.
  apply SN.in_int_sn in H1; trivial.
 
- exists empty; red; auto. 
+ exists empty; split.
+  red; auto.
+  apply varSAT.
 Qed.
 
 Lemma int_sound : forall e M M' T,

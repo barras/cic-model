@@ -110,7 +110,7 @@ red; intros.
 apply H0 in H2.
 apply H1 in H2.
 apply in_int_not_kind in H2; trivial.
-apply in_int_intro; [|discriminate|discriminate].
+apply in_int_intro; [discriminate|discriminate|].
 simpl int; simpl tm in H2 |- *; trivial.
 Qed.
 

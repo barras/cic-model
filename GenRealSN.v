@@ -4,6 +4,12 @@ Require Import basic.
 Require Import Sat.
 Require Import Models.
 
+(* move *)
+Lemma and_split (A B:Prop) :
+  A -> (A->B) -> A/\B.
+split; auto.
+Qed.
+
 Module Lc := Lambda.
 
 (** * Abstract strong mormalization model (supporting strong eliminations) *)
@@ -186,13 +192,13 @@ elim H; trivial.
 Qed.
 
 Lemma in_int_intro : forall i j M T,
-  [int i M, tm j M] \real int i T ->
   M <> kind ->
   T <> kind ->
+  [int i M, tm j M] \real int i T ->
   in_int i j M T.
 red; intros.
 destruct T; auto.
-elim H1; trivial.
+elim H0; trivial.
 Qed.
 
 
@@ -337,6 +343,13 @@ destruct T; try contradiction.
 apply H0; trivial.
 Qed.
 
+Lemma assume_wf e M T :
+  (wf e -> typ e M T) ->
+  typ e M T.
+red; intros; apply H; trivial.
+red; eauto.
+Qed.
+
 (** Well-formed types *)
 Definition typs e T :=
   typ e T kind \/ typ e T prop.
@@ -367,6 +380,34 @@ destruct H.
   red; intros; trivial.
 
   split; [apply daimon_false|apply varSAT].
+Qed.
+
+Definition type_ok e T :=
+  T <> kind /\ forall i j, val_ok e i j -> Lc.sn (tm j T) /\ exists w, [w,SatSet.daimon]\real int i T.
+
+Lemma typs_type_ok e T :
+  wf e -> typs e T -> type_ok e T.
+intros (i0,(j0,is_val0)) ty_T.
+split; intros.
+ destruct ty_T as [ty_T|ty_T]; apply ty_T in is_val0; destruct is_val0; trivial.
+
+ split.
+  destruct ty_T as [ty_T|ty_T]; apply ty_T in H; apply in_int_sn in H; trivial.
+
+  apply typs_non_empty with (1:=ty_T) (2:=H).
+Qed.
+
+Lemma typs_is_non_empty e i j T :
+  typs e T ->
+  val_ok e i j -> 
+  T <> kind /\ Lc.sn (tm j T) /\ exists w, [w,SatSet.daimon]\real int i T.
+split.
+ apply typs_not_kind with (2:=H).
+ exists i; exists j; trivial.
+split.
+ destruct H; apply H in H0; apply in_int_sn in H0; trivial.
+
+ apply typs_non_empty with (1:=H) (2:=H0).
 Qed.
 
 
@@ -408,6 +449,17 @@ red.
 exists vnil; exists (fun _ => SatSet.daimon).
 red; intros.
 destruct n; discriminate.
+Qed.
+
+Lemma wf_cons_ok : forall e T,
+  wf e ->
+  type_ok e T ->
+  wf (T::e).
+unfold wf; intros e T (i,(j,is_val)) (T_nk,inh_T).
+destruct inh_T with (1:=is_val) as (_,(x,non_mt)).
+exists (V.cons x i); exists (I.cons SatSet.daimon j).
+apply vcons_add_var_daimon; trivial.
+destruct non_mt; trivial.
 Qed.
 
 Lemma wf_cons : forall e T,
@@ -598,9 +650,9 @@ apply in_int_not_kind in ty_u; try discriminate.
 simpl in *.
 apply prod_elim with (x:=int i v) (u:=tm j v) in ty_u; trivial.
  apply in_int_intro; simpl; trivial; try discriminate.
-  rewrite <- int_subst_eq; trivial.
-
   destruct Ur as [Ur|]; simpl; try discriminate; trivial.
+
+  rewrite <- int_subst_eq; trivial.
 
  red; intros.
  rewrite H0; reflexivity.
@@ -623,30 +675,98 @@ apply real_sn in H2.
 apply Lc.sn_subst in H2; trivial.
 Qed.
 
-Lemma typ_abs : forall e T M U,
-  typs e T ->
+Lemma typ_abs_ok : forall e T M U,
+  type_ok e T ->
   typ (T :: e) M U ->
   U <> kind ->
   typ e (Abs T M) (Prod T U).
 Proof.
-intros e T M U ty_T ty_M not_tops i j is_val.
-assert (T_not_tops : T <> kind).
- destruct ty_T as [ty_T|ty_T]; apply ty_T in is_val;
-   destruct is_val; trivial.
+intros e T M U (T_not_tops,ty_T) ty_M not_tops i j is_val.
 apply in_int_intro; simpl; try discriminate.
 apply prod_intro2; intros.
  apply add_var_eq_fun; auto with *.
 
  apply add_var_eq_fun; auto with *.
 
- apply typs_sn with (1:=ty_T) (2:=is_val).
+ apply ty_T with (1:=is_val).
 
- apply typs_non_empty with (2:=is_val); trivial.
+ apply ty_T with (1:=is_val).
 
  apply vcons_add_var with (x:=x) (T:=T) (t:=u) in is_val; trivial.
  apply ty_M in is_val.
  apply in_int_not_kind in is_val; trivial.
  rewrite <- tm_subst_cons; trivial.
+Qed.
+
+
+Lemma typ_abs : forall e T M U,
+  typs e T ->
+  typ (T :: e) M U ->
+  U <> kind ->
+  typ e (Abs T M) (Prod T U).
+Proof.
+intros e T M U ty_T ty_M not_tops.
+apply assume_wf; intro wfe.
+apply typ_abs_ok; trivial.
+apply typs_type_ok; trivial.
+Qed.
+
+Lemma typ_beta_ok : forall e T M N U,
+  type_ok e T ->
+  typ (T::e) M U ->
+  typ e N T ->
+  T <> kind ->
+  U <> kind ->
+  typ e (App (Abs T M) N) (subst N U).
+Proof.
+intros.
+apply typ_app with T; trivial.
+apply typ_abs_ok; trivial.
+Qed.
+
+Lemma typ_beta : forall e T M N U,
+  typs e T ->
+  typ (T::e) M U ->
+  typ e N T ->
+  T <> kind ->
+  U <> kind ->
+  typ e (App (Abs T M) N) (subst N U).
+Proof.
+intros.
+apply typ_app with T; trivial.
+apply typ_abs; trivial.
+Qed.
+
+Lemma typ_prod_prop : forall e T U,
+  type_ok e T ->
+  typ (T :: e) U prop ->
+  typ e (Prod T U) prop.
+Proof.
+intros e T U (T_not_tops, inh_T) ty_U i j is_val.
+specialize inh_T with (1:=is_val).
+destruct inh_T as (snT,(witT, (in_T,_))).
+specialize vcons_add_var_daimon with (1:=is_val) (2:=in_T) (3:=T_not_tops);
+  intros in_U.
+apply ty_U in in_U.
+split;[discriminate|apply and_split;simpl;intros].
+ (* value *)
+ apply impredicative_prod; intros.   
+  red; intros.
+  rewrite H0; reflexivity.
+
+  clear witT in_T in_U.
+  specialize vcons_add_var_daimon with (1:=is_val) (2:=H) (3:=T_not_tops);
+    intros in_U.
+  apply ty_U in in_U.
+  apply in_int_not_kind in in_U;[|discriminate].
+  destruct in_U; trivial.
+
+ (* sat *)
+ destruct in_U as (_,(in_U,satU)).
+ rewrite Real_sort in satU|-*; simpl; trivial.
+ rewrite tm_subst_cons in satU.
+ apply Lc.sn_subst in satU.
+ apply KSAT_intro with (A:=snSAT); auto.
 Qed.
 
 Lemma typ_prod : forall e T U s2,
@@ -655,52 +775,39 @@ Lemma typ_prod : forall e T U s2,
   typ (T :: e) U s2 ->
   typ e (Prod T U) s2.
 Proof.
-intros e T U s2 is_srt ty_T ty_U i j is_val.
-assert (T_not_tops : T <> kind).
- destruct ty_T as [ty_T|ty_T]; apply ty_T in is_val;
-   destruct is_val; trivial.
-assert (typs (T::e) U) by (destruct is_srt; subst; red; auto).
-destruct (typs_non_empty ty_T is_val) as (witT,in_T).
-specialize vcons_add_var with (1:=is_val) (2:=in_T) (3:=T_not_tops);
-  intros in_U.
-apply ty_U in in_U.
-split;[discriminate|simpl].
-assert (snU : Lc.sn (tm (Lc.ilift j) U)).
- apply Lc.sn_subst with SatSet.daimon.
- rewrite <- tm_subst_cons.
- destruct is_srt; subst s2; simpl in *.
-  destruct in_U as (_,(_,snu)); trivial.
-
-  destruct in_U as (_,mem); simpl in mem.
-  apply real_sn in mem; trivial.
-destruct is_srt; subst s2; simpl in *.
+intros e T U s2 is_srt ty_T ty_U.
+destruct is_srt; subst s2.
  (* s2=kind *)
- split.
+ intros i j is_val.
+ assert (T_not_tops : T <> kind).
+  destruct ty_T as [ty_T|ty_T]; apply ty_T in is_val;
+    destruct is_val; trivial.
+ destruct (typs_non_empty ty_T is_val) as (witT,(in_T,_)).
+ specialize vcons_add_var_daimon with (1:=is_val) (2:=in_T) (3:=T_not_tops);
+   intros in_U.
+ apply ty_U in in_U.
+ assert (Lc.sn (tm j T)).
+  destruct ty_T as [ty_T|ty_T]; apply ty_T in is_val;
+    destruct is_val as (_,(_,satT)); trivial.
+  apply sat_sn in satT; trivial.
+ split;[discriminate|split;simpl].
+  (* kind_ok: *)
   apply prod_kind_ok.
   destruct in_U as (_,(mem,_)); trivial.
 
-  apply Lc.sn_K2.
-   apply typs_sn with (1:=ty_T) (2:=is_val).
-
-   apply Lc.sn_abs; trivial.
+  (* sn *)
+  destruct in_U as (_,(_,satU)).
+  rewrite tm_subst_cons in satU.
+  apply Lc.sn_subst in satU.
+  apply KSAT_intro with (A:=snSAT); auto.
 
  (* s2=prop *)
- unfold CProd.
- apply real_exp_K.
-  apply Lc.sn_abs; trivial.
- assert (prod (int i T) (fun x => int (V.cons x i) U) ∈ props).
-  apply impredicative_prod; intros.   
-   red; intros.
-   rewrite H1; reflexivity.
-   assert (val_ok (T::e) (V.cons x i) (I.cons SatSet.daimon j)).
-    apply vcons_add_var; trivial.
-    split; trivial.
-    apply varSAT.
-   apply ty_U in H1.
-   destruct H1 as (_,(?,_)); trivial.
- split; simpl; trivial.
- rewrite Real_sort; trivial.
- apply typs_sn with (1:=ty_T) (2:=is_val).
+ apply assume_wf; intros (i0,(j0,is_val0)).
+ destruct typs_is_non_empty with (1:=ty_T) (2:=is_val0) as (T_nk,_).
+ apply typ_prod_prop; trivial.
+ split; trivial.
+ intros.
+ destruct typs_is_non_empty with (1:=ty_T) (2:=H); trivial.
 Qed.
 
 Lemma typ_conv : forall e M T T',

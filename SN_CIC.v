@@ -1479,8 +1479,8 @@ Lemma typ_nat_fix :
 red; intros.
 destruct tyord_inv with (2:=ty_O)(3:=H); trivial.
 apply in_int_intro.
-2:discriminate.
-2:discriminate.
+discriminate.
+discriminate.
 assert (int i (NatFix O M) ∈ El(int i (Prod (NatI O) (subst_rec O 1 U)))).
  rewrite intProd_eq.
  eapply eq_elim.
