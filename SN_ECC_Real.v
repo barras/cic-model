@@ -161,8 +161,6 @@ exists nil; exists (mkSET x).
  apply singl_intro.
 Qed.
 
-Notation and_split := GenRealSN.and_split.
-
 Lemma cst_typ e x y :
   in_set x y ->
   SN.typ e (cst x) (mkSET y).

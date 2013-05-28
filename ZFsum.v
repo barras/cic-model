@@ -104,6 +104,25 @@ elim H1 using sum_ind; intros.
  apply inr_typ; auto.
 Qed.
 
+Lemma sum_inv_l X Y x :
+  inl x ∈ sum X Y -> x ∈ X.
+intros.
+apply sum_ind with (3:=H); intros.
+ apply couple_injection in H1; destruct H1.
+ rewrite H2; trivial.
+
+ apply discr_sum in H1; contradiction.
+Qed.
+Lemma sum_inv_r X Y y :
+  inr y ∈ sum X Y -> y ∈ Y.
+intros.
+apply sum_ind with (3:=H); intros.
+ symmetry in H1; apply discr_sum in H1; contradiction.
+
+ apply couple_injection in H1; destruct H1.
+ rewrite H2; trivial.
+Qed.
+
   Definition sum_case f g x :=
     cond_set (fst x == zero) (f (dest_sum x)) ∪
     cond_set (fst x == succ zero) (g (dest_sum x)).

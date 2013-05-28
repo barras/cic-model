@@ -817,7 +817,7 @@ apply H in H1. apply in_int_not_kind in H1; [destruct H1 as (H1, _)|discriminate
 unfold inX in H1; simpl in H1; rewrite El_def in H1.
 apply H in H2. apply in_int_not_kind in H2; [destruct H2 as (H2, _)|discriminate].
 unfold inX in H2; simpl in H2; rewrite El_def in H2.
-apply in_int_intro; [clear e H|discriminate|discriminate].
+apply in_int_intro; [discriminate|discriminate|clear e H].
 assert ([i 0, j 0]\real (prod (prod (mkTY NAT cNAT) (fun _ => props)) (fun x => 
   prod (app x (i 1)) (fun y => app x (i 2)))) ->
 [int i (Ref 0), tm j (Ref 0)]\real int i (EQ_trm (Ref 1) (Ref 2))).

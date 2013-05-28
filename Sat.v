@@ -151,6 +151,14 @@ intros (A,A_can) (B,B_can) m in_subst; simpl in *.
 apply Abs_sound_Arr; auto.
 Qed.
 
+  Lemma prodSAT_intro': forall A B m,
+    (forall v, inSAT v A -> inSAT (App m v) B) ->
+    inSAT m (prodSAT A B).
+simpl; intros.
+red; intros.
+apply H; trivial.
+Qed.
+
   Lemma prodSAT_elim : forall A B u v,
     inSAT u (prodSAT A B) ->
     inSAT v A ->
@@ -272,28 +280,50 @@ destruct S; simpl; intros.
 apply (sat1_in_cand 0 x); trivial.
 Qed.
 
-(** Dependent product *)
-(** The realizability relation of a dependent product.
-   It is the intersection of all reducibility candidates {x}F -> {f(x)}G(x)
-   when x ranges A. *)
-Definition piSAT0 A B (F:A->SAT) (G:A->B->SAT) (f:A->B) :=
-  interSAT (fun x => prodSAT (F x) (G x (f x))).
+(** Dealing with type dependencies *)
 
-Lemma piSAT0_intro : forall A B F G (f:A->B) t,
-  sn t -> (* if A is empty *)
-  (forall x u, inSAT u (F x) -> inSAT (App t u) (G x (f x))) ->
-  inSAT t (piSAT0 F G f).
-unfold piSAT0; intros.
-split; intros; trivial.
-intros ? ?.
-apply H0; trivial.
+Definition depSAT A (P:A->Prop) F :=
+  interSAT (fun x:sig P => F (proj1_sig x)).
+
+Lemma depSAT_elim A (P:A->Prop) F t x :
+  inSAT t (depSAT P F) ->
+  P x ->
+  inSAT t (F x).
+intros.
+apply interSAT_elim with (x:=exist P x H0) in H.
+trivial.
 Qed.
 
-Lemma piSAT0_elim : forall A B F G (f:A->B) x t u,
-  inSAT t (piSAT0 F G f) ->
-  inSAT u (F x) ->
-  inSAT (App t u) (G x (f x)).
+Lemma depSAT_intro A (P:A->Prop) F t :
+  sn t ->
+  (forall x, P x -> inSAT t (F x)) ->
+  inSAT t (depSAT P F).
+split; trivial.
+intros (x,?); simpl.
+apply (H0 x); trivial.
+Qed.
+
+(** Dependent product *)
+
+Definition piSAT0 A (P:A->Prop) (F G:A->SAT) :=
+  depSAT P (fun x => prodSAT (F x) (G x)).
+
+Lemma piSAT0_intro : forall A (P:A->Prop) (F G:A->SAT) t,
+  sn t -> (* if A is empty *)
+  (forall x u, inSAT u (F x) -> inSAT (App t u) (G x)) ->
+  inSAT t (piSAT0 P F G).
+unfold piSAT0; intros.
+apply depSAT_intro; trivial.
 intros.
-apply interSAT_elim with (x:=x) in H.
-apply H; trivial.
+apply prodSAT_intro'; auto.
+Qed.
+
+Lemma piSAT0_elim : forall A (P:A->Prop) (F G:A->SAT) x t u,
+  inSAT t (piSAT0 P F G) ->
+  P x ->
+  inSAT u (F x) ->
+  inSAT (App t u) (G x).
+intros.
+apply interSAT_elim with (x:=exist _ x H0) in H.
+apply prodSAT_elim with (2:=H1); trivial.
 Qed.

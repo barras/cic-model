@@ -1,5 +1,5 @@
 (** Saturated sets constructions related to natural numbers: interpreting constructors,
-    dependent pattern-matching and fixpoint. Also support size annotations. *)
+    dependent pattern-matching and fixpoint. Does not support size annotations. *)
 
 Set Implicit Arguments.
 Require Import basic Can Sat.
@@ -239,7 +239,7 @@ rewrite <- cNAT_eq; trivial.
 Qed.
 
 (** * Pattern-matching *)
-
+(*
 Definition NCASE f g n :=
   Lc.App2 n f (Lc.Abs (Lc.Abs (Lc.App (Lc.lift 2 g) (Lc.Ref 1)))).
 
@@ -308,7 +308,9 @@ repeat rewrite Lc.simpl_subst; trivial.
 do 2 rewrite Lc.lift0.
 apply prodSAT_elim with (2:=H4); auto.
 Qed.
+*)
 
+(*
 (** * Structural fixpoint: *)
 
 (** NATFIX m n --> m (NATFIX m) n when n is a constructor.
@@ -581,3 +583,4 @@ assert (isOrd z).
  apply isOrd_inv with y; trivial.
 apply TI_intro with z; auto with *.
 Qed.
+*)

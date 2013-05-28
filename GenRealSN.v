@@ -4,12 +4,6 @@ Require Import basic.
 Require Import Sat.
 Require Import Models.
 
-(* move *)
-Lemma and_split (A B:Prop) :
-  A -> (A->B) -> A/\B.
-split; auto.
-Qed.
-
 Module Lc := Lambda.
 
 (** * Abstract strong mormalization model (supporting strong eliminations) *)

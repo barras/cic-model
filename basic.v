@@ -26,6 +26,12 @@ Lemma indexed_relation_id : forall A B (R:B->B->Prop) (F F':A->B),
 split; intros; eauto.
 Qed.
 
+(** Asymmetric and-split, strengthens the rhs with the proof of the lhs *)
+Lemma and_split (A B:Prop) :
+  A -> (A->B) -> A/\B.
+split; auto.
+Qed.
+
 (**********************************************************************************)
 (** Setoid and morphisms stuff *)
 
