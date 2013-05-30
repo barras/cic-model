@@ -300,7 +300,7 @@ Qed.
 
 Definition Zero : trm.
 (* begin show *)
-left; exists (fun _ => ZERO) (fun _ => INL ID).
+left; exists (fun _ => ZERO) (fun _ => ZE).
 (* end show *)
  do 2 red; reflexivity.
  do 2 red; reflexivity.
@@ -330,7 +330,7 @@ Qed.
 
 Definition Succ (o:trm): trm.
 (* begin show *)
-left; exists (fun i => lam (int i (NatI o)) SUCC) (fun _ => Lc.Abs (INR (Lc.Ref 0))).
+left; exists (fun i => lam (int i (NatI o)) SUCC) (fun _ => Lc.Abs (SU (Lc.Ref 0))).
 (*end show *)
  do 2 red; intros.
  apply lam_ext.
@@ -1078,102 +1078,44 @@ exists (fun i =>
  rewrite H; reflexivity.
 
  (* *)
- red; simpl; intros.
- unfold NATFIX, guard_sum, Lc.App2.
- repeat f_equal.
-  unfold Lc.lift; simpl.
+ red; intros.
+ replace (Lc.lift_rec 1
+     (NATFIX (Lc.Abs (tm (Lc.ilift (I.cons (tm j O) j)) M))) k) with
+   (NATFIX (Lc.lift_rec 1 (Lc.Abs (tm (Lc.ilift (I.cons (tm j O) j)) M)) k)).
+  simpl.
   f_equal.
-  f_equal.
-  f_equal.
-  rewrite <- Lc.permute_lift_rec with (n:=1) (p:=2) (k:=S (S k)); auto with arith.
-  f_equal.
-  rewrite <- Lc.permute_lift_rec with (n:=1) (p:=1) (k:=S k); auto with arith.
   f_equal.
   rewrite <- tm_liftable.
   apply tm_morph; auto with *.
   rewrite <- Lc.ilift_binder_lift.
   apply Lc.ilift_morph.
-  intros [|i]; simpl; try reflexivity.
+  intros [|k']; simpl; trivial.
   apply tm_liftable.
 
-  unfold Lc.lift; simpl.
-  f_equal.
-  f_equal.
-  f_equal.
-  rewrite <- Lc.permute_lift_rec with (n:=1) (p:=2) (k:=S (S k)); auto with arith.
-  f_equal.
-  rewrite <- Lc.permute_lift_rec with (n:=1) (p:=1) (k:=S k); auto with arith.
-  f_equal.
-  rewrite <- tm_liftable.
-  apply tm_morph; auto with *.
-  rewrite <- Lc.ilift_binder_lift.
-  apply Lc.ilift_morph.
-  intros [|i]; simpl; try reflexivity.
-  apply tm_liftable.
-
-  unfold Lc.lift; simpl.
-  f_equal.
-  f_equal.
-  f_equal.
-  rewrite <- Lc.permute_lift_rec with (n:=1) (p:=1) (k:=S (S k)); auto with arith.
-  f_equal.
-  rewrite <- Lc.permute_lift_rec with (n:=1) (p:=1) (k:=S k); auto with arith.
-  f_equal.
-  rewrite <- tm_liftable.
-  apply tm_morph; auto with *.
-  rewrite <- Lc.ilift_binder_lift.
-  apply Lc.ilift_morph.
-  intros [|i]; simpl; try reflexivity.
-  apply tm_liftable.
+  generalize  (Lc.Abs (tm (Lc.ilift (I.cons (tm j O) j)) M)); intro.
+  unfold NATFIX, FIXP; simpl.
+  rewrite <- Lc.permute_lift.
+  reflexivity.
 
  (* *)
- red; simpl; intros.
- unfold NATFIX, guard_sum, Lc.App2.
- repeat f_equal.
-  unfold Lc.lift; simpl.
+ red; intros.
+ replace (Lc.subst_rec u
+     (NATFIX (Lc.Abs (tm (Lc.ilift (I.cons (tm j O) j)) M))) k) with
+   (NATFIX (Lc.subst_rec u (Lc.Abs (tm (Lc.ilift (I.cons (tm j O) j)) M)) k)).
+  simpl.
   f_equal.
-  f_equal.
-  f_equal.
-  rewrite <- Lc.commut_lift_subst_rec with (p:=S (S k)); auto with arith.
-  f_equal.
-  rewrite <- Lc.commut_lift_subst_rec with (p:=S k); auto with arith.
   f_equal.
   rewrite <- tm_substitutive.
   apply tm_morph; auto with *.
   rewrite <- Lc.ilift_binder.
   apply Lc.ilift_morph.
-  intros [|i]; simpl; try reflexivity.
+  intros [|k']; simpl; trivial.
   apply tm_substitutive.
 
-  unfold Lc.lift; simpl.
-  f_equal.
-  f_equal.
-  f_equal.
-  rewrite <- Lc.commut_lift_subst_rec with (p:=S (S k)); auto with arith.
-  f_equal.
-  rewrite <- Lc.commut_lift_subst_rec with (p:=S k); auto with arith.
-  f_equal.
-  rewrite <- tm_substitutive.
-  apply tm_morph; auto with *.
-  rewrite <- Lc.ilift_binder.
-  apply Lc.ilift_morph.
-  intros [|i]; simpl; try reflexivity.
-  apply tm_substitutive.
-
-  unfold Lc.lift; simpl.
-  f_equal.
-  f_equal.
-  f_equal.
-  rewrite <- Lc.commut_lift_subst_rec with (p:=S (S k)); auto with arith.
-  f_equal.
-  rewrite <- Lc.commut_lift_subst_rec with (p:=S k); auto with arith.
-  f_equal.
-  rewrite <- tm_substitutive.
-  apply tm_morph; auto with *.
-  rewrite <- Lc.ilift_binder.
-  apply Lc.ilift_morph.
-  intros [|i]; simpl; try reflexivity.
-  apply tm_substitutive.
+  generalize  (Lc.Abs (tm (Lc.ilift (I.cons (tm j O) j)) M)); intro.
+  unfold NATFIX, FIXP; simpl.
+  rewrite <- Lc.commut_lift_subst.
+  reflexivity.
 Defined.
 
 

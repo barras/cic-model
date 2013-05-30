@@ -478,32 +478,11 @@ Qed.
 Lemma red_iota_simulated_0 : forall f g,
   red_term (NatRec f g Zero) f.
 red; simpl; intros.
-unfold ZE.
-eapply t_trans;[apply Lc.redp_app_l;apply t_step;apply Lc.red1_beta; reflexivity|].
-unfold Lc.subst; simpl.
-apply t_step.
-apply Lc.red1_beta.
-unfold Lc.subst; rewrite Lc.simpl_subst; trivial.
-rewrite Lc.lift0; trivial.
+apply ZE_iota.
 Qed.
 
 Lemma red_iota_simulated_S : forall f g n,
   red_term (NatRec f g (App Succ n)) (App (App g n) (NatRec f g n)).
 red; simpl; intros.
-unfold SU.
-eapply t_trans.
- do 2 apply Lc.redp_app_l.
- apply t_step; apply Lc.red1_beta; reflexivity.
-unfold Lc.subst; simpl.
-eapply  t_trans.
- apply Lc.redp_app_l.
- apply t_step; apply Lc.red1_beta; reflexivity.
-unfold Lc.subst; simpl.
-rewrite Lc.simpl_subst; auto.
-apply t_step; apply Lc.red1_beta.
-unfold Lc.subst; simpl.
-rewrite Lc.simpl_subst; auto.
-rewrite Lc.simpl_subst; auto.
-do 3 rewrite Lc.lift0.
-reflexivity.
+apply SU_iota.
 Qed.

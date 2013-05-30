@@ -56,23 +56,44 @@ apply prodSAT_morph.
   rewrite Px in H1; apply sum_inv_r in H1; trivial.
 Qed.
 
+Definition ZE := INL ID.
+
 Lemma Real_ZERO_gen A :
-  inSAT (INL ID) (fNAT A ZERO).
+  inSAT ZE (fNAT A ZERO).
 apply Real_inl.
  do 2 red; reflexivity.
 
  apply ID_intro.
 Qed.
 
+Definition SU := INR.
+
 Lemma Real_SUCC_gen A n t :
   Proper (eq_set==>eqSAT) A ->
   inSAT t (A n) ->
-  inSAT (INR t) (fNAT A (SUCC n)).
+  inSAT (SU t) (fNAT A (SUCC n)).
 intros.
 apply Real_inr; trivial.
 Qed.
 
 Definition NCASE f g n := Lc.App2 n (Lc.Abs (Lc.lift 1 f)) g.
+
+Lemma ZE_iota t1 t2 :
+  Lc.redp (NCASE t1 t2 ZE) t1.
+unfold NCASE, ZE.
+eapply t_trans.
+ apply INL_iota.
+apply t_step; apply Lc.red1_beta.
+unfold Lc.subst; rewrite Lc.simpl_subst; trivial.
+rewrite Lc.lift0; trivial.
+Qed.
+
+Lemma SU_iota n t1 t2 :
+  Lc.redp (NCASE t1 t2 (SU n)) (Lc.App t2 n).
+unfold NCASE, SU.
+apply INR_iota.
+Qed.
+
 
 Lemma Real_NATCASE_gen X A C n nt ft gt:
   Proper (eq_set ==> eqSAT) C ->
@@ -144,7 +165,7 @@ Qed.
 
 Lemma Real_ZERO o :
   isOrd o ->
-  inSAT (INL ID) (fNATi (osucc o) ZERO).
+  inSAT ZE (fNATi (osucc o) ZERO).
 intros.
 rewrite fNATi_succ_eq; trivial.
  apply Real_ZERO_gen.
@@ -156,7 +177,7 @@ Lemma Real_SUCC o n t :
   isOrd o ->
   n ∈ NATi o ->
   inSAT t (fNATi o n) ->
-  inSAT (INR t) (fNATi (osucc o) (SUCC n)).
+  inSAT (SU t) (fNATi (osucc o) (SUCC n)).
 intros.
 rewrite fNATi_succ_eq; trivial.
  apply Real_inr; trivial.
@@ -180,7 +201,6 @@ unfold NATi in nty; rewrite TI_mono_succ in nty; auto.
 apply Real_NATCASE_gen with (2:=nty) (3:=nreal); auto.
 Qed.
 
-(* TODO: reduction of NCASE *)
 
 (** * Structural fixpoint: *)
 
@@ -240,6 +260,20 @@ destruct eqc; subst c.
  rewrite Lc.lift0; trivial.
 Qed.
 
+Lemma G_INL m a :
+  Lc.redp (Lc.App (guard_sum m) (INL a)) (Lc.App2 m m (INL a)).
+apply G_sim.
+econstructor; exists 1; split; auto.
+reflexivity.
+Qed.
+Lemma G_INR m a :
+  Lc.redp (Lc.App (guard_sum m) (INR a)) (Lc.App2 m m (INR a)).
+apply G_sim.
+econstructor; exists 0; split; auto.
+reflexivity.
+Qed.
+
+
 (*
 Definition guard_couple m :=
   Lc.Abs (Lc.App2 (Lc.App (Lc.Ref 0) (Lc.Abs (Lc.Abs (Lc.lift 3 m)))) (Lc.lift 1 m) (Lc.Ref 0)).
@@ -279,7 +313,19 @@ rewrite Lc.lift0; trivial.
 Qed.
 *)
 
-Lemma G_sat A k m t X :
+Lemma G_sn m :
+  sn m -> sn (guard_sum m).
+unfold guard_sum; intros.
+apply sn_abs.
+apply sat_sn with snSAT.
+apply prodSAT_elim with snSAT;[|apply varSAT].
+apply prodSAT_elim with snSAT;[|apply sn_lift;trivial].
+apply prodSAT_elim with snSAT;[|apply sn_abs;apply sn_lift;trivial].
+apply prodSAT_elim with snSAT;[|apply sn_abs;apply sn_lift;trivial].
+apply varSAT.
+Qed.
+
+Lemma G_sat_gen A k m t X :
   k ∈ NAT ->
   inSAT t (fNAT A k) ->
   inSAT (Lc.App2 m m t) X ->
@@ -310,6 +356,7 @@ apply Real_NATCASE_gen with (X:=NAT) (A:=A) (C:=fun _ => S) (n:=k); auto.
   rewrite Lc.lift0; trivial.
 Qed.
 
+(*
 Lemma sn_G_inv m : Lc.sn (guard_sum m) -> Lc.sn m.
 intros.
 unfold guard_sum in H.
@@ -318,8 +365,104 @@ eapply subterm_sn in H;[|apply sbtrm_app_l].
 eapply subterm_sn in H;[|apply sbtrm_app_r].
 apply sn_lift_inv with (1:=H) (2:=eq_refl).
 Qed.
+*)
+
+(**)
+
+Lemma G_sat o x t m (X:SAT):
+  isOrd o ->
+  x ∈ NATi o ->
+  inSAT t (fNATi o x) ->
+  inSAT (Lc.App2 m m t) X ->
+  inSAT (Lc.App (guard_sum m) t) X.
+intros.
+assert (x ∈ NAT).
+ apply NATi_NAT in H0; trivial.
+apply TI_elim in H0; auto.
+destruct H0 as (o',?,?).
+assert (isOrd o') by eauto using isOrd_inv.
+assert (osucc o' ⊆ o).
+ red; intros.
+ apply isOrd_plump with o'; trivial.
+  eauto using isOrd_inv.
+  apply olts_le; trivial.
+rewrite <- TI_mono_succ in H4; auto.
+rewrite <- fNATi_mono with (o1:=osucc o') in H1; auto.
+rewrite fNATi_succ_eq in H1; auto.
+apply G_sat_gen with (2:=H1); trivial.
+Qed.
 
 
+
+(* specialized fix *)
+
+Definition NATFIX := FIXP (Lc.Abs (guard_sum (Lc.Ref 0))).
+
+Lemma NATFIX_sim : forall m n,
+  (exists t c, (c=0\/c=1) /\ n = Lc.Abs (Lc.Abs (Lc.App (Lc.Ref c) t))) ->
+  Lc.redp (Lc.App (NATFIX m) n) (Lc.App2 m (NATFIX m) n).
+intros.
+apply FIXP_sim.
+intros.
+eapply t_trans.
+ eapply Lc.redp_app_l.
+ apply t_step.
+ apply beta.
+apply G_sim; trivial.
+Qed.
+
+Lemma ZE_iotafix m :
+  Lc.redp (Lc.App (NATFIX m) ZE) (Lc.App2 m (NATFIX m) ZE).
+apply NATFIX_sim.
+econstructor.
+exists 1.
+split; auto.
+reflexivity.
+Qed.
+Lemma SU_iotafix m n :
+  Lc.redp (Lc.App (NATFIX m) (SU n)) (Lc.App2 m (NATFIX m) (SU n)).
+apply NATFIX_sim.
+econstructor.
+exists 0.
+split; auto.
+reflexivity.
+Qed.
+
+Lemma NATFIX_sat : forall o m X,
+  isOrd o ->
+  (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ NATi y ->
+   inclSAT (X y n) (X y' n)) ->
+  inSAT m (piSAT0 (fun o' =>o' ∈ osucc o) 
+             (fun o1 => piSAT0 (fun n => n ∈ NATi o1) (fNATi o1) (X o1))
+             (fun o1 => let o2 := osucc o1 in
+                        piSAT0 (fun n => n ∈ NATi o2) (fNATi o2) (X o2))) ->
+  inSAT (NATFIX m) (piSAT0 (fun n => n ∈ NATi o) (fNATi o) (X o)).
+intros.
+apply FIXP_sat; trivial.
+ intros.
+ apply sat_sn with snSAT.
+ apply inSAT_exp; auto.
+ apply G_sn in H2; trivial.
+
+ intros.
+ eapply inSAT_context.
+  intros.
+  apply inSAT_exp; auto.
+  exact H6.
+
+  eapply G_sat with (3:=H4); auto.
+
+ intros.
+ apply TI_elim in H4; auto.
+ destruct H4 as (o',?,?); exists o'; trivial.
+ rewrite <- TI_mono_succ in H5; eauto using isOrd_inv.
+
+ intros.
+ apply fNATi_mono; trivial.
+Qed.
+
+(* specialized fix *)
+(*
 Definition NATFIX m :=
   guard_sum (Lc.Abs (Lc.App  (Lc.lift 1 m) (guard_sum (Lc.Ref 0)))).
 
@@ -338,6 +481,23 @@ set (t1 := Lc.Abs (Lc.App (Lc.lift 1 m) (guard_sum (Lc.Ref 0)))).
 unfold Lc.subst; simpl.
 rewrite Lc.simpl_subst; auto.
 rewrite Lc.lift0.
+reflexivity.
+Qed.
+
+Lemma ZE_iotafix m :
+  Lc.redp (Lc.App (NATFIX m) ZE) (Lc.App2 m (NATFIX m) ZE).
+apply NATFIX_sim.
+econstructor.
+exists 1.
+split; auto.
+reflexivity.
+Qed.
+Lemma SU_iotafix m n :
+  Lc.redp (Lc.App (NATFIX m) (SU n)) (Lc.App2 m (NATFIX m) (SU n)).
+apply NATFIX_sim.
+econstructor.
+exists 0.
+split; auto.
 reflexivity.
 Qed.
 
@@ -450,3 +610,4 @@ assert (z ∈ osucc o).
 assert (h := piSAT0_elim _ _ msat H4 H1).
 apply (piSAT0_elim _ _ h H3 ureal').
 Qed.
+*)

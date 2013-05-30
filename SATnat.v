@@ -172,6 +172,17 @@ Qed.
 (** Interp of 0 *)
 Definition ZE := Lc.Abs (Lc.Abs (Lc.Ref 1)).
 
+Lemma ZE_iota t1 t2 :
+  Lc.redp (Lc.App2 ZE t1 t2) t1.
+unfold ZE.
+eapply t_trans;[apply Lc.redp_app_l;apply t_step;apply Lc.red1_beta; reflexivity|].
+unfold Lc.subst; simpl.
+apply t_step.
+apply Lc.red1_beta.
+unfold Lc.subst; rewrite Lc.simpl_subst; trivial.
+rewrite Lc.lift0; trivial.
+Qed.
+
 Lemma fNAT_ZE : forall A, inSAT ZE (fNAT A ZERO).
 intros.
 rewrite fNAT_def; intros.
@@ -198,6 +209,26 @@ Qed.
 
 Definition SU := Lc.Abs (Lc.Abs (Lc.Abs
     (Lc.App2 (Lc.Ref 0) (Lc.Ref 2) (Lc.App2 (Lc.Ref 2) (Lc.Ref 1) (Lc.Ref 0))))).
+
+Lemma SU_iota n t1 t2 :
+  Lc.redp (Lc.App2 (Lc.App SU n) t1 t2) (Lc.App2 t2 n (Lc.App2 n t1 t2)).
+unfold SU.
+eapply t_trans.
+ do 2 apply Lc.redp_app_l.
+ apply t_step; apply Lc.red1_beta; reflexivity.
+unfold Lc.subst; simpl.
+eapply  t_trans.
+ apply Lc.redp_app_l.
+ apply t_step; apply Lc.red1_beta; reflexivity.
+unfold Lc.subst; simpl.
+rewrite Lc.simpl_subst; auto.
+apply t_step; apply Lc.red1_beta.
+unfold Lc.subst; simpl.
+rewrite Lc.simpl_subst; auto.
+rewrite Lc.simpl_subst; auto.
+do 3 rewrite Lc.lift0.
+reflexivity.
+Qed.
 
 Lemma fNAT_SU : forall (A:family) n t,
   n ∈ NAT ->
@@ -238,349 +269,3 @@ apply fNAT_SU; trivial.
 rewrite <- cNAT_eq; trivial.
 Qed.
 
-(** * Pattern-matching *)
-(*
-Definition NCASE f g n :=
-  Lc.App2 n f (Lc.Abs (Lc.Abs (Lc.App (Lc.lift 2 g) (Lc.Ref 1)))).
-
-Lemma NCASE_sim_0 f g :
-  Lc.redp (NCASE f g ZE) f.
-unfold NCASE, ZE.
-eapply t_trans;[apply t_step|].
- apply Lc.app_red_l.
- apply beta.
-unfold Lc.subst; simpl.
-apply t_step.
-apply Lc.red1_beta.
-unfold Lc.subst; rewrite Lc.simpl_subst; auto.
-rewrite Lc.lift0; trivial.
-Qed.
-
-Lemma NCASE_sim_S f g n :
-  Lc.redp (NCASE f g (Lc.App SU n)) (Lc.App g n).
-unfold NCASE, SU.
-eapply t_trans;[apply t_step|].
- do 2 apply Lc.app_red_l.
- apply beta.
-unfold Lc.subst; simpl.
-eapply t_trans;[apply t_step|].
- apply Lc.app_red_l.
- apply beta.
-unfold Lc.subst; simpl.
-rewrite Lc.simpl_subst; trivial.
-eapply t_trans;[apply t_step|].
- apply beta.
-unfold Lc.subst; simpl.
-do 2 (rewrite Lc.simpl_subst; trivial).
-repeat rewrite Lc.lift0.
-eapply t_trans;[apply t_step|].
- apply Lc.app_red_l.
- apply beta.
-unfold Lc.subst; simpl.
-rewrite Lc.simpl_subst; trivial.
-apply t_step.
-apply Lc.red1_beta.
-unfold Lc.subst; simpl.
-do 2 (rewrite Lc.simpl_subst; auto).
-repeat rewrite Lc.lift0; trivial.
-Qed.
-
-Lemma NCASE_fNAT f g n k (A B:family) :
-  k ∈ NAT ->
-  inSAT n (fNAT A k) ->
-  inSAT f (B ZERO) ->
-  inSAT g (piNAT(fun m => prodSAT (A m) (B (SUCC m)))) ->
-  inSAT (NCASE f g n) (B k).
-unfold NCASE; intros.
-rewrite fNAT_def in H0.
-apply H0 with (P:=B); intros; trivial.
-rewrite piNAT_ax in H2|-*; intros.
-destruct H2 as (sng,H2).
-split; intros.
- do 2 apply Lc.sn_abs.
- apply Lc.sn_app_var.
- apply Lc.sn_lift; trivial.
-apply prodSAT_intro; intros.
-unfold Lc.subst; simpl Lc.subst_rec.
-apply prodSAT_intro; intros.
-unfold Lc.subst; simpl Lc.subst_rec.
-repeat rewrite Lc.simpl_subst; trivial.
-do 2 rewrite Lc.lift0.
-apply prodSAT_elim with (2:=H4); auto.
-Qed.
-*)
-
-(*
-(** * Structural fixpoint: *)
-
-(** NATFIX m n --> m (NATFIX m) n when n is a constructor.
-   let G m := "\n. (match n with | 0 => m | S _ => m end) m n"
-   let G m := \n. n m (\_.\_.m) m n
-    G m -/-> ; G m 0 --> m 0 ; G m (S k) --> m (S k)
-   NATFIX m n := G (\x. m (G x)) n
-     --> (\x. m (G x)) (\x. m (G x)) n
-     --> m (G (\x. m (G x))) n == m (NATFIX m) n
- *)
-
-(** Guard the self-application of m (which would produce a non-strongly
-    normalizing term) by a natural number.
- *)
-Definition G m :=
- Lc.Abs (Lc.App2 (Lc.App2 (Lc.Ref 0) (Lc.lift 1 m) (Lc.Abs (Lc.Abs (Lc.lift 3 m)))) (Lc.lift 1 m) (Lc.Ref 0)).
-
-(** (G m n) reduces to (m m n) when n is a constructor. Note that
-    n need not be closed. *)
-Lemma G_sim : forall m n,
-  n = ZE \/ (exists t1 t2, n = Lc.Abs (Lc.Abs (Lc.App2 (Lc.Ref 0) t1 t2))) ->
-  Lc.redp (Lc.App (G m) n) (Lc.App2 m m n).
-intros.
-unfold G.
-eapply t_trans.
- apply t_step.
- apply Lc.beta.
-unfold Lc.subst; simpl.
-rewrite Lc.simpl_subst; auto.
-repeat rewrite Lc.lift0.
-unfold Lc.lift; rewrite Lc.simpl_subst_rec; auto.
-apply Lc.redp_app_l.
-apply Lc.redp_app_l.
-destruct H as [eqn|(t1,(t2,eqn))]; rewrite eqn.
- eapply t_trans.
-  apply t_step.
-  apply Lc.app_red_l.
-  apply beta.
- unfold Lc.subst; simpl.
- apply t_step.
- apply red1_beta.
- unfold Lc.subst; rewrite Lc.simpl_subst; auto with *.
- rewrite Lc.lift0; trivial.
-
- eapply t_trans.
-  apply t_step.
-  apply Lc.app_red_l.
-  apply beta.
- unfold Lc.subst; simpl.
- eapply t_trans.
-  apply t_step; apply beta. 
- unfold Lc.subst; simpl.
- rewrite Lc.lift0.
- eapply t_trans.
-  apply t_step.
-  apply Lc.app_red_l.
-  apply beta.
- unfold Lc.subst; simpl.
- rewrite Lc.simpl_subst_rec; auto.
- apply t_step.
- apply Lc.red1_beta.
- unfold Lc.subst.
- rewrite Lc.simpl_subst_rec; auto.
- rewrite Lc.lift_rec0; trivial.
-Qed.
-
-Lemma G_sat A k m t X :
-  k ∈ NAT ->
-  inSAT t (fNAT A k) ->
-  inSAT (Lc.App2 m m t) X ->
-  inSAT (Lc.App (G m) t) X.
-intros.
-unfold G.
-apply inSAT_exp; intros.
- right; apply sat_sn in H0; trivial.
-unfold Lc.subst; simpl Lc.subst_rec.
-repeat rewrite Lc.simpl_subst; auto.
-repeat rewrite Lc.lift0.
-assert (tsat := H0).
-rewrite fNAT_def in tsat.
-eapply inSAT_context.
- intros.
- eapply inSAT_context.
-  intros.
-  assert (rS0 : eqSAT S0 S0) by reflexivity.
-  pose (G:=mkFam (fun _ => S0) (fun _ _ _ _ => rS0)).
-  apply tsat with (P:=G).
-  unfold G; simpl.
-  eexact H3.
-  rewrite piNAT_ax; intros.
-   split; intros.
-   do 2 apply Lc.sn_abs.
-   apply Lc.sn_lift.
-   apply sat_sn in H3; trivial.
-  apply prodSAT_intro; intros.
-  unfold Lc.subst; simpl Lc.subst_rec.
-  apply prodSAT_intro; intros.
-  unfold Lc.subst; repeat rewrite Lc.simpl_subst; auto.
-  rewrite Lc.lift0; trivial.
- eexact H2.
-trivial.
-Qed.
-
-Lemma sn_G_inv m : Lc.sn (G m) -> Lc.sn m.
-intros.
-unfold G in H.
-eapply subterm_sn in H;[|constructor].
-eapply subterm_sn in H;[|apply sbtrm_app_l].
-eapply subterm_sn in H;[|apply sbtrm_app_r].
-apply sn_lift_inv with (1:=H) (2:=eq_refl).
-Qed.
-
-
-Definition NATFIX m :=
-  G (Lc.Abs (Lc.App  (Lc.lift 1 m) (G (Lc.Ref 0)))).
-
-(** NATFIX reduces as a fixpoint combinator when applied to a constructor *)
-Lemma NATFIX_sim : forall m n,
-  n = ZE \/ (exists t1 t2, n = Lc.Abs (Lc.Abs (Lc.App2 (Lc.Ref 0) t1 t2))) ->
-  Lc.redp (Lc.App (NATFIX m) n) (Lc.App2 m (NATFIX m) n).
-intros.
-unfold NATFIX at 1.
-eapply t_trans.
- apply G_sim; trivial.
-apply Lc.redp_app_l.
-apply t_step.
-apply Lc.red1_beta.
-set (t1 := Lc.Abs (Lc.App (Lc.lift 1 m) (G (Lc.Ref 0)))).
-unfold Lc.subst; simpl.
-rewrite Lc.simpl_subst; auto.
-rewrite Lc.lift0.
-reflexivity.
-Qed.
-
-Definition piNATi F o :=
-  interSAT (fun p:{n|n ∈ NATi o} => F (proj1_sig p)).
-
-Lemma piNATi_ax t F o :
-  inSAT t (piNATi F o) <-> sn t /\ forall n, n ∈ NATi o -> inSAT t (F n).
-split; intros.
- split; intros.
-  apply sat_sn in H; trivial.
- apply interSAT_elim with (x:=exist (fun n=>n ∈ NATi o) n H0) in H; trivial.
-
- destruct H.
- split; intros; trivial.
- destruct x; simpl; auto.
- apply H0; trivial.
-Qed.
-
-Require Import ZFord.
-
-(** The guard is needed mainly here: NATFIX m does not reduce *)
-Lemma sn_natfix o m X :
-  isOrd o ->
-  inSAT m (interSAT (fun o':{o'|o' ∈ osucc o} => let o':=proj1_sig o' in
-        prodSAT (piNATi(fun n => prodSAT (cNAT n) (X o' n)) o')
-                (piNATi(fun n => prodSAT (cNAT n) (X (osucc o') n)) (osucc o')))) ->
-  sn (NATFIX m).
-intros.
-assert (empty ∈ osucc o).
- apply isOrd_plump with o; auto with *.
-  red; intros.
-  apply empty_ax in H1; contradiction.
-  apply lt_osucc; trivial.
-apply interSAT_elim with (x:=exist (fun o'=>o'∈ osucc o) empty H1) in H0.
-simpl proj1_sig in H0.
-unfold NATFIX.
-assert (sn (Lc.Abs (Lc.App (Lc.lift 1 m) (G (Lc.Ref 0))))).
- apply sn_abs.
- assert (inSAT (G (Lc.Ref 0)) (piNATi(fun n => prodSAT (cNAT n) (X empty n)) empty)).
-  rewrite piNATi_ax.
-  split; intros.
-   apply sn_abs.
-   constructor; intros.
-   apply nf_norm in H2; try contradiction.
-   repeat constructor.
-
-   intros ? ?.
-   eapply G_sat with (A:=cNAT) (k:=n).
-    revert H2; apply NATi_NAT; auto with *.
-
-    apply cNAT_pre; trivial.
-
-    apply prodSAT_elim with (A:=snSAT).
-    2:apply sat_sn in H3; trivial.
-    apply prodSAT_elim with (A:=snSAT).
-    apply varSAT.
-    apply varSAT.
-
- specialize prodSAT_elim with (1:=H0)(2:=H2); intro.
- apply sat_sn in H3; trivial.
- apply sn_subst with (Ref 0).
- unfold Lc.subst; simpl.
- rewrite simpl_subst; auto.
- rewrite lift0; auto.
-
-apply sn_abs.
-apply prodSAT_elim with (A:=snSAT) (B:=snSAT).
-2:simpl; auto with *.
-apply prodSAT_elim with (A:=snSAT).
-apply prodSAT_elim with (A:=snSAT).
-apply prodSAT_elim with (A:=snSAT).
-apply varSAT.
-
-simpl; apply sn_lift; trivial.
-
-apply sn_abs; apply sn_abs.
-apply sn_lift; trivial.
-
-simpl; apply sn_lift; trivial.
-Qed.
-
-
-
-Lemma NATFIX_sat : forall o m X,
-  isOrd o ->
-  (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ NATi y ->
-   inclSAT (X y n) (X y' n)) ->
-  inSAT m (interSAT (fun o':{o'|o' ∈ osucc o} => let o':=proj1_sig o' in
-        prodSAT (piNATi(fun n => prodSAT (cNAT n) (X o' n)) o')
-                (piNATi(fun n => prodSAT (cNAT n) (X (osucc o') n)) (osucc o')))) ->
-  inSAT (NATFIX m) (piNATi(fun n => prodSAT (cNAT n) (X o n)) o).
-intros o m X H Xmono H0.
-elim H using isOrd_ind; intros.
-rewrite piNATi_ax.
-split.
- apply sn_natfix with (2:=H0); trivial.
-
-intros x i.
-assert (tyx : x ∈ NAT).
- apply NATi_NAT with y; trivial.
-apply TI_elim in i; auto with *.
-destruct i as (z,?,?).
-unfold NATFIX.
-intros t tty.
-apply cNAT_pre in tty.
-apply G_sat with (2:=tty); trivial.
-eapply inSAT_context; intros.
- apply inSAT_exp.
-  left; simpl.
-  apply Bool.orb_true_r.
-
-  unfold Lc.subst; simpl Lc.subst_rec.
-  repeat rewrite Lc.simpl_subst; auto.
-  rewrite Lc.lift0.
-  change (inSAT (Lc.App m (NATFIX m)) S).
-  eexact H6.
-
-apply Xmono with (osucc z); eauto using isOrd_inv.
- red; intros.
- apply isOrd_plump with z; trivial.
-  eauto using isOrd_inv.
-  apply olts_le; trivial.
-
- unfold NATi; rewrite ZFfix.TI_mono_succ; auto with *.
- eauto using isOrd_inv.
-apply prodSAT_elim with (cNAT x).
-2:apply cNAT_post; trivial.
-assert (z ∈ osucc o).
- apply isOrd_trans with o; auto.
- apply H2; trivial.
-apply interSAT_elim with (x:=exist (fun o'=>o' ∈ osucc o) z H6) in H0.
-simpl proj1_sig in H0.
-specialize H3 with (1:=H4).
-specialize prodSAT_elim with (1:=H0) (2:=H3); intro.
-rewrite piNATi_ax in H7.
-destruct H7 as (_,H7); apply H7.
-assert (isOrd z).
- apply isOrd_inv with y; trivial.
-apply TI_intro with z; auto with *.
-Qed.
-*)
