@@ -19,8 +19,7 @@ Module Type SN_addon (M : CC_Model).
 
   Parameter Real_prod : forall A B,
     eqSAT (Real (prod A B))
-     (prodSAT (Real A)
-        (interSAT (fun p:{y|y∈ A} => Real (B (proj1_sig p))))).
+     (prodSAT (Real A) (depSAT (fun x=>x∈A) (fun x => Real (B x)))).
 
   (** Every proposition is inhabited *)
   Parameter daimon : X.
@@ -423,8 +422,7 @@ apply prod_elim with (x:=int i v) in H1; trivial.
 
   rewrite <- int_subst_eq.
   apply prodSAT_elim with (v:=tm j v) in H2; trivial.
-  apply interSAT_elim with
-   (x:=exist (fun z=>z∈ int i V) (int i v) H) in H2; trivial.
+  apply (depSAT_elim _ H2); trivial.
 
   destruct Ur as [Ur|]; simpl; try discriminate; trivial.
 

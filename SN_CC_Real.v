@@ -79,8 +79,7 @@ Qed.
    is the set of terms that realize f (in forall x:A. F(x)).
  *)
 Definition piSAT A (F:set->set) (f:set->set) :=
-  interSAT (fun p:{x|x ∈ El A} =>
-    prodSAT (Real A (proj1_sig p)) (Real (F (proj1_sig p)) (f (proj1_sig p)))).
+  piSAT0 (fun x => x ∈ El A) (Real A) (fun x => Real (F x) (f x)).
 
 Lemma piSAT_morph : forall A B F F' f f',
   A == B ->
@@ -88,13 +87,13 @@ Lemma piSAT_morph : forall A B F F' f f',
   eq_fun (El A) f f' -> 
   eqSAT (piSAT A F f) (piSAT B F' f').
 unfold piSAT; intros.
-apply interSAT_morph_subset; simpl; intros; auto with *.
+apply piSAT0_morph; intros.
+ red; intros.
  rewrite H; reflexivity.
 
- apply prodSAT_morph; auto with *.
-  apply Real_morph; auto with *.
+ rewrite H; reflexivity.
 
-  apply Real_morph; auto with *.
+ apply Real_morph; auto with *.
 Qed.
 
 Definition prod A F :=

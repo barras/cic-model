@@ -362,7 +362,6 @@ left; exists (fun i => NATREC (int i f) (fun n y => app (app (int i g) n) y) (in
  repeat rewrite tm_substitutive; trivial.
 Defined.
 
-
 (** Typing rule of the eliminator *)
 Lemma typ_Nrect : forall e n f g P,
   typ e n Nat ->
@@ -434,35 +433,36 @@ split.
     split; intros.
     apply sat_sn in rg; trivial.
    rewrite NATREC_S; trivial.
-   intros m satm.
-   apply piSAT_elim with (x:=n0)(u:=m) in rg.
-   2:unfold inX;rewrite ElNat_eq; trivial.
-   2:rewrite RealNat_eq; trivial.
+   apply prodSAT_intro'; intros m satm.
+   apply piSAT0_elim' in rg.
+   red in rg; specialize rg with (x:=n0)(u:=m).
+   unfold inX in rg;rewrite ElNat_eq in rg; trivial.
+   rewrite RealNat_eq in rg.
    rewrite intProd_eq in rg.
    rewrite Real_prod in rg.
-    intros y saty.
-    apply piSAT_elim with (x:=NATREC (int i f) gg n0)(u:=y) in rg.
-     simpl int in rg.
-     rewrite split_lift in rg.
-     do 2 rewrite int_cons_lift_eq in rg.
-     rewrite beta_eq in rg; auto with *.
-      red; intros.
-      rewrite H3; reflexivity.
+    apply prodSAT_intro'; intros y saty.
+    assert (rg' := rg H0 satm); clear rg.
+    apply piSAT0_elim' in rg'.
+    red in rg'.
+    specialize rg' with (x:=NATREC (int i f) gg n0)(u:=y).
+    simpl int in rg'.
+    rewrite int_cons_lift_eq in rg'.
+    assert (rg := rg' (NRtyp _ H0) saty); clear rg'.
+    rewrite split_lift in rg.
+    do 2 rewrite int_cons_lift_eq in rg.
+    rewrite beta_eq in rg; auto with *.
+     red; intros.
+     rewrite H3; reflexivity.
 
-      rewrite El_def; trivial.
-
-    unfold inX; auto.
-    simpl int.
-    rewrite int_cons_lift_eq; auto.
-
-    simpl int.
-    rewrite int_cons_lift_eq; auto.
+     rewrite El_def; trivial.
 
 red; intros.
 rewrite <- H3; reflexivity.
 
 apply cc_prod_elim with (1:=ty).
 rewrite ElNat_eq; trivial.
+
+trivial.
 
 red; intros.
 rewrite <- H1; reflexivity.

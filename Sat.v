@@ -308,6 +308,16 @@ Qed.
 Definition piSAT0 A (P:A->Prop) (F G:A->SAT) :=
   depSAT P (fun x => prodSAT (F x) (G x)).
 
+Lemma piSAT0_morph : forall A (P P':A->Prop) F F' G G',
+  pointwise_relation A iff P P' ->
+  (forall x, P x -> P' x -> eqSAT (F x) (F' x)) ->
+  (forall x, P x -> P' x -> eqSAT (G x) (G' x)) ->
+  eqSAT (piSAT0 P F G) (piSAT0 P' F' G').
+unfold piSAT0; intros.
+apply interSAT_morph_subset; simpl; intros; auto with *.
+apply prodSAT_morph; auto with *.
+Qed.
+
 Lemma piSAT0_intro : forall A (P:A->Prop) (F G:A->SAT) t,
   sn t -> (* if A is empty *)
   (forall x u, P x -> inSAT u (F x) -> inSAT (App t u) (G x)) ->
@@ -326,6 +336,12 @@ Lemma piSAT0_elim : forall A (P:A->Prop) (F G:A->SAT) x t u,
 intros.
 apply interSAT_elim with (x:=exist _ x H0) in H.
 apply prodSAT_elim with (2:=H1); trivial.
+Qed.
+Lemma piSAT0_elim' A (P:A->Prop) (F G:A->SAT) t :
+  inSAT t (piSAT0 P F G) ->
+  id (forall x u, P x -> inSAT u (F x) -> inSAT (App t u) (G x)).
+red; intros.
+apply piSAT0_elim with (1:=H)(2:=H0)(3:=H1).
 Qed.
 
 Opaque inSAT.

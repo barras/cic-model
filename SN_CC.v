@@ -17,7 +17,7 @@ Definition El T := fst T.
 Definition Real T := sSAT (snd T) .
 
 Definition piSAT A (F:set->SAT) :=
-  prodSAT (Real A) (interSAT (fun p:{y|y ∈ El A} => F (proj1_sig p))).
+  prodSAT (Real A) (depSAT (fun y => y ∈ El A) F).
 
 Definition sn_prod A F :=
   mkTY (cc_prod (El A) (fun x => El (F x)))

@@ -19,14 +19,12 @@ Module Type RealSN_addon (M : CC_Model).
 
   Parameter Real_sort : forall P, P ∈ props -> eqSAT (Real props P) snSAT.
 
-  Definition piSAT A F f :=
-    interSAT (fun p:{x|x ∈ A} =>
-      prodSAT (Real A (proj1_sig p)) (Real (F (proj1_sig p)) (f (proj1_sig p)))).
-
   Parameter Real_prod : forall dom f F,
     eq_fun dom F F ->
     f ∈ prod dom F ->
-    eqSAT (Real (prod dom F) f) (piSAT dom F (app f)).
+    eqSAT (Real (prod dom F) f)
+      (piSAT0 (fun x => x ∈ dom) (Real dom)
+          (fun x => Real (F x) (app f x))).
 
   Existing Instance Real_morph.
 
@@ -69,7 +67,7 @@ Lemma real_exp_K : forall x A u v,
 destruct 2; split; trivial.
 apply KSAT_intro; trivial.
 Qed.
-
+(*
 Lemma piSAT_intro : forall A B f t,
   Lc.sn t -> (* if A is empty *)
   (forall x u, x ∈ A -> inSAT u (Real A x) -> inSAT (Lc.App t u) (Real (B x) (f x))) ->
@@ -90,7 +88,7 @@ intros.
 apply interSAT_elim with (x:=exist (fun x => x ∈ A) x H0) in H; simpl proj1_sig in H.
 apply H; trivial.
 Qed.
-
+*)
 (* Works even when dom is empty: *)
 Lemma prod_intro_sn : forall dom f F m,
   eq_fun dom f f ->
@@ -107,7 +105,7 @@ assert (lam dom f ∈ prod dom F).
  apply varSAT.
 split; trivial.
 rewrite Real_prod; trivial.
-apply piSAT_intro; intros; trivial.
+apply piSAT0_intro; intros; trivial.
 rewrite beta_eq; trivial.
 apply H2; auto.
 Qed.
