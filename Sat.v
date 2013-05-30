@@ -310,7 +310,7 @@ Definition piSAT0 A (P:A->Prop) (F G:A->SAT) :=
 
 Lemma piSAT0_intro : forall A (P:A->Prop) (F G:A->SAT) t,
   sn t -> (* if A is empty *)
-  (forall x u, inSAT u (F x) -> inSAT (App t u) (G x)) ->
+  (forall x u, P x -> inSAT u (F x) -> inSAT (App t u) (G x)) ->
   inSAT t (piSAT0 P F G).
 unfold piSAT0; intros.
 apply depSAT_intro; trivial.
@@ -327,3 +327,5 @@ intros.
 apply interSAT_elim with (x:=exist _ x H0) in H.
 apply prodSAT_elim with (2:=H1); trivial.
 Qed.
+
+Opaque inSAT.

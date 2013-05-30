@@ -72,38 +72,38 @@ intros.
 apply Real_inr; trivial.
 Qed.
 
+Definition NCASE f g n := Lc.App2 n (Lc.Abs (Lc.lift 1 f)) g.
+
 Lemma Real_NATCASE_gen X A C n nt ft gt:
   Proper (eq_set ==> eqSAT) C ->
   n ∈ NATf X ->
   inSAT nt (fNAT A n) ->
   inSAT ft (C ZERO) ->
-  inSAT gt (depSAT (fun x => x ∈ X) (fun x => prodSAT (A x) (C (SUCC x)))) ->
-  inSAT (Lc.App2 nt (Lc.Abs (Lc.lift 1 ft)) gt) (C n).
+  inSAT gt (piSAT0 (fun x => x ∈ X) A (fun x => C (SUCC x))) ->
+  inSAT (NCASE ft gt nt) (C n).
 intros Cm nty nreal freal greal.
 apply Real_sum_case with ZFind_basic.UNIT X n (fun _ => unitSAT) A; trivial.
- apply depSAT_intro.
+ apply piSAT0_intro.
   apply Lc.sn_abs.
   apply Lc.sn_lift.
   apply sat_sn in freal; trivial.
 
-  intros.
-  rewrite H in nty; apply sum_inv_l in nty.
+  intros x u eqn ureal.
+  rewrite eqn in nty; apply sum_inv_l in nty.
   apply ZFind_basic.unit_elim in nty.
-  rewrite nty in H.
-  apply prodSAT_intro; intros.
+  rewrite nty in eqn.
+  apply inSAT_exp; [right; apply sat_sn in ureal;trivial|].
   unfold Lc.subst; rewrite Lc.simpl_subst; auto.
   rewrite Lc.lift0; trivial.
-  rewrite H; trivial.
+  rewrite eqn; trivial.
 
- apply depSAT_intro.
+ apply piSAT0_intro.
   apply sat_sn in greal; trivial.
 
   intros.
   rewrite H in nty; apply sum_inv_r in nty.
-  apply prodSAT_intro'; intros.
   rewrite H.
-  apply prodSAT_elim with (2:=H0).
-  apply depSAT_elim with (P:=fun x => x ∈ X)(x:=x) in greal; trivial.
+  apply piSAT0_elim with (1:=greal); trivial.
 Qed.
 
 Definition fNATi o := tiSAT NATf fNAT o.
@@ -172,8 +172,8 @@ Lemma Real_NATCASE o C n nt ft gt:
   n ∈ NATi (osucc o) ->
   inSAT nt (fNATi (osucc o) n) ->
   inSAT ft (C ZERO) ->
-  inSAT gt (depSAT (fun x => x ∈ NATi o) (fun x => prodSAT (fNATi o x) (C (SUCC x)))) ->
-  inSAT (Lc.App2 nt (Lc.Abs (Lc.lift 1 ft)) gt) (C n).
+  inSAT gt (piSAT0 (fun x => x ∈ NATi o) (fNATi o) (fun x => C (SUCC x))) ->
+  inSAT (NCASE ft gt nt) (C n).
 intros oo Cm nty nreal freal greal.
 rewrite fNATi_succ_eq in nreal; trivial.
 unfold NATi in nty; rewrite TI_mono_succ in nty; auto.
@@ -299,12 +299,12 @@ apply Real_NATCASE_gen with (X:=NAT) (A:=A) (C:=fun _ => S) (n:=k); auto.
 
  rewrite NAT_eq in H; trivial.
 
- apply depSAT_intro; intros.
+ apply piSAT0_intro; intros.
   apply Lc.sn_abs.
   apply Lc.sn_lift.
   apply sat_sn in H1; trivial.
 
-  apply prodSAT_intro; intros.
+  apply inSAT_exp;[right;apply sat_sn in H3; trivial|].
   unfold Lc.subst; simpl Lc.subst_rec.
   rewrite Lc.simpl_subst; auto.
   rewrite Lc.lift0; trivial.
@@ -344,8 +344,8 @@ Qed.
 (** The guard is needed mainly here: NATFIX m does not reduce *)
 Lemma sn_natfix o m X B:
   isOrd o ->
-  inSAT m (interSAT (fun o':{o'|o' ∈ osucc o} => let o1:=proj1_sig o' in
-        prodSAT (depSAT (fun n => n ∈ NATi o1) (fun n => prodSAT (fNATi o1 n) (X o1 n))) (B o'))) ->
+  inSAT m (piSAT0 (fun o' => o' ∈ osucc o)
+        (fun o1 => piSAT0 (fun n => n ∈ NATi o1) (fNATi o1) (X o1)) B) ->
   sn (NATFIX m).
 intros.
 assert (empty ∈ osucc o).
@@ -353,19 +353,16 @@ assert (empty ∈ osucc o).
   red; intros.
   apply empty_ax in H1; contradiction.
   apply lt_osucc; trivial.
-apply interSAT_elim with (x:=exist (fun o'=>o'∈ osucc o) empty H1) in H0.
-simpl proj1_sig in H0.
 unfold NATFIX.
 assert (sn (Lc.Abs (Lc.App (Lc.lift 1 m) (guard_sum (Lc.Ref 0))))).
  apply sn_abs.
- assert (inSAT (guard_sum (Lc.Ref 0)) (depSAT(fun n => n ∈ NATi empty) (fun n => prodSAT (fNATi empty n) (X empty n)))).
-  apply depSAT_intro; intros.
+ assert (inSAT (guard_sum (Lc.Ref 0)) (piSAT0(fun n => n ∈ NATi empty) (fNATi empty) (X empty))).
+  apply piSAT0_intro; intros.
    apply sn_abs.
    constructor; intros.
    apply nf_norm in H2; try contradiction.
    repeat constructor.
 
-   apply prodSAT_intro'; intros.
    eapply G_sat with (A:=fNATi empty) (k:=x).
     revert H2; apply NATi_NAT; auto with *.
 
@@ -377,13 +374,10 @@ assert (sn (Lc.Abs (Lc.App (Lc.lift 1 m) (guard_sum (Lc.Ref 0))))).
     red; intros.
     apply empty_ax in H4; contradiction.
 
-    apply prodSAT_elim with (A:=snSAT).
-    2:apply sat_sn in H3; trivial.
-    apply prodSAT_elim with (A:=snSAT).
-    apply varSAT.
-    apply varSAT.
+    eapply prodSAT_elim; [|eexact H3].
+    apply prodSAT_elim with snSAT;apply varSAT.
 
- specialize prodSAT_elim with (1:=H0)(2:=H2); intro.
+ specialize piSAT0_elim with (1:=H0)(2:=H1)(3:=H2); intro.
  apply sat_sn in H3; trivial.
  apply sn_subst with (Ref 0).
  unfold Lc.subst; simpl.
@@ -402,39 +396,38 @@ apply prodSAT_elim with (A:=snSAT).
  apply sn_lift; trivial.
 Qed.
 
-
 Lemma NATFIX_sat : forall o m X,
   isOrd o ->
   (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ NATi y ->
    inclSAT (X y n) (X y' n)) ->
-  inSAT m (interSAT (fun o':{o'|o' ∈ osucc o} => let o1:=proj1_sig o' in let o2 := osucc o1 in
-        prodSAT (depSAT (fun n => n ∈ NATi o1) (fun n => prodSAT (fNATi o1 n) (X o1 n)))
-                (depSAT (fun n => n ∈ NATi o2) (fun n => prodSAT (fNATi o2 n) (X o2 n))))) ->
-  inSAT (NATFIX m) (depSAT (fun n => n ∈ NATi o) (fun n => prodSAT (fNATi o n) (X o n))).
+  inSAT m (piSAT0 (fun o' =>o' ∈ osucc o) 
+             (fun o1 => piSAT0 (fun n => n ∈ NATi o1) (fNATi o1) (X o1))
+             (fun o1 => let o2 := osucc o1 in
+                        piSAT0 (fun n => n ∈ NATi o2) (fNATi o2) (X o2))) ->
+  inSAT (NATFIX m) (piSAT0 (fun n => n ∈ NATi o) (fNATi o) (X o)).
 intros o m X oo Xmono msat.
 elim oo using isOrd_ind; intros.
-apply depSAT_intro.
+apply piSAT0_intro.
  apply sn_natfix with (o:=o) (X:=X) (2:=msat); trivial.
 
-intros x i.
+intros x u xty0 ureal.
 assert (tyx : x ∈ NAT).
  apply NATi_NAT with y; trivial.
-apply TI_elim in i; auto with *.
-destruct i as (z,?,?).
+apply TI_elim in xty0; auto with *.
+destruct xty0 as (z,?,?).
+specialize H1 with (1:=H2).
 assert (zo : isOrd z).
  apply isOrd_inv with y; trivial.
 unfold NATFIX.
 rewrite <- ZFfix.TI_mono_succ in H3; auto with *.
-apply prodSAT_intro'.
-intros t tty.
-assert (tty' : inSAT t (fNAT (fNATi z) x)).
+assert (ureal' : inSAT u (fNAT (fNATi z) x)).
  rewrite <- fNATi_succ_eq; trivial.
  rewrite fNATi_mono with (o2:=y); auto.
  red; intros.
  apply isOrd_plump with z; trivial.
   apply isOrd_inv with (osucc z); auto.
   apply olts_le in H4; trivial.
-apply G_sat with (2:=tty'); trivial.
+apply G_sat with (2:=ureal'); trivial.
 eapply inSAT_context; intros.
  apply inSAT_exp.
   left; simpl.
@@ -445,19 +438,15 @@ eapply inSAT_context; intros.
   rewrite Lc.lift0.
   change (inSAT (Lc.App m (NATFIX m)) S).
   eexact H4.
-rewrite <- fNATi_succ_eq in tty'; trivial.
+rewrite <- fNATi_succ_eq in ureal'; trivial.
 apply Xmono with (osucc z); eauto using isOrd_inv.
  red; intros.
  apply isOrd_plump with z; trivial.
   eauto using isOrd_inv.
   apply olts_le; trivial.
-apply prodSAT_elim with (A:=fNATi (osucc z) x); trivial.
 assert (z ∈ osucc o).
  apply isOrd_trans with o; auto.
  apply H0; trivial.
-apply interSAT_elim with (x:=exist (fun o'=>o' ∈ osucc o) z H4) in msat.
-simpl proj1_sig in msat.
-specialize H1 with (1:=H2).
-specialize prodSAT_elim with (1:=msat) (2:=H1); intro.
-apply (depSAT_elim x H5); trivial.
+assert (h := piSAT0_elim _ _ msat H4 H1).
+apply (piSAT0_elim _ _ h H3 ureal').
 Qed.

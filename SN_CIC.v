@@ -573,7 +573,7 @@ apply Real_intro; intros.
 
   rewrite NATCASE_ZERO; trivial.
 
-  apply depSAT_intro.
+  apply piSAT0_intro.
    apply typ_abs in H2.
    3:discriminate.
    2:left.
@@ -587,11 +587,11 @@ apply Real_intro; intros.
    apply Lc.sbtrm_app_r.
 
    intros.
-   apply prodSAT_intro; intros.
+   apply inSAT_exp; [apply sat_sn in H11; auto|].
    rewrite <- tm_subst_cons.
    rewrite NATCASE_SUCC.
    2:intros ? e'; rewrite e'; reflexivity.
-   assert (val_ok (NatI O :: e) (V.cons x i) (I.cons v j)).
+   assert (val_ok (NatI O :: e) (V.cons x i) (I.cons u j)).
     apply vcons_add_var; trivial.
     2:discriminate.
     rewrite realNati_def; auto with *.
@@ -1629,10 +1629,9 @@ rewrite Real_prod; trivial.
 simpl tm.
 unfold piSAT.
 cut (inSAT (NATFIX (Lc.Abs (tm (Lc.ilift (I.cons (tm j O) j)) M)))
-       (depSAT (fun n => n ∈ NATi (int0 O i)) (fun n =>
-           prodSAT (fNATi (int0 O i) n)
-             (Real (int0 U (V.cons n (V.cons (int0 O i) i)))
-               (cc_app (NATREC (F i) (int0 O i)) n))))).
+       (piSAT0 (fun n => n ∈ NATi (int0 O i)) (fNATi (int0 O i))
+          (fun n =>Real (int0 U (V.cons n (V.cons (int0 O i) i)))
+                    (cc_app (NATREC (F i) (int0 O i)) n)))).
  apply interSAT_morph_subset.
   intros; simpl; rewrite El_def; reflexivity.
 
