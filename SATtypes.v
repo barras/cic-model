@@ -213,7 +213,8 @@ Qed.
 
 Require Import ZFord.
 
-Lemma FIXP_sat : forall G o T RT m X,
+Lemma FIXP_sat G o T RT m X :
+  let FIX_ty o := piSAT0 (fun n => n ∈ T o) (RT o) (X o) in
   isOrd o ->
   (forall m, sn m -> sn (App G m)) ->
   (forall o x t m (X:SAT), isOrd o -> x ∈ T o ->
@@ -226,12 +227,9 @@ Lemma FIXP_sat : forall G o T RT m X,
 
   (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ T y ->
    inclSAT (X y n) (X y' n)) ->
-  inSAT m (piSAT0 (fun o' => o' ∈ osucc o) 
-             (fun o1 => piSAT0 (fun n => n ∈ T o1) (RT o1) (X o1))
-             (fun o1 => let o2 := osucc o1 in
-                        piSAT0 (fun n => n ∈ T o2) (RT o2) (X o2))) ->
-  inSAT (FIXP G m) (piSAT0 (fun n => n ∈ T o) (RT o) (X o)).
-intros G o T RT m X oo snG Gsat Tcont Rirrel Xmono msat.
+  inSAT m (piSAT0 (fun o' => o' ∈ osucc o) (fun o' => FIX_ty o') (fun o' => FIX_ty (osucc o'))) ->
+  inSAT (FIXP G m) (FIX_ty o).
+intros FIX_ty oo snG Gsat Tcont Rirrel Xmono msat.
 elim oo using isOrd_ind; intros.
 apply piSAT0_intro.
  apply FIXP_sn; trivial.
@@ -453,7 +451,8 @@ transitivity (tiSAT F A o x0).
  apply tiSAT_morph; auto with *.
 Qed.
 
-Lemma FIXP_TI_sat : forall G o F A m X,
+Lemma FIXP_TI_sat G o F A m X :
+  let FIX_ty o := piSAT0 (fun n => n ∈ TI F o) (tiSAT F A o) (X o) in
   Proper (incl_set ==> incl_set) F ->
   Proper ((eq_set ==> eqSAT) ==> eq_set ==> eqSAT) A ->
   (forall R R' o', isOrd o' -> o' ⊆ o -> (forall x x', x ∈ TI F o' -> x==x' -> eqSAT (R x) (R' x')) ->
@@ -466,11 +465,9 @@ Lemma FIXP_TI_sat : forall G o F A m X,
    inSAT (App2 G m t) X) ->
   (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ TI F y ->
    inclSAT (X y n) (X y' n)) ->
-  inSAT m (piSAT0 (fun o' => o' ∈ osucc o) 
-             (fun o1 => piSAT0 (fun n => n ∈ TI F o1) (tiSAT F A o1) (X o1))
-             (fun o1 => let o2 := osucc o1 in
-                        piSAT0 (fun n => n ∈ TI F o2) (tiSAT F A o2) (X o2))) ->
-  inSAT (FIXP G m) (piSAT0 (fun n => n ∈ TI F o) (tiSAT F A o) (X o)).
+  inSAT m (piSAT0 (fun o' => o' ∈ osucc o)
+             (fun o1 => FIX_ty o1) (fun o1 => FIX_ty (osucc o1))) ->
+  inSAT (FIXP G m) (FIX_ty o).
 intros.
 apply FIXP_sat; trivial.
  intros.

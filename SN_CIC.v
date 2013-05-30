@@ -533,7 +533,6 @@ red in H3; specialize H3 with (1:=H4).
 apply in_int_not_kind in H3;[|discriminate].
 apply in_int_intro; try discriminate.
 destruct H1.
-(*Opaque inSAT.*)
 rewrite realNati_def in H3; simpl in H3|-*; auto.
 destruct H3.
 apply Real_intro; intros.
@@ -1528,7 +1527,7 @@ split; intros.
  revert H1; apply NATi_NAT; simpl; auto.
 Qed.
 *)
-
+(*
 Lemma indexed_relation_equiv A B (R:B->B->Prop) (P P':A->Prop) (G G':A->B) :
   (forall x:A, P x <-> P' x) -> 
   (forall x:A, P x -> R (G x) (G' x)) ->
@@ -1542,7 +1541,7 @@ split; intros (i,?); simpl.
  apply H in p.
  exists (exist _ i p); simpl; auto.
 Qed.
-
+*)
 Lemma typ_nat_fix :
   typ e (NatFix O M) (Prod (NatI O) (subst_rec O 1 U)).
 red; intros.
