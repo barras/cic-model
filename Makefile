@@ -57,13 +57,13 @@ html::
 	/bin/cp html/coqdoc.css html/full/
 	perl -pi -e "s/(<div id=\"header\">)/\1<script src=\"headings.js\"><\/script>/" $(ALLHTML) $(ALLHTMLFULL)
 
-graph::	deps.png deps.imap graph.html
+graph::	graph/deps.png graph/deps.imap graph/graph.html
 
-deps.g:	.depend libs.txt
-	./graph.sh lib2graph
+graph/deps.g:	.depend libs.txt
+	graph/graph.sh lib2graph
 
-deps.dot: deps.g
-	./graph.sh graph2dot
+graph/deps.dot: graph/deps.g
+	graph/graph.sh graph2dot
 
 .dot.png:
 	dot -Tpng $< > $@
@@ -71,7 +71,7 @@ deps.dot: deps.g
 .dot.imap:
 	dot -Tcmapx $< > $@
 
-graph.html: g.html deps.imap
+graph/index.html: g.html grpah/deps.imap
 	sed -e "/--IMAP--/ r deps.imap" g.html > $@
 
 Ens0.v: Ens.v
