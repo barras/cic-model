@@ -81,7 +81,7 @@ destruct (H X' Y (fun y => projT1 y)) as (C,(f,Hf)).
  simpl in h.
  trivial.
 Qed.
-(*
+
 Lemma ttcoll_impl2 :
   ttcoll (fun _ _ => False) -> streicher_ttcoll.
 red; intros.
@@ -90,6 +90,9 @@ assert (exists R, X= { a:A & { y:set | R a y}}).
  admit.
 destruct H1 as (R,?).
 subst X.
+assert (e = @projT1 _ _).
+ admit.
+subst e.
 destruct (H A R) as (Y,(g,?)).
  do 2 red; intros; contradiction.
 exists {a:A & {y:Y|R a (g y)}}.
@@ -97,28 +100,16 @@ exists (fun t:{a:A&{y:Y|R a (g y)}} =>
   existT (fun a =>{y:set|R a y}) (projT1 t)
    (exist (fun y => R (projT1 t) y) (g (proj1_sig (projT2 t))) (proj2_sig (projT2 t)))).
 intros.
-destruct (H1 y).
-pose (X':= {x:X|exists y:set, R x y}).
-pose (Y := { a:X' & { y:set | R (proj1_sig a) y}}).
-destruct (H X' Y (fun y => projT1 y)) as (C,(f,Hf)).
- destruct y as (x,(y,?)).
- exists (existT (fun a=>{y:set|R(proj1_sig a) y}) (exist _ x (ex_intro _ y r)) (exist (fun y => R x y) y r)).
- simpl.
- reflexivity.
+simpl.
+destruct (H0 y) as ((a,(y',?)),?); simpl in *.
+subst y.
+destruct (H1 a) as (j,?).
+ exists y'; trivial.
 
- exists C.
- exists (fun c => proj1_sig (projT2 (f c))).
- intros.
- destruct (Hf (exist _ i H1)) as (c,?).
- exists c.
- assert (h := proj2_sig (projT2 (f c))).
- simpl in h.
- pattern (projT1 (f c)) in h at 1.
- rewrite H2 in h.
- simpl in h.
- trivial.
+ refine (ex_intro _ (existT _ a (exist (fun y=>R a (g y)) j H2)) _); simpl.
+ reflexivity.
 Qed.
-*)
+
 
 Definition miquel_dom A (P:A->Prop) (R:A->Type->Prop) :=
   (forall x B B' (f:B->B'),

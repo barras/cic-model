@@ -1,5 +1,5 @@
 
-Require Import ZF ZFpairs ZFsum ZFind_nat Sat.
+Require Import ZF ZFpairs ZFsum Sat.
 Require Import ZFlambda.
 Require Import Lambda.
 
@@ -418,6 +418,47 @@ rewrite cc_beta_eq.
 
  revert H3; apply TI_incl; auto.
 Qed.
+
+
+Lemma cc_app_outside_domain dom f x :
+  is_cc_fun dom f ->
+  ~ x ∈ dom ->
+  cc_app f x == empty.
+intros.
+apply empty_ext; red; intros.
+apply couple_in_app in H1.
+apply H in H1.
+destruct H1 as (_,?).
+rewrite fst_def in H1; auto.
+Qed.
+
+
+Lemma tiSAT_outside_domain o A F S :
+  Proper (incl_set==>incl_set) F ->
+  Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A ->
+  (forall R R' o', isOrd o' -> o' ⊆ o -> (forall x x', x ∈ TI F o' -> x==x' -> eqSAT (R x) (R' x')) ->
+   forall x x', x ∈ TI F (osucc o') -> x==x' -> eqSAT (A R x) (A R' x')) ->
+  isOrd o ->
+  forall x,
+  ~ x ∈ TI F o ->
+  inclSAT (tiSAT F A o x) S.
+intros.
+specialize tiSAT_recursor with (1:=H) (2:=H0) (3:=H1) (4:=H2); intro rec.
+unfold tiSAT.
+red; intros.
+rewrite REC_eqn with (2:=rec) in H4; trivial.
+fold (tiSAT F A o) in H4.
+destruct H4.
+assert (H5' := fun S h => H5 (exist _ S h)).
+clear H5; simpl in H5'.
+apply H5'; intros.
+rewrite cc_app_outside_domain with (dom:=TI F o) in H6; trivial.
+ apply empty_ax in H6; contradiction.
+
+ apply is_cc_fun_lam.
+ do 2 red; intros; apply cc_app_morph; auto with *.
+Qed.
+
 
 Lemma tiSAT_mono o1 o2 A F:
   Proper (incl_set==>incl_set) F ->

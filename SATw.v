@@ -35,19 +35,14 @@ unfold sigmaReal.
 apply interSAT_morph.
 apply indexed_relation_id; intros S.
 apply prodSAT_morph; auto with *.
-apply prodSAT_morph.
- apply RA_morph; apply fst_morph; trivial.
+apply piSAT0_morph; intros; auto with *.
+ red; intros.
+ rewrite H0; reflexivity.
 
  apply prodSAT_morph; auto with *.
- apply piSAT0_morph; intros.
-  red; intros.
-  rewrite H0; reflexivity.
-
-  apply RB_morph; auto with *.
-  apply fst_morph; auto.
-
-  apply H.
-  rewrite H0; reflexivity.
+ apply piSAT0_morph; intros; auto with *.
+ apply H.
+ rewrite H0; reflexivity.
 Qed.
 Hint Resolve rW_morph.
 
@@ -62,25 +57,23 @@ unfold sigmaReal.
 apply interSAT_morph.
 apply indexed_relation_id; intros S.
 apply prodSAT_morph; auto with *.
-apply prodSAT_morph.
- apply RA_morph; apply fst_morph; trivial.
+apply piSAT0_morph; intros; auto with *.
+ red; intros.
+ rewrite H2; reflexivity.
 
  apply prodSAT_morph; auto with *.
- apply piSAT0_morph; intros.
-  red; intros.
+ apply piSAT0_morph; intros; auto with *.
+ apply H0.
+  rewrite TI_mono_succ in H1; auto.
+  2:apply W_F_mono; trivial.
+  unfold Wf in H1.
+  apply W_F_elim in H1; trivial.
+  destruct H1 as (_,(?,_)); auto.
+  apply H1.
+  apply fst_morph in H3; rewrite fst_def in H3.
+  rewrite H3; trivial.
+
   rewrite H2; reflexivity.
-
-  apply RB_morph; auto with *.
-  apply fst_morph; auto.
-
-  apply H0.
-   rewrite TI_mono_succ in H1; auto.
-   2:apply W_F_mono; trivial.
-   unfold Wf in H1.
-   apply W_F_elim in H1; trivial.
-   destruct H1 as (_,(?,_)); auto.
-
-   rewrite H2; reflexivity.
 Qed.
 
 Definition WC x f := COUPLE x f.
@@ -130,7 +123,7 @@ Lemma Real_WCASE_gen X RX C n nt bt:
   inSAT (WCASE bt nt) (C n).
 intros Cm nty xreal breal.
 unfold Wf in nty.
-apply Real_sigma_elim' with (3:=nty) (4:=xreal); trivial.
+apply Real_sigma_elim with (3:=nty) (4:=xreal); trivial.
 do 2 red; intros.
 rewrite H0; reflexivity.
 Qed.

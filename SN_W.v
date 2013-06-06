@@ -312,13 +312,13 @@ red; intros.
 apply cc_lam_ext.
  apply TI_morph_gen.
   red; intros.
-  apply union2_morph; auto with *.
   unfold W_F.
   apply sigma_morph; trivial.
   red; intros.
   apply cc_arr_morph; trivial.
-  apply H0; trivial.
- 
+   apply H0; trivial.
+   apply union2_morph; auto with *.
+
   apply osucc_morph; trivial.
 
  red; intros.
@@ -342,11 +342,14 @@ apply cc_lam_ext.
 
    apply H2; reflexivity.
 
-   apply ZFlambda.sSAT_morph.
-   apply cc_app_morph.
-    apply H5; trivial.
-
+   apply condSAT_morph.
     rewrite H10; reflexivity.
+
+    apply ZFlambda.sSAT_morph.
+    apply cc_app_morph.
+     apply H5; trivial.
+
+     rewrite H10; reflexivity.
 Qed.
 
 Definition WI (o:trm) : trm.
@@ -561,7 +564,6 @@ assert (couple (int0 X0 i) (int0 F i) ∈ TI (WF' i) (osucc (int0 O i))).
 
     rewrite El_def.
     apply union2_morph; auto with *.
-
     assert (eq_val i (fun k => i (k-0))).
      intros [|k]; simpl; reflexivity.
     rewrite <- H3; reflexivity.
@@ -577,41 +579,37 @@ split.
    apply RAw_morph; reflexivity.
    apply RBw_morph; reflexivity.
 
-   admit. (* Pb: *)
-
    rewrite fst_def.
-   destruct H2; trivial.
+   apply H2.
 
    destruct H3.
    unfold SN_CC_addon.Real in H8; simpl in H8.
    rewrite Real_prod in H8.
-   unfold piSAT in H8.
-   revert H8; apply piSAT0_morph; intros.
-    red; intros.
-    rewrite fst_def.
-    rewrite <- int_subst_eq; reflexivity.
+    unfold piSAT in H8.
+    revert H8; apply piSAT0_morph; intros.
+     red; intros.
+     rewrite fst_def.
+     rewrite <- int_subst_eq; reflexivity.
 
-    rewrite fst_def.
-    rewrite <- int_subst_eq; reflexivity.
+     rewrite fst_def.
+     rewrite <- int_subst_eq; reflexivity.
 
-    unfold V.lams, V.cons, V.shift; simpl.
-    rewrite snd_def.
-    assert (eq_val i (fun k => i (k-0))).
-     intros [|k]; simpl; reflexivity.
-    rewrite Real_def.
-     apply rWi_morph_gen; trivial.
-      apply Aw_morph; trivial.
-      apply Bw_morph; trivial.
-      apply RAw_morph; trivial.
-      apply RBw_morph; trivial.
-      rewrite H10; reflexivity.
-      reflexivity.
+     unfold V.lams, V.cons, V.shift; simpl.
+     rewrite snd_def.
+     assert (eq_val i (fun k => i (k-0))).
+      intros [|k]; simpl; reflexivity.
+     rewrite Real_def.
+      apply rWi_morph_gen; trivial.
+       apply Aw_morph; trivial.
+       apply Bw_morph; trivial.
+       apply RAw_morph; trivial.
+       apply RBw_morph; trivial.
+       rewrite H10; reflexivity.
+       reflexivity.
 
      intros.
      apply rWi_morph; auto with *.
-      apply Bw_morph; reflexivity.
-      apply RAw_morph; reflexivity.
-      apply RBw_morph; reflexivity.
+     apply RAw_morph; reflexivity.
 
      red in H3; simpl in H3.
      apply El_prod_elim in H3.
@@ -623,7 +621,6 @@ split.
 
      red; intros.
      reflexivity.
-
 
     exact H3.
 
@@ -851,6 +848,10 @@ split.
          (couple (fst (int0 n i)) (snd (int0 n i))))).
   apply El_morph.
   apply app_ext.
+   admit.
+   admit.
+
+
   2:apply fst_def.
 ; auto with *.
   apply cc_prod_elim with (1:=H2).
