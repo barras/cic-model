@@ -139,7 +139,9 @@ Module SN := GenRealSN.MakeModel SN_CC_Model SN_CC_addon.
 
 (** ** Extendability *)
 Definition cst (x:set) : SN.trm.
+(* begin show *)
 left; exists (fun _ =>x) (fun _ =>Lambda.K).
+(* end show *)
  do 2 red; reflexivity.
  do 2 red; reflexivity.
  red; reflexivity.

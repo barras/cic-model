@@ -3,7 +3,7 @@
 
 Set Implicit Arguments.
 Require Import basic Can Sat.
-Require Import ZF ZFind_nat.
+Require Import ZF ZFnats.
 Module Lc:=Lambda.
 
 
@@ -32,8 +32,8 @@ Qed.
 
 Definition fNAT (A:set->SAT) (k:set) :=
   piFAM(fun P =>
-        prodSAT (P ZERO)
-       (prodSAT (depSAT (fun n => n ∈ NAT) (fun n => prodSAT (A n) (prodSAT (P n) (P (SUCC n)))))
+        prodSAT (P zero)
+       (prodSAT (depSAT (fun n => n ∈ N) (fun n => prodSAT (A n) (prodSAT (P n) (P (succ n)))))
                 (P k))).
 
 Instance fNAT_morph : Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) fNAT.
@@ -54,8 +54,8 @@ Lemma fNAT_def : forall t A k,
   inSAT t (fNAT A k) <->
   forall P f g,
   Proper (eq_set==>eqSAT) P ->
-  inSAT f (P ZERO) ->
-  inSAT g (depSAT(fun n=>n ∈ NAT)(fun n => prodSAT (A n) (prodSAT (P n) (P (SUCC n))))) ->
+  inSAT f (P zero) ->
+  inSAT g (depSAT(fun n=>n ∈ N)(fun n => prodSAT (A n) (prodSAT (P n) (P (succ n))))) ->
   inSAT (Lc.App2 t f g) (P k).
 intros.
 unfold fNAT.
@@ -140,7 +140,7 @@ unfold Lc.subst; rewrite Lc.simpl_subst; trivial.
 rewrite Lc.lift0; trivial.
 Qed.
 
-Lemma fNAT_ZE : forall A, inSAT ZE (fNAT A ZERO).
+Lemma fNAT_ZE : forall A, inSAT ZE (fNAT A zero).
 intros.
 rewrite fNAT_def; intros.
 unfold ZE.
@@ -156,7 +156,7 @@ rewrite Lc.lift0; auto.
 Qed.
 
 (** ZE realizes 0 *)
-Lemma cNAT_ZE : inSAT ZE (cNAT ZERO).
+Lemma cNAT_ZE : inSAT ZE (cNAT zero).
 rewrite cNAT_eq.
 apply fNAT_ZE.
 Qed.
@@ -190,10 +190,10 @@ reflexivity.
 Qed.
 
 Lemma fNAT_SU : forall A n t,
-  n ∈ NAT ->
+  n ∈ N ->
   inSAT t (A n) ->
   inSAT t (fNAT A n) ->
-  inSAT (Lc.App SU t) (fNAT A (SUCC n)).
+  inSAT (Lc.App SU t) (fNAT A (succ n)).
 intros A n t nty H H0.
 unfold SU.
 apply inSAT_exp;[auto|].
@@ -218,38 +218,10 @@ apply prodSAT_elim with (P n).
 Qed.
 
 (** SU realizes the successor *)
-Lemma cNAT_SU : forall n t, n ∈ NAT -> inSAT t (cNAT n) -> inSAT (Lc.App SU t) (cNAT (SUCC n)). 
+Lemma cNAT_SU : forall n t, n ∈ N -> inSAT t (cNAT n) -> inSAT (Lc.App SU t) (cNAT (succ n)). 
 intros.
 rewrite cNAT_eq.
 apply fNAT_SU; trivial.
 rewrite <- cNAT_eq; trivial.
 Qed.
 
-Lemma cNAT_mt t :
-  inSAT t (cNAT empty) ->
-  inSAT (Lc.App SU t) (cNAT empty).
-intros.
-assert (tsat := H).
-rewrite cNAT_eq in H|-*.
-rewrite fNAT_def in H|-*; intros.
-eapply inSAT_context; intros.
- eapply inSAT_context; intros.
-  apply inSAT_exp;[auto|].
- exact H4.
- unfold Lc.subst; simpl Lc.subst_rec.
- apply inSAT_exp;[right|].
-  apply sat_sn in H1; trivial.
- unfold Lc.subst; simpl Lc.subst_rec.
- repeat rewrite Lc.simpl_subst; auto.
- exact H3.
-apply inSAT_exp;[right|].
- apply sat_sn in H2; trivial.
-unfold Lc.subst; simpl Lc.subst_rec.
-repeat rewrite Lc.simpl_subst; auto.
-repeat rewrite Lc.lift0.
-apply prodSAT_elim with (P empty).
- apply prodSAT_elim with (cNAT empty); trivial.
- admit.
-
- apply H; trivial.
-Qed.

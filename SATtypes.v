@@ -118,7 +118,9 @@ repeat rewrite lift0; trivial.
 Qed.
 
 Definition sigmaReal (X:set->SAT) (Y:set->set->SAT) (a:set) : SAT :=
-  interSAT (fun C => prodSAT (prodSAT (X (fst a)) (prodSAT (Y (fst a) (snd a)) C)) C).
+  interSAT (fun C => prodSAT
+     (piSAT0 (fun x => a==couple x (snd a)) X (fun x => prodSAT (Y x (snd a)) C))
+     C).
 
 Lemma Real_couple x y X Y t1 t2 :
   Proper (eq_set ==> eqSAT) X ->
@@ -127,18 +129,20 @@ Lemma Real_couple x y X Y t1 t2 :
   inSAT t2 (Y x y) ->
   inSAT (COUPLE t1 t2) (sigmaReal X Y (couple x y)).
 intros.
-apply interSAT_intro; intros.
+apply interSAT_intro.
  exact snSAT.
+intros C.
 apply prodSAT_intro; intros.
 unfold subst; simpl subst_rec.
 repeat rewrite simpl_subst; auto.
 repeat rewrite lift0.
-rewrite fst_def in H3.
-rewrite snd_def in H3.
+apply piSAT0_elim' in H3; red in H3.
 apply prodSAT_elim with (2:=H2).
-apply prodSAT_elim with (2:=H1); trivial.
+rewrite <- (snd_def x y).
+apply H3; trivial.
+rewrite snd_def; reflexivity.
 Qed.
-
+(*
 Lemma Real_sigma_elim X Y a C t b :
   inSAT t (sigmaReal X Y a) ->
   inSAT b (prodSAT (X (fst a)) (prodSAT (Y (fst a) (snd a)) C)) ->
@@ -147,8 +151,8 @@ intros.
 apply interSAT_elim with (x:=C) in H.
 apply prodSAT_elim with (1:=H) (2:=H0).
 Qed.
-
-Lemma Real_sigma_elim' X Y RX RY a C t b :
+*)
+Lemma Real_sigma_elim X Y RX RY a C t b :
   ext_fun X Y ->
   Proper (eq_set ==> eqSAT) C ->
   a ∈ sigma X Y ->
@@ -159,14 +163,17 @@ Lemma Real_sigma_elim' X Y RX RY a C t b :
 intros.
 assert (eqa := surj_pair _ _ _ (subset_elim1 _ _ _ H1)).
 rewrite eqa.
-apply Real_sigma_elim with RX RY a; trivial.
+unfold sigmaReal in H2.
+refine (prodSAT_elim _ (interSAT_elim H2 _) _).
+apply piSAT0_intro; intros.
+ apply sat_sn in H3; trivial.
 apply prodSAT_intro'; intros.
-apply prodSAT_intro'; intros.
-apply piSAT0_elim' in H3; red in H3.
-specialize H3 with (1:=fst_typ_sigma _ _ _ H1) (2:=H4).
-apply piSAT0_elim' in H3; red in H3.
-apply H3; trivial.
-apply snd_typ_sigma with (A:=X); auto with *.
+rewrite eqa in H4; apply couple_injection in H4; destruct H4 as (?,_).
+rewrite H4.
+refine (piSAT0_elim' (piSAT0_elim' H3 x _ _ H5) (snd a) _ _ H6).
+ apply fst_typ_sigma in H1; rewrite H4 in H1; trivial.
+
+ apply snd_typ_sigma with (A:=X); auto with *.
 Qed.
 
 (** * Structural fixpoint. *)
