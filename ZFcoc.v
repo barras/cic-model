@@ -247,6 +247,20 @@ Qed.
 (* The operator that adds the empty set to a type. *)
 Definition cc_dec x := singl empty ∪ x.
 
+Lemma cc_dec_intro x :
+  x ⊆ cc_dec x.
+red; intros.
+apply union2_intro2; trivial.
+Qed.
+Hint Resolve cc_dec_intro.
+
+Instance cc_dec_mono : Proper (incl_set==>incl_set) cc_dec.
+do 3 red; intros.
+apply union2_elim in H0; destruct H0.
+ apply union2_intro1; trivial.
+ apply union2_intro2; auto.
+Qed.
+
 Instance cc_dec_morph : morph1 cc_dec.
 unfold cc_dec; do 2 red; intros.
 rewrite H; reflexivity.

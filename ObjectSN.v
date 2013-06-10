@@ -335,8 +335,8 @@ destruct H; split.
  apply H0; rewrite H1; reflexivity.
 Qed.
 
-Lemma int_lift_eq : forall i T,
-  int i (lift 1 T) == int (V.shift 1 i) T.
+Lemma int_lift_eq : forall n T i,
+  int i (lift n T) == int (V.shift n i) T.
 unfold int; intros;
   destruct T as [T|]; simpl; auto. (* BUG: intros needed before destruct *)
 2:reflexivity.

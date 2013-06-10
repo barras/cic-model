@@ -3,6 +3,7 @@ Require Import ZF ZFpairs ZFsum ZFrelations ZFord ZFfix ZFind_w Sat SATtypes.
 Require Import ZFlambda.
 Require Import Lambda.
 Module Lc:=Lambda.
+Require Import ZFcoc.
 
 Set Implicit Arguments.
 
@@ -17,7 +18,6 @@ Let Bext : ext_fun A B.
 auto with *.
 Qed.
 
-Require Import ZFcoc.
 Let Wf X := W_F A B (cc_dec X).
 
 Local Instance Wf_mono : Proper (incl_set ==> incl_set) Wf.
@@ -26,13 +26,6 @@ unfold Wf; apply W_F_mono; trivial.
 apply union2_mono; auto with *.
 Qed.
 
-
-Lemma discr_pair_mt a b :
-  ~ pair a b == empty.
-red; intros.
-elim empty_ax with a.
-rewrite <- H; apply pair_intro1.
-Qed.
 
 Lemma mt_not_in_W_F o x :
   isOrd o ->
@@ -44,8 +37,8 @@ destruct H0 as (o',?,?).
 unfold Wf in H2.
 apply W_F_elim in H2; trivial.
 destruct H2 as (_,(_,?)).
-rewrite H2 in H1.
-apply discr_pair_mt in H1; trivial.
+rewrite H1 in H2.
+apply discr_mt_pair in H2; trivial.
 Qed.
 
 
@@ -53,47 +46,6 @@ Variable RA : set -> SAT.
 Variable RB : set -> set -> SAT.
 Hypothesis RA_morph : Proper (eq_set ==> eqSAT) RA.
 Hypothesis RB_morph : Proper (eq_set ==> eq_set ==> eqSAT) RB.
-
-Definition condSAT (P:Prop) (S:SAT) : SAT :=
-  depSAT (fun C => P -> inclSAT S C) (fun C => C).
-
-Lemma condSAT_morph_gen (P P':Prop) S S' :
-  (P<->P') ->
-  (P->eqSAT S S') ->
-  eqSAT (condSAT P S) (condSAT P' S').
-intros.
-apply interSAT_morph_subset; simpl; intros; auto with *.
-apply impl_morph; trivial.
-split; intros.
- red; intros.
- rewrite <- H0 in H3; auto.
-
- red ;intros.
- rewrite H0 in H3; auto.
-Qed.
-
-Instance condSAT_morph : Proper (iff==>eqSAT==>eqSAT) condSAT.
-do 3 red; intros.
-apply condSAT_morph_gen; auto with *.
-Qed.
-
-Lemma condSAT_ok (P:Prop) S : P -> eqSAT (condSAT P S) S.
-split; intros.
- unfold condSAT in H0.
- apply (depSAT_elim S H0); auto with *.
-
- apply depSAT_intro; intros.
-  apply sat_sn in H0; trivial.
-  apply H1; trivial.
-Qed.
-
-Lemma condSAT_smaller P S :
-  inclSAT (condSAT P S) S.
-red; intros.
-unfold condSAT in H.
-apply (depSAT_elim S H); auto with *.
-Qed.
-
 
 Definition rW (X:set->SAT) : set->SAT :=
   sigmaReal RA (fun x f => piSAT0 (fun i => i ∈ B x) (RB x)
@@ -157,12 +109,6 @@ apply piSAT0_morph; intros; auto with *.
 Qed.
 
 Definition WC x f := COUPLE x f.
-
-Parameter sigmaReal_morph : forall X Y,
-  Proper (eq_set ==> eqSAT) X ->
-  Proper (eq_set ==> eq_set ==> eqSAT) Y ->
-  Proper (eq_set ==> eqSAT) (sigmaReal X Y).
-Existing Instance sigmaReal_morph.
 
 Lemma Real_WC_gen X RX a b x f :
   Proper (eq_set==>eqSAT) RX ->
@@ -409,6 +355,29 @@ apply prodSAT_elim with snSAT;[|do 2 apply sn_abs;apply sn_lift;trivial].
 apply varSAT.
 Qed.
 
+Lemma guard_couple_neutral u v S :
+  inSAT u snSAT ->
+  inSAT v (interSAT(fun S => S)) ->
+  inSAT (Lc.App2 guard_couple u v) S.
+intros.
+eapply prodSAT_elim;[|apply H0].
+eapply prodSAT_elim;[|apply H].
+apply prodSAT_intro; intros.
+unfold Lc.subst; simpl Lc.subst_rec.
+apply prodSAT_intro; intros.
+unfold Lc.subst; simpl Lc.subst_rec.
+repeat rewrite simpl_subst; auto with arith.
+repeat rewrite Lc.lift0.
+eapply prodSAT_elim;[|apply H2].
+eapply prodSAT_elim;[|apply H1].
+eapply prodSAT_elim with snSAT.
+ apply interSAT_elim with (1:=H2).
+
+ do 2 apply sn_abs; apply sn_lift.
+ apply sat_sn in H1; trivial.
+Qed.
+
+
 Lemma G_sat o x t m (X:SAT):
   isOrd o ->
   x ∈ cc_dec (TI Wf o) ->
@@ -487,44 +456,6 @@ econstructor; econstructor; reflexivity.
 Qed.
 
 
-
-Lemma guard_couple_neutral u v S :
-  inSAT u snSAT ->
-  inSAT v (interSAT(fun S => S)) ->
-  inSAT (Lc.App2 guard_couple u v) S.
-intros.
-eapply prodSAT_elim;[|apply H0].
-eapply prodSAT_elim;[|apply H].
-apply prodSAT_intro; intros.
-unfold Lc.subst; simpl Lc.subst_rec.
-apply prodSAT_intro; intros.
-unfold Lc.subst; simpl Lc.subst_rec.
-repeat rewrite simpl_subst; auto with arith.
-repeat rewrite Lc.lift0.
-eapply prodSAT_elim;[|apply H2].
-eapply prodSAT_elim;[|apply H1].
-eapply prodSAT_elim with snSAT.
- apply interSAT_elim with (1:=H2).
-
- do 2 apply sn_abs; apply sn_lift.
- apply sat_sn in H1; trivial.
-Qed.
-
-
-Lemma piSAT0_intro' A0 (P:A0->Prop) (F G:A0->SAT) t :
-  (forall x u, P x -> inSAT u (F x) -> inSAT (App t u) (G x)) ->
-  (exists w, P w) ->
-  inSAT t (piSAT0 P F G).
-intros.
-apply piSAT0_intro; trivial.
-destruct H0 as (w,?).
-apply subterm_sn with (App t (Ref 0)); auto.
-apply sat_sn with (G w).
-apply H; trivial.
-apply varSAT.
-Qed.
-
-
 Lemma WFIX_sat : forall o m X,
   let FIX_ty o := piSAT0 (fun n => n ∈ cc_dec (TI Wf o)) (rWi o) (X o) in
   isOrd o ->
@@ -535,27 +466,15 @@ Lemma WFIX_sat : forall o m X,
   inSAT (WFIX m) (FIX_ty o).
 intros o m X FIX_ty oo Xmono msat.
 elim oo using isOrd_ind; intros.
-apply piSAT0_intro.
- apply FIXP_sn; trivial.
-  apply G_sn.
-  apply piSAT0_elim' in msat; red in msat.
-  eapply sat_sn; apply msat with (x:=o).
-   apply lt_osucc; trivial.
-
-   apply piSAT0_intro; intros.
-    apply G_sn.
-    apply sn_var.
-
-    apply G_sat with (2:=H2); trivial.
-    eapply prodSAT_elim; [|eexact H3].
-    apply prodSAT_elim with snSAT;apply varSAT.
-
+apply piSAT0_intro'.
+2:exists empty; apply union2_intro1; apply singl_intro.
 intros x u xty0 ureal.
 apply union2_elim in xty0; destruct xty0.
+ (* neutral case *)
  apply singl_elim in H2.
  rewrite H2 in ureal.
  unfold WFIX, FIXP.
- apply G_sn'.
+ apply guard_couple_neutral.
  2:apply rWi_neutral with (2:=ureal); trivial.
  apply sat_sn with (prodSAT (interSAT(fun S=>S)) snSAT).
  apply prodSAT_intro; intros.
@@ -569,13 +488,14 @@ apply union2_elim in xty0; destruct xty0.
  apply piSAT0_intro'; intros.
  2:exists empty; apply union2_intro1; apply singl_intro.
  apply union2_elim in H4; destruct H4.
+  (* rec. call on neutral term *)
   apply singl_elim in H4.
   rewrite H4 in H5.
   apply guard_couple_neutral.
-   apply sat_sn in H3; trivial.
+  2:apply rWi_neutral with y; trivial.
+  apply sat_sn in H3; trivial.
 
-   apply rWi_neutral with y; trivial.
-
+  (* rec. call on regular value *)
   apply TI_elim in H4; auto with *.
   destruct H4 as (z,?,?).
   specialize H1 with (1:=H4).
@@ -587,15 +507,16 @@ apply union2_elim in xty0; destruct xty0.
     eauto using isOrd_inv.
     apply olts_le; trivial.
   rewrite <- TI_mono_succ in H6; auto with *.
+  assert (ureal' : inSAT u0 (rWi (osucc z) x0)).
+   apply rWi_mono with (3:=H7); auto.
   apply G_sat with (osucc z) x0; auto.
    apply union2_intro2; trivial.
-
-   rewrite rWi_mono with (3:=H7); auto.   
 
    eapply prodSAT_elim;[|apply H5].
    eapply prodSAT_elim;[|apply H3].
    apply interSAT_elim with (1:=H3).
 
+ (* reducible case *)
  apply TI_elim in H2; auto with *.
  destruct H2 as (z,?,?).
  specialize H1 with (1:=H2).

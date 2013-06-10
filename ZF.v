@@ -629,8 +629,11 @@ apply eq_intro; intros.
  apply subset_intro; trivial.
 Qed.
 
-  Lemma cond_set_elim_prop x P z :  z ∈ cond_set P x -> P.
-rewrite cond_set_ax; destruct 1; trivial.
+  Lemma cond_set_mt P x : ~P -> cond_set P x == empty.
+intros.
+apply empty_ext; red; intros.
+rewrite cond_set_ax in H0.
+destruct H0; auto.
 Qed.
 
 (** other properties of axioms *)

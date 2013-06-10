@@ -303,6 +303,49 @@ intros (x,?); simpl.
 apply (H0 x); trivial.
 Qed.
 
+(** Conditional saturated set *)
+
+Definition condSAT (P:Prop) (S:SAT) : SAT :=
+  depSAT (fun C => P -> inclSAT S C) (fun C => C).
+
+Lemma condSAT_morph_gen (P P':Prop) S S' :
+  (P<->P') ->
+  (P->eqSAT S S') ->
+  eqSAT (condSAT P S) (condSAT P' S').
+intros.
+apply interSAT_morph_subset; simpl; intros; auto with *.
+apply impl_morph; trivial.
+split; intros.
+ red; intros.
+ rewrite <- H0 in H3; auto.
+
+ red ;intros.
+ rewrite H0 in H3; auto.
+Qed.
+
+Instance condSAT_morph : Proper (iff==>eqSAT==>eqSAT) condSAT.
+do 3 red; intros.
+apply condSAT_morph_gen; auto with *.
+Qed.
+
+Lemma condSAT_ok (P:Prop) S : P -> eqSAT (condSAT P S) S.
+split; intros.
+ unfold condSAT in H0.
+ apply (depSAT_elim S H0); auto with *.
+
+ apply depSAT_intro; intros.
+  apply sat_sn in H0; trivial.
+  apply H1; trivial.
+Qed.
+
+Lemma condSAT_smaller P S :
+  inclSAT (condSAT P S) S.
+red; intros.
+unfold condSAT in H.
+apply (depSAT_elim S H); auto with *.
+Qed.
+
+
 (** Dependent product *)
 
 Definition piSAT0 A (P:A->Prop) (F G:A->SAT) :=
@@ -327,6 +370,20 @@ apply depSAT_intro; trivial.
 intros.
 apply prodSAT_intro'; auto.
 Qed.
+
+Lemma piSAT0_intro' A0 (P:A0->Prop) (F G:A0->SAT) t :
+  (forall x u, P x -> inSAT u (F x) -> inSAT (App t u) (G x)) ->
+  (exists w, P w) ->
+  inSAT t (piSAT0 P F G).
+intros.
+apply piSAT0_intro; trivial.
+destruct H0 as (w,?).
+apply subterm_sn with (App t (Ref 0)); auto.
+apply sat_sn with (G w).
+apply H; trivial.
+apply varSAT.
+Qed.
+
 
 Lemma piSAT0_elim : forall A (P:A->Prop) (F G:A->SAT) x t u,
   inSAT t (piSAT0 P F G) ->

@@ -122,6 +122,22 @@ Definition sigmaReal (X:set->SAT) (Y:set->set->SAT) (a:set) : SAT :=
      (piSAT0 (fun x => a==couple x (snd a)) X (fun x => prodSAT (Y x (snd a)) C))
      C).
 
+Instance sigmaReal_morph X Y :
+  Proper (eq_set ==> eqSAT) X ->
+  Proper (eq_set ==> eq_set ==> eqSAT) Y ->
+  Proper (eq_set ==> eqSAT) (sigmaReal X Y).
+do 2 red; intros.
+apply interSAT_morph.
+apply indexed_relation_id; intros C.
+apply prodSAT_morph; auto with *.
+apply piSAT0_morph; intros; auto with *.
+ red; intros.
+ rewrite H1; reflexivity.
+
+ apply prodSAT_morph; auto with *.
+ rewrite H1; reflexivity.
+Qed.
+
 Lemma Real_couple x y X Y t1 t2 :
   Proper (eq_set ==> eqSAT) X ->
   Proper (eq_set ==> eq_set ==> eqSAT) Y ->

@@ -323,3 +323,59 @@ apply couple_intro_sigma; trivial.
 
   apply snd_typ_sigma with (2:=H3); auto with *.
 Qed.
+
+Definition sigma_case b c :=
+  cond_set (c == couple (fst c) (snd c)) (b (fst c) (snd c)).
+
+Instance sigma_case_morph :
+  Proper ((eq_set==>eq_set==>eq_set)==>eq_set==>eq_set) sigma_case.
+do 3 red; intros.
+apply cond_set_morph.
+ rewrite H0; reflexivity.
+
+ apply H; rewrite H0; reflexivity.
+Qed.
+
+Lemma sigma_case_couple f a b c :
+  morph2 f ->
+  c == couple a b ->
+  sigma_case f c == f a b.
+intros.
+unfold sigma_case.
+rewrite cond_set_ok.
+ rewrite H0; rewrite fst_def; rewrite snd_def; reflexivity.
+
+ rewrite H0; rewrite fst_def; rewrite snd_def; reflexivity.
+Qed.
+(*
+Lemma sigma_case_mt f c :
+  c == empty -> 
+  sigma_case f c == empty.
+intros.
+unfold sigma_case.
+apply empty_ext; red; intros.
+rewrite cond_set_ax in H0.
+destruct H0.
+rewrite H1 in H.
+assert (singl (fst c) ∈ couple (fst c) (snd c)).
+ apply pair_intro1.
+rewrite H in H2.
+apply empty_ax in H2; trivial.
+*)
+(*Lemma fst_mt : fst empty == empty.
+apply empty_ext; red; intros.
+unfold fst in H.
+apply union_elim in H; destruct H.
+apply subset_elim1 in H0.
+apply union_elim in H0; destruct H0.
+apply empty_ax in H1; trivial.
+Qed.
+Lemma snd_mt : snd empty == empty.
+apply empty_ext; red; intros.
+unfold snd in H.
+apply union_elim in H; destruct H.
+apply subset_elim1 in H0.
+apply union_elim in H0; destruct H0.
+apply empty_ax in H1; trivial.
+Qed.
+*)
