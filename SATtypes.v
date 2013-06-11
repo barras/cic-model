@@ -235,7 +235,89 @@ repeat rewrite lift0; auto.
 Qed.
 
 Require Import ZFord.
+Require Import ZFcoc.
 
+Lemma FIXP_sat0 G o T RT m X :
+  let FIX_ty o := piSAT0 (fun n => n ∈ cc_dec (T o)) (RT o) (X o) in
+  let FIX_ty' o := piSAT0 (fun n => n ∈ T o) (RT o) (X o) in
+  isOrd o ->
+  (forall o x t m (X:SAT), isOrd o -> x ∈ cc_dec (T o) ->
+   inSAT t (RT o x) ->
+   sn m ->
+   (x ∈ T o -> inSAT (App2 m m t) X) ->
+   inSAT (App2 G m t) X) ->
+  (forall y n, isOrd y -> y ⊆ o -> n ∈ T y -> exists2 y', y' ∈ y & n ∈ T (osucc y')) ->
+  (forall y y' n, isOrd y -> isOrd y' -> n ∈ T y -> y ⊆ y' -> y' ⊆ o ->
+   eqSAT (RT y n) (RT y' n)) ->
+
+  (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ T y ->
+   inclSAT (X y n) (X y' n)) ->
+  inSAT m (piSAT0 (fun o' => o' ∈ osucc o) (fun o' => FIX_ty o') (fun o' => FIX_ty' (osucc o'))) ->
+  inSAT (FIXP G m) (FIX_ty o).
+intros FIX_ty FIX_ty' oo Gsat Tcont Rirrel Xmono msat.
+elim oo using isOrd_ind; intros.
+apply piSAT0_intro'.
+2:exists empty; apply union2_intro1; apply singl_intro.
+intros x u xty0 ureal.
+apply Gsat with (2:=xty0); trivial.
+ (* neutral case *)
+ eapply sat_sn.
+ apply prodSAT_intro with (A:=interSAT(fun S=>S)).
+ intros v vsat.
+ unfold subst; simpl subst_rec.
+ rewrite !simpl_subst; trivial.
+ rewrite !lift0.
+ match goal with |- inSAT _ ?S =>
+   change (inSAT (App m (App G v)) S)
+ end.
+ apply piSAT0_elim' in msat; red in msat.
+ apply msat with (x:=y); auto with *.
+  apply ole_lts; auto.
+
+  apply piSAT0_intro'; intros.
+  2:exists empty; apply union2_intro1; apply singl_intro.
+  eapply Gsat with (2:=H2); trivial.
+   apply sat_sn in vsat; trivial.
+
+   intros _.
+   eapply prodSAT_elim;[|apply H3].
+   eapply prodSAT_elim;[|apply vsat].
+   apply interSAT_elim with (1:=vsat).
+
+ (* closed case *)
+ intros xty.
+ eapply inSAT_context; intros.
+  apply inSAT_exp; simpl.
+    left; simpl.
+    rewrite Bool.orb_true_r.
+    apply Bool.orb_true_r.
+
+    unfold subst; simpl subst_rec.
+    repeat rewrite simpl_subst; auto.
+    repeat rewrite lift0.
+    change (inSAT (App m (FIXP G m)) S).
+    eexact H2.
+ apply Tcont in xty; trivial.
+ destruct xty as (z,zty,xty).
+ specialize H1 with (1:=zty).
+ assert (zo : isOrd z).
+  apply isOrd_inv with y; trivial.
+ assert (zlt : osucc z ⊆ y).
+  red; intros; apply le_lt_trans with z; auto.
+ assert (ureal' : inSAT u (RT (osucc z) x)).
+  rewrite <- Rirrel with (3:=xty) in ureal; auto.
+ apply Xmono with (osucc z); auto.
+ assert (z ∈ osucc o).
+  apply isOrd_trans with o; auto.
+  apply H0; trivial.
+ apply piSAT0_elim' in msat; red in msat.
+ specialize msat with (1:=H2) (2:=H1).
+ apply piSAT0_elim' in msat; red in msat.
+ apply msat; trivial.
+Qed.
+
+
+(* deprecated: *)
 Lemma FIXP_sat G o T RT m X :
   let FIX_ty o := piSAT0 (fun n => n ∈ T o) (RT o) (X o) in
   isOrd o ->
@@ -436,19 +518,6 @@ rewrite cc_beta_eq.
 Qed.
 
 
-Lemma cc_app_outside_domain dom f x :
-  is_cc_fun dom f ->
-  ~ x ∈ dom ->
-  cc_app f x == empty.
-intros.
-apply empty_ext; red; intros.
-apply couple_in_app in H1.
-apply H in H1.
-destruct H1 as (_,?).
-rewrite fst_def in H1; auto.
-Qed.
-
-
 Lemma tiSAT_outside_domain o A F S :
   Proper (incl_set==>incl_set) F ->
   Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A ->
@@ -515,6 +584,7 @@ transitivity (tiSAT F A o x0).
  apply tiSAT_morph; auto with *.
 Qed.
 
+(* useful ?
 Lemma FIXP_TI_sat G o F A m X :
   let FIX_ty o := piSAT0 (fun n => n ∈ TI F o) (tiSAT F A o) (X o) in
   Proper (incl_set ==> incl_set) F ->
@@ -546,3 +616,4 @@ apply FIXP_sat; trivial.
  transitivity y'; trivial.
 Qed.
 
+*)

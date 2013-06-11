@@ -661,6 +661,96 @@ rewrite <- H.
 apply W'_eqn.
 Qed.
 
+
+
+Definition squash f := subset f (fun c => ~ fst c == empty).
+
+Instance squash_morph : morph1 squash.
+do 2 red; intros.
+apply subset_morph; auto with *.
+Qed.
+
+Lemma squash_ax f z :
+  z ∈ squash f <-> z ∈ f /\ ~ fst z == empty.
+unfold squash; rewrite subset_ax.
+apply and_iff_morphism; auto with *.
+split; intros.
+ destruct H.
+ rewrite H; trivial.
+
+ exists z; auto with *.
+Qed.
+
+Require Import ZFcoc.
+Lemma squash_eq  U V f :
+  ~ empty ∈ U ->
+  f ∈ cc_prod (cc_dec U) V ->
+  squash f == cc_lam U (cc_app f).
+intros.
+apply eq_set_ax; intros z.
+rewrite squash_ax.
+rewrite cc_lam_def.
+2:do 2 red; intros; apply cc_app_morph; auto with *.
+split; intros.
+ destruct H1.
+ destruct cc_prod_is_cc_fun with (1:=H0)(2:=H1).
+ apply union2_elim in H4; destruct H4.
+  apply singl_elim in H4; contradiction.
+ exists (fst z); trivial.
+ exists (snd z); trivial.
+ rewrite <- couple_in_app.
+ rewrite H3 in H1; trivial.
+
+ destruct H1 as (x,xty,(y,yty,eqc)).
+ rewrite <- couple_in_app in yty.
+ rewrite eqc; split; trivial.
+ rewrite fst_def; intro h; rewrite h in xty; auto.
+Qed.
+
+
+Lemma squash_typ U V f :
+  ext_fun (cc_dec U) V ->
+  ~ empty ∈ U ->
+  f ∈ cc_prod (cc_dec U) V ->
+  squash f ∈ cc_prod U V.
+intros.
+rewrite squash_eq with (2:=H1); trivial.
+apply cc_prod_intro; intros.
+ do 2 red; intros; apply cc_app_morph; auto with *.
+
+ do 2 red; intros; apply H; trivial.
+ apply cc_dec_intro; trivial.
+
+ apply cc_prod_elim with (1:=H1).
+ apply cc_dec_intro; trivial.
+Qed.
+
+Lemma squash_beta U V f x :
+  ~ empty ∈ U ->
+  f ∈ cc_prod (cc_dec U) V ->
+  x ∈ U ->
+  cc_app (squash f) x == cc_app f x.
+intros.
+rewrite squash_eq with (2:=H0); trivial.
+rewrite cc_beta_eq; auto with *.
+do 2 red; intros; apply cc_app_morph; auto with *.
+Qed.
+
+Lemma squash_mt U V f :
+  ~ empty ∈ U ->
+  f ∈ cc_prod (cc_dec U) V ->
+  cc_app (squash f) empty == empty.
+intros.
+apply cc_app_outside_domain with U; trivial.
+rewrite squash_eq with (2:=H0); trivial.
+apply is_cc_fun_lam.
+do 2 red; intros; apply cc_app_morph; auto with *.
+Qed.
+
+
+
+
+
 (** Recursor on W *)
 
 Require Import ZFfunext ZFfixrec.
@@ -869,179 +959,7 @@ do 2 red; intros.
 unfold Wf; apply W_F_mono; trivial.
 apply cc_dec_mono; auto with *.
 Qed.
-(*
-  Variable U' : set -> set -> set.
-  Hypothesis U'mono : forall o o' x x',
-    isOrd o' -> o' ⊆ ord -> isOrd o -> o ⊆ o' ->
-    x ∈ cc_dec (TI W_F' o) -> x == x' ->
-    U' o x ⊆ U' o' x'.
 
-  Let Ty' o := cc_prod (cc_dec (TI W_F' o)) (U' o).
-  Let Q' o f := forall x, x ∈ cc_dec (TI W_F' o) -> cc_app f x ∈ U' o x.
-
-  Hypothesis Ftyp' : forall o f, isOrd o -> o ⊆ ord ->
-    f ∈ Ty' o -> F o f ∈ Ty' (osucc o).
-
-  Definition Wi_ord_irrel' :=
-    forall o o' f g,
-    isOrd o' -> o' ⊆ ord -> isOrd o -> o ⊆ o' ->
-    f ∈ Ty' o -> g ∈ Ty' o' ->
-    fcompat (TI W_F' o) f g ->
-    fcompat (TI W_F' (osucc o)) (F o f) (F o' g).
-
-  Hypothesis Firrel' : Wi_ord_irrel'.
-
-Lemma U'morph : forall o o', isOrd o' -> o' ⊆ ord -> o == o' ->
-    forall x x', x ∈ cc_dec (TI W_F' o) -> x == x' -> U' o x == U' o' x'. 
-intros.
-apply incl_eq.
- apply U'mono; auto.
-  rewrite H1; trivial.
-  rewrite H1; reflexivity.
-
- apply U'mono; auto.
-  rewrite H1; trivial.
-  rewrite H1; trivial.
-  rewrite H1; reflexivity.
-  rewrite <- H3; rewrite <- H1; trivial.
-  symmetry; trivial.
-Qed.
-
-Lemma U'ext : forall o, isOrd o -> o ⊆ ord -> ext_fun (cc_dec (TI W_F' o)) (U' o).
-red; red; intros.
-apply U'morph; auto with *.
-Qed.
-
-
-  Lemma WREC_typing' : forall o f, isOrd o -> o ⊆ ord -> 
-    is_cc_fun (cc_dec (TI W_F' o)) f -> Q' o f -> f ∈ Ty' o.
-intros.
-rewrite cc_eta_eq' with (1:=H1).
-apply cc_prod_intro; intros; auto.
- do 2 red; intros.
- rewrite H4; reflexivity.
-
- apply U'ext; trivial.
-Qed.
-
-
-Let Q'm :
-   forall o o',
-   isOrd o ->
-   o ⊆ ord ->
-   o == o' -> forall f f', fcompat (cc_dec (TI W_F' o)) f f' -> Q' o f -> Q' o' f'.
-intros.
-unfold Q' in H3|-*; intros.
-rewrite <- H1 in H4.
-specialize H3 with (1:=H4).
-red in H2; rewrite <- H2; trivial.
-revert H3; apply U'mono; auto with *.
- rewrite <- H1; trivial.
- rewrite <- H1; trivial.
- rewrite <- H1; reflexivity.
-Qed.
-
-(*
-Let Q'cont : forall o f : set,
- isOrd o ->
- o ⊆ ord ->
- is_cc_fun (cc_dec (TI W_F' o)) f ->
- (forall o' : set, o' ∈ o -> Q' (osucc o') f) -> Q' o f.
-intros.
-red; intros.
-apply TI_elim in H3; auto with *.
-destruct H3.
-rewrite <- TI_mono_succ in H4; eauto using isOrd_inv.
-2:apply W_F'_mono.
-generalize (H2 _ H3 _ H4).
-apply U'mono; eauto using isOrd_inv with *.
-red; intros.
-apply isOrd_plump with x0; eauto using isOrd_inv.
-apply olts_le in H5; trivial.
-Qed.
-*)
-(*
-Let Q'typ : forall o f,
- isOrd o ->
- o ⊆ ord ->
- is_cc_fun (TI W_F' o) f ->
- Q' o f -> is_cc_fun (TI W_F' (osucc o)) (F o f) /\ Q' (osucc o) (F o f).
-intros.
-assert (F o f ∈ Ty' (osucc o)).
- apply Ftyp'; trivial.
- apply WREC_typing'; trivial.
-split.
- apply cc_prod_is_cc_fun in H3; trivial.
-
- red; intros.
- apply cc_prod_elim with (1:=H3); trivial.
-Qed.
-*)
-  Definition F' o f :=
-    F o (cc_lam (cc_dec (TI
-
-    cc_lam (cc_dec (TI W_F' o)) (fun x => cond_set (~x==empty) (cc_app (F o f) x)).
-
-  Lemma WREC_recursor' : recursor ord (TI W_F') Q' F'.
-split; auto.
- apply TI_morph.
-
- intros.
- apply TI_mono_eq; auto with *.
-admit.
-
- red; red; intros.
- destruct H1 as (oo,(ofun,oty)); destruct H2 as (o'o,(o'fun,o'ty)).
- apply Firrel'; trivial.
-  apply WREC_typing'; trivial. 
-  transitivity o'; trivial.
-
-  apply WREC_typing'; trivial. 
-Qed.
-
-  Lemma WREC_wt' : WREC ord ∈ Ty' ord.
-intros.
-destruct REC_wt with (1:=oord) (2:=WREC_recursor').
-apply WREC_typing'; auto with *.
-Qed.
-
-  Lemma WREC_ind' : forall P x,
-    Proper (eq_set==>eq_set==>eq_set==>iff) P ->
-    (forall o x, isOrd o -> lt o ord ->
-     x ∈ W_F' (TI W_F' o) ->
-     (forall y, y ∈ TI W_F' o -> P o y (cc_app (WREC ord) y)) ->
-     forall w, isOrd w -> w ⊆ ord -> lt o w ->
-     P w x (cc_app (F ord (WREC ord)) x)) ->
-    x ∈ TI W_F' ord ->
-    P ord x (cc_app (WREC ord) x).
-intros.
-unfold WREC.
-apply REC_ind with (2:=WREC_recursor'); auto.
-intros.
-apply TI_elim in H4; auto with *.
-destruct H4 as (o',?,?).
-apply H0 with o'; eauto using isOrd_inv.
-red; auto.
-Qed.
-
-  Lemma WREC_expand' : forall n,
-    n ∈ TI W_F' ord -> cc_app (WREC ord) n == cc_app (F ord (WREC ord)) n.
-intros.
-apply REC_expand with (2:=WREC_recursor') (Q:=Q'); auto.
-Qed.
-
-  Lemma WREC_irrel' o o' :
-    isOrd o ->
-    isOrd o' ->
-    o ⊆ o' ->
-    o' ⊆ ord ->
-    eq_fun (TI W_F' o) (cc_app (WREC o)) (cc_app (WREC o')).
-red; intros.
-rewrite <- H4.
-apply REC_ord_irrel with (2:=WREC_recursor'); auto with *.
-Qed.
-*)
-(* version OK?*)
   Variable U' : set -> set -> set.
   Hypothesis U'mono : forall o o' x x',
     isOrd o' -> o' ⊆ ord -> isOrd o -> o ⊆ o' ->

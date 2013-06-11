@@ -855,6 +855,19 @@ rewrite <- couple_in_app in H.
 apply empty_ax in H; trivial.
 Qed.
 
+Lemma cc_app_outside_domain dom f x :
+  is_cc_fun dom f ->
+  ~ x ∈ dom ->
+  cc_app f x == empty.
+intros.
+apply empty_ext; red; intros.
+apply couple_in_app in H1.
+apply H in H1.
+destruct H1 as (_,?).
+rewrite fst_def in H1; auto.
+Qed.
+
+
 (** Beta reduction *)
 
 Lemma cc_beta_eq : forall dom F x,
