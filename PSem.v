@@ -72,7 +72,7 @@ assert (forall S, inSAT (Lc.App (tm j v) (Lc.Abs (Lc.Ref 0))) S) as HF.
   assert (mkProp S ∈ El props).
    rewrite El_props_def. exists S. reflexivity.
   split; trivial.
-   rewrite Real_sort; trivial. apply Lc.sn_abs; apply Lc.sn_var.
+   rewrite Real_sort; trivial. apply snSAT_intro; apply Lc.sn_abs; apply Lc.sn_var.
 
  apply SN.prod_elim with (x:=mkProp S) (u:=Lc.Abs (Lc.Ref 0)) in Hv; trivial.
   destruct Hv. rewrite Real_mkProp in H1; trivial.
@@ -118,7 +118,7 @@ apply prod_intro_lam.
   unfold inX; apply H; trivial.
 
   unfold Lc.subst; simpl Lc.subst_rec. rewrite Real_sort; [clear H|apply H; trivial].
-   apply Lc.sn_abs; apply Lc.sn_lift; apply sat_sn in Hu; trivial.
+   apply snSAT_intro; apply Lc.sn_abs; apply Lc.sn_lift; apply sat_sn in Hu; trivial.
 Qed.
 
 Definition P1t : trm.
@@ -179,7 +179,7 @@ apply prod_intro_lam.
   unfold inX; apply H; trivial.
 
   unfold Lc.subst; simpl Lc.subst_rec. rewrite Real_sort; [clear H|apply H; trivial].
-   apply Lc.sn_abs; apply Lc.sn_lift; apply sat_sn in Hu; trivial.
+   apply snSAT_intro; apply Lc.sn_abs; apply Lc.sn_lift; apply sat_sn in Hu; trivial.
 Qed.
 
 Definition P2t : trm.
@@ -254,7 +254,8 @@ assert (forall x, x ∈ NAT ->
     destruct H as (H, _); unfold inX in H; trivial.
 
     split; [unfold inX; rewrite El_def|]; trivial.
-     rewrite Real_def; [|apply fam_mrph|]; trivial.
+     rewrite Real_def; trivial.
+     intros; apply cNAT_morph; trivial.
 
 apply prod_intro_sn; [|do 2 red; reflexivity|apply real_sn in H; trivial|].
  do 2 red; intros; apply NATREC_morph; [reflexivity

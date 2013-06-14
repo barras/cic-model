@@ -284,8 +284,7 @@ Import ZFind_nat.
 Lemma inSAT_n : forall n, n ∈ NAT -> exists t, inSAT t (cNAT n) /\ closed_pure_trm t.
 intros. pattern n; apply NAT_ind; trivial; intros.
  destruct H2 as (t, (HinSAT, Hclsd)). 
- exists t; split; [revert HinSAT; apply fam_mrph; rewrite <- H1; 
-   [trivial|reflexivity]|]; trivial.
+ exists t; split;[revert HinSAT; apply cNAT_morph; auto with *|trivial].
 
  exists ZE. split; [apply cNAT_ZE|unfold closed_pure_trm].
   intros k HF. inversion_clear HF. inversion_clear H0. inversion_clear H1.

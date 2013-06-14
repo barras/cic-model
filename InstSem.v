@@ -84,7 +84,7 @@ apply prod_intro_lam.
   unfold inX; apply H; trivial.
 
   unfold Lc.subst; simpl Lc.subst_rec. rewrite Real_sort; [clear H|apply H; trivial].
-   apply Lc.sn_abs; apply Lc.sn_lift; apply sat_sn in Hu; trivial.
+   apply snSAT_intro;apply Lc.sn_abs; apply Lc.sn_lift; apply sat_sn in Hu; trivial.
 Qed.
 
 Lemma P1_ZERO : app P1 ZERO == prod props (fun p => prod p (fun p1 => p)).
@@ -133,7 +133,7 @@ apply SN.prod_elim with (x:=lam props (fun x => lam x (fun y => y)))
     
    split; trivial.
     rewrite Real_sort; trivial.
-    apply Lc.sn_abs; apply Lc.sn_var.
+    apply snSAT_intro;apply Lc.sn_abs; apply Lc.sn_var.
     
     assert ([app (app x P1) (lam props (fun x => (lam x (fun y => y)))), prf] \real 
       app P1 (SUCC n) ->
@@ -205,7 +205,7 @@ apply prod_intro_lam.
   unfold inX; apply H; trivial.
 
   unfold Lc.subst; simpl Lc.subst_rec. rewrite Real_sort; [clear H|apply H; trivial].
-   apply Lc.sn_abs; apply Lc.sn_lift; apply sat_sn in Hu; trivial.
+   apply snSAT_intro;apply Lc.sn_abs; apply Lc.sn_lift; apply sat_sn in Hu; trivial.
 Qed.
 
 Lemma P2_SUCC : forall n, n ∈ NAT -> 
@@ -258,7 +258,7 @@ apply SN.prod_elim with (x:=lam props (fun x => lam x (fun y => y)))
     
    split; trivial.
     rewrite Real_sort; trivial.
-    apply Lc.sn_abs; apply Lc.sn_var.
+    apply snSAT_intro;apply Lc.sn_abs; apply Lc.sn_var.
     
     assert ([app (app x P2) (lam props (fun x => (lam x (fun y => y)))), prf] \real 
       app P2 ZERO ->
@@ -322,7 +322,8 @@ assert (forall x, x ∈ NAT ->
     destruct H as (H, _); unfold inX in H; trivial.
 
     split; [unfold inX; rewrite El_def|]; trivial.
-     rewrite Real_def; [|apply fam_mrph|]; trivial.
+     rewrite Real_def; trivial.
+     intros; apply cNAT_morph; trivial.
 
 apply prod_intro_sn; [|do 2 red; reflexivity|apply real_sn in H; trivial|].
  do 2 red; intros; apply NATREC_morph; [reflexivity
