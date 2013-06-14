@@ -319,9 +319,9 @@ unfold guard_sum; intros.
 apply sn_abs.
 apply sat_sn with snSAT.
 apply prodSAT_elim with snSAT;[|apply varSAT].
-apply prodSAT_elim with snSAT;[|apply sn_lift;trivial].
-apply prodSAT_elim with snSAT;[|apply sn_abs;apply sn_lift;trivial].
-apply prodSAT_elim with snSAT;[|apply sn_abs;apply sn_lift;trivial].
+apply prodSAT_elim with snSAT;[|apply snSAT_intro;apply sn_lift;trivial].
+apply prodSAT_elim with snSAT;[|apply snSAT_intro;apply sn_abs;apply sn_lift;trivial].
+apply prodSAT_elim with snSAT;[|apply snSAT_intro;apply sn_abs;apply sn_lift;trivial].
 apply varSAT.
 Qed.
 

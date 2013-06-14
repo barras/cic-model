@@ -13,7 +13,6 @@ Import SN_ECC_Real.SN_CC_Model.
 Import SN_ECC_Real.SN.
 Opaque Real.
 Import Sat Sat.SatSet.
-Opaque inSAT.
 Notation "'int0' x y" := (int y x) (at level 10, x at level 9, y at level 9).
 
 
@@ -748,13 +747,12 @@ apply and_split; intros.
  apply sat_sn in snB.
  rewrite tm_subst_cons in snB.
  apply Lc.sn_subst in snB.
-Transparent inSAT.
  simpl.
+ apply snSAT_intro.
  apply Lc.sn_K2; trivial.
  apply Lc.sn_K2; trivial.
  apply Lc.sn_abs; trivial.
 Qed.
-Opaque inSAT.
 
 (********************************************************************************)
 (** Occurrences *)

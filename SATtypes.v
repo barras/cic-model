@@ -235,29 +235,33 @@ repeat rewrite lift0; auto.
 Qed.
 
 Require Import ZFord.
-Require Import ZFcoc.
 
-Lemma FIXP_sat0 G o T RT m X :
-  let FIX_ty o := piSAT0 (fun n => n ∈ cc_bot (T o)) (RT o) (X o) in
-  let FIX_ty' o := piSAT0 (fun n => n ∈ T o) (RT o) (X o) in
+Lemma FIXP_sat0 G o T U RT m X :
+  let FIX_bot o := piSAT0 (fun n => n ∈ U o) (RT o) (X o) in
+  let FIX_strict o := piSAT0 (fun n => n ∈ T o) (RT o) (X o) in
   isOrd o ->
-  (forall o x t m (X:SAT), isOrd o -> x ∈ cc_bot (T o) ->
+  (* strict domain values form a continuous sequence *)
+  (forall y n, isOrd y -> y ⊆ o -> n ∈ T y -> exists2 y', y' ∈ y & n ∈ T (osucc y')) ->
+  (* U is not empty *)
+  (forall o, isOrd o -> exists w, w ∈ U o) ->
+  (* monotonicity of RT and X *)
+  (forall y y' n, isOrd y -> isOrd y' -> n ∈ T y -> y ⊆ y' -> y' ⊆ o ->
+   eqSAT (RT y n) (RT y' n)) ->
+  (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ T y ->
+   inclSAT (X y n) (X y' n)) ->
+  (* Saturation property of guard G *)
+  (forall o x t m (X:SAT), isOrd o -> x ∈ U o ->
    inSAT t (RT o x) ->
    sn m ->
    (x ∈ T o -> inSAT (App2 m m t) X) ->
    inSAT (App2 G m t) X) ->
-  (forall y n, isOrd y -> y ⊆ o -> n ∈ T y -> exists2 y', y' ∈ y & n ∈ T (osucc y')) ->
-  (forall y y' n, isOrd y -> isOrd y' -> n ∈ T y -> y ⊆ y' -> y' ⊆ o ->
-   eqSAT (RT y n) (RT y' n)) ->
 
-  (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ T y ->
-   inclSAT (X y n) (X y' n)) ->
-  inSAT m (piSAT0 (fun o' => o' ∈ osucc o) (fun o' => FIX_ty o') (fun o' => FIX_ty' (osucc o'))) ->
-  inSAT (FIXP G m) (FIX_ty o).
-intros FIX_ty FIX_ty' oo Gsat Tcont Rirrel Xmono msat.
+  inSAT m (piSAT0 (fun o' => o' ∈ osucc o)
+    (fun o' => FIX_bot o') (fun o' => FIX_strict (osucc o'))) ->
+  inSAT (FIXP G m) (FIX_bot o).
+intros FIX_bot FIX_strict oo Tcont Ubot Rirrel Xmono Gsat msat.
 elim oo using isOrd_ind; intros.
-apply piSAT0_intro'.
-2:exists empty; auto.
+apply piSAT0_intro'; [|apply  Ubot;trivial].
 intros x u xty0 ureal.
 apply Gsat with (2:=xty0); trivial.
  (* neutral case *)
@@ -274,8 +278,7 @@ apply Gsat with (2:=xty0); trivial.
  apply msat with (x:=y); auto with *.
   apply ole_lts; auto.
 
-  apply piSAT0_intro'; intros.
-  2:exists empty; auto.
+  apply piSAT0_intro'; intros; [|apply Ubot; trivial].
   eapply Gsat with (2:=H2); trivial.
    apply sat_sn in vsat; trivial.
 
@@ -533,15 +536,13 @@ unfold tiSAT.
 red; intros.
 rewrite REC_eqn with (2:=rec) in H4; trivial.
 fold (tiSAT F A o) in H4.
-destruct H4.
-assert (H5' := fun S h => H5 (exist _ S h)).
-clear H5; simpl in H5'.
-apply H5'; intros.
-rewrite cc_app_outside_domain with (dom:=TI F o) in H6; trivial.
- apply empty_ax in H6; contradiction.
-
- apply is_cc_fun_lam.
- do 2 red; intros; apply cc_app_morph; auto with *.
+rewrite cc_app_outside_domain with (dom:=TI F o) in H4; trivial.
+2:apply is_cc_fun_lam.
+2:do 2 red; intros; apply cc_app_morph; auto with *.
+unfold sSAT,complSAT in H4.
+assert (H4' := fun h => interSAT_elim H4 (exist _ S h)); clear H4; simpl in H4'.
+apply H4'; intros.
+apply empty_ax in H5; contradiction.
 Qed.
 
 

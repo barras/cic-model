@@ -57,7 +57,7 @@ SATnat2.vo SATnat2.glob SATnat2.v.beautified: SATnat2.v basic.vo Can.vo Sat.vo Z
 SATnat_fix.vo SATnat_fix.glob SATnat_fix.v.beautified: SATnat_fix.v basic.vo Can.vo Sat.vo ZF.vo ZFind_nat.vo
 SATnat_nat.vo SATnat_nat.glob SATnat_nat.v.beautified: SATnat_nat.v basic.vo Can.vo Sat.vo ZF.vo ZFnats.vo
 SATnat_real.vo SATnat_real.glob SATnat_real.v.beautified: SATnat_real.v ZF.vo ZFpairs.vo ZFsum.vo ZFord.vo ZFfix.vo ZFind_nat.vo Sat.vo SATtypes.vo ZFlambda.vo Lambda.vo
-SATtypes.vo SATtypes.glob SATtypes.v.beautified: SATtypes.v ZF.vo ZFpairs.vo ZFsum.vo Sat.vo ZFlambda.vo Lambda.vo ZFord.vo ZFcoc.vo ZFfixrec.vo ZFrelations.vo ZFfix.vo
+SATtypes.vo SATtypes.glob SATtypes.v.beautified: SATtypes.v ZF.vo ZFpairs.vo ZFsum.vo Sat.vo ZFlambda.vo Lambda.vo ZFord.vo ZFfixrec.vo ZFrelations.vo ZFfix.vo
 SATw.vo SATw.glob SATw.v.beautified: SATw.v ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFind_w.vo Sat.vo SATtypes.vo ZFlambda.vo Lambda.vo ZFcoc.vo
 SN_CC.vo SN_CC.glob SN_CC.v.beautified: SN_CC.v Sat.vo ZF.vo ZFcoc.vo ZFlambda.vo Models.vo GenModelSN.vo TypeJudge.vo
 SN_CC_Real.vo SN_CC_Real.glob SN_CC_Real.v.beautified: SN_CC_Real.v Sat.vo ZF.vo ZFcoc.vo ZFlambda.vo GenRealSN.vo TypeJudge.vo
@@ -192,7 +192,7 @@ SATnat2.html SATnat2.glob SATnat2.v.beautified: SATnat2.v basic.html Can.html Sa
 SATnat_fix.html SATnat_fix.glob SATnat_fix.v.beautified: SATnat_fix.v basic.html Can.html Sat.html ZF.html ZFind_nat.html
 SATnat_nat.html SATnat_nat.glob SATnat_nat.v.beautified: SATnat_nat.v basic.html Can.html Sat.html ZF.html ZFnats.html
 SATnat_real.html SATnat_real.glob SATnat_real.v.beautified: SATnat_real.v ZF.html ZFpairs.html ZFsum.html ZFord.html ZFfix.html ZFind_nat.html Sat.html SATtypes.html ZFlambda.html Lambda.html
-SATtypes.html SATtypes.glob SATtypes.v.beautified: SATtypes.v ZF.html ZFpairs.html ZFsum.html Sat.html ZFlambda.html Lambda.html ZFord.html ZFcoc.html ZFfixrec.html ZFrelations.html ZFfix.html
+SATtypes.html SATtypes.glob SATtypes.v.beautified: SATtypes.v ZF.html ZFpairs.html ZFsum.html Sat.html ZFlambda.html Lambda.html ZFord.html ZFfixrec.html ZFrelations.html ZFfix.html
 SATw.html SATw.glob SATw.v.beautified: SATw.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFord.html ZFfix.html ZFind_w.html Sat.html SATtypes.html ZFlambda.html Lambda.html ZFcoc.html
 SN_CC.html SN_CC.glob SN_CC.v.beautified: SN_CC.v Sat.html ZF.html ZFcoc.html ZFlambda.html Models.html GenModelSN.html TypeJudge.html
 SN_CC_Real.html SN_CC_Real.glob SN_CC_Real.v.beautified: SN_CC_Real.v Sat.html ZF.html ZFcoc.html ZFlambda.html GenRealSN.html TypeJudge.html

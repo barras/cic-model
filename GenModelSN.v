@@ -533,6 +533,7 @@ split;[discriminate|split;simpl].
  destruct in_U as (_,(_,satU)).
  rewrite Real_sort in satU|-*; simpl.
  rewrite tm_subst_cons in satU.
+ apply sat_sn in satU.
  apply Lc.sn_subst in satU.
  apply KSAT_intro with (A:=snSAT); auto.
 Qed.
@@ -567,6 +568,7 @@ destruct is_srt; subst s2.
   destruct in_U as (_,(_,satU)).
   rewrite tm_subst_cons in satU.
   apply Lc.sn_subst in satU.
+  apply sat_sn with snSAT.
   apply KSAT_intro with (A:=snSAT); auto.
 
  (* s2=prop *)

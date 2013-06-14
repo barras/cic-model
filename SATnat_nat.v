@@ -65,7 +65,8 @@ split; intros.
  apply prodSAT_elim with (2:=H1) in H; trivial.
  apply prodSAT_elim with (1:=H); trivial.
 
- intros f satf g satg.
+ apply prodSAT_intro'; intros f satf.
+ apply prodSAT_intro'; intros g satg.
  apply H; trivial.
 Qed.
 

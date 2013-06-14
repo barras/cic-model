@@ -23,21 +23,9 @@ Lemma inSAT_Real : forall x t S,
   inSAT t S ->
   inSAT t (Real (mkTY x S)).
 intros.
-destruct S; simpl in *.
-split.
- apply (Can.incl_sn x0); trivial.
-
- destruct x1; simpl.
- destruct x1; simpl in *.
- apply i0.
-  apply (Can.incl_sn x0); trivial.
-
-  unfold mkTY.
-  rewrite ZFpairs.snd_def.
-  apply subset_intro.
-   apply ZFlambda.iLAM_typ.
-
-   exists t; auto with *.
+unfold Real, CCSN.Real, mkTY.
+rewrite ZFpairs.snd_def.
+rewrite ZFlambda.iSAT_id; trivial.
 Qed.
 
 Lemma inSAT_Real_rev : forall x t S,
@@ -206,11 +194,9 @@ Qed.
 Lemma prodSAT_mono : Proper (inclSAT --> inclSAT ==> inclSAT) prodSAT.
 do 4 red; intros.
 simpl.
-red; intros.
-simpl in H1.
-red in H1.
+apply prodSAT_intro'; intros.
 apply H0.
-apply H1.
+apply prodSAT_elim with (1:=H1).
 apply H; trivial.
 Qed.
 

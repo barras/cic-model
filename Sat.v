@@ -401,4 +401,4 @@ red; intros.
 apply piSAT0_elim with (1:=H)(2:=H0)(3:=H1).
 Qed.
 
-Opaque inSAT.
+Global Opaque inSAT.

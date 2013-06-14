@@ -357,6 +357,7 @@ split.
   rewrite Real_sort_sn in *.
   simpl in satU|-*.
   rewrite SN.tm_subst_cons in satU.
+  apply sat_sn in satU.
   apply Lambda.sn_subst in satU.
   apply KSAT_intro with (A:=snSAT); auto.
 Qed.

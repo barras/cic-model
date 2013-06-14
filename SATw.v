@@ -348,7 +348,7 @@ rewrite cc_bot_ax in xty; destruct xty as [xty|xty].
  rewrite xty in xsat.
  eapply prodSAT_elim;[|apply xsat].
  apply prodSAT_elim with snSAT;[|apply snm].
-  apply prodSAT_elim with snSAT;[|do 2 apply sn_abs;apply sn_lift;apply  snm].
+  apply prodSAT_elim with snSAT;[|apply snSAT_intro;do 2 apply sn_abs;apply sn_lift;apply  snm].
   apply rWi_neutral with (2:=xsat); trivial.
 
  generalize (msat xty); clear msat.
@@ -411,13 +411,14 @@ Lemma WFIX_sat : forall o m X,
              (fun o1 => FIX_ty o1) (fun o1 => FIX_ty' (osucc o1))) ->
   inSAT (WFIX m) (FIX_ty o).
 intros o m X FIX_ty FIX_ty' oo Xmono msat.
-apply FIXP_sat0 with (2:=G_sat) (6:=msat); trivial.
- intros.
+apply FIXP_sat0 with (6:=G_sat) (7:=msat); trivial; intros.
  apply TI_elim in H1; auto with *.
  destruct H1 as (z,zty,xty).
  exists z; trivial.
  rewrite TI_mono_succ; auto with *.
  apply isOrd_inv with y; trivial.
+
+ exists empty; trivial.
 
  intros.
  apply rWi_mono; trivial.
