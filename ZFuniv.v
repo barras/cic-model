@@ -178,7 +178,7 @@ Lemma El_in_props P :
   P ∈ El sn_props ->
   El P ∈ props.
 intros.
-apply cc_dec_prop.
+apply cc_bot_prop.
 apply sn_sort_elim in H; destruct H; trivial.
 rewrite H.
 apply power_intro; intros.

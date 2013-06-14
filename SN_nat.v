@@ -44,7 +44,7 @@ left; exists (fun _ => mkTY N cNAT) (fun _ => Lc.K).
 Defined.
 
 
-Lemma mt_in_N : cc_dec N == N.
+Lemma mt_in_N : cc_bot N == N.
 apply eq_intro; intros.
  apply union2_elim in H; destruct H; trivial.
  apply singl_elim in H; rewrite H.

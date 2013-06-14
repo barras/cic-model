@@ -40,16 +40,16 @@ Hint Resolve G_CCLam.
    This means that even non-computable functions have "realizers",
    but no closed ones (it is the set of neutral terms).
  *)
-Definition mkTY X R := couple X (cc_lam (cc_dec X) (fun x => iSAT (R x))).
+Definition mkTY X R := couple X (cc_lam (cc_bot X) (fun x => iSAT (R x))).
 
 Lemma mkTY_ext : forall X Y R R',
   X == Y ->
-  (forall x x', x ∈ cc_dec X -> x == x' -> eqSAT (R x) (R' x')) ->
+  (forall x x', x ∈ cc_bot X -> x == x' -> eqSAT (R x) (R' x')) ->
   mkTY X R == mkTY Y R'.
 unfold mkTY; intros.
 apply couple_morph; trivial.
 apply cc_lam_ext; auto.
- apply cc_dec_morph; trivial.
+ apply cc_bot_morph; trivial.
 red; intros.
 apply iSAT_morph.
 auto.
@@ -94,8 +94,8 @@ rewrite fst_def; reflexivity.
 Qed.
 
 Lemma Real_def : forall x X R,
-  (forall x x', x ∈ cc_dec X -> x == x' -> eqSAT (R x) (R x')) ->
-  x ∈ cc_dec X ->
+  (forall x x', x ∈ cc_bot X -> x == x' -> eqSAT (R x) (R x')) ->
+  x ∈ cc_bot X ->
   eqSAT (Real (mkTY X R) x) (R x).
 intros.
 unfold Real, mkTY.
@@ -125,15 +125,15 @@ Hint Resolve Elt_El empty_El.
  *)
 Definition sn_sort K :=
    mkTY (sup K (fun P =>
-         repl (cc_arr (cc_dec P) (power CCLam)) (fun R T => T == couple P R /\
-                   forall x, x ∈ cc_dec P -> iSAT (sSAT (cc_app R x)) == cc_app R x)))
+         repl (cc_arr (cc_bot P) (power CCLam)) (fun R T => T == couple P R /\
+                   forall x, x ∈ cc_bot P -> iSAT (sSAT (cc_app R x)) == cc_app R x)))
      (fun _ => snSAT).
 
 
 Lemma sort_repl_morph P :
-  ZFrepl.repl_rel (cc_arr (cc_dec P) (power CCLam))
+  ZFrepl.repl_rel (cc_arr (cc_bot P) (power CCLam))
     (fun R T => T == couple P R /\
-           forall x, x ∈ cc_dec P -> iSAT (sSAT (cc_app R x)) == cc_app R x).
+           forall x, x ∈ cc_bot P -> iSAT (sSAT (cc_app R x)) == cc_app R x).
 split; intros.
  revert H2; apply iff_impl.
  apply and_iff_morphism.
@@ -147,8 +147,8 @@ split; intros.
 Qed.
 Lemma sort_repl_morph2 :
   Proper (eq_set ==> eq_set) (fun P =>
-         repl (cc_arr (cc_dec P) (power CCLam)) (fun R T => T == couple P R /\
-                   forall x, x ∈ cc_dec P -> iSAT (sSAT (cc_app R x)) == cc_app R x)).
+         repl (cc_arr (cc_bot P) (power CCLam)) (fun R T => T == couple P R /\
+                   forall x, x ∈ cc_bot P -> iSAT (sSAT (cc_app R x)) == cc_app R x)).
 do 2 red; intros.   
 apply ZFrepl.repl_morph_raw.
  rewrite H; reflexivity.
@@ -166,7 +166,7 @@ Lemma sn_sort_ax T K:
   T ∈ El (sn_sort K) <->
   T == empty \/
   exists2 P, P ∈ K & exists2 R,
-    (forall x x', x ∈ cc_dec P -> x==x' -> eqSAT (R x) (R x')) &
+    (forall x x', x ∈ cc_bot P -> x==x' -> eqSAT (R x) (R x')) &
     T == mkTY P R.
 unfold sn_sort; rewrite El_def.
 rewrite union2_ax.
@@ -194,9 +194,9 @@ apply or_iff_morphism.
      rewrite <- H3; auto.
 
     destruct H as (R,?,?).
-    assert (ext_fun (cc_dec P) (fun x : set => iSAT (R x))).
+    assert (ext_fun (cc_bot P) (fun x : set => iSAT (R x))).
      do 2 red; intros; apply iSAT_morph; auto.
-    exists (cc_lam (cc_dec P) (fun x => iSAT (R x))).
+    exists (cc_lam (cc_bot P) (fun x => iSAT (R x))).
      apply cc_prod_intro; intros; auto.
      apply power_intro; intros.
      apply subset_elim1 in H3; trivial.
@@ -214,7 +214,7 @@ Qed.
 
 
 Lemma sn_sort_intro K T A :
-  (forall x x', x ∈ cc_dec T -> x == x' -> eqSAT (A x) (A x')) ->
+  (forall x x', x ∈ cc_bot T -> x == x' -> eqSAT (A x) (A x')) ->
   T ∈ K -> mkTY T A ∈ El (sn_sort K).
 intros.
 apply sn_sort_ax; right.
@@ -225,7 +225,7 @@ Qed.
 Lemma sn_sort_elim_raw K T :
   T ∈ El (sn_sort K) ->
   T == empty \/
-  exists U A, T == mkTY U A /\ U ∈ K /\ forall x x', x∈cc_dec U->x==x'->eqSAT(A x)(A x').
+  exists U A, T == mkTY U A /\ U ∈ K /\ forall x x', x∈cc_bot U->x==x'->eqSAT(A x)(A x').
 intro.
 apply sn_sort_ax in H.
 destruct H as [?|(P,?,(R,Rext,eqT))]; auto.
@@ -268,7 +268,7 @@ intros.
 apply sn_sort_intro.
  reflexivity.
 apply G_sup; intros; auto.
-assert (cc_arr (cc_dec x) (power CCLam) ∈ K2).
+assert (cc_arr (cc_bot x) (power CCLam) ∈ K2).
  apply G_cc_prod; intros; auto.
   apply G_union2; auto.
    apply G_singl; trivial; apply G_inf_nontriv; trivial.
@@ -309,7 +309,7 @@ Lemma El_in_props P :
   P ∈ El sn_props ->
   El P ∈ props.
 intros.
-apply cc_dec_prop.
+apply cc_bot_prop.
 apply sn_sort_elim in H; destruct H; trivial.
 rewrite H.
 apply power_intro; intros.

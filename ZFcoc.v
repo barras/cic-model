@@ -245,30 +245,32 @@ Qed.
  *)
 
 (* The operator that adds the empty set to a type. *)
-Definition cc_dec x := singl empty ∪ x.
+Definition cc_bot x := singl empty ∪ x.
 
-Lemma cc_dec_intro x :
-  x ⊆ cc_dec x.
+Lemma cc_bot_bot x : empty ∈ cc_bot x. 
+apply union2_intro1; apply singl_intro.
+Qed.
+Lemma cc_bot_intro x z : z ∈ x -> z ∈ cc_bot x.
 red; intros.
 apply union2_intro2; trivial.
 Qed.
-Hint Resolve cc_dec_intro.
+Hint Resolve cc_bot_bot cc_bot_intro.
 
-Instance cc_dec_mono : Proper (incl_set==>incl_set) cc_dec.
+Instance cc_bot_mono : Proper (incl_set==>incl_set) cc_bot.
 do 3 red; intros.
 apply union2_elim in H0; destruct H0.
  apply union2_intro1; trivial.
  apply union2_intro2; auto.
 Qed.
 
-Instance cc_dec_morph : morph1 cc_dec.
-unfold cc_dec; do 2 red; intros.
+Instance cc_bot_morph : morph1 cc_bot.
+unfold cc_bot; do 2 red; intros.
 rewrite H; reflexivity.
 Qed.
 
-Lemma cc_dec_ax : forall x z,
-  z ∈ cc_dec x <-> z == empty \/ z ∈ x.
-unfold cc_dec; intros.
+Lemma cc_bot_ax : forall x z,
+  z ∈ cc_bot x <-> z == empty \/ z ∈ x.
+unfold cc_bot; intros.
 split; intros.
  apply union2_elim in H; destruct H; auto.
  apply singl_elim in H; auto.
@@ -279,25 +281,77 @@ split; intros.
   apply union2_intro2; trivial.
 Qed.
 
-Lemma cc_dec_prop :
-    forall P, P ∈ props -> cc_dec P ∈ props.
+Lemma cc_bot_prop :
+    forall P, P ∈ props -> cc_bot P ∈ props.
 intros.
 apply power_intro; intros.
-rewrite cc_dec_ax in H0.
+rewrite cc_bot_ax in H0.
 destruct H0;[rewrite H0;apply singl_intro|].
 apply power_elim with (1:=H); trivial.
 Qed.
 
 
-Lemma cc_dec_cl_prop :
-    forall P, P ∈ cl_props -> cc_dec P ∈ cl_props.
+Lemma cc_bot_cl_prop :
+    forall P, P ∈ cl_props -> cc_bot P ∈ cl_props.
 intros.
 apply subset_intro.
- apply cc_dec_prop.
+ apply cc_bot_prop.
  apply subset_elim1 in H; auto.
 
  intros _.
- red; rewrite cc_dec_ax; left; reflexivity.
+ red; rewrite cc_bot_ax; left; reflexivity.
+Qed.
+
+Lemma cc_prod_mt U V :
+  ext_fun U V ->
+  (forall x, x ∈ U -> empty ∈ V x) ->
+  cc_bot (cc_prod U V) == cc_prod U V.
+intros Vm Vmt.
+unfold cc_bot.
+apply eq_intro; intros; auto.
+rewrite cc_bot_ax in H; destruct H; trivial.
+rewrite H.
+assert (cc_lam U (fun _ => empty) == empty).
+ apply cc_impredicative_lam; auto with *.
+rewrite <- H0.
+apply cc_prod_intro; auto with *.
+Qed.
+
+Lemma cc_prod_ext_mt U V f :
+  ext_fun (cc_bot U) V ->
+  empty ∈ V empty ->
+  ~ empty ∈ U ->
+  f ∈ cc_prod U V ->
+  f ∈ cc_prod (cc_bot U) V.
+intros.
+assert (f == cc_lam (cc_bot U) (cc_app f)).
+ apply cc_prod_is_cc_fun in H2.
+ apply eq_set_ax; intros z.
+ rewrite cc_lam_def.
+ 2:do 2 red; intros; apply cc_app_morph; auto with *.
+ split; intros.
+  destruct (H2 _ H3).
+  exists (fst z); [apply cc_bot_intro;trivial|].
+  exists (snd z); trivial.
+  rewrite <- couple_in_app.
+  rewrite H4 in H3; trivial.
+
+  destruct H3 as (x,xty,(y,yty,eqc)).
+  rewrite eqc.
+  rewrite couple_in_app; trivial.
+rewrite H3; apply cc_prod_intro; trivial.
+ do 2 red; intros; apply cc_app_morph; auto with *.
+
+ intros.
+ rewrite cc_bot_ax in H4; destruct H4.
+  rewrite cc_app_outside_domain.
+  2:apply cc_prod_is_cc_fun in H2; eexact H2.
+   apply eq_elim with (V empty); trivial.
+   apply H; auto with *.
+
+   rewrite H4; trivial.
+
+ apply cc_prod_elim with (1:=H2); trivial.
 Qed.
 
 

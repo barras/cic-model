@@ -684,7 +684,7 @@ Qed.
 Require Import ZFcoc.
 Lemma squash_eq  U V f :
   ~ empty ∈ U ->
-  f ∈ cc_prod (cc_dec U) V ->
+  f ∈ cc_prod (cc_bot U) V ->
   squash f == cc_lam U (cc_app f).
 intros.
 apply eq_set_ax; intros z.
@@ -709,9 +709,9 @@ Qed.
 
 
 Lemma squash_typ U V f :
-  ext_fun (cc_dec U) V ->
+  ext_fun (cc_bot U) V ->
   ~ empty ∈ U ->
-  f ∈ cc_prod (cc_dec U) V ->
+  f ∈ cc_prod (cc_bot U) V ->
   squash f ∈ cc_prod U V.
 intros.
 rewrite squash_eq with (2:=H1); trivial.
@@ -719,15 +719,15 @@ apply cc_prod_intro; intros.
  do 2 red; intros; apply cc_app_morph; auto with *.
 
  do 2 red; intros; apply H; trivial.
- apply cc_dec_intro; trivial.
+ apply cc_bot_intro; trivial.
 
  apply cc_prod_elim with (1:=H1).
- apply cc_dec_intro; trivial.
+ apply cc_bot_intro; trivial.
 Qed.
 
 Lemma squash_beta U V f x :
   ~ empty ∈ U ->
-  f ∈ cc_prod (cc_dec U) V ->
+  f ∈ cc_prod (cc_bot U) V ->
   x ∈ U ->
   cc_app (squash f) x == cc_app f x.
 intros.
@@ -738,7 +738,7 @@ Qed.
 
 Lemma squash_mt U V f :
   ~ empty ∈ U ->
-  f ∈ cc_prod (cc_dec U) V ->
+  f ∈ cc_prod (cc_bot U) V ->
   cc_app (squash f) empty == empty.
 intros.
 apply cc_app_outside_domain with U; trivial.
@@ -951,13 +951,13 @@ Qed.
 
 Require Import ZFcoc.
 
-  Definition W_F' X := W_F (cc_dec X).
+  Definition W_F' X := W_F (cc_bot X).
 
 
   Instance W_F'_mono : Proper (incl_set==>incl_set) W_F'.
 do 2 red; intros.
 unfold Wf; apply W_F_mono; trivial.
-apply cc_dec_mono; auto with *.
+apply cc_bot_mono; auto with *.
 Qed.
 
   Variable U' : set -> set -> set.

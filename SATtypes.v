@@ -238,10 +238,10 @@ Require Import ZFord.
 Require Import ZFcoc.
 
 Lemma FIXP_sat0 G o T RT m X :
-  let FIX_ty o := piSAT0 (fun n => n ∈ cc_dec (T o)) (RT o) (X o) in
+  let FIX_ty o := piSAT0 (fun n => n ∈ cc_bot (T o)) (RT o) (X o) in
   let FIX_ty' o := piSAT0 (fun n => n ∈ T o) (RT o) (X o) in
   isOrd o ->
-  (forall o x t m (X:SAT), isOrd o -> x ∈ cc_dec (T o) ->
+  (forall o x t m (X:SAT), isOrd o -> x ∈ cc_bot (T o) ->
    inSAT t (RT o x) ->
    sn m ->
    (x ∈ T o -> inSAT (App2 m m t) X) ->
@@ -257,7 +257,7 @@ Lemma FIXP_sat0 G o T RT m X :
 intros FIX_ty FIX_ty' oo Gsat Tcont Rirrel Xmono msat.
 elim oo using isOrd_ind; intros.
 apply piSAT0_intro'.
-2:exists empty; apply union2_intro1; apply singl_intro.
+2:exists empty; auto.
 intros x u xty0 ureal.
 apply Gsat with (2:=xty0); trivial.
  (* neutral case *)
@@ -275,7 +275,7 @@ apply Gsat with (2:=xty0); trivial.
   apply ole_lts; auto.
 
   apply piSAT0_intro'; intros.
-  2:exists empty; apply union2_intro1; apply singl_intro.
+  2:exists empty; auto.
   eapply Gsat with (2:=H2); trivial.
    apply sat_sn in vsat; trivial.
 

@@ -218,6 +218,22 @@ apply NATi_morph.
 rewrite H; reflexivity.
 Defined.
 
+(** NB: type 0 is the universe of hereditarily finite sets,
+    so NAT is in type 1. *)
+Lemma typ_natI_type : forall e O,
+  typ_ord e O ->
+  typ e (NatI O) (type 1).
+red; intros.
+apply H in H0.
+change (NATi (int O i) ∈ ecc 1).
+apply G_incl with NAT; trivial.
+2:apply NATi_NAT; trivial.
+apply G_TI; intros; auto with *.
+unfold NATf.
+apply G_sum; trivial.
+ apply G_union2; trivial.
+Qed.
+
 Lemma typ_natI : forall e o,
   typ e (NatI o) kind.
 red; intros; simpl; trivial.

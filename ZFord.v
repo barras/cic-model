@@ -1312,6 +1312,36 @@ apply and_iff_morphism.
  rewrite H0; rewrite H1; reflexivity.
 Qed.
 
+Lemma TR_ext_ord F F' o o' :
+  (forall f f' oo oo',
+   (forall ooo ooo', isOrd ooo -> ooo==ooo' -> f ooo == f' ooo') ->
+   isOrd oo ->
+   oo == oo' ->
+   F f oo == F' f' oo') ->
+ isOrd o ->
+ o == o' ->
+ TR F o == TR F' o'.
+intros.
+unfold TR.
+apply ZFrepl.uchoice_morph_raw.
+red; intros.
+unfold TR_rel.
+apply and_iff_morphism.
+ rewrite H1; reflexivity.
+apply fa_morph; intro P.
+apply fa_morph; intro Pm.
+apply impl_morph; intros.
+ apply fa_morph; intro oo.
+ apply fa_morph; intro f.
+ apply fa_morph; intro oo_.
+ apply impl_morph; [rewrite H1;auto with *|intro].
+ apply impl_morph; [auto with *|intro fm].
+ apply impl_morph; [auto with *|intros _].
+ apply Pm; auto with *.
+
+ rewrite H1; rewrite H2; reflexivity.
+Qed.
+
 Section TransfiniteRec.
 
   Variable F : (set -> set) -> set -> set.
@@ -1468,6 +1498,17 @@ Qed.
 
 End TransfiniteIteration.
 Hint Resolve TI_fun_ext.
+
+Global Instance TI_morph_gen :
+  Proper ((eq_set==>eq_set)==>eq_set==>eq_set) TI.
+do 3 red; intros.
+unfold TI.
+apply TR_morph; trivial.
+do 2 red; intros.
+apply sup_morph; trivial.
+red; intros.
+apply H; apply H1; trivial.
+Qed.
 
 
 (** * Supremum of directed ordinals *)

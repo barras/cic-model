@@ -18,12 +18,12 @@ Let Bext : ext_fun A B.
 auto with *.
 Qed.
 
-Let Wf X := W_F A B (cc_dec X).
+Let Wf X := W_F A B (cc_bot X).
 
 Local Instance Wf_mono : Proper (incl_set ==> incl_set) Wf.
 do 2 red; intros.
 unfold Wf; apply W_F_mono; trivial.
-apply union2_mono; auto with *.
+apply cc_bot_mono; trivial.
 Qed.
 
 
@@ -102,8 +102,8 @@ apply piSAT0_morph; intros; auto with *.
    apply fst_morph in H3; rewrite fst_def in H3.
    rewrite <- H3 in H5.
    specialize H1 with (1:=H5).
-   apply union2_elim in H1; destruct H1; trivial.
-   apply singl_elim in H1; contradiction.
+   rewrite cc_bot_ax in H1; destruct H1; trivial.
+   contradiction.
 
    rewrite H2; reflexivity.
 Qed.
@@ -144,7 +144,7 @@ Lemma Real_WCASE_gen X RX C n nt bt:
   n ∈ Wf X ->
   inSAT nt (rW RX n) ->
   inSAT bt (piSAT0 (fun x => x ∈ A) RA (fun x =>
-            piSAT0 (fun f => f ∈ cc_arr (B x) (cc_dec X))
+            piSAT0 (fun f => f ∈ cc_arr (B x) (cc_bot X))
                    (fun f => piSAT0 (fun i => i ∈ B x) (RB x)
                       (fun i => condSAT (~cc_app f i==empty) (RX (cc_app f i))))
                    (fun f => C (couple x f)))) ->
@@ -238,8 +238,7 @@ apply Real_WC_gen with (TI Wf o); auto with *.
  specialize H3 with (1:=H5).
  apply piSAT0_elim' in H2; red in H2.
  specialize H2 with (1:=H5) (2:=H6).
- apply union2_elim in H3; destruct H3.
-  apply singl_elim in H3.
+ rewrite cc_bot_ax in H3; destruct H3.
   rewrite H3 in H2.
   revert H2; apply rWi_neutral; trivial.
 
@@ -254,7 +253,7 @@ Lemma Real_WCASE o C n nt bt:
   n ∈ TI Wf (osucc o) ->
   inSAT nt (rWi (osucc o) n) ->
   inSAT bt (piSAT0 (fun x => x ∈ A) RA (fun x =>
-            piSAT0 (fun f => f ∈ cc_arr (B x) (cc_dec (TI Wf o)))
+            piSAT0 (fun f => f ∈ cc_arr (B x) (cc_bot (TI Wf o)))
                    (fun f => piSAT0 (fun i => i ∈ B x) (RB x) (fun i => rWi o (cc_app f i)))
                    (fun f => C (couple x f)))) ->
   inSAT (WCASE bt nt) (C n).
@@ -329,7 +328,7 @@ Qed.
 
 Lemma G_sat o x t m (X:SAT):
   isOrd o ->
-  x ∈ cc_dec (TI Wf o) ->
+  x ∈ cc_bot (TI Wf o) ->
   inSAT t (rWi o x) ->
   Lc.sn m ->
   (x ∈ TI Wf o -> inSAT (Lc.App2 m m t) X) ->
@@ -345,8 +344,7 @@ apply inSAT_exp; simpl; auto.
 unfold Lc.subst; simpl Lc.subst_rec.
 repeat rewrite Lc.simpl_subst; auto.
 repeat rewrite Lc.lift0.
-apply union2_elim in xty; destruct xty as [xty|xty].
- apply singl_elim in xty.
+rewrite cc_bot_ax in xty; destruct xty as [xty|xty].
  rewrite xty in xsat.
  eapply prodSAT_elim;[|apply xsat].
  apply prodSAT_elim with snSAT;[|apply snm].
@@ -404,7 +402,7 @@ Qed.
 (* m is always used with guarded arguments, so its domain does not
    include empty *)
 Lemma WFIX_sat : forall o m X,
-  let FIX_ty o := piSAT0 (fun n => n ∈ cc_dec (TI Wf o)) (rWi o) (X o) in
+  let FIX_ty o := piSAT0 (fun n => n ∈ cc_bot (TI Wf o)) (rWi o) (X o) in
   let FIX_ty' o := piSAT0 (fun n => n ∈ TI Wf o) (rWi o) (X o) in
   isOrd o ->
   (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ TI Wf y ->
@@ -426,3 +424,125 @@ apply FIXP_sat0 with (2:=G_sat) (6:=msat); trivial.
 Qed.
 
 End Wtypes.
+
+Lemma rWi_ext X X' Y Y' RX RX' RY RY' o o' x x' :
+  X == X' ->
+  ZF.eq_fun X Y Y' ->
+  (eq_set==>eqSAT)%signature RX RX' ->
+  (forall x x', x ∈ X -> x==x' -> (eq_set==>eqSAT)%signature (RY x) (RY' x')) ->
+  isOrd o ->
+  o == o' ->
+  x == x' ->
+  eqSAT (rWi X Y RX RY o x) (rWi X' Y' RX' RY' o' x').
+intros.
+unfold rWi.
+unfold tiSAT.
+apply ZFlambda.sSAT_morph.
+apply cc_app_morph; trivial.
+apply TR_ext_ord; intros; auto with *.
+apply sup_morph; auto.
+red; intros.
+apply cc_lam_ext.
+ apply TI_morph_gen.
+  red; intros.
+  apply W_F_ext; trivial.
+  apply cc_bot_morph; trivial.
+
+  apply osucc_morph; trivial.
+
+ red; intros.
+ assert (x0o: isOrd x0) by eauto using isOrd_inv.
+ apply ZFlambda.iSAT_morph.
+ unfold rW.
+ unfold sigmaReal.
+ apply interSAT_morph.
+ apply indexed_relation_id; intros C.
+ apply prodSAT_morph; auto with *.
+ apply piSAT0_morph; intros.
+  red; intros.
+  rewrite H12; reflexivity.
+
+  apply H1; reflexivity.
+
+  assert (x2 ∈ X).
+   assert (ext_fun X Y).
+    apply eq_fun_ext in H0; trivial.
+   apply TI_elim in H11; auto with *.
+    destruct H11 as (ooo,?,?).
+    apply W_F_elim in H16; trivial.
+    destruct H16 as (?,_).
+    rewrite H13 in H16.
+    rewrite fst_def in H16; trivial.
+
+    do 2 red; intros.
+    apply W_F_morph; trivial.
+    rewrite H16; reflexivity.
+  apply prodSAT_morph; auto with *.
+  apply piSAT0_morph; intros.
+   red; intros.
+   apply eq_set_ax.
+   apply H0; auto with *.
+
+   apply H2; auto with *.
+
+   apply condSAT_morph.
+    rewrite H12; reflexivity.
+
+    apply ZFlambda.sSAT_morph.
+    apply cc_app_morph.
+     apply H6; trivial.
+
+     rewrite H12; reflexivity.
+Qed.
+
+Instance rWi_morph_gen : Proper
+  (eq_set==>(eq_set==>eq_set)==>(eq_set==>eqSAT)==>(eq_set==>eq_set==>eqSAT)==>eq_set==>eq_set==>eqSAT) rWi.
+do 7 red; intros.
+unfold rWi.
+unfold tiSAT.
+apply ZFlambda.sSAT_morph.
+apply cc_app_morph; trivial.
+apply TR_morph; trivial.
+do 3 red; intros.
+apply sup_morph; auto.
+red; intros.
+apply cc_lam_ext.
+ apply TI_morph_gen.
+  red; intros.
+  apply W_F_ext; trivial.
+   red; intros; auto with *.
+
+   apply cc_bot_morph; trivial.
+
+  apply osucc_morph; trivial.
+
+ red; intros.
+ apply ZFlambda.iSAT_morph.
+ unfold rW.
+ unfold sigmaReal.
+ apply interSAT_morph.
+ apply indexed_relation_id; intros C.
+ apply prodSAT_morph; auto with *.
+ apply piSAT0_morph; intros.
+  red; intros.
+  rewrite H10; reflexivity.
+
+  apply H1; reflexivity.
+
+  apply prodSAT_morph; auto with *.
+  apply piSAT0_morph; intros.
+   red; intros.
+   apply eq_set_ax.
+   apply H0; reflexivity.
+
+   apply H2; reflexivity.
+
+   apply condSAT_morph.
+    rewrite H10; reflexivity.
+
+    apply ZFlambda.sSAT_morph.
+    apply cc_app_morph.
+     apply H5; trivial.
+
+     rewrite H10; reflexivity.
+Qed.

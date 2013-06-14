@@ -59,7 +59,7 @@ apply couple_morph.
   apply El_morph; auto.
 
  apply cc_lam_ext.
-  apply cc_dec_morph.
+  apply cc_bot_morph.
   apply cc_prod_ext; intros.
    apply El_morph; trivial.
    red; intros.
