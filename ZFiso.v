@@ -8,36 +8,46 @@ Set Implicit Arguments.
 (** * Isomorphisms *)
 
 Record iso_fun X Y f : Prop := {
-  iso_funm : ext_fun X f;
+  iso_funm : morph1 f;
   iso_typ : typ_fun f X Y;
   iso_inj : forall x x', x ∈ X -> x' ∈ X -> f x == f x' -> x == x';
   iso_surj : forall y, y ∈ Y -> exists2 x, x ∈ X & f x == y
 }.
 
-Lemma iso_fun_morph : forall X X' Y Y' f f',
-  X == X' ->
-  Y == Y' ->
+Lemma iso_fun_ext X X' Y Y' f f' :
+  morph1 f' ->
+  X==X' ->
+  Y==Y' ->
   eq_fun X f f' ->
-  iso_fun X Y f -> iso_fun X' Y' f'.
-constructor; intros.
- symmetry in H1; apply eq_fun_ext in H1.
- do 2 red; intros.
- rewrite <- H in H3; auto.
-
+  iso_fun X Y f ->
+  iso_fun X' Y' f'.
+intros.
+constructor; intros; trivial.
  red; intros.
- rewrite <- H in H3; rewrite <- H0; rewrite <- (H1 x x H3 (reflexivity _)).
- apply (iso_typ H2); trivial.
+ rewrite <- H0 in H4.
+ rewrite <- H1.
+ rewrite <- (H2 _ _ H4 (reflexivity x)).
+ apply (iso_typ H3); trivial.
 
- rewrite <- H in H3, H4.
- apply (iso_inj H2); trivial.
- rewrite (H1 x x H3 (reflexivity _)); rewrite (H1 x' x' H4 (reflexivity _)); trivial.
+ rewrite <- H0 in H4,H5.
+ rewrite <- (H2 _ _ H4 (reflexivity x)) in H6.
+ rewrite <- (H2 _ _ H5 (reflexivity x')) in H6.
+ apply (iso_inj H3) in H6; trivial.
 
- rewrite <- H0 in H3.
- destruct (iso_surj H2) with y; trivial.
- exists x.
-  rewrite <- H; trivial.
+ rewrite <- H1 in H4.
+ destruct (iso_surj H3) with y; trivial.
+ rewrite (H2 _ _ H5 (reflexivity x)) in H6.
+ rewrite H0 in H5.
+ eauto.
+Qed.
 
-  rewrite <- (H1 x x H4 (reflexivity _)); trivial.
+Instance iso_fun_morph : Proper (eq_set==>eq_set==>(eq_set==>eq_set)==>iff) iso_fun.
+apply morph_impl_iff3; auto with *.
+do 4 red; intros.
+red; apply iso_fun_ext; trivial.
+ red; transitivity x1; auto with *.
+
+ red; auto.
 Qed.
 
 Lemma iso_change_rhs : forall X Y Y' f,
@@ -45,33 +55,31 @@ Lemma iso_change_rhs : forall X Y Y' f,
   iso_fun X Y f ->
   iso_fun X Y' f.
 intros.
-destruct H0 as (fm,tyf,injf,surjf); constructor; intros; eauto.
- rewrite <- H; auto.
-rewrite <- H in H0; auto.
+generalize (iso_funm H0); intro.
+rewrite <- H; trivial.
 Qed.
 
-Lemma eq_iso_fun : forall X Y f, X == Y -> (forall x, x ∈ X -> f x == x) ->
+Lemma eq_iso_fun X Y f :
+  morph1 f ->
+  X == Y ->
+  (forall x, x ∈ X -> f x == x) ->
   iso_fun X Y f.
-constructor; intros.
- do 2 red; intros.
- rewrite H0; trivial.
- rewrite H2; symmetry; apply H0.
- rewrite <- H2; trivial.
-
+constructor; intros; trivial.
  red; intros.
- rewrite H0; trivial.
- rewrite <- H; trivial.
+ rewrite H1; trivial.
+ rewrite <- H0; trivial.
 
- rewrite H0 in H3; trivial.
- rewrite H3; auto.
+ rewrite H1 in H4; trivial.
+ rewrite H4; auto.
 
- rewrite <- H in H1.
+ rewrite <- H0 in H2.
  eauto.
 Qed.
  
 Lemma id_iso_fun : forall X, iso_fun X X (fun x => x).
 intros.
 apply eq_iso_fun; auto with *.
+do 2 red; auto.
 Qed.
 
 (** Inverse and symmetry *)
@@ -119,8 +127,8 @@ destruct 1; intros.
 unfold iso_inv.
 destruct iso_surj0 with y; trivial.
 refine (transitivity _ _);
- [symmetry; apply iso_funm0;
-  [|symmetry;apply union_subset_singl with (y:=x)(y':=x); auto with *]|];
+ [apply iso_funm0;
+  apply union_subset_singl with (y:=x)(y':=x); auto with *|];
  auto with *.
 intros.
 apply iso_inj0; trivial.
@@ -153,16 +161,14 @@ constructor; intros.
  do 2 red; intros.
  apply union_morph; apply subset_morph; auto with *.
  red; intros.
- rewrite H1; reflexivity.
+ rewrite H0; reflexivity.
 
  red; intros.
  apply iso_inv_typ with (1:=H); trivial.
 
  apply (iso_funm H) in H2.
-  rewrite iso_inv_eq with (1:=H) in H2; trivial.
-  rewrite iso_inv_eq with (1:=H) in H2; trivial.
-
-  apply iso_inv_typ with (1:=H); trivial.
+ rewrite iso_inv_eq with (1:=H) in H2; trivial.
+ rewrite iso_inv_eq with (1:=H) in H2; trivial.
 
  exists (f y); auto.  
   apply (iso_typ H); trivial.
@@ -173,7 +179,7 @@ Qed.
 (** Composition and transitivity *)
 
 Lemma iso_fun_trans_eq : forall X Y Z f g h,
-  (forall x, x ∈ X -> g (f x) == h x) ->
+  (forall x, g (f x) == h x) ->
   iso_fun X Y f ->
   iso_fun Y Z g ->
   iso_fun X Z h.
@@ -182,11 +188,8 @@ constructor; intros.
  do 2 red; intros.
   rewrite <- H; trivial.
   rewrite <- H.
-  2:rewrite <- H3; trivial.
   apply (iso_funm H1).
-   apply (iso_typ H0); trivial.
-
-   apply (iso_funm H0); trivial.
+  apply (iso_funm H0); trivial.
 
  red; intros.
  rewrite <- H; trivial.
@@ -204,9 +207,7 @@ constructor; intros.
  destruct (iso_surj H0 H3).
  exists x0; trivial.
  rewrite <- H; auto.
- generalize (iso_funm H1); intro.
- refine (transitivity _ _);[apply (iso_funm H1);[|apply H6]|]; trivial.
- apply (iso_typ H0); trivial.
+ rewrite <- H4; apply (iso_funm H1); trivial.
 Qed.
 
 Definition comp_iso (f:set->set) (g:set->set) := fun x => g (f x).
@@ -242,7 +243,7 @@ Qed.
 (* Alternative introduction rule (when inverse is easy to express) *)
 
 Lemma iso_intro : forall X Y f g,
-  ext_fun X f ->
+  morph1 f ->
   (forall x, x ∈ X -> f x ∈ Y /\ g (f x) == x) ->
   (forall y y', y ∈ Y -> y == y' -> g y == g y' /\ g y ∈ X /\ f (g y) == y) ->
   iso_fun X Y f.
@@ -342,7 +343,7 @@ Lemma sum_iso_fun_morph : forall X X' Y Y' f g,
   iso_fun (sum X Y) (sum X' Y') (sum_isomap f g).
 intros.
 constructor; intros.
- apply sum_isomap_ext.
+ apply sum_isomap_morph.
   apply (iso_funm H).
   apply (iso_funm H0).
 
@@ -509,7 +510,6 @@ Lemma sum_assoc_iso_fun :
   forall X Y Z, iso_fun (sum (sum X Y) Z) (sum X (sum Y Z)) sum_isoassoc.
 unfold sum_isoassoc; intros.
 constructor; intros.
- apply morph_is_ext.
  apply sum_isoassoc_morph.
 
  apply sum_isoassoc_typ; trivial.
@@ -616,13 +616,13 @@ Qed.
 Lemma sigma_iso_fun_morph : forall A A' B B' f g,
   ext_fun A B ->
   ext_fun A' B' ->
-  ext_fun2 A B g ->
+  morph2 g ->
   iso_fun A A' f ->
   (forall x x', x ∈ A -> f x == x' -> iso_fun (B x) (B' x') (g x)) ->
   iso_fun (sigma A B) (sigma A' B') (sigma_isomap f g).
 intros.
 constructor; intros.
- apply sigma_isomap_ext; intros; auto.
+ apply sigma_isomap_morph; intros; auto.
  apply (iso_funm H2).
 
  apply sigma_isomap_typ; intros; trivial.
@@ -636,8 +636,7 @@ constructor; intros.
  2:apply fst_typ_sigma in H4; trivial.
  2:apply fst_typ_sigma in H5; trivial.
  assert (g (fst x) (snd x) == g (fst x) (snd x')).
-  rewrite H8; symmetry; apply H1; auto with *.
-  apply snd_typ_sigma with (y:=fst x) in H5; auto with *.
+  rewrite <- H6 in H8; trivial.
  apply (iso_inj (H3 _ _ H7 (reflexivity _))) in H9.
   rewrite (surj_pair _ _ _ (subset_elim1 _ _ _ H4)).
   rewrite (surj_pair _ _ _ (subset_elim1 _ _ _ H5)).
@@ -760,12 +759,14 @@ Qed.
 
 Lemma sigma_iso_fun_1_r' : forall A B f,
   ext_fun A B ->
-  ext_fun A f ->
+  morph1 f ->
   (forall x, x ∈ A -> iso_fun (singl empty) (B x) (fun _ => f x)) ->
   iso_fun A (sigma A B) (sigma_1r_iso f).
 intros.
 unfold sigma_1r_iso.
 constructor; intros; auto with *.
+ do 2 red; intros; apply couple_morph; auto.
+
  apply sigma_1r_iso_typ; trivial.
  intros.
  apply (iso_typ (H1 _ H2) (singl_intro empty)).
@@ -835,7 +836,7 @@ Lemma iso_sigma_sigma : forall A B C,
           (sigma (sigma A B) (fun p => C (fst p) (snd p)))
           sigma_isoassoc.
 unfold sigma_isoassoc; constructor; intros.
- apply morph_is_ext; apply sigma_isoassoc_morph.
+ apply sigma_isoassoc_morph.
 
  apply sigma_isoassoc_typ; trivial.
 
@@ -960,7 +961,7 @@ Lemma iso_fun_sum_sigma : forall A1 A2 B1 B2,
           sum_sigma_iso.
 unfold sum_sigma_iso; intros A1 A2 B1 B2 bm1 bm2.
 constructor; intros.
- apply sum_case_ext; apply morph_is_ext; auto with *.
+ apply sum_sigma_iso_morph.
 
  apply sum_sigma_iso_typ; trivial.
 
@@ -1033,26 +1034,20 @@ Lemma prodcart_iso_fun_morph : forall X X' Y Y' f g,
   iso_fun X X' f -> iso_fun Y Y' g ->
   iso_fun (prodcart X Y) (prodcart X' Y') (sigma_isomap f (fun _ => g)).
 intros.
+assert (fm := iso_funm H).
+assert (gm := iso_funm H0).
 cut (iso_fun (sigma X (fun _ => Y)) (sigma X' (fun _ => Y'))
        (sigma_isomap f (fun _ => g))).
  apply iso_fun_morph.
-  symmetry; apply sigma_nodep.
+  apply sigma_nodep.
 
-  symmetry; apply sigma_nodep.
+  apply sigma_nodep.
 
   red; intros.
   unfold sigma_isomap.
-  apply couple_morph.
-   apply (iso_funm H).
-    apply fst_typ_sigma in H1; trivial.
-    apply fst_morph; trivial.
-
-   apply (iso_funm H0).
-    apply snd_typ_sigma with (2:=H1) (y:=fst x); auto with *.
-    apply snd_morph; trivial.
+  rewrite H1; reflexivity.
 apply sigma_iso_fun_morph; auto.
-red; intros.
-apply (iso_funm H0); trivial.
+do 3 red; intros; apply gm; trivial.
 Qed.
 
 Lemma sigma_isomap_typ_prod A A' B B' f g :
@@ -1069,7 +1064,7 @@ Lemma prodcart_comm_iso_fun :
   forall X Y, iso_fun (prodcart X Y) (prodcart Y X) (fun p => couple (snd p) (fst p)).
 constructor; intros.
  do 2 red; intros.
- rewrite H0; reflexivity.
+ rewrite H; reflexivity.
 
  red; intros.
  apply couple_intro.
@@ -1165,7 +1160,7 @@ assert (ef : ext_fun (prodcart A1 A2)
    apply snd_morph; trivial.
 constructor; intros.
  do 2 red; intros.
- rewrite H2; reflexivity.
+ rewrite H1; reflexivity.
 
  apply prodcart_sigma_iso_typ; trivial.
 
@@ -1232,8 +1227,8 @@ Qed.
 
 Lemma cc_prod_isomap_typ A A' B B' f g :
   ext_fun A' B' ->
-  ext_fun A' f ->
-  ext_fun2 A B g ->
+  morph1 f ->
+  morph2 g ->
   typ_fun f A' A ->
   (forall x, x ∈ A' -> typ_fun (g (f x)) (B (f x)) (B' x)) ->
   typ_fun (cc_prod_isomap A' f g) (cc_prod A B) (cc_prod A' B').
@@ -1242,9 +1237,7 @@ unfold cc_prod_isomap.
 apply cc_prod_intro; trivial; intros.
  do 2 red; intros.
  apply gm; auto with *.
-  apply cc_prod_elim with (1:=H); auto.
-
-  apply cc_app_morph; auto with *.
+ apply cc_app_morph; auto with *.
 
  apply tyg; trivial.
  apply cc_prod_elim with (1:=H); auto.
@@ -1253,7 +1246,7 @@ Qed.
 Lemma cc_prod_iso_fun_morph : forall A A' B B' f g,
   ext_fun A B ->
   ext_fun A' B' ->
-  ext_fun2 A B g ->
+  morph2 g ->
   iso_fun A' A f ->
   (forall x, x ∈ A' -> iso_fun (B (f x)) (B' x) (g (f x))) ->
   iso_fun (cc_prod A B) (cc_prod A' B') (cc_prod_isomap A' f g).
@@ -1269,10 +1262,9 @@ assert (gext : forall h h' x x',
   g (f x') (cc_app h' (f x'))).
  intros.
  apply H1; auto.
-  apply cc_prod_elim with (1:=H6); auto.
-  apply cc_app_morph; auto.
+ apply cc_app_morph; auto.
 unfold cc_prod_isomap; constructor; intros.
- apply cc_prod_isomap_ext; intros; auto with *.
+ apply cc_prod_isomap_morph; intros; auto with *.
 
  apply cc_prod_isomap_typ; intros; trivial.
  exact (iso_typ (H3 _ H4)).
@@ -1309,17 +1301,11 @@ unfold cc_prod_isomap; constructor; intros.
     apply iso_inv_typ with (1:=H2); trivial.
 
     apply fm.
-     apply iso_inv_typ with (1:=H2); trivial.
-     apply iso_inv_morph0; trivial.
+    apply iso_inv_morph0; trivial.
 
    red; intros.
    apply H1; auto with *.
-    apply tyf.
-    apply iso_inv_typ with (1:=H2); trivial.
-
-    apply fm.
-     apply iso_inv_typ with (1:=H2); trivial.
-     apply iso_inv_morph0; trivial.
+   rewrite H6; reflexivity.
 
    apply cc_app_morph; auto with *.
    apply iso_inv_morph0; trivial.
@@ -1343,15 +1329,9 @@ unfold cc_prod_isomap; constructor; intros.
    apply iso_inv_eq2 with (1:=H2); auto.
   transitivity (g (f x) (iso_inv (B (f x)) (g (f x)) (cc_app y x))).
    symmetry; apply H1; auto with *.
-    apply iso_inv_typ with (1:=H3 _ H5).
-    apply cc_prod_elim with (1:=H4); trivial.
-
-    rewrite cc_beta_eq; auto.
-     apply iso_inv_ext; auto with *.
-      red; intros.
-      apply H1; auto.
-
-      apply cc_app_morph; auto with *.
+   rewrite cc_beta_eq; auto.
+   apply iso_inv_morph; auto with *.
+   apply cc_app_morph; auto with *.
 
    rewrite iso_inv_eq with (1:=H3 _ H5).
     apply cc_app_morph; auto with *.
@@ -1362,6 +1342,8 @@ Lemma cc_prod_iso_fun_0_l : forall a F,
   iso_fun (cc_prod empty F) (singl a) (fun _ => a).
 intros.
 constructor; intros; auto with *.
+ do 2 red; reflexivity.
+
  red; intros.
  apply singl_intro.
 
@@ -1387,7 +1369,7 @@ constructor; intros.
  do 2 red; intros.
  apply cc_lam_ext; auto with *.
  red; intros.
- apply empty_ax in H1; contradiction.
+ apply empty_ax in H0; contradiction.
 
  red; intros.
  apply cc_prod_intro; intros; auto with *.
@@ -1414,7 +1396,7 @@ Lemma cc_prod_iso_fun_1_l : forall x F,
   iso_fun (cc_prod (singl x) F) (F x) (cc_prod_iso1l x).
 unfold cc_prod_iso1l; constructor; intros.
  do 2 red; intros.
- rewrite H1; reflexivity.
+ rewrite H0; reflexivity.
 
  red; intros.
  apply cc_prod_elim with (1:=H0).
@@ -1552,7 +1534,7 @@ unfold cc_prod_isocurry; constructor; intros.
  do 2 red; intros.
  apply cc_lam_ext; intros; auto with *.
  red; intros.
- rewrite H2; rewrite H4; reflexivity.
+ rewrite H1; rewrite H3; reflexivity.
 
  apply cc_prod_isocurry_typ; trivial.
 
@@ -1698,7 +1680,7 @@ Lemma iso_fun_cc_prod_sigma : forall A B C,
     (cc_prod_sigma_iso A).
 intros A B C Bm Cm.
 unfold cc_prod_sigma_iso; constructor; intros.
- apply morph_is_ext; apply cc_prod_sigma_iso_morph; reflexivity.
+ apply cc_prod_sigma_iso_morph; reflexivity.
 
  apply cc_prod_sigma_iso_typ; trivial.
 
@@ -1830,7 +1812,7 @@ Lemma iso_fun_prodcart_cc_prod : forall A1 A2 F1 F2,
     (cc_prod (sum A1 A2) (sum_case F1 F2))
     (prodcart_cc_prod_iso (sum A1 A2)).
 constructor; intros.
- apply morph_is_ext; apply prodcart_cc_prod_iso_morph; reflexivity.
+ apply prodcart_cc_prod_iso_morph; reflexivity.
 
  apply prodcart_cc_prod_iso_typ; trivial.
 
@@ -1953,20 +1935,14 @@ Section TI_iso.
 Lemma iso_cont : forall F G o f,
   Proper (incl_set ==> incl_set) F ->
   Proper (incl_set ==> incl_set) G ->
+  morph1 f ->
   isOrd o ->
   (forall o', o' ∈ o -> iso_fun (TI F (osucc o')) (TI G (osucc o')) f) ->
   iso_fun (TI F o) (TI G o) f.
-intros F G o f Fmono Gmono oo iso'.
+intros F G o f Fmono Gmono fm oo iso'.
 assert (Fm := Fmono_morph _ Fmono).
 assert (Gm := Fmono_morph _ Gmono).
-constructor; intros.
- do 2 red; intros.
- apply TI_elim in H; trivial.
- destruct H.
- apply (iso_funm (iso' _ H)); trivial.
- rewrite TI_mono_succ; trivial.
- apply isOrd_inv with o; trivial.
-
+constructor; intros; trivial.
  red; intros. 
  apply TI_elim in H; trivial.
  destruct H.
@@ -2010,8 +1986,12 @@ Qed.
   Variable o : set.
   Hypothesis Fmono : Proper (incl_set ==> incl_set) F.
   Hypothesis Gmono : Proper (incl_set ==> incl_set) G.
-  Hypothesis gext : forall X f f', eq_fun X f f' -> eq_fun (F X) (g f) (g f').
-(*  Hypothesis isog : forall X Y f, iso_fun X Y f -> iso_fun (F X) (G Y) (g f).*)
+  Hypothesis gm : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) g.
+  Hypothesis gext : forall o f f',
+    morph1 f ->
+    isOrd o ->
+    eq_fun (TI F o) f f' ->
+    eq_fun (F (TI F o)) (g f) (g f').
   Hypothesis isog' : forall o f, isOrd o ->
     iso_fun (TI F o) (TI G o) f -> iso_fun (F (TI F o)) (G (TI G o)) (g f).
   Hypothesis oord : isOrd o.
@@ -2020,8 +2000,8 @@ Qed.
   Let Gm := Fmono_morph _ Gmono.
   Let egf : forall o' f, isOrd o' -> ext_fun (F (TI F o')) (g (cc_app f)).
 do 2 red; intros.
-apply (@gext (TI F o')); trivial.
-red; intros; apply cc_app_morph; auto with *.
+apply gm; trivial.
+apply cc_app_morph; auto with *.
 Qed.
 
   Lemma TI_iso_recursor :
@@ -2040,36 +2020,38 @@ constructor; intros.
 
   rewrite <- H1; apply isOrd_inv with o0; trivial.
 
- revert H3; apply iso_fun_morph; auto with *.
+ revert H3; apply iso_fun_ext; auto with *.
+  apply cc_app_morph; reflexivity.
   apply TI_morph; trivial.
   apply TI_morph; trivial.
+
   red; intros.
   rewrite <- H4; auto.
 
   apply iso_cont; trivial.
+  apply cc_app_morph; reflexivity.
 
  do 3 red; intros.
  apply cc_lam_ext.
   apply Fm; apply TI_morph; auto.
 
   red; intros.
-  apply (@gext (TI F x)); trivial.
-   red; intros; apply cc_app_morph; auto with *.
+  apply gm; trivial.
+  apply cc_app_morph; auto with *.
 
  split.
   rewrite TI_mono_succ; auto with *.
   apply is_cc_fun_lam; auto.
 
   apply isog' in H2; trivial.
-  revert H2; apply iso_fun_morph.
+  revert H2; apply iso_fun_ext.
+   apply cc_app_morph; reflexivity.
    symmetry; apply TI_mono_succ; eauto using isOrd_inv.
    symmetry; apply TI_mono_succ; eauto using isOrd_inv.
 
    red; intros.  
    rewrite cc_beta_eq; auto.
-    apply (@gext (TI F o0)); trivial.
-    red; intros.
-    rewrite H5; reflexivity.
+    rewrite H3; reflexivity.
 
     rewrite <- H3; trivial.
 
@@ -2080,7 +2062,9 @@ constructor; intros.
  rewrite cc_beta_eq; auto.
  2:rewrite TI_mono_succ in H4; auto with *.
  rewrite cc_beta_eq; auto.
-  apply (@gext (TI F o0)); auto with *.
+  apply (@gext o0); auto with *.
+   apply cc_app_morph; auto with *.
+
    red; intros.
    rewrite <- H2; auto.
 
@@ -2125,7 +2109,9 @@ assert (same_iso : eq_fun (TI F o) (TI_iso F g o) (g (TI_iso F g o))).
  rewrite H0 in H.
  apply TI_iso_fun; trivial.
 assert (iso1' : iso_fun (TI F o) (TI G o) (g (TI_iso F g o))).
- revert iso1; apply iso_fun_morph; auto with *.
+ revert iso1; apply iso_fun_ext; auto with *.
+ apply gm.
+ apply cc_app_morph; reflexivity.
 clear iso1.
 split; intros.
  apply iso_fun_sym in iso1'.
@@ -2158,19 +2144,13 @@ Section TIF_iso.
   Hypothesis Gmono : mono_fam A G.
 
 Lemma TIF_iso_cont : forall o f,
+  (forall a, a ∈ A -> morph1 (f a)) ->
   isOrd o ->
   (forall a o', a ∈ A -> o' ∈ o ->
    iso_fun (TIF A F (osucc o') a) (TIF A G (osucc o') a) (f a)) ->
   forall a, a ∈ A -> iso_fun (TIF A F o a) (TIF A G o a) (f a).
-intros o f oo iso' a tya.
-constructor; intros.
- do 2 red; intros.
- apply TIF_elim in H; trivial.
- destruct H.
- apply (iso_funm (iso' _ _ tya H)); trivial.
- rewrite TIF_mono_succ; trivial.
- apply isOrd_inv with o; trivial.
-
+intros o f fm oo iso' a tya.
+constructor; intros; auto.
  red; intros. 
  apply TIF_elim in H; trivial.
  destruct H.
@@ -2279,7 +2259,8 @@ constructor; intros.
  apply osucc_morph; trivial.
 
  (* iso *)
- generalize (H3 _ H4); apply iso_fun_morph; auto with *.
+ generalize (H3 _ H4); apply iso_fun_ext; auto with *.
+  do 2 red; intros. rewrite H5; reflexivity.
   apply TIF_morph; auto with *.
   apply TIF_morph; auto with *.
 
@@ -2290,6 +2271,8 @@ constructor; intros.
 
  (* Q continuity *)
  apply TIF_iso_cont with (f:=fun a0 x => cc_app f (couple a0 x)); auto.
+ do 2 red; intros.
+ rewrite H5; reflexivity.
 
  (* F morph *)
  do 3 red; intros.
@@ -2315,7 +2298,10 @@ constructor; intros.
   apply isog with (a:=a) in H2; trivial.
   2:apply TIF_morph; auto with *.
   2:apply TIF_morph; auto with *.
-   revert H2; apply iso_fun_morph.
+   revert H2; apply iso_fun_ext.
+    do 2 red; intros. apply cc_app_morph;[reflexivity|].
+    rewrite H2; reflexivity.
+
     symmetry; apply TIF_mono_succ; eauto using isOrd_inv.
     symmetry; apply TIF_mono_succ; eauto using isOrd_inv.
 

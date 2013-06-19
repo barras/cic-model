@@ -1,5 +1,5 @@
 
-Require Import ZFpairs.
+Require Import ZFpairs ZFstable.
 
 (** * Relations *)
 
@@ -564,6 +564,36 @@ apply app_defined.
 Qed.
 
 
+Lemma func_is_ext : forall x X F,
+  ext_fun x F ->
+  ext_fun x (fun x => func X (F x)).
+do 2 red; intros.
+apply func_morph; auto.
+reflexivity.
+Qed.
+Hint Resolve func_is_ext.
+
+Lemma func_stable_class A K :
+  stable_class K (func A).
+red; red; intros.
+destruct inter_wit with (2:=H0); eauto with *.
+assert (forall x, x ∈ X -> z ∈ func A x).
+ intros.
+ apply inter_elim with (1:=H0).
+ rewrite replf_ax.
+  exists x0; auto with *.
+
+  red; red; intros.
+  rewrite H4; reflexivity.
+clear H0.
+assert (z ∈ func A x) by auto.
+apply func_narrow with x; trivial.
+intros.
+apply inter_intro; eauto.
+intros.
+apply app_typ with A; auto.
+Qed.
+
 (** Dependent typing *)
 
 Definition dep_image (A:set) (B:set->set) := replf A B.
@@ -1020,7 +1050,6 @@ Lemma cc_arr_intro : forall A B F,
   cc_lam A F ∈ cc_arr A B.
 unfold cc_arr; intros.
 apply cc_prod_intro; auto.
-do 2 red; reflexivity.
 Qed.
 
 Lemma cc_arr_elim : forall f x A B,
@@ -1077,4 +1106,43 @@ apply cc_prod_intro; intros; auto.
 do 2 red; intros.
 apply H0; trivial.
 rewrite <- H1; trivial.
+Qed.
+
+Lemma cc_prod_stable_class : forall K dom F,
+  (forall y y' x x', y == y' -> x ∈ dom -> x == x' -> F y x == F y' x') ->
+  (forall x, x ∈ dom -> stable_class K (fun y => F y x)) ->
+  stable_class K (fun y => cc_prod dom (F y)).
+intros K dom F Fm Fs.
+assert (Hm : morph1 (fun y => cc_prod dom (F y))).
+ do 2 red; intros.
+ apply cc_prod_ext; auto with *.
+ red; intros; apply Fm; auto.
+red; red ;intros.
+destruct inter_wit with (2:=H0) as (w,winX); trivial.
+assert (forall x, x ∈ X -> z ∈ cc_prod dom (F x)).
+ intros.
+ apply inter_elim with (1:=H0).
+ rewrite replf_ax; auto.
+ exists x; auto with *.
+clear H0.
+assert (z ∈ cc_prod dom (F w)) by auto.
+rewrite (cc_eta_eq _ _ _ H0).
+apply cc_prod_intro.
+ red; red; intros; apply cc_app_morph; auto with *.
+
+ red; red; intros; apply Fm; auto with *.
+
+ intros.
+ apply Fs; trivial.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H3; auto.
+  2:red;red;intros;apply Fm; auto with *.
+  destruct H3.
+  rewrite H4; apply H1 in H3.
+  apply cc_prod_elim with (1:=H3); trivial.
+
+  exists (F w x); rewrite replf_ax.
+  2:red;red;intros; apply Fm; auto with *.
+  eauto with *.
 Qed.

@@ -69,8 +69,10 @@ Qed.
 
   Lemma VN_stable : stable_ord VN.
 unfold VN.
-apply TI_stable.
+apply TI_stable with (fun _ => True); auto with *.
  apply power_mono.
+
+ do 2 red; reflexivity.
 
  apply power_stable.
 Qed.

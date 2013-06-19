@@ -18,29 +18,11 @@ Let Bext : ext_fun A B.
 auto with *.
 Qed.
 
-Let Wf X := W_F A B (cc_bot X).
+Notation Wf := (W_F' A B).
 
 Local Instance Wf_mono : Proper (incl_set ==> incl_set) Wf.
-do 2 red; intros.
-unfold Wf; apply W_F_mono; trivial.
-apply cc_bot_mono; trivial.
+apply W_F'_mono; trivial.
 Qed.
-
-
-Lemma mt_not_in_W_F o x :
-  isOrd o ->
-  x ∈ TI Wf o ->
-  ~ x == empty.
-red; intros.
-apply TI_elim in H0; auto with *.
-destruct H0 as (o',?,?).
-unfold Wf in H2.
-apply W_F_elim in H2; trivial.
-destruct H2 as (_,(_,?)).
-rewrite H1 in H2.
-apply discr_mt_pair in H2; trivial.
-Qed.
-
 
 Variable RA : set -> SAT.
 Variable RB : set -> set -> SAT.
@@ -96,7 +78,7 @@ apply piSAT0_morph; intros; auto with *.
   intros.
   apply H0.
    rewrite TI_mono_succ in H1; auto with *.
-   unfold Wf in H1.
+   unfold W_F' in H1.
    apply W_F_elim in H1; trivial.
    destruct H1 as (_,(?,_)); auto.
    apply fst_morph in H3; rewrite fst_def in H3.
@@ -150,7 +132,7 @@ Lemma Real_WCASE_gen X RX C n nt bt:
                    (fun f => C (couple x f)))) ->
   inSAT (WCASE bt nt) (C n).
 intros Cm nty xreal breal.
-unfold Wf in nty.
+unfold W_F' in nty.
 apply Real_sigma_elim with (3:=nty) (4:=xreal); trivial.
 do 2 red; intros.
 rewrite H0; reflexivity.
@@ -208,7 +190,7 @@ apply tiSAT_outside_domain; auto with *.
  intros; apply rW_irrel with (o:=o'); trivial.
 
  intro.
- apply mt_not_in_W_F in H0; auto with *.
+ apply mt_not_in_W_F' in H0; auto with *.
 Qed.
 
 
@@ -224,7 +206,7 @@ rewrite rWi_succ_eq; trivial.
 rewrite TI_mono_succ in H0; trivial.
 2:apply Wf_mono; trivial.
 assert (nty := H0).
-unfold Wf in H0; apply W_F_elim in H0; trivial.
+unfold W_F' in H0; apply W_F_elim in H0; trivial.
 destruct H0 as (?,(?,?)).
 rewrite (rW_morph (rWi_morph (reflexivity o)) H4).
 apply Real_WC_gen with (TI Wf o); auto with *.
@@ -243,7 +225,7 @@ apply Real_WC_gen with (TI Wf o); auto with *.
   revert H2; apply rWi_neutral; trivial.
 
   rewrite condSAT_ok; trivial.
-  apply mt_not_in_W_F in H3; trivial.
+  apply mt_not_in_W_F' in H3; trivial.
 Qed.
 
 
@@ -427,6 +409,7 @@ Qed.
 End Wtypes.
 
 Lemma rWi_ext X X' Y Y' RX RX' RY RY' o o' x x' :
+  morph1 Y ->
   X == X' ->
   ZF.eq_fun X Y Y' ->
   (eq_set==>eqSAT)%signature RX RX' ->
@@ -435,6 +418,7 @@ Lemma rWi_ext X X' Y Y' RX RX' RY RY' o o' x x' :
   o == o' ->
   x == x' ->
   eqSAT (rWi X Y RX RY o x) (rWi X' Y' RX' RY' o' x').
+intros Ym.
 intros.
 unfold rWi.
 unfold tiSAT.

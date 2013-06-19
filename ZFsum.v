@@ -1,5 +1,6 @@
 Require Import ZFnats.
 Require Import ZFpairs.
+Require Import ZFstable.
 
 Definition inl x := couple zero x.
 Definition inr y := couple (succ zero) y.
@@ -243,3 +244,75 @@ apply sum_ind with (3:=H4); intros.
  rewrite sum_case_inr; auto.
 Qed.
 
+
+Lemma sum_is_ext : forall o F G,
+  ext_fun o F ->
+  ext_fun o G ->
+  ext_fun o (fun y => sum (F y) (G y)).
+do 2 red; intros.
+rewrite (H x x'); trivial.
+rewrite (H0 x x'); trivial.
+reflexivity.
+Qed.
+Hint Resolve sum_is_ext.
+
+Lemma sum_stable_class K F G :
+  morph1 F ->
+  morph1 G ->
+  stable_class K F ->
+  stable_class K G ->
+  stable_class K (fun y => sum (F y) (G y)).
+intros Fm Gm Fs Gs.
+red; red ;intros.
+destruct inter_wit with (2:=H0) as (w,winX).
+ do 2 red; intros.
+ rewrite H1; reflexivity.
+assert (forall x, x ∈ X -> z ∈ sum (F x) (G x)).
+ intros.
+ apply inter_elim with (1:=H0).
+ rewrite replf_ax.
+  exists x; auto with *.
+
+  red; red; intros.
+  rewrite H3; reflexivity.
+clear H0.
+assert (z ∈ sum (F w) (G w)) by auto.
+apply sum_ind with (3:=H0); intros.
+ rewrite H3; apply inl_typ.
+ apply Fs; eauto.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H4.
+  2:red;red;intros;apply Fm; trivial.
+  destruct H4.
+  rewrite H5; clear H5 y.
+  assert (z ∈ sum (F x0) (G x0)) by auto.
+  apply sum_ind with (3:=H5); intros.
+   rewrite H7 in H3; apply inl_inj in H3; rewrite <-H3; trivial.
+
+   rewrite H3 in H7; apply discr_sum in H7; contradiction.
+
+  exists (F w).
+  rewrite replf_ax.
+  2:red;red;intros;apply Fm;trivial.
+  exists w; auto with *.
+
+ rewrite H3; apply inr_typ.
+ apply Gs; eauto.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H4.
+  2:red;red;intros;apply Gm; trivial.
+  destruct H4.
+  rewrite H5; clear H5 y0.
+  assert (z ∈ sum (F x) (G x)) by auto.
+  apply sum_ind with (3:=H5); intros.
+   rewrite H7 in H3; apply discr_sum in H3; contradiction.
+
+   rewrite H7 in H3; apply inr_inj in H3; rewrite <-H3; trivial.
+
+  exists (G w).
+  rewrite replf_ax.
+  2:red;red;intros;apply Gm;trivial.
+  exists w; auto with *.
+Qed.

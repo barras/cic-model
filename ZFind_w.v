@@ -15,7 +15,7 @@ Section W_theory.
 
 Variable A : set.
 Variable B : set -> set.
-Hypothesis Bext : ext_fun A B.
+Hypothesis Bm : morph1 B.
 
 (* The intended type operator *)
 Definition W_F X := sigma A (fun x => cc_arr (B x) X).
@@ -66,13 +66,13 @@ Qed.
 
 Lemma W_F_stable : stable W_F.
 unfold W_F.
-apply sigma_stable'; auto with *.
+apply sigma2_stable_class; auto with *.
  intros; apply cc_prod_ext; auto with *.
  red; trivial.
 
  intros.
- apply cc_prod_stable; intros; auto.
- apply id_stable.
+ apply cc_prod_stable_class; intros; auto.
+ apply id_stable_class.
 Qed.
 
 Lemma WFi_ext a a' f f' :
@@ -114,21 +114,22 @@ intros.
 apply WFi_ext; auto.
 Qed.
 
-  Lemma WFmap_morph : forall X f f',
-    eq_fun X f f' ->
-    eq_fun (W_F X) (WFmap f) (WFmap f').
-red; intros.
-apply W_F_elim in H0; destruct H0 as (?,(?,_)).
-apply WFmap_ext; intros; auto.
+  Instance WFmap_morph : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) WFmap.
+do 3 red; intros.
+apply couple_morph.
  apply fst_morph; trivial.
 
- apply H; auto.
- rewrite H1; rewrite H4; reflexivity.
+ apply cc_lam_ext; intros.
+  rewrite H0; reflexivity.
+
+  red; intros.
+  apply H.
+  rewrite H0; rewrite H2; reflexivity.
 Qed.
 
 Lemma WFmap_comp : forall f g X Y x,
-  ext_fun X g ->
-  ext_fun Y f ->
+  morph1 g ->
+  morph1 f ->
   (forall x, x ∈ X -> g x ∈ Y) ->
   x ∈ W_F X ->
   WFmap f (WFmap g x) == WFmap (fun x => f (g x)) x.
@@ -169,7 +170,7 @@ apply WFi_inv in H4; auto.
  red; intros.
  apply H3; auto.
  apply H7.
- rewrite <- H12; revert H11; apply eq_elim; apply Bext; trivial.
+ rewrite <- H12; revert H11; apply eq_elim; apply Bm; trivial.
 
  do 2 red; intros; apply H1; auto.
  rewrite H10; reflexivity.
@@ -198,6 +199,8 @@ Lemma WFmap_iso X Y f :
   iso_fun (W_F X) (W_F Y) (WFmap f).
 intros isof.
 assert (fm := iso_funm isof).
+assert (fext : ext_fun X f).
+ apply morph_is_ext; trivial.
 constructor; intros.
  apply WFmap_morph; trivial.
 
@@ -210,17 +213,19 @@ constructor; intros.
 
  exists (WFmap (iso_inv X f) y).
   apply WFmap_typ with (2:=H); intros; trivial.
-   apply (iso_funm (iso_fun_sym isof)).
+   apply morph_is_ext; apply (iso_funm (iso_fun_sym isof)).
 
    apply iso_inv_typ with (1:=isof); trivial.
 
   rewrite WFmap_comp with (1:=iso_funm (iso_fun_sym isof)) (2:=fm) (4:=H); intros; trivial.
    transitivity (WFmap (fun x => x) y).
    2:symmetry; apply WF_eta with (1:=H); trivial.
-   apply WFmap_morph with (X:=Y); intros; auto with *.
-   red; intros.
-   rewrite <- H1.
-   apply iso_inv_eq with (1:=isof); trivial.
+   apply WFmap_ext; intros; auto with *.
+    apply W_F_elim with (1:=H).
+
+    rewrite <- H1.
+    apply iso_inv_eq with (1:=isof); trivial.
+    apply W_F_elim with (1:=H); trivial.
 
    apply iso_inv_typ with (1:=isof); trivial.
 Qed.
@@ -242,23 +247,25 @@ Definition Wsup x :=
       replf (cc_app (snd x) y)
         (fun p => couple (Cons y (fst p)) (snd p))).
 
-Lemma Wsup_morph : forall X, ext_fun (W_F X) Wsup.
+Instance Wsup_morph : morph1 Wsup.
 do 2 red; intros.
 unfold Wsup.
 apply union2_morph.
- rewrite H0; reflexivity.
+ rewrite H; reflexivity.
 
  apply sup_morph.
-  apply Bext.
-   apply fst_typ_sigma in H; trivial.
-   apply fst_morph; trivial.
+  rewrite H; reflexivity.
 
   red; intros.
   apply replf_morph_raw; auto.
-   rewrite H0; rewrite H2; reflexivity.
+   rewrite H; rewrite H1; reflexivity.
 
    red; intros.
-   rewrite H2; rewrite H3; reflexivity.
+   rewrite H1; rewrite H2; reflexivity.
+Qed.
+
+Lemma Wsup_ext : forall X, ext_fun (W_F X) Wsup.
+do 2 red; intros; apply Wsup_morph; trivial.
 Qed.
 
 Lemma wext1 : forall i y,
@@ -277,7 +284,7 @@ apply replf_morph_raw; auto.
  red; intros.
  rewrite H0; rewrite H1; reflexivity.
 Qed.
-Hint Resolve wext1 wext2.
+Hint Resolve Wsup_ext wext1 wext2.
 
 Lemma Wsup_def :
   forall x p,
@@ -469,9 +476,7 @@ apply Wsup_typ_gen with X; auto with *.
 Qed.
 Hint Resolve Wf_typ.
 
-Lemma Wf_stable : forall X,
-  X ⊆ power Wdom ->
-  inter (replf X Wf) ⊆ Wf (inter X).
+Lemma Wf_stable : stable_class (fun X : set => X ⊆ Ffix Wf Wdom) Wf.
 red; intros X Xty z H.
 unfold Wf.
 assert (forall a, a ∈ X -> z ∈ Wf a).
@@ -487,7 +492,7 @@ assert (z ∈ Wf x); auto.
 apply Wf_elim in H2.
 destruct H2.
 exists x0; auto.
-apply W_F_stable.
+apply W_F_stable; auto.
 apply inter_intro.
  intros.
  rewrite replf_ax in H4.
@@ -499,9 +504,11 @@ apply inter_intro.
  rewrite H3 in H5; apply Wsup_inj with (X:=x) (Y:=x1)in H5; trivial.
   rewrite H5; trivial.
 
-  red; intros; apply power_elim with (1:=Xty _ H1); trivial.
+  transitivity (Ffix Wf Wdom); auto.
+  apply Ffix_inA.
 
-  red; intros; apply power_elim with (1:=Xty _ H4); trivial.
+  transitivity (Ffix Wf Wdom); auto.
+  apply Ffix_inA.
 
  exists (W_F x).
  rewrite replf_ax.
@@ -624,19 +631,29 @@ apply iso_fun_trans with (W_F (TI Wf o)).
  transitivity W'; [apply Wi_W';trivial|apply W'typ].
 Qed.
 
+Let gm  : Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) g.
+do 3 red; intros.
+unfold g.
+apply comp_iso_morph; trivial.
+ apply WFmap_morph; trivial.
+
+ apply Wsup_morph.
+Qed.
+
 Let g_ext : forall X f f',
   eq_fun X f f' -> eq_fun (W_F X) (g f) (g f').
 red; intros.
-unfold comp_iso.
-apply (Wsup_morph (replf X f)).
- apply WFmap_typ with (2:=H0).
-  red; transitivity f'; auto with *.
+apply Wsup_morph.
+apply WFmap_ext.
+ apply W_F_elim with (1:=H0).
 
-  intros.
-  rewrite replf_ax; eauto with *.
-  red; transitivity f'; auto with *.
+ rewrite H1; reflexivity.
 
- apply WFmap_morph in H; auto.
+ intros.
+ apply H.
+  apply W_F_elim with (1:=H0); trivial.
+
+  rewrite H1; rewrite H3; reflexivity.
 Qed.
 
 Lemma TI_W_F_Wf_iso o :
@@ -747,9 +764,517 @@ apply is_cc_fun_lam.
 do 2 red; intros; apply cc_app_morph; auto with *.
 Qed.
 
+(** The type operator on the construction domain
+    (extended with bottom value) *)
+
+Require Import ZFcoc.
+
+  Definition W_F' X := W_F (cc_bot X).
+
+  Instance W_F'_mono : Proper (incl_set==>incl_set) W_F'.
+do 2 red; intros.
+unfold Wf; apply W_F_mono; trivial.
+apply cc_bot_mono; auto with *.
+Qed.
+
+  Lemma mt_not_in_W_F' o x :
+    isOrd o ->
+    x ∈ TI W_F' o ->
+    ~ x == empty.
+red; intros.
+apply TI_elim in H0; auto with *.
+destruct H0 as (o',?,?).
+unfold W_F' in H2.
+apply W_F_elim in H2; trivial.
+destruct H2 as (_,(_,?)).
+rewrite H2 in H1.
+symmetry in H1; apply discr_mt_pair in H1; trivial.
+Qed.
+
+Lemma Wsup_ext' : forall X, ext_fun (W_F' X) Wsup.
+intros; apply Wsup_ext.
+Qed.
+Hint Resolve Wsup_ext'.
+
+Definition Wf' X := replf (W_F' X) Wsup.
+
+Lemma Wf_intro' : forall x X,
+  x ∈ W_F' X ->
+  Wsup x ∈ Wf' X.
+intros.
+unfold Wf'.
+rewrite replf_ax; trivial.
+exists x; auto with *.
+Qed.
+
+Lemma Wf_elim' : forall a X,
+  a ∈ Wf' X ->
+  exists2 x, x ∈ W_F' X &
+  a == Wsup x.
+intros.
+unfold Wf' in H.
+rewrite replf_ax in H; trivial.
+Qed.
+
+Instance Wf_mono' : Proper (incl_set ==> incl_set) Wf'.
+do 2 red; intros.
+apply Wf_mono.
+apply cc_bot_mono; trivial.
+Qed.
+
+Instance Wf_morph' : morph1 Wf'.
+apply Fmono_morph; auto with *.
+Qed.
+Hint Resolve Wf_mono' Wf_morph'.
+
+
+Lemma union2_stable_disjoint K F G :
+  morph1 F ->
+  morph1 G ->
+  stable_class K F ->
+  stable_class K G ->
+  (forall X Y z, K X -> K Y -> z ∈ F X -> z ∈ G Y -> False) ->
+  stable_class K (fun X => F X ∪ G X).
+intros Fm Gm Fs Gs disj.
+intros X KX z zty.
+destruct inter_wit with (2:=zty) as (w,winX).
+ do 2 red; intros.
+ rewrite H; reflexivity.
+assert (forall x, x ∈ X -> z ∈ F x ∪ G x).
+ intros.
+ apply inter_elim with (1:=zty).
+ rewrite replf_ax.
+  exists x; auto with *.
+
+  red; red; intros.
+  rewrite H1; reflexivity.
+clear zty.
+assert (z ∈ F w ∪ G w) by auto.
+apply union2_elim in H0; destruct H0.
+ apply union2_intro1.
+ apply Fs; auto.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H1.
+  2:red;red;intros;apply Fm; trivial.
+  destruct H1.
+  rewrite H2; clear H2 y.
+  assert (z ∈ F x ∪ G x) by auto.
+  apply union2_elim in H2; destruct H2; trivial.
+  elim disj with (3:=H0) (4:=H2); auto.
+
+  exists (F w).
+  rewrite replf_ax.
+  2:red;red;intros;apply Fm;trivial.
+  exists w; auto with *.
+
+ apply union2_intro2.
+ apply Gs; auto.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H1.
+  2:red;red;intros;apply Gm; trivial.
+  destruct H1.
+  rewrite H2; clear H2 y.
+  assert (z ∈ F x ∪ G x) by auto.
+  apply union2_elim in H2; destruct H2; trivial.
+  elim disj with (3:=H2) (4:=H0); auto.
+
+  exists (G w).
+  rewrite replf_ax.
+  2:red;red;intros;apply Gm;trivial.
+  exists w; auto with *.
+Qed.
+
+  Lemma mt_not_in_Wf' o x :
+    isOrd o ->
+    x ∈ TI Wf' o ->
+    ~ x == empty.
+red; intros.
+apply TI_elim in H0; auto with *.
+destruct H0 as (o',?,?).
+apply Wf_elim' in H2.
+destruct H2 as (w,_,?).
+rewrite H2 in H1; apply empty_ax with (couple Nil (fst w)).
+rewrite <- H1.
+apply union2_intro1.
+apply singl_intro.
+Qed.
 
 
 
+(*
+Lemma mt_not_Wdom X x :
+  X ⊆ Wdom ->
+  x ∈ X ->
+  ~ empty ∈ x.
+red; intros.
+apply H in H0.
+unfold Wdom,rel in H0.
+specialize power_elim with (1:=H0) (2:=H1); intro.
+apply surj_pair in H2.
+apply discr_mt_pair in H2; trivial.
+Qed.
+*)
+
+Lemma Wdom_cc_bot X :
+  X ⊆ Wdom -> cc_bot X ⊆ Wdom.
+red; intros.
+apply cc_bot_ax in H0; destruct H0; auto.
+rewrite H0; apply power_intro; intros.
+apply empty_ax in H1; contradiction.
+Qed.
+
+Lemma Wsup_inj' : forall X Y x x',
+  X ⊆ Wdom ->
+  Y ⊆ Wdom ->
+  x ∈ W_F' X ->
+  x' ∈ W_F' Y ->
+  Wsup x == Wsup x' -> x == x'.
+intros X Y x x' tyf tyf' H H0 H1.
+unfold W_F in H,H0.
+destruct W_F_elim with (1:=H) as (?,(?,?)).
+destruct W_F_elim with (1:=H0) as (?,(?,?)).
+rewrite H4; rewrite H7; apply WFi_ext; intros; auto.
+ generalize (Wsup_hd_prop (fst x) x); intro.
+ generalize (Wsup_hd_prop (fst x) x'); intro.
+ apply H9.
+ rewrite <- H1.
+ apply H8.
+ reflexivity.
+
+ red; intros.
+ assert (x'0 ∈ B (fst x')).
+  revert H9; apply in_set_morph; auto with *.
+ assert (cc_app (snd x) x0 ⊆ prodcart (List (sup A B)) A).
+  red; intros.
+  assert (cc_app (snd x) x0 ∈ X).
+   apply H3 in H9.
+   apply cc_bot_ax in H9; destruct H9; trivial.
+   rewrite H9 in H12; apply empty_ax in H12; contradiction.
+  apply power_elim with (2:=H12); auto.
+ assert (cc_app (snd x') x'0 ⊆ prodcart (List (sup A B)) A).
+  red; intros.
+  assert (cc_app (snd x') x'0 ∈ Y).
+   apply H6 in H11.
+   apply cc_bot_ax in H11; destruct H11; trivial.
+   rewrite H11 in H13; apply empty_ax in H13; contradiction.
+  apply power_elim with (2:=H13); auto.
+ generalize (fun z l => Wsup_tl_prop _ x0 l z _ H (Wdom_cc_bot _ tyf)); intros.
+ generalize (fun z l => Wsup_tl_prop _ x'0 l z _ H0 (Wdom_cc_bot _ tyf')); intros.
+ apply eq_intro; intros.
+  generalize (surj_pair _ _ _ (H12 _ H16)); intro.
+  rewrite H17.
+  apply H15.
+  rewrite <- H10; rewrite <- H1; rewrite H14.
+  rewrite <- H17; auto.
+
+  generalize (surj_pair _ _ _ (H13 _ H16)); intro.
+  rewrite H17.
+  apply H14.
+  rewrite H10; rewrite H1; rewrite H15.
+  rewrite <- H17; auto.
+Qed.
+
+Lemma Wsup_typ_gen' : forall X x,
+  X ⊆ Wdom ->
+  x ∈ W_F' X ->
+  Wsup x ∈ Wdom.
+intros.
+apply power_intro; intros.
+rewrite Wsup_def in H1; trivial.
+unfold W_F' in H0; apply W_F_elim in H0; destruct H0 as (?,(?,_)).
+destruct H1 as [eqz|(i,?,(q,?,eqz))]; rewrite eqz; clear z eqz.
+ apply couple_intro; trivial.
+ apply Nil_typ.
+
+ assert (q ∈ prodcart (List (sup A B)) A).
+  specialize H2 with (1:=H1).
+  apply cc_bot_ax in H2; destruct H2.
+   rewrite H2 in H3; apply empty_ax in H3; contradiction.
+
+   apply H in H2.
+   apply power_elim with (1:=H2); trivial.
+ apply couple_intro.
+  apply Cons_typ.
+   rewrite sup_ax; eauto with *.
+
+   apply fst_typ with (1:=H4).
+
+  apply snd_typ with (1:=H4).
+Qed.
+
+Lemma Wf_typ' : forall X,
+  X ⊆ Wdom -> Wf' X ⊆ Wdom.
+red; intros.
+apply Wf_elim' in H0; destruct H0 as (x,?,?).
+rewrite H1.
+apply Wsup_typ_gen' with X; auto with *.
+Qed.
+Hint Resolve Wf_typ'.
+
+Lemma TI_Wf_typ' o :
+  isOrd o ->
+  TI Wf' o ⊆ Wdom.
+induction 1 using isOrd_ind; intros.
+red; intros.
+apply TI_elim in H2; auto.
+destruct H2.
+revert H3; apply Wf_typ'; auto.
+Qed.
+
+
+Lemma cc_bot_stable :
+  stable_class (fun X => X ⊆ Ffix Wf' Wdom) cc_bot.
+unfold cc_bot; apply union2_stable_disjoint.
+ do 2 red; reflexivity.
+
+ do 2 red; trivial.
+
+ apply cst_stable_class.
+
+ apply id_stable_class.
+
+ intros.
+ apply singl_elim in H1.
+ rewrite H1 in H2; apply H0 in H2.
+ rewrite Ffix_def in H2; auto.
+ destruct H2.
+ apply mt_not_in_Wf' in H3; auto with *.
+Qed.
+
+Lemma W_F_stable' : stable_class (fun X => X ⊆ Ffix Wf' Wdom) W_F'.
+apply sigma2_stable_class.
+ intros; apply cc_prod_ext; auto with *.
+ red; intros; apply cc_bot_morph; trivial.
+
+ intros.
+ apply cc_prod_stable_class; intros; auto.
+  apply cc_bot_morph; trivial.
+
+  apply cc_bot_stable.
+Qed.
+
+
+Lemma Wf_stable' : stable_class (fun X => X ⊆ Ffix Wf' Wdom) Wf'.
+red; intros X Xty z H.
+unfold Wf'.
+assert (forall a, a ∈ X -> z ∈ Wf' a).
+ intros.
+ apply inter_elim with (1:=H).
+ rewrite replf_ax.
+ 2:red;red;intros;apply Wf_morph'; trivial.
+ exists a; auto with *.
+rewrite replf_ax; auto.
+destruct inter_wit with (2:=H).
+ apply Fmono_morph; trivial.
+assert (z ∈ Wf' x); auto.
+apply Wf_elim' in H2.
+destruct H2.
+exists x0; auto.
+apply W_F_stable'; trivial.
+apply inter_intro.
+ intros.
+ rewrite replf_ax in H4.
+ 2:red;red;intros;apply W_F_morph; apply cc_bot_morph; auto.
+ destruct H4.
+ rewrite H5; clear y H5.
+ specialize H0 with (1:=H4).
+ apply Wf_elim' in H0; destruct H0.
+ rewrite H3 in H5; apply Wsup_inj' with (X:=x) (Y:=x1)in H5; trivial.
+  rewrite H5; trivial.
+
+  transitivity (Ffix Wf' Wdom); auto.
+  apply Ffix_inA.
+
+  transitivity (Ffix Wf' Wdom); auto.
+  apply Ffix_inA.
+
+ exists (W_F' x).
+ rewrite replf_ax.
+ 2:red;red;intros;apply W_F_morph;apply cc_bot_morph;auto.
+ exists x; auto with *.
+Qed.
+
+Lemma W_F_Wf_iso'' X :
+  X ⊆ Wdom ->
+  iso_fun (W_F' X) (Wf' X) Wsup.
+split; intros.
+ apply Wsup_morph.
+
+ red; intros.
+ apply Wf_intro'; trivial.
+
+ apply Wsup_inj' with X X; auto.
+
+ destruct Wf_elim' with (1:=H0); eauto with *.
+Qed.
+
+  Definition W_ord' := Ffix_ord Wf' Wdom.
+
+Let fbot f x := cond_set (~x==empty) (f x).
+
+Lemma eqf_fbot X f f' :
+  ~ empty ∈ X ->
+  eq_fun X f f' ->
+  eq_fun (cc_bot X) (fbot f) (fbot f').
+red; intros.
+rewrite cc_bot_ax in H1; destruct H1.
+ unfold fbot; rewrite cond_set_mt;[|tauto].
+ rewrite H2 in H1; rewrite cond_set_mt;[|tauto].
+ reflexivity.
+
+ assert (~x==empty).
+  intro h; rewrite h in H1; contradiction.
+ unfold fbot; rewrite cond_set_ok; trivial.
+ rewrite H2 in H3; rewrite cond_set_ok; trivial.
+ apply H0; trivial.
+Qed.
+
+Lemma iso_cc_bot X Y f :
+  iso_fun X Y f ->
+  ~ empty ∈ X ->
+  ~ empty ∈ Y ->
+  iso_fun (cc_bot X) (cc_bot Y) (fbot f).
+unfold fbot.
+intros.
+assert (fm := iso_funm H).
+split; intros.
+ do 2 red; intros.
+ rewrite H2; reflexivity.
+
+ red; intros.
+ apply cc_bot_ax in H2; destruct H2.
+  rewrite cond_set_mt; auto.
+
+  rewrite cond_set_ok.
+   apply cc_bot_intro.
+   apply (iso_typ H); trivial.
+
+   intro h; rewrite h in H2; contradiction.
+
+ rewrite cc_bot_ax in H2,H3.
+ destruct H2; [rewrite H2|]; (destruct H3;[rewrite H3|]); try reflexivity.
+  rewrite cond_set_mt in H4;[|tauto].
+  rewrite cond_set_ok in H4.
+   elim H1.
+   rewrite H4.
+   apply (iso_typ H); trivial.
+
+   intro h; rewrite h in H3; contradiction.
+
+  rewrite cond_set_ok in H4.
+   rewrite cond_set_mt in H4;[|tauto].
+   elim H1.
+   rewrite <- H4.
+   apply (iso_typ H); trivial.
+
+   intro h; rewrite h in H2; contradiction.
+
+  rewrite cond_set_ok in H4.
+   rewrite cond_set_ok in H4.
+    apply (iso_inj H) in H4; trivial.
+
+    intro h; rewrite h in H3; contradiction.
+   intro h; rewrite h in H2; contradiction.
+
+ rewrite cc_bot_ax in H2; destruct H2.
+  exists empty; auto.
+  rewrite cond_set_mt; auto with *.
+
+  destruct (iso_surj H) with y; trivial.
+  exists x; auto.
+  rewrite cond_set_ok; trivial.
+  intro h; rewrite h in H3; contradiction.
+Qed.
+
+Lemma W_F_Wf_iso''' o f :
+  isOrd o ->
+  iso_fun (TI W_F' o) (TI Wf' o) f ->
+  iso_fun (W_F' (TI W_F' o)) (Wf' (TI Wf' o)) (g (fbot f)).
+intros.
+apply iso_fun_trans with (W_F' (TI Wf' o)).
+ apply WFmap_iso; trivial.
+ apply iso_cc_bot; trivial.
+  intro h; apply mt_not_in_W_F' in h; auto with *.
+  intro h; apply mt_not_in_Wf' in h; auto with *.
+
+ apply W_F_Wf_iso''.
+ apply TI_Wf_typ'; trivial.
+Qed.
+
+Let gbot_ext : forall X f f',
+  ~ empty ∈ X ->
+  eq_fun X f f' -> eq_fun (W_F' X) (g (fbot f)) (g (fbot f')).
+red; intros.
+unfold g,comp_iso.
+assert (eqbot : eq_fun (cc_bot X) (fbot f) (fbot f')).
+ apply eqf_fbot; trivial.
+apply Wsup_morph.
+apply WFmap_ext; intros.
+ apply W_F_elim with (1:=H1).
+
+ rewrite H2; reflexivity.
+
+ apply eqbot.
+ apply W_F_elim with (1:=H1); trivial.
+
+ rewrite H2; rewrite H4; reflexivity.
+Qed.
+
+Let gbotm : Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) (fun f => g (fbot f)).
+do 3 red; intros.
+apply gm; trivial.
+unfold fbot; red; intros.
+apply cond_set_morph; auto.
+rewrite H1; reflexivity.
+Qed.
+
+Lemma TI_W_F_Wf_iso' o :
+  isOrd o ->
+  iso_fun (TI W_F' o) (TI Wf' o) (TI_iso W_F' (fun f => g (fbot f)) o).
+intros.
+apply TI_iso_fun; intros; auto.
+ do 2 red; intros; apply W_F_mono; apply cc_bot_mono; trivial.
+
+ apply gbot_ext; trivial.
+ intros h; apply mt_not_in_W_F' in h; auto with *.
+
+ apply W_F_Wf_iso'''; trivial.
+Qed.
+
+  Lemma W_fix' :
+    TI W_F' W_ord' == W_F' (TI W_F' W_ord').
+rewrite TI_iso_fixpoint with (2:=Wf_mono') (g:=fun f => g (fbot f)).
+ apply TI_clos_fix_eqn; auto.
+ apply Wf_stable'.
+
+ do 2 red; intros; apply W_F_mono; apply cc_bot_mono; trivial.
+
+ trivial.
+
+ intros.
+ apply gbot_ext; trivial.
+ intros h; apply mt_not_in_W_F' in h; auto with *.
+
+ apply W_F_Wf_iso'''.
+
+ apply Ffix_o_o; trivial.
+ apply Wf_typ'.
+Qed.
+
+  Lemma W_fix'' o :
+    isOrd o ->
+    TI W_F' o ⊆ TI W_F' W_ord'.
+induction 1 using isOrd_ind; intros.
+red; intros.
+apply TI_elim in H2; auto.
+2:apply Fmono_morph.
+2:apply W_F'_mono.
+destruct H2 as (o',?,?).
+rewrite W_fix'.
+revert H3; apply W_F'_mono; auto.
+Qed.
 
 (** Recursor on W *)
 
@@ -949,17 +1474,6 @@ rewrite <- H4.
 apply REC_ord_irrel with (2:=WREC_recursor); auto with *.
 Qed.
 
-Require Import ZFcoc.
-
-  Definition W_F' X := W_F (cc_bot X).
-
-
-  Instance W_F'_mono : Proper (incl_set==>incl_set) W_F'.
-do 2 red; intros.
-unfold Wf; apply W_F_mono; trivial.
-apply cc_bot_mono; auto with *.
-Qed.
-
   Variable U' : set -> set -> set.
   Hypothesis U'mono : forall o o' x x',
     isOrd o' -> o' ⊆ ord -> isOrd o -> o ⊆ o' ->
@@ -1144,6 +1658,7 @@ unfold Wdom.
 apply G_rel; trivial.
 apply G_List; trivial.
 apply G_sup; trivial.
+apply morph_is_ext; trivial.
 Qed.
 
   Lemma G_W' : W' ∈ U.
@@ -1174,6 +1689,22 @@ apply G_TI; intros; trivial.
  apply G_W_ord.
 
  apply G_W_F; trivial.
+Qed.
+
+  Lemma G_W_F' X : X ∈ U -> W_F' X ∈ U.
+intros.
+unfold W_F'.
+apply G_W_F.
+apply G_union2; trivial.
+apply G_singl; trivial.
+apply G_incl with X; trivial.
+red; intros z ?; elim empty_ax with z; trivial.
+Qed.
+
+  Lemma G_W_ord' : W_ord' ∈ U.
+unfold W_ord'.
+apply G_Ffix_ord; auto.
+apply G_Wdom.
 Qed.
 
 End W_Univ.
@@ -1215,7 +1746,7 @@ Hypothesis Ugrot : grot_univ U.
 
   Definition sets := W U (fun X =>X).
 
-  Let sm : ext_fun U (fun X => X).
+  Let sm : morph1 (fun X => X).
 do 2 red; trivial.
 Qed.
 

@@ -261,6 +261,15 @@ Lemma FIXP_sat0 G o T U RT m X :
   inSAT (FIXP G m) (FIX_bot o).
 intros FIX_bot FIX_strict oo Tcont Ubot Rirrel Xmono Gsat msat.
 elim oo using isOrd_ind; intros.
+(*
+apply piSAT0_intro; intros.
+ eapply sat_sn.
+ unfold FIXP.
+ eapply prodSAT_intro'; intros.
+eapply Gsat.
+
+ apply FIXP_sn.
+*)
 apply piSAT0_intro'; [|apply  Ubot;trivial].
 intros x u xty0 ureal.
 apply Gsat with (2:=xty0); trivial.

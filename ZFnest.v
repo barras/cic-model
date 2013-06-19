@@ -4,24 +4,6 @@ Require Import ZFiso ZFfixrec.
 Require Import ZFind_w ZFspos.
 Require Import ZFlist.
 
-(* --> ZFfix *)
-Lemma TI_op_mono o o' f f' :
-  morph1 f ->
-  morph1 f' -> 
-  (incl_set ==> incl_set)%signature f f' ->
-  isOrd o ->
-  o == o' ->
-  TI f o ⊆ TI f' o'.
-intros.
-rewrite <- H3.
-clear o' H3.
-elim H2 using isOrd_ind; intros.
-red; intros.
-apply TI_elim in H6; trivial.
-destruct H6.
-apply TI_intro with x; trivial.
-revert H7; apply H1; auto.
-Qed.
 
 Section NestedInductive.
 
@@ -574,7 +556,7 @@ assert (essf1 : forall x,
  apply fst_morph; apply (iso_funm H0); auto.
  rewrite H3; reflexivity.
 constructor; intros.
- apply gext; auto.
+ apply gm.
  apply (iso_funm H0).
 
  red; intros.
@@ -651,14 +633,11 @@ constructor; intros.
     intros; apply B'_elim in H5; destruct H5 as [(l,?,eqx)|(i,?,(b',?,eqx))];
       rewrite eqx; apply LIST_case_Cons.
    assert (f (cc_app (snd (snd x)) (fst (Cons x0 x1))) == f (cc_app (snd(snd x)) x0)).
-    symmetry; apply (iso_funm H0); auto.
-     apply ty3.
-     rewrite H3; trivial.
-
-     rewrite fst_def; reflexivity.
+    apply (iso_funm H0); auto.
+    unfold Cons; rewrite fst_def; reflexivity.
    assert (f (cc_app (snd (snd x')) (fst (Cons x0 x1))) == f (cc_app (snd(snd x')) x0)).
-    symmetry; apply (iso_funm H0); auto.
-    rewrite fst_def; reflexivity.
+    apply (iso_funm H0); auto.
+    unfold Cons; rewrite fst_def; reflexivity.
    rewrite <- H6; rewrite <- H7.
    generalize (H2 (Cons x0 x1) (Cons x0 x1)).
    rewrite snd_def; do 2 rewrite case_Cons.
@@ -690,7 +669,7 @@ constructor; intros.
  assert (invm : ext_fun (C (fst (fst y))) (fun i : set => iso_inv Y f (fb' i))).
   do 2 red; intros.
   apply iso_inv_ext; auto with *.
-   apply (iso_funm H0).
+   red; intros; apply (iso_funm H0); trivial.
 
    unfold fb'; apply WFi_ext with (A:=A'i o); auto with *.
     rewrite H2; reflexivity.
@@ -734,11 +713,9 @@ constructor; intros.
 
       apply fst_morph.
       apply (iso_funm H0).
-       apply (iso_inv_typ H0); auto.
-
-       rewrite snd_def.
-       rewrite snd_def.
-       rewrite cc_beta_eq; auto with *.
+      rewrite snd_def.
+      rewrite snd_def.
+      rewrite cc_beta_eq; auto with *.
 
    symmetry; apply cc_lam_ext.
     simpl.
@@ -756,11 +733,9 @@ constructor; intros.
    transitivity (fst (f (iso_inv Y f (fb' x)))).
       apply fst_morph.
       symmetry; apply (iso_funm H0).
-       apply (iso_inv_typ H0); auto.
-
-       rewrite snd_def.
-       rewrite snd_def.
-       rewrite cc_beta_eq; auto with *.
+      rewrite snd_def.
+      rewrite snd_def.
+      rewrite cc_beta_eq; auto with *.
 
       rewrite iso_inv_eq with (1:=H0); auto.
       unfold fb'; rewrite fst_def.
@@ -790,11 +765,9 @@ constructor; intros.
       apply cc_app_morph; auto with *.
       apply snd_morph.
       apply (iso_funm H0).
-       apply (iso_inv_typ H0); auto.
-
-       rewrite snd_def.
-       rewrite snd_def.
-       rewrite cc_beta_eq; auto with *.
+      rewrite snd_def.
+      rewrite snd_def.
+      rewrite cc_beta_eq; auto with *.
 Qed.
 
 Lemma TRF_indep_g : forall X o o' x,
@@ -881,7 +854,7 @@ Lemma isPos_nest o :
 constructor.
  do 2 red; intros.
  simpl.
- apply TI_op_mono; auto with *; apply Fmono_morph;
+ apply TI_mono_gen; auto with *; apply Fmono_morph;
    do 2 red; intros; apply Fmono; auto with *.
 
  do 2 red; intros; simpl.

@@ -106,6 +106,11 @@ apply H; trivial.
 Qed.
 Hint Resolve morph_is_ext.
 
+Lemma cst_is_ext : forall X o, ext_fun o (fun _ => X).
+do 2 red; reflexivity.
+Qed.
+Hint Resolve cst_is_ext.
+
 Definition eq_pred dom (P Q : set -> Prop) :=
   forall x, x ∈ dom -> (P x <-> Q x).
 
@@ -889,27 +894,27 @@ apply eq_intro; intros.
  destruct H; eauto using union_intro.
 Qed.
 
-(** Russel's paradox *)
+(** Russell's paradox *)
 
-Section Russel.
+Section Russell.
 
 Variable U : set.
 Variable universal : forall x, x ∈ U.
 
-Definition omega := subset U (fun x => ~ x ∈ x).
+Definition russell_omega := subset U (fun x => ~ x ∈ x).
 
-Lemma omega_not_in_omega : ~ omega ∈ omega.
+Lemma omega_not_in_omega : ~ russell_omega ∈ russell_omega.
 Proof.
-unfold omega at 2 in |- *.
+unfold russell_omega at 2 in |- *.
 red in |- *; intro.
 elim subset_elim2 with (1 := H); intros.
 rewrite <- H0 in H1.
 exact (H1 H).
 Qed.
 
-Lemma omega_in_omega : omega ∈ omega.
+Lemma omega_in_omega : russell_omega ∈ russell_omega.
 Proof.
-unfold omega at 2 in |- *.
+unfold russell_omega at 2 in |- *.
 apply subset_intro; trivial.
 exact omega_not_in_omega.
 Qed.
@@ -917,7 +922,7 @@ Qed.
 Lemma no_universal_set : False.
 Proof (omega_not_in_omega omega_in_omega).
 
-End Russel.
+End Russell.
 
 (** intersection *)
 

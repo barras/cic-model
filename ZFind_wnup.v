@@ -131,6 +131,10 @@ Instance B'_morph : morph1 B'.
 do 2 red; intros; apply Bm; [apply fst_morph|apply snd_morph]; trivial.
 Qed.
 
+Lemma B'm : morph1 B'.
+auto with *.
+Qed.
+Hint Resolve B'm.
 Lemma B'ext : ext_fun A' B'.
 auto with *.
 Qed.
@@ -244,7 +248,8 @@ Lemma tr_iso a X Y P g :
   iso_fun Wd (W_Fd Y a) (tr g).
 intros Pm; intros.
 unfold tr.
-assert (gm : forall x x', x ∈ Wd -> x == x' ->
+assert (gm := iso_funm (H1 _ H0)).
+(*assert (gext : forall x x', x ∈ Wd -> x == x' ->
              eq_fun (B' (fst x)) (fun i => g (cc_app (snd x) i)) (fun i => g (cc_app (snd x') i))).
  do 2 red; intros.
  unfold Wd in H2; rewrite subset_ax in H2; destruct H2 as (?,(w,?,(?,?))).
@@ -252,25 +257,17 @@ assert (gm : forall x x', x ∈ Wd -> x == x' ->
  destruct H2 as (?,(?,_)).
  apply A'_elim in H2; destruct H2 as (?,(?,_)).
  apply (iso_funm (H1 _ (ftyp _ _ _ H2 H10 H4))).
-  apply subset_intro; auto.
-  unfold B' in H4; rewrite H6 in H4|-*; rewrite H7 in H4|-*; auto.
-
-  rewrite H3; rewrite H5; reflexivity.
+ rewrite H3; rewrite H5; reflexivity.*)
 constructor; intros.
  do 2 red; intros.
- unfold B'.
- assert (h:=H2); unfold Wd in h;
-   rewrite subset_ax in h; destruct h as (?,(w,eqx,(?,?))).
- apply W0.W_F_elim in H4; auto.
- destruct H4 as (?,(?,_)).
- apply A'_elim in H4; destruct H4 as (?,(?,_)).
  apply couple_morph.
-  rewrite H3; reflexivity.
+  rewrite H2; reflexivity.
 
   apply cc_lam_ext.
-   rewrite H3; reflexivity.
+   rewrite H2; reflexivity.
 
-   apply gm; trivial.
+   red; intros.
+   rewrite H2; rewrite H4; reflexivity.
 
  (* typ *)
  red; intros.
@@ -282,7 +279,8 @@ constructor; intros.
  apply W_Fd_intro; intros; auto with *.
   rewrite <- inst; trivial.
 
-  apply gm; auto with *.
+  do 2 red; intros.
+  rewrite H4; reflexivity.
 
   specialize ty2 with (1:=H2).
   apply (iso_typ (H1 _ (ftyp _ _ _ tya tyx H3))).
@@ -324,8 +322,11 @@ constructor; intros.
      rewrite <- inst' in H7; auto.
     rewrite H6 in H7|-*; rewrite eqx1 in H7|-*; rewrite <- H8; apply insts'; auto.
 
-   apply gm; auto with *.
-   apply gm; auto with *.
+   do 2 red; intros.
+   rewrite H6; reflexivity.
+
+   do 2 red; intros.
+   rewrite H6; reflexivity.
 
   rewrite eqy; rewrite eqy'.
   rewrite inst; rewrite inst'; rewrite H5; reflexivity.
@@ -347,8 +348,8 @@ do 2 red; intros; apply cc_prod_morph.
    apply subset_morph; auto with *.
    red; intros; rewrite H4; reflexivity.
 
-   apply H1; apply ftyp; trivial.
-   unfold B' in H3; rewrite fst_def in H3; rewrite snd_def in H3; trivial.
+   apply morph_is_ext.
+   apply (iso_funm (H1 _ H0)).
 
    rewrite H4; reflexivity.
  exists (couple (couple a (fst y)) (cc_lam (B' (couple a (fst y)))
@@ -395,13 +396,9 @@ do 2 red; intros; apply cc_prod_morph.
 
      rewrite H4 in H3.
      apply (iso_funm (H1 _ (ftyp _ _ _ H0 ty1 H3))).
-      apply iso_inv_typ with (1:=H1 _ (ftyp _ _ _ H0 ty1 H3)).
-      rewrite <- H4; trivial.
-
-      rewrite snd_def.
-      rewrite cc_beta_eq; auto with *.
-
-      unfold B'; rewrite fst_def; rewrite snd_def; trivial.
+     rewrite snd_def.
+     rewrite cc_beta_eq; auto with *.
+     unfold B'; rewrite fst_def; rewrite snd_def; trivial.
 Qed.
 
 Require Import ZFlimit.
@@ -1446,11 +1443,17 @@ unfold A'' in H0|-*.
 unfold cs; rewrite Dec_cons; auto.
 Qed.
 
-Let ea z : ext_fun (A' (Arg' z) (A'' z)) (B' (B'' z)).
+Let ea z : morph1 (B' (B'' z)).
+do 2 red; intros.
+unfold B', B''.
+rewrite H; reflexivity.
+Qed.
+(*Let ea z : ext_fun (A' (Arg' z) (A'' z)) (B' (B'' z)).
 do 2 red; intros.
 unfold B', B''.
 rewrite H0; reflexivity.
 Qed.
+*)
 
 Let idx_incl : sup (A' (Arg' a') (A'' a')) (B' (B'' a')) ⊆ sup (A' (Arg' a) (A'' a)) (B' (B'' a)).
 red; intros.
@@ -1616,7 +1619,7 @@ Let fix_incl : typ_fun csw (Ffix Fa' dom_a') (Ffix Fa dom_a).
  apply dom_ti_incl; auto.
 Qed.
 
-Lemma wsup_fsub A0 B0 (bm : ext_fun A0 B0) o w :
+Lemma wsup_fsub A0 B0 (bm : morph1 B0) o w :
   isOrd o ->
   w ∈ W0.W_F A0 B0 (TI (W0.Wf A0 B0) o) ->
   fsub (W0.Wf A0 B0) (W0.Wdom A0 B0) (W0.Wsup B0 w) == replf (B0 (fst w)) (fun i => cc_app (snd w) i).

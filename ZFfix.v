@@ -1,4 +1,4 @@
-Require Import ZF ZFrelations ZFnats ZFord.
+Require Import ZF ZFrelations ZFnats ZFord ZFstable.
 
 (** Transfinite iteration of a monotonic operator
  *)
@@ -72,7 +72,98 @@ apply H0.
 elim TI_elim with (3:=H3); intros; auto with *.
 apply Fmono with (TI F x); auto.
 Qed.
+(** Stability of ordinal-indexed families *)
 
+Definition stable_ord := stable_class isOrd.
+
+Lemma TI_stable K :
+  Proper (eq_set ==> iff) K ->
+  stable_class K F ->
+  (forall o, isOrd o -> K (TI F o)) ->
+  stable_ord (TI F).
+intros Km Fs KTI.
+cut (forall o, isOrd o ->
+  forall X, o == inter X ->
+  (forall x, x ∈ X -> isOrd x) ->
+  inter (replf X (TI F)) ⊆ TI F (inter X)).
+ do 2 red; intros.
+ apply H with (inter X); auto with *.
+ apply isOrd_inter; auto.
+induction 1 using isOrd_ind; red; intros.
+assert (eX : ext_fun X (TI F)).
+ red; red; intros; apply TI_morph; trivial.
+assert (eN : forall X, ext_fun X F).
+ red; red; intros; apply Fm; trivial.
+pose (Y := subset (union X) (fun y => z ∈ F (TI F y))).
+assert (oY : forall y, y ∈ Y -> isOrd y).
+ unfold Y; intros.
+ apply subset_elim1 in H5.
+ apply union_elim in H5; destruct H5.
+ eauto using isOrd_inv.
+assert (eY : ext_fun Y (TI F)).
+ red; red; intros.
+ apply TI_morph; trivial.
+assert (wX : exists w, w ∈ X).
+ destruct inter_non_empty with (1:=H4).
+ rewrite replf_ax in H5; trivial.
+ destruct H5.
+ exists x0; trivial.
+destruct wX as (wx,wX).
+assert (wY : exists w, w ∈ Y).
+ assert (z ∈ TI F wx).
+  apply inter_elim with (1:=H4).
+  rewrite replf_ax; trivial.
+  exists wx; auto with *.
+ apply TI_elim in H5; auto.
+ destruct H5.
+ exists x.
+ apply subset_intro; trivial.
+ apply union_intro with wx; trivial.
+destruct wY as (wy,wY).
+assert (ltY : lt (inter Y) (inter X)).
+ apply inter_intro; eauto.
+ intros.
+ assert (z ∈ TI F y0).
+  apply inter_elim with (1:=H4).
+  rewrite replf_ax; trivial.
+  exists y0; auto with *.
+ apply TI_elim in H6; auto.
+ destruct H6.
+ apply isOrd_plump with x; auto.
+  apply isOrd_inter; auto.
+
+  red; intros.
+  apply inter_elim with (1:=H8).
+  apply subset_intro; trivial.
+  apply union_intro with y0; trivial.
+assert (inter (replf Y (TI F)) ⊆ TI F (inter Y)).
+ apply H1 with (inter Y); auto with *.
+ rewrite H2; trivial.
+apply TI_intro with (inter Y); auto.
+ apply isOrd_inter; auto.
+apply Fmono with (1:=H5).
+apply Fs.
+ intros.
+ rewrite replf_ax in H6; auto with *.
+ destruct H6.
+ rewrite H7; auto.
+apply inter_intro.
+ intros.
+ rewrite replf_ax in H6; trivial.
+ destruct H6.
+ rewrite replf_ax in H6; trivial.
+ destruct H6.
+ apply subset_elim2 in H6; destruct H6.
+ setoid_replace y0 with (F (TI F x1)); trivial.
+ rewrite H7; apply Fm.
+ rewrite H8; apply TI_morph; trivial.
+
+ exists (F (TI F wy)).
+ rewrite replf_ax; trivial.
+ exists (TI F wy); auto with *.
+ rewrite replf_ax; trivial.
+ exists wy; auto with *.
+Qed.
 
 (** * Case of a bounded monotonic operator 
  *)
@@ -508,31 +599,7 @@ rewrite <- Ffix_rel_fun with (1:=H3) (2:=H7).
 rewrite <- H5 in H4.
 apply H1; trivial.
 Qed.
-(*
-  Lemma Fix_rec_typ U1 U2 a :
-    Ffix ⊆ U1 ->
-    (forall x g, ext_fun (fsub x) g -> x ∈ U1 -> (forall y, y ∈ fsub x -> g y ∈ U2) -> G g x ∈ U2) ->
-    a ∈ Ffix ->
-    Fix_rec a ∈ U2.
-intros.
-rewrite Ffix_def in H1; destruct H1.
-revert a H2.
-induction H1 using isOrd_ind; intros.
-rewrite Fr_eqn with (2:=H4); trivial.
-apply H0.
- do 2 red; intros; apply uchoice_morph_raw.
- red; intros.
- apply Ffix_rel_morph; trivial.
 
- apply H.
- rewrite Ffix_def; eauto.
-
- intros.
- apply fsub_elim with (o:=y) in H5; trivial.
- destruct H5.
- apply H3 with x0; trivial.
-Qed.
-*)
   Lemma Fix_rec_typ U2 a :
     (forall x g, ext_fun (fsub x) g -> x ∈ Ffix -> (forall y, y ∈ fsub x -> g y ∈ U2) -> G g x ∈ U2) ->
     a ∈ Ffix ->
@@ -595,16 +662,15 @@ Qed.
 Hint Resolve F_a_ord.
 
 (** We need stability to prove that Ffix is a fixpoint *)
-  Hypothesis Fstab : forall X,
-    X ⊆ power A ->
-    inter (replf X F) ⊆ F (inter X).
+  Hypothesis Fstab : stable_class (fun X => X ⊆ Ffix) F.
 
   Lemma F_intro : forall w,
     isOrd w ->
     forall a, a ∈ TI F w ->
     a ∈ F (fsub a).
 intros.
-assert (fx_ok : Ffix ∈ subset (power Ffix) (fun X => a ∈ F X)).
+pose (F1a := subset (power Ffix) (fun X => a ∈ F X)).
+assert (fx_ok : Ffix ∈ F1a).
  apply subset_intro.
   apply power_intro; trivial.
 
@@ -613,7 +679,7 @@ assert (fx_ok : Ffix ∈ subset (power Ffix) (fun X => a ∈ F X)).
   revert H1; apply Fmono.
   apply TI_Ffix; trivial.
   apply isOrd_inv with w; trivial.
-assert (inter (replf (subset (power Ffix) (fun X => a ∈ F X)) (fun X => X)) ⊆ fsub a).
+assert (inter (replf F1a (fun X => X)) ⊆ fsub a).
  red; intros.
  apply subset_intro.
   apply inter_elim with (1:=H1).
@@ -628,17 +694,16 @@ assert (inter (replf (subset (power Ffix) (fun X => a ∈ F X)) (fun X => X)) �
   exists X; auto with *.
   apply subset_intro; trivial.
   apply power_intro; trivial.
-
 apply Fmono in H1.
 apply H1.
 apply Fstab.
- red; intros.
+ intros.
  rewrite replf_ax in H2.
  2:do 2 red; trivial.
  destruct H2.
  apply subset_elim1 in H2.
- rewrite H3; revert H2; apply power_mono.
- apply Ffix_inA.
+ rewrite H3; red; intros.
+ apply power_elim with (1:=H2); trivial.
 
  apply TI_elim in H0; auto.
  destruct H0.
@@ -711,6 +776,24 @@ apply TI_intro with (Fix_rec F_a a); auto.
  apply F_a_tot; trivial.
 Qed.
 
+  Lemma TI_clos_stages o : isOrd o -> TI F o ⊆ TI F Ffix_ord.
+intros.
+transitivity Ffix.
+ apply TI_Ffix; trivial.
+
+ red; intros; apply Ffix_post; trivial.
+Qed.
+
+  Lemma TI_clos_fix_eqn : TI F Ffix_ord == F (TI F Ffix_ord).
+apply eq_set_ax; intros z.
+rewrite <- TI_mono_succ; trivial.
+split; intros.
+ revert H; apply TI_incl; auto.
+
+ apply TI_clos_stages in H; auto.
+Qed.
+ 
+
   Lemma Ffix_closure : Ffix == TI F Ffix_ord.
 apply incl_eq.
  red; intros; apply Ffix_post; trivial.
@@ -718,23 +801,11 @@ apply incl_eq.
  apply TI_Ffix; trivial.
 Qed.
 
-(** We prove it is a fixpoint *)
+(** We prove Ffix is a fixpoint *)
   Lemma Ffix_eqn : Ffix == F Ffix.
-apply eq_intro; intros.
-rewrite Ffix_def in H; destruct H.
-apply Fmono with (TI F x).
- apply TI_Ffix; trivial.
-
- rewrite <- TI_mono_succ; auto.
- revert H0; apply TI_incl; auto.
-
- assert (z ∈ TI F (osucc Ffix_ord)).
-  rewrite TI_mono_succ; auto.
-  revert H; apply Fmono.
-  red; intros; apply Ffix_post; trivial.
- rewrite Ffix_def; exists (osucc Ffix_ord); auto.
+rewrite Ffix_closure.
+apply TI_clos_fix_eqn.
 Qed.
-
 
 End BoundedOperator.
 
@@ -800,6 +871,29 @@ End BoundIndep.
 
 End IterMonotone.
 
+
+Lemma TI_mono_gen G G' o o' :
+  morph1 G ->
+  morph1 G' ->
+  (incl_set==>incl_set)%signature G G' ->
+  isOrd o ->
+  isOrd o' ->
+  o ⊆ o' ->
+  TI G o ⊆ TI G' o'.
+intros.
+revert o' H3 H4.
+elim H2 using isOrd_ind; intros.
+red; intros.
+apply TI_elim in H8; trivial.
+destruct H8 as (y',y'o,?).
+apply TI_intro with y'; auto.
+ apply H7; trivial.
+
+ revert H8; apply H1.
+ apply H5; auto with *.
+ apply isOrd_inv with y; trivial.
+Qed.
+
 (** * Construction of the fixpoint "from above" *)
 
 Section KnasterTarski.
@@ -810,21 +904,6 @@ Variable F : set -> set.
 Hypothesis Fmono : Proper (incl_set==>incl_set) F.
 Hypothesis Ftyp : forall x, x ⊆ A -> F x ⊆ A.
 
-(*
-Lemma fx_mrph : forall x x', x ⊆ A -> x == x' -> F x == F x'.
-intros.
-apply eq_intro; intros.
- revert z H1; apply mono; trivial.
- rewrite <- H0; trivial.
- rewrite H0; auto with *.
-
- revert z H1; apply mono; trivial.
- rewrite H0; auto with *.
-Qed.
-
-Let Ftyp := Ffix.(typ).
-Let Fmono := Ffix.(mono).
-*)
 
 Definition is_lfp x :=
   F x == x /\ forall y, (*y ⊆ A ->*) F y ⊆ y -> x ⊆ y.

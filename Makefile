@@ -29,7 +29,9 @@ DOCVO=$(DOCV:.v=.vo)
 
 ALLV:=$(DOCV)
 
-.PHONY: html dist-v graph
+doc:: $(DOCV:.v=.vo)
+
+.PHONY: html dist-v graph doc
 
 dist-v::
 	rm -fr cic-model

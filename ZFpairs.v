@@ -1,5 +1,6 @@
 
 Require Export ZF.
+Require Import ZFstable.
 
 (* ordered pairs *)
 
@@ -203,6 +204,51 @@ destruct H1 as (a, inA, (b, inB, eqp)).
  rewrite snd_def; reflexivity.
 Qed.
 
+Lemma prodcart_stable_class : forall K F G,
+  morph1 F ->
+  morph1 G ->
+  stable_class K F ->
+  stable_class K G ->
+  stable_class K (fun y => prodcart (F y) (G y)).
+intros K F G Fm Gm Fs Gs.
+red; red; intros X Xcls z zint.
+destruct inter_wit with (2:=zint) as (w,winX).
+ do 2 red; intros.
+ rewrite H; reflexivity.
+assert (zall : forall x, x ∈ X -> z ∈ prodcart (F x) (G x)).
+ intros.
+ apply inter_elim with (1:=zint).
+ rewrite replf_ax.
+  exists x; auto with *.
+
+  red; red; intros.
+  rewrite H1; reflexivity.
+clear zint.
+assert (z ∈ prodcart (F w) (G w)) by auto.
+rewrite (surj_pair _ _ _ H).
+apply couple_intro.
+ apply Fs; trivial.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H0; trivial.
+  2:red;red;auto.
+  destruct H0.
+  rewrite H1; apply zall in H0; apply fst_typ in H0; trivial.
+
+  exists (F w); rewrite replf_ax; auto.
+  eauto with *.
+
+ apply Gs; trivial.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H0; auto.
+  destruct H0.
+  rewrite H1; apply zall in H0; apply snd_typ in H0; trivial.
+
+  exists (G w); rewrite replf_ax; auto.
+  eauto with *.
+Qed.
+
 (* dependent pairs *)
 
 Definition sigma A B :=
@@ -258,7 +304,6 @@ apply eq_intro; intros.
  apply couple_intro; trivial.
  apply union_intro with B; trivial.
  apply replf_intro with (fst z); auto with *.
- do 2 red; reflexivity.
 
  apply subset_elim1 in H.
  generalize (fst_typ _ _ _ H); intro.
@@ -267,7 +312,6 @@ apply eq_intro; intros.
  apply couple_intro; trivial.
  apply union_elim in H1; destruct H1.
  rewrite replf_ax in H2; auto with *.
- 2:do 2 red; reflexivity.
  destruct H2.
  rewrite <- H3; trivial.
 Qed.
@@ -379,3 +423,112 @@ apply union_elim in H0; destruct H0.
 apply empty_ax in H1; trivial.
 Qed.
 *)
+
+Lemma sigma2_stable_class K A F :
+  (forall y y' x x', y == y' -> x ∈ A -> x == x' -> F y x == F y' x') ->
+  (forall x, x ∈ A -> stable_class K (fun y => F y x)) ->
+  stable_class K (fun y => sigma A (F y)).
+intros Fm Fs.
+assert (Hm : morph1 (fun y => sigma A (F y))).
+ do 2 red; intros.
+ apply subset_morph.
+  apply prodcart_morph; auto with *.
+  apply union_morph.
+  apply replf_morph; auto with *.
+  red; intros.
+  apply Fm; trivial.
+
+ red; intros.
+ setoid_replace (F x (fst x0)) with (F y (fst x0)); auto with *.
+ apply Fm; auto with *.
+ apply fst_typ in H0; trivial.
+red; red ;intros.
+destruct inter_wit with (2:=H0) as (w,winX); trivial.
+assert (forall x, x ∈ X -> z ∈ sigma A (F x)).
+ intros.
+ apply inter_elim with (1:=H0).
+ rewrite replf_ax; auto.
+ exists x; auto with *.
+clear H0.
+assert (z ∈ sigma A (F w)) by auto.
+rewrite (surj_pair _ _ _ (subset_elim1 _ _ _ H0)).
+apply couple_intro_sigma.
+ red;red;intros;apply Fm; auto with *.
+
+ apply fst_typ_sigma in H0; trivial.
+
+ apply Fs; trivial.
+  apply fst_typ_sigma in H0; trivial.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H2.
+   destruct H2.
+   rewrite H3; apply H1 in H2; apply snd_typ_sigma with (y:=fst z) in H2;
+   auto with *.
+   red; red; intros; apply Fm; auto with *.
+
+   red; red; intros; apply Fm; auto with *.
+   apply fst_typ_sigma in H0; trivial.
+
+  exists (F w (fst z)); rewrite replf_ax.
+   eauto with *.
+
+   red;red;intros; apply Fm; auto with *.
+   apply fst_typ_sigma in H0; trivial.
+Qed.
+
+Lemma sigma_stable_class (K:set->Prop) F G :
+  morph1 F ->
+  morph2 G ->
+  stable_class K F ->
+  (forall x, stable_class K (fun y => G y x)) ->
+  stable_class K (fun y => sigma (F y) (G y)).
+intros Fm Gm Fs Gs.
+red; red; intros.
+assert (Hm : morph1 (fun y => sigma (F y) (G y))).
+ do 2 red; intros.
+ apply subset_morph.
+  apply prodcart_morph; auto with *.
+  apply sup_morph; auto with *.
+  red; intros; apply Gm; trivial.
+
+  red; intros.
+  apply in_set_morph; auto with *.
+  apply Gm; auto with *.
+destruct inter_wit with (2:=H0) as (w,winX); trivial.
+assert (forall x, x ∈ X -> z ∈ sigma (F x) (G x)).
+ intros.
+ apply inter_elim with (1:=H0).
+ rewrite replf_ax; auto.
+ exists x; auto with *.
+clear H0.
+assert (z ∈ sigma (F w) (G w)) by auto.
+rewrite (surj_pair _ _ _ (subset_elim1 _ _ _ H0)).
+apply couple_intro_sigma.
+ do 2 red;intros;apply Gm; auto with *.
+
+ apply Fs; trivial.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H2; auto.
+  destruct H2.
+  rewrite H3; apply H1 in H2; apply fst_typ_sigma in H2; trivial.
+
+  exists (F w); rewrite replf_ax; auto.
+  eauto with *.
+
+ apply Gs; trivial.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H2.
+   destruct H2.
+   rewrite H3; apply H1 in H2; apply snd_typ_sigma with (y:=fst z) in H2;
+   auto with *.
+   red; red; intros; apply Gm; auto with *.
+
+   red; red; intros; apply Gm; auto with *.
+
+  exists (G w (fst z)); rewrite replf_ax.
+  2:red;red;intros; apply Gm; auto with *.
+  eauto with *.
+Qed.

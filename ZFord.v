@@ -796,6 +796,24 @@ End Examples.
 Definition increasing F :=
   forall x y, isOrd x -> isOrd y -> y ⊆ x -> F y ⊆ F x.
 
+Lemma increasing_is_ext : forall F,
+  increasing F ->
+  forall o, isOrd o ->
+  ext_fun o F.
+intros F Fincr o H.
+red; red; intros.
+apply eq_intro.
+ apply Fincr.
+  rewrite <- H1; eauto using isOrd_inv.
+  eauto using isOrd_inv.
+  rewrite H1; reflexivity.
+ apply Fincr.
+  eauto using isOrd_inv.
+  rewrite <- H1; eauto using isOrd_inv.
+  rewrite H1; reflexivity.
+Qed.
+Hint Resolve increasing_is_ext.
+
 Definition increasing_bounded o F :=
   forall x x', x' < o -> x < x' -> F x ⊆ F x'.
 

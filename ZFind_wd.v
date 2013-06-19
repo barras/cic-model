@@ -9,7 +9,10 @@ Section DependentW.
 (** Parameters of W-types *)
 Variable A : set.
 Variable B : set -> set.
-Hypothesis Bext : ext_fun A B.
+Hypothesis Bm : morph1 B.
+Let Bext : ext_fun A B.
+apply morph_is_ext; trivial.
+Qed.
 
 (** Index type *)
 Variable Arg : set.
