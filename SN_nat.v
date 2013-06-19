@@ -53,14 +53,14 @@ apply eq_intro; intros.
  apply union2_intro2; trivial.
 Qed.
 
-Lemma ElNat_eq i : El (int i Nat) == N.
+Lemma ElNat_eq i : El (int Nat i) == N.
 simpl; rewrite El_def.
 apply mt_in_N.
 Qed.
 
 Lemma RealNat_eq i n :
   n ∈ N ->
-  eqSAT (Real (int i Nat) n) (cNAT n).
+  eqSAT (Real (int Nat i) n) (cNAT n).
 intros.
 simpl int.
 rewrite Real_def; intros; trivial.
@@ -74,7 +74,7 @@ Qed.
   Notation "[ x , t ] \real A" := (x ∈ El A  /\ inSAT t (Real A x)) (at level 60).
 
 Lemma realNat_def : forall i n t,
-  [n,t] \real int i Nat <-> n ∈ N /\ inSAT t (cNAT n).
+  [n,t] \real int Nat i <-> n ∈ N /\ inSAT t (cNAT n).
 intros.
 rewrite ElNat_eq.
 split; destruct 1; split; trivial.
@@ -360,8 +360,8 @@ Qed.
 (** Recursor *)
 Definition NatRec (f g n:trm) : trm.
 (*begin show*)
-left; exists (fun i => NATREC (int i f) (fun n y => app (app (int i g) n) y) (int i n))
-             (fun j => Lc.App2 (tm j n) (tm j f) (tm j g)).
+left; exists (fun i => NATREC (int f i) (fun n y => app (app (int g i) n) y) (int n i))
+             (fun j => Lc.App2 (tm n j) (tm f j) (tm g j)).
 (*end show*)
  do 2 red; intros.
  apply NATREC_morph.
@@ -399,16 +399,16 @@ apply in_int_not_kind in H;[|discriminate].
 apply in_int_not_kind in H0;[|discriminate].
 apply in_int_not_kind in H1;[|discriminate].
 rewrite intProd_eq in H1.
-pose (gg := fun n y => app (app (int i g) n) y).
+pose (gg := fun n y => app (app (int g i) n) y).
 assert (ggm : morph2 gg).
  unfold gg; do 3 red; intros.
  rewrite H3;rewrite H4; reflexivity.
 assert (NRtyp : forall n, n ∈ N ->
-  NATREC (int i f) gg n ∈ El (app (int i P) n)).
+  NATREC (int f i) gg n ∈ El (app (int P i) n)).
  destruct H0 as (H0,_).
  destruct H1 as (H1,_); unfold inX, prod, ZFuniv_real.prod in H1; rewrite El_def in H1.
  intros.
- apply NATREC_typ with (P:=fun x => El (app (int i P) x)); trivial.
+ apply NATREC_typ with (P:=fun x => El (app (int P i) x)); trivial.
   do 2 red; intros.
   rewrite <- H4; reflexivity.
 
@@ -447,7 +447,7 @@ split.
  destruct H1 as (ty,rg).
  unfold inX,prod,ZFuniv_real.prod in ty; rewrite El_def in ty.
  simpl SN_CC_addon.Real.
- apply rn with (P:=fun x => Real (app (int i P) x) (NATREC (int i f) gg x)); intros.
+ apply rn with (P:=fun x => Real (app (int P i) x) (NATREC (int f i) gg x)); intros.
   do 2 red; intros; apply Real_morph.
    rewrite H0; reflexivity.
 
@@ -469,7 +469,7 @@ split.
    rewrite intProd_eq in rg.
    rewrite Real_prod in rg.
     apply piSAT0_elim' in rg; red in rg.
-    specialize rg with (x0:=NATREC (int i f) gg x) (u:=u).
+    specialize rg with (x0:=NATREC (int f i) gg x) (u:=u).
     simpl int in rg.
     rewrite split_lift with (n:=1) in rg.
     do 3 rewrite int_cons_lift_eq in rg.

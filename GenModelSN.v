@@ -45,42 +45,42 @@ Include ObjectSN.MakeObject(M).
 (** Handles the case of kind: a type that contains all "non-empty" types
    and that is included in no type.
  *)
-Definition in_int (i:val) (j:Lc.intt) (M T:trm) :=
+Definition in_int (M T:trm) (i:val) (j:Lc.intt) :=
   M <> kind /\
   match T with
-  | None => kind_ok M /\ Lc.sn (tm j M)
-  | _ => int i M ∈ int i T /\ inSAT (tm j M) (Real (int i T))
+  | None => kind_ok M /\ Lc.sn (tm M j)
+  | _ => int M i ∈ int T i /\ inSAT (tm M j) (Real (int T i))
   end.
 
 Instance in_int_morph : Proper
-  (eq_val ==> pointwise_relation nat (@eq Lc.term) ==> eq_trm ==> eq_trm ==> iff)
+  (eq_trm ==> eq_trm ==> eq_val ==> pointwise_relation nat (@eq Lc.term) ==> iff)
   in_int.
 apply morph_impl_iff4; auto with *.
 unfold in_int; do 5 red; intros.
 repeat rewrite eq_kind.
-destruct x2; destruct y2; try contradiction.
+destruct x0; destruct y0; try contradiction.
  rewrite H; rewrite H0; rewrite H1; rewrite H2.
  reflexivity.
 
- rewrite H0; rewrite H1.
+ rewrite H; rewrite H2.
  reflexivity.
 Qed.
 
 Lemma in_int_not_kind : forall i j M T,
-  in_int i j M T ->
+  in_int M T i j ->
   T <> kind ->
-  int i M ∈ int i T /\
-  inSAT (tm j M) (Real (int i T)).
+  int M i ∈ int T i /\
+  inSAT (tm M j) (Real (int T i)).
 destruct T; intros in_T not_tops;[|elim not_tops; reflexivity].
 destruct in_T as (mem,sat); trivial.
 Qed.
 
 Lemma in_int_intro : forall i j M T,
-  int i M ∈ int i T ->
-  inSAT (tm j M) (Real (int i T)) ->
+  int M i ∈ int T i ->
+  inSAT (tm M j) (Real (int T i)) ->
   M <> kind ->
   T <> kind ->
-  in_int i j M T.
+  in_int M T i j.
 red; intros.
 destruct T; auto.
 elim H2; trivial.
@@ -88,10 +88,10 @@ Qed.
 
 (* We do not accept kind variables yet *)
 Lemma in_int_var0 : forall i j x t T,
-  x ∈ int i T ->
-  inSAT t (Real (int i T)) ->
+  x ∈ int T i ->
+  inSAT t (Real (int T i)) ->
   T <> kind ->
-  in_int (V.cons x i) (I.cons t j) (Ref 0) (lift 1 T).
+  in_int (Ref 0) (lift 1 T) (V.cons x i) (I.cons t j).
 intros.
 red; simpl.
 revert H1; pattern T at 1 2.
@@ -102,8 +102,8 @@ rewrite int_cons_lift_eq; auto.
 Qed.
 
 Lemma in_int_varS : forall i j x t n T,
-  in_int i j (Ref n) (lift (S n) T) ->
-  in_int (V.cons x i) (I.cons t j) (Ref (S n)) (lift (S (S n)) T).
+  in_int (Ref n) (lift (S n) T) i j ->
+  in_int (Ref (S n)) (lift (S (S n)) T) (V.cons x i) (I.cons t j).
 destruct 1 as (_,in_T); split; [discriminate|].
 revert in_T; pattern T at 1 4; case T; simpl.
  intros _ in_T.
@@ -116,7 +116,7 @@ revert in_T; pattern T at 1 4; case T; simpl.
 Qed.
 
 Lemma in_int_sn : forall i j M T,
-  in_int i j M T -> Lc.sn (tm j M).
+  in_int M T i j -> Lc.sn (tm M j).
 intros i j M [f|] (_,(_,sat)); trivial.
 apply sat_sn in sat; trivial.
 Qed.
@@ -126,12 +126,12 @@ Definition env := list trm.
 
 Definition val_ok (e:env) (i:val) (j:Lc.intt) :=
   forall n T, nth_error e n = value T ->
-  in_int i j (Ref n) (lift (S n) T).
+  in_int (Ref n) (lift (S n) T) i j.
 
 Lemma vcons_add_var : forall e T i j x t,
   val_ok e i j ->
-  x ∈ int i T ->
-  inSAT t (Real (int i T)) ->
+  x ∈ int T i ->
+  inSAT t (Real (int T i)) ->
   T <> kind ->
   val_ok (T::e) (V.cons x i) (I.cons t j).
 unfold val_ok; simpl; intros.
@@ -143,10 +143,10 @@ destruct n; simpl in *.
 Qed.
 
 Lemma add_var_eq_fun : forall T U U' i,
-  (forall x, x ∈ int i T -> int (V.cons x i) U == int (V.cons x i) U') -> 
-  eq_fun (int i T)
-    (fun x => int (V.cons x i) U)
-    (fun x => int (V.cons x i) U').
+  (forall x, x ∈ int T i -> int U (V.cons x i) == int U' (V.cons x i)) ->
+  eq_fun (int T i)
+    (fun x => int U (V.cons x i))
+    (fun x => int U' (V.cons x i)).
 red; intros.
 rewrite <- H1; auto.
 Qed.
@@ -154,7 +154,7 @@ Qed.
 
 Lemma vcons_add_var0 : forall e T i j x,
   val_ok e i j ->
-  x ∈ int i T ->
+  x ∈ int T i ->
   T <> kind ->
   val_ok (T::e) (V.cons x i) (I.cons SatSet.daimon j).
 intros.
@@ -168,9 +168,9 @@ Qed.
 Definition wf (e:env) :=
   exists i, exists j, val_ok e i j.
 Definition typ (e:env) (M T:trm) :=
-  forall i j, val_ok e i j -> in_int i j M T.
+  forall i j, val_ok e i j -> in_int M T i j.
 Definition eq_typ (e:env) (M M':trm) :=
-  forall i j, val_ok e i j -> int i M == int i M'.
+  forall i j, val_ok e i j -> int M i == int M' i.
 
 Instance typ_morph : forall e, Proper (eq_trm ==> eq_trm ==> iff) (typ e).
 unfold typ; split; simpl; intros.
@@ -226,13 +226,13 @@ Qed.
 Lemma typs_kind_ok : forall e T i j,
   typs e T ->
   val_ok e i j ->
-  exists x, x ∈ int i T.
+  exists x, x ∈ int T i.
 intros.
 destruct H.
  apply H in H0.
  destruct H0 as (_,(mem,_)); apply kind_ok_witness; trivial.
 
- exists (app daimon (int i T)).
+ exists (app daimon (int T i)).
  apply H in H0.
  destruct H0 as (_,(mem,_)); simpl in *.
  apply prod_elim with (2:=daimon_false); trivial.
@@ -240,7 +240,7 @@ destruct H.
 Qed.
 
 Definition type_ok e T :=
-  T <> kind /\ forall i j, val_ok e i j -> Lc.sn (tm j T) /\ exists w, w ∈ int i T.
+  T <> kind /\ forall i j, val_ok e i j -> Lc.sn (tm T j) /\ exists w, w ∈ int T i.
 
 Lemma typs_type_ok e T :
   wf e -> typs e T -> type_ok e T.
@@ -257,7 +257,7 @@ Qed.
 Lemma typs_is_non_empty e i j T :
   typs e T ->
   val_ok e i j -> 
-  T <> kind /\ Lc.sn (tm j T) /\ exists w, w ∈ int i T.
+  T <> kind /\ Lc.sn (tm T j) /\ exists w, w ∈ int T i.
 split.
  apply typs_not_kind with (2:=H).
  exists i; exists j; trivial.
@@ -315,7 +315,7 @@ Qed.
 
 Lemma trans : forall e M M' M'', eq_typ e M M' -> eq_typ e M' M'' -> eq_typ e M M''.
 unfold eq_typ; intros.
-transitivity (int i M'); eauto.
+transitivity (int M' i); eauto.
 Qed.
 
 Instance eq_typ_setoid : forall e, Equivalence (eq_typ e).
@@ -370,10 +370,10 @@ Lemma eq_typ_beta : forall e T M M' N N',
   eq_typ e (App (Abs T M) N) (subst N' M').
 Proof.
 unfold eq_typ, typ, App, Abs; simpl; intros.
-assert (eq_fun (int i T)
-  (fun x => int (V.cons x i) M) (fun x => int (V.cons x i) M)).
+assert (eq_fun (int T i)
+  (fun x => int M (V.cons x i)) (fun x => int M (V.cons x i))).
  apply add_var_eq_fun with (T:=T); intros; trivial; reflexivity.
-assert (int i N ∈ int i T).
+assert (int N i ∈ int T i).
  apply H1 in H3.
  apply in_int_not_kind in H3; trivial.
  destruct H3; trivial.
@@ -416,12 +416,12 @@ apply in_int_not_kind in ty_u; try discriminate.
 destruct ty_u.
 simpl in *.
 rewrite Real_prod in H2.
-apply prod_elim with (x:=int i v) in H1; trivial.
+apply prod_elim with (x:=int v i) in H1; trivial.
  apply in_int_intro; simpl; trivial; try discriminate.
   rewrite <- int_subst_eq; trivial.
 
   rewrite <- int_subst_eq.
-  apply prodSAT_elim with (v:=tm j v) in H2; trivial.
+  apply prodSAT_elim with (v:=tm v j) in H2; trivial.
   apply (depSAT_elim _ H2); trivial.
 
   destruct Ur as [Ur|]; simpl; try discriminate; trivial.
@@ -555,7 +555,7 @@ destruct is_srt; subst s2.
  specialize vcons_add_var0 with (1:=is_val) (2:=in_T) (3:=T_not_tops);
    intros in_U.
  apply ty_U in in_U.
- assert (Lc.sn (tm j T)).
+ assert (Lc.sn (tm T j)).
   destruct ty_T as [ty_T|ty_T]; apply ty_T in is_val;
     destruct is_val as (_,(_,satT)); trivial.
   apply sat_sn in satT; trivial.

@@ -589,7 +589,7 @@ Parameter sort_not_empty : exists t, forall e, typ e t sort.
 
 (*The sort is closed, since it is first-order*)
 Parameter sort_closed : forall i1 i2, 
-  int i1 sort == int i2 sort.
+  int sort i1 == int sort i2.
 
 
 (*The equivalence relation of the theory*)

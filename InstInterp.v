@@ -309,12 +309,12 @@ induction f; simpl intp_fofml; intros.
     apply lift_rec_morph. apply subst_rec_morph; [reflexivity|reflexivity|].
      apply eq_trm_intro; [| |destruct (intp_fofml f); simpl; trivial]; intros.
       rewrite int_lift_rec_eq. unfold V.lams, V.shift.
-       apply int_morph; [do 2 red; intros|reflexivity].
+       apply int_morph; [reflexivity|do 2 red; intros].
         destruct (le_gt_dec 1 a); [|reflexivity].
          replace (1+(0+(a-1))) with a; [reflexivity|omega].
 
       rewrite tm_lift_rec_eq. unfold I.lams, I.shift.
-       apply tm_morph; [do 2 red; intros|reflexivity].
+       apply tm_morph; [reflexivity|do 2 red; intros].
         destruct (le_gt_dec 1 a); [|reflexivity].
          replace (1+(0+(a-1))) with a; [reflexivity|omega].
 Qed.

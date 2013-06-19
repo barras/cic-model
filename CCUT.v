@@ -116,8 +116,8 @@ left; exists (fun _ => lam (mkTY (singl empty) natSAT) (fun x => x)) (fun _ => S
 Defined.
 
 Definition NatRec (f g n:trm) : trm.
-left; exists (fun i => int i f)
-             (fun j => Lc.App2 (tm j n) (tm j f) (Lc.App (tm j g) ZE)).
+left; exists (fun i => int f i)
+             (fun j => Lc.App2 (tm n j) (tm f j) (Lc.App (tm g j) ZE)).
  do 2 red; intros.
  rewrite H; reflexivity.
 
@@ -212,7 +212,7 @@ split.
  discriminate.
 split.
  simpl.
- assert (int i n == empty).
+ assert (int n i == empty).
   apply H in H3.
   destruct H3 as (_,(H3,_)).
   simpl in H3.
@@ -244,11 +244,11 @@ split.
  apply inSAT_Real_rev in H2.
  unfold piSAT at 1 in H2.
  destruct H.
- specialize (H4 (Real (app (int i P) (int i n)))).
+ specialize (H4 (Real (app (int P i) (int n i)))).
  simpl int.
  apply prodSAT_elim with
-   (prodSAT (Real (app (int i P) (int i n))) (Real (app (int i P) (int i n)))).
- apply prodSAT_elim with (Real (app (int i P) (int i n))).
+   (prodSAT (Real (app (int P i) (int n i))) (Real (app (int P i) (int n i)))).
+ apply prodSAT_elim with (Real (app (int P i) (int n i))).
   trivial.
 
   revert H1; apply inSAT_morph; auto.
@@ -262,7 +262,7 @@ split.
   apply inSAT_Real; trivial.
 
   red; intros.
-  generalize (fun h => interSAT_elim H2 (exist _ (int i n) h)); clear H2; intro H2.
+  generalize (fun h => interSAT_elim H2 (exist _ (int n i) h)); clear H2; intro H2.
   simpl proj1_sig in H2.
   lapply H2.
    clear H2; intros H2.
@@ -275,7 +275,7 @@ split.
     rewrite int_cons_lift_eq; auto with *.
 
     red; intros.
-    generalize (fun h => interSAT_elim H2 (exist _ (int i f) h)); clear H2; intro H2.
+    generalize (fun h => interSAT_elim H2 (exist _ (int f i) h)); clear H2; intro H2.
     simpl proj1_sig in H2.
     lapply H2.
      apply inSAT_morph; auto.

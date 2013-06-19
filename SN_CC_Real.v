@@ -383,7 +383,7 @@ red in H0; simpl in_int in H0.
 destruct H0 as (_,H0).
 simpl int in H0.
 destruct H0.
-set (prf := tm (I.nil (Lc.Abs (Lc.Ref 0))) M) in H0.
+set (prf := tm M (I.nil (Lc.Abs (Lc.Ref 0)))) in H0.
 assert (forall S, inSAT (Lc.App prf (Lc.Abs (Lc.Ref 0))) S).
  intros.
  assert ([mkProp S, Lc.Abs (Lc.Ref 0)] \real props). 
@@ -394,7 +394,7 @@ assert (forall S, inSAT (Lc.App prf (Lc.Abs (Lc.Ref 0))) S).
   rewrite Real_sort; auto.
   apply snSAT_intro.
   apply Lc.sn_abs; auto.
- assert (H2 := @prod_elim props (int(V.nil props) M) (mkProp S) (fun P=>P) prf (Lc.Abs (Lc.Ref 0))).
+ assert (H2 := @prod_elim props (int M (V.nil props)) (mkProp S) (fun P=>P) prf (Lc.Abs (Lc.Ref 0))).
  destruct H2; trivial.
   red; auto.
 

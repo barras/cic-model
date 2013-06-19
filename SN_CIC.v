@@ -16,7 +16,6 @@ Import SN_CC_Real.SN.
 Opaque Real.
 Import Sat Sat.SatSet.
 Opaque inSAT.
-Notation "'int0' x y" := (int y x) (at level 10, x at level 9, y at level 9).
 
 Lemma Real_intro x t T :
   x ∈ El T ->
@@ -184,7 +183,7 @@ Qed.
 
 Definition OSucc : trm -> trm.
 (*begin show*)
-intros o; left; exists (fun i => osucc (int i o)) (fun j => tm j o).
+intros o; left; exists (fun i => osucc (int o i)) (fun j => tm o j).
 (*end show*)
  do 2 red; intros.
  rewrite H; reflexivity.
@@ -201,7 +200,7 @@ Defined.
 
 Definition OSucct : trm -> trm.
 (*begin show*)
-intros o; left; exists (fun i => mkTY (osucc (int i o)) (fun _ => snSAT)) (fun j => tm j o).
+intros o; left; exists (fun i => mkTY (osucc (int o i)) (fun _ => snSAT)) (fun j => tm o j).
 (*end show*)
  do 2 red; intros.
  apply mkTY_ext; auto with *.
@@ -221,7 +220,7 @@ Lemma tyord_inv : forall e i j o o',
   isOrd o' ->
   typ e o (Ordt o') ->
   val_ok e i j ->
-  isOrd (int i o) /\ int i o < o' /\ Lc.sn (tm j o).
+  isOrd (int o i) /\ int o i < o' /\ Lc.sn (tm o j).
 unfold typ; intros.
 specialize H0 with (1:=H1).
 apply in_int_not_kind in H0.
@@ -246,7 +245,7 @@ Defined.
 
 Definition NatI (O:trm) : trm.
 (*begin show*)
-left; exists (fun i => mkTY (NATi (int i O)) (fNATi (int i O))) (fun j => tm j O).
+left; exists (fun i => mkTY (NATi (int O i)) (fNATi (int O i))) (fun j => tm O j).
 (*end show*)
  do 2 red; intros.
  unfold eqX.
@@ -286,9 +285,9 @@ split;[|split].
 Qed.
 
 Lemma realNati_def x t i O :
- isOrd (int i O) ->
- ([x,t] \real int i (NatI O) <->
-  x ∈ NATi (int i O) /\ inSAT t (fNATi (int i O) x)).
+ isOrd (int O i) ->
+ ([x,t] \real int (NatI O) i <->
+  x ∈ NATi (int O i) /\ inSAT t (fNATi (int O i) x)).
 intros.
 simpl.
 rewrite Real_ax; auto with *.
@@ -330,7 +329,7 @@ Qed.
 
 Definition Succ (o:trm): trm.
 (* begin show *)
-left; exists (fun i => lam (int i (NatI o)) SUCC) (fun _ => Lc.Abs (SU (Lc.Ref 0))).
+left; exists (fun i => lam (int (NatI o) i) SUCC) (fun _ => Lc.Abs (SU (Lc.Ref 0))).
 (*end show *)
  do 2 red; intros.
  apply lam_ext.
@@ -412,8 +411,8 @@ Qed.
 
 Definition Natcase (fZ fS n : trm) : trm.
 (*begin show*)
-left; exists (fun i => NATCASE (int i fZ) (fun k => int (V.cons k i) fS) (int i n))
-       (fun j => Lc.App2 (tm j n) (Lc.Abs (Lc.lift 1 (tm j fZ))) (Lc.Abs (tm (Lc.ilift j) fS))).
+left; exists (fun i => NATCASE (int fZ i) (fun k => int fS (V.cons k i)) (int n i))
+       (fun j => Lc.App2 (tm n j) (Lc.Abs (Lc.lift 1 (tm fZ j))) (Lc.Abs (tm fS (Lc.ilift j)))).
 (*end show*)
 do 2 red; intros.
 apply NATCASE_morph.
@@ -502,9 +501,9 @@ apply in_int_not_kind in H1.
 2:discriminate.
 destruct H1 as (H1,_).
 red; simpl.
-assert (m1: morph1 (fun _ => int0 fZ i)).
+assert (m1: morph1 (fun _ => int fZ i)).
  do 2 red; intros; reflexivity.
-assert (m2: morph1 (fun k => int0 fS (V.cons k i))).
+assert (m2: morph1 (fun k => int fS (V.cons k i))).
  do 2 red; intros.
  rewrite H5; reflexivity.
 rewrite beta_eq; trivial.
@@ -536,7 +535,7 @@ destruct H1.
 rewrite realNati_def in H3; simpl in H3|-*; auto.
 destruct H3.
 apply Real_intro; intros.
- apply NATCASE_typ with (o:=int i O) (P:=fun n => El(app (int i P) n)); intros; trivial.
+ apply NATCASE_typ with (o:=int O i) (P:=fun n => El(app (int P i) n)); intros; trivial.
   do 2 red; intros.
   rewrite H9; reflexivity.
 
@@ -561,7 +560,7 @@ apply Real_intro; intros.
    rewrite int_cons_lift_eq; trivial.
 
  apply Real_NATCASE with
-   (C:=fun n => Real (app (int0 P i) n) (NATCASE (int0 fZ i) (fun k => int0 fS (V.cons k i)) n)) (o:=int0 O i); auto.
+   (C:=fun n => Real (app (int P i) n) (NATCASE (int fZ i) (fun k => int fS (V.cons k i)) n)) (o:=int O i); auto.
   do 2 red; intros.
   apply Real_morph.
    rewrite H10; reflexivity.
@@ -633,7 +632,7 @@ Qed.
   Definition noccur (f:nat->bool) (T:trm) : Prop :=
     forall i i',
     (forall n, if f n then True else i n == i' n) ->
-    int i T == int i' T.
+    int T i == int T i'.
 
   Lemma noc_var : forall f n, f n = false -> noccur f (Ref n).
 red; simpl; intros.
@@ -705,7 +704,7 @@ Definition val_mono (e:fenv) i j i' j' :=
     forall n,
     if ords e n then i n ⊆ i' n
     else match fixs e n with
-      Some T => forall x, x ∈ El(int (V.shift (S n) i) T) -> app (i n) x == app (i' n) x
+      Some T => forall x, x ∈ El(int T (V.shift (S n) i)) -> app (i n) x == app (i' n) x
     | _ => i n == i' n
     end.
 
@@ -720,8 +719,8 @@ Qed.
 Lemma val_push_var : forall e i j i' j' x t x' t' T,
   val_mono e i j i' j' ->
   x == x' ->
-  [x,t] \real int i T ->
-  [x',t'] \real int i' T ->
+  [x,t] \real int T i ->
+  [x',t'] \real int T i' ->
   T <> kind ->
   val_mono (push_var e T) (V.cons x i) (I.cons t j) (V.cons x' i') (I.cons t' j').
 destruct 1 as (?&?&?); split;[idtac|split]; trivial.
@@ -739,8 +738,8 @@ Qed.
 Lemma val_push_ord : forall e i j i' j' x t x' t' T,
   val_mono e i j i' j' ->
   x ⊆ x' ->
-  [x,t] \real int i T ->
-  [x',t'] \real int i' T ->
+  [x,t] \real int T i ->
+  [x',t'] \real int T i' ->
   T <> kind ->
   val_mono (push_ord e T) (V.cons x i) (I.cons t j) (V.cons x' i') (I.cons t' j').
 destruct 1 as (?&?&?); split;[idtac|split]; trivial.
@@ -757,9 +756,9 @@ Qed.
 
 Lemma val_push_fun : forall e i j i' j' f tf g tg T U,
   val_mono e i j i' j' ->
-  [f,tf] \real prod (int i T) (fun x => int (V.cons x i) U) ->
-  [g,tg] \real prod (int i' T) (fun x => int (V.cons x i') U) ->
-  fcompat (El(int i T)) f g ->
+  [f,tf] \real prod (int T i) (fun x => int U (V.cons x i)) ->
+  [g,tg] \real prod (int T i') (fun x => int U (V.cons x i')) ->
+  fcompat (El(int T i)) f g ->
   val_mono (push_fun e T U) (V.cons f i) (I.cons tf j) (V.cons g i') (I.cons tg j').
 destruct 1 as (?&?&?); split;[idtac|split]; trivial.
  unfold push_fun; simpl.
@@ -778,19 +777,19 @@ Qed.
 (** Function Extension judgment *)
 Definition fx_extends e dom M :=
   forall i i' j j', val_mono e i j i' j' ->
-  fcompat (El(int i dom)) (int i M) (int i' M).
+  fcompat (El(int dom i)) (int M i) (int M i').
 
 (** Covariance judgment *)
 Definition fx_sub e M :=
   forall i i' j j', val_mono e i j i' j' ->
-  forall x t, [x,t] \real int i M -> [x,t] \real int i' M.
+  forall x t, [x,t] \real int M i -> [x,t] \real int M i'.
 
 Definition fx_subval e M :=
-  forall i i' j j', val_mono e i j i' j' -> int i M ⊆ int i' M.
+  forall i i' j j', val_mono e i j i' j' -> int M i ⊆ int M i'.
 
 (** Invariance *)
 Definition fx_equals e M :=
-  forall i i' j j', val_mono e i j i' j' -> int i M == int i' M.
+  forall i i' j j', val_mono e i j i' j' -> int M i == int M i'.
 
 Definition spec_var e n :=
   ords e n || match fixs e n with Some _ => true | _ => false end.
@@ -897,7 +896,7 @@ destruct H3.
 unfold inX in H3.
 rewrite Real_prod in H4; trivial.
  unfold prod in H3; rewrite El_def in H3.
- assert (x ∈ El(prod (int i' T) (fun x0 : X => int (V.cons x0 i') U))).
+ assert (x ∈ El(prod (int T i') (fun x0 : X => int U (V.cons x0 i')))).
   unfold prod, inX; rewrite El_def.
   revert H3; apply cc_prod_covariant.
    do 2 red; intros.
@@ -922,11 +921,11 @@ rewrite Real_prod in H4; trivial.
  rewrite Real_prod; trivial.
   unfold piSAT.
   apply interSAT_intro' with
-   (F:=fun v => prodSAT(Real(int i' T) v)(Real(int(V.cons v i') U)(cc_app x v))).
+   (F:=fun v => prodSAT(Real(int T i') v)(Real(int U (V.cons v i'))(cc_app x v))).
    apply sat_sn in H4; trivial.
    intros.
    rewrite <- H0 in H6.
-   specialize interSAT_elim with (1:=H4) (x:=exist (fun x=> x ∈ El(int0 T i)) x0 H6); simpl proj1_sig; intros.
+   specialize interSAT_elim with (1:=H4) (x:=exist (fun x=> x ∈ El(int T i)) x0 H6); simpl proj1_sig; intros.
    revert H7; apply prodSAT_mono.
     do 2 red; intros.
     rewrite <- H0 in H7; trivial.
@@ -1060,8 +1059,8 @@ Definition NatFix (O M:trm) : trm.
 (*begin show*)
 left.
 exists (fun i =>
-         NATREC (fun o' f => int (V.cons f (V.cons o' i)) M) (int i O))
-       (fun j => NATFIX (Lc.Abs (tm (Lc.ilift (I.cons (tm j O) j)) M))).
+         NATREC (fun o' f => int M (V.cons f (V.cons o' i))) (int O i))
+       (fun j => NATFIX (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j))))).
 (*end show*)
  do 2 red; intros.
  apply NATREC_morph.
@@ -1079,8 +1078,8 @@ exists (fun i =>
  (* *)
  red; intros.
  replace (Lc.lift_rec 1
-     (NATFIX (Lc.Abs (tm (Lc.ilift (I.cons (tm j O) j)) M))) k) with
-   (NATFIX (Lc.lift_rec 1 (Lc.Abs (tm (Lc.ilift (I.cons (tm j O) j)) M)) k)).
+     (NATFIX (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j))))) k) with
+   (NATFIX (Lc.lift_rec 1 (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j)))) k)).
   simpl.
   f_equal.
   f_equal.
@@ -1091,7 +1090,7 @@ exists (fun i =>
   intros [|k']; simpl; trivial.
   apply tm_liftable.
 
-  generalize  (Lc.Abs (tm (Lc.ilift (I.cons (tm j O) j)) M)); intro.
+  generalize  (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j)) )); intro.
   unfold NATFIX, FIXP; simpl.
   rewrite <- Lc.permute_lift.
   reflexivity.
@@ -1099,8 +1098,8 @@ exists (fun i =>
  (* *)
  red; intros.
  replace (Lc.subst_rec u
-     (NATFIX (Lc.Abs (tm (Lc.ilift (I.cons (tm j O) j)) M))) k) with
-   (NATFIX (Lc.subst_rec u (Lc.Abs (tm (Lc.ilift (I.cons (tm j O) j)) M)) k)).
+     (NATFIX (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j))))) k) with
+   (NATFIX (Lc.subst_rec u (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j)))) k)).
   simpl.
   f_equal.
   f_equal.
@@ -1111,7 +1110,7 @@ exists (fun i =>
   intros [|k']; simpl; trivial.
   apply tm_substitutive.
 
-  generalize  (Lc.Abs (tm (Lc.ilift (I.cons (tm j O) j)) M)); intro.
+  generalize  (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j)))); intro.
   unfold NATFIX, FIXP; simpl.
   rewrite <- Lc.commut_lift_subst.
   reflexivity.
@@ -1138,7 +1137,7 @@ Section NatFixRules.
     (NatI (OSucc (Ref 1)))
     M.
 
-  Let F i := fun o' f => int (V.cons f (V.cons o' i)) M.
+  Let F i := fun o' f => int M (V.cons f (V.cons o' i)).
 
   Lemma morph_fix_body : forall i, morph2 (F i).
 unfold F; do 3 red; intros.
@@ -1146,7 +1145,7 @@ rewrite H; rewrite H0; reflexivity.
 Qed.
 
   Lemma ext_fun_ty : forall o i,
-    ext_fun (NATi o) (fun x => int (V.cons x (V.cons o i)) U).
+    ext_fun (NATi o) (fun x => int U (V.cons x (V.cons o i))).
 do 2 red; intros.
 rewrite H0;reflexivity.
 Qed.
@@ -1156,10 +1155,10 @@ Qed.
 
   Lemma ty_fix_body : forall i j o f,
    val_ok e i j ->
-   o < osucc (int i O) ->
-   f ∈ cc_prod (NATi o) (fun x => El(int (V.cons x (V.cons o i)) U)) ->
+   o < osucc (int O i) ->
+   f ∈ cc_prod (NATi o) (fun x => El(int U (V.cons x (V.cons o i)))) ->
    F i o f ∈
-   cc_prod (NATi (osucc o)) (fun x => El(int (V.cons x (V.cons (osucc o) i)) U)).
+   cc_prod (NATi (osucc o)) (fun x => El(int U (V.cons x (V.cons (osucc o) i)))).
 unfold F; intros.
 destruct tyord_inv with (2:=ty_O) (3:=H); trivial.
 red in ty_M.
@@ -1210,9 +1209,9 @@ Qed.
 
   Lemma fix_body_irrel : forall i j,
     val_ok e i j ->
-    NAT_ord_irrel (int i O) (F i) (fun o' x => El(int (V.cons x (V.cons o' i)) U)).
+    NAT_ord_irrel (int O i) (F i) (fun o' x => El(int U (V.cons x (V.cons o' i)))).
 red; red; intros.
-assert (isOrd (int0 O i)).
+assert (isOrd (int O i)).
  apply ty_O in H.
  apply isOrd_inv with infty; auto.
  apply in_int_not_kind in H;[|discriminate].
@@ -1266,11 +1265,11 @@ Qed.
 
   Lemma val_mono_2 i j y y' n n':
     val_ok e i j ->
-    isOrd (int0 O i) ->
+    isOrd (int O i) ->
     isOrd y ->
     isOrd y' ->
     y ⊆ y' ->
-    y' ⊆ int0 O i ->
+    y' ⊆ int O i ->
     n ∈ NATi y ->
     n == n' ->
     val_mono (push_var (push_ord E (OSucct O)) (NatI (OSucc (Ref 0))))
@@ -1310,12 +1309,12 @@ Qed.
   Lemma fix_codom_mono : forall o o' x x' i j,
    val_ok e i j ->
    isOrd o' ->
-   o' ⊆ int i O ->
+   o' ⊆ int O i ->
    isOrd o ->
    o ⊆ o' ->
    x ∈ NATi o ->
    x == x' ->
-   El (int (V.cons x (V.cons o i)) U) ⊆ El(int (V.cons x' (V.cons o' i)) U).
+   El (int U (V.cons x (V.cons o i))) ⊆ El(int U (V.cons x' (V.cons o' i))).
 Proof.
 intros.
 red in fx_sub_U.
@@ -1342,18 +1341,18 @@ Qed.
 Let fix_typ o i j:
   val_ok e i j ->
   isOrd o ->
-  isOrd (int i O) ->
-  o ⊆ int i O ->
+  isOrd (int O i) ->
+  o ⊆ int O i ->
   NATREC (F i) o
-   ∈ cc_prod (NATi o) (fun n => El (int (V.cons n (V.cons o i)) U)).
+   ∈ cc_prod (NATi o) (fun n => El (int U (V.cons n (V.cons o i)))).
 intros.
-eapply NATREC_wt with (U:=fun o n => El(int(V.cons n (V.cons o i))U)); trivial.
+eapply NATREC_wt with (U:=fun o n => El (int U (V.cons n (V.cons o i)))); trivial.
  intros.
  apply fix_codom_mono with (1:=H); trivial.
  transitivity o; trivial.
 
  intros; apply ty_fix_body with (1:=H); trivial.
- apply isOrd_plump with (int i O); auto.
+ apply isOrd_plump with (int O i); auto.
   transitivity o; trivial.
 
   apply lt_osucc; trivial.
@@ -1367,20 +1366,20 @@ Qed.
     val_ok e i j ->
     isOrd o ->
     isOrd o' ->
-    isOrd (int i O) ->
+    isOrd (int O i) ->
     o ⊆ o' ->
-    o' ⊆ int i O ->
+    o' ⊆ int O i ->
     x ∈ NATi o ->
     cc_app (NATREC (F i) o) x == cc_app (NATREC (F i) o') x.
 intros.
 apply NATREC_ord_irrel with 
-  (ord:=int i O)
-  (U:=fun o x => El (int0 U (V.cons x (V.cons o i)))); auto.
+  (ord:=int O i)
+  (U:=fun o x => El (int U (V.cons x (V.cons o i)))); auto.
  intros.
  apply fix_codom_mono with (1:=H); trivial.
 
  intros; apply ty_fix_body with (1:=H); trivial.
- apply isOrd_plump with (int i O); auto.
+ apply isOrd_plump with (int O i); auto.
  apply lt_osucc; trivial.
 
  red; intros; apply fix_body_irrel with (1:=H); trivial.
@@ -1391,11 +1390,11 @@ Qed.
 Lemma fix_eqn : forall i j o n,
   val_ok e i j ->
   isOrd o ->
-  isOrd (int i O) ->
-  o ⊆ int i O ->
+  isOrd (int O i) ->
+  o ⊆ int O i ->
   n ∈ NATi (osucc o) ->
   cc_app (NATREC (F i) (osucc o)) n ==
-  cc_app (int (V.cons (NATREC (F i) o) (V.cons o i)) M) n.
+  cc_app (int M (V.cons (NATREC (F i) o) (V.cons o i))) n.
 intros.
 unfold NATREC at 1.
 rewrite REC_eq; auto with *.
@@ -1406,15 +1405,15 @@ apply incl_eq.
  destruct H4.
  assert (xo : isOrd x) by eauto using isOrd_inv.
  assert (xle : x ⊆ o) by (apply olts_le; auto).
- assert (xle' : x ⊆ int i O) by (transitivity o; trivial).
+ assert (xle' : x ⊆ int O i) by (transitivity o; trivial).
  assert (F i x (REC (F i) x) ∈ 
-         cc_prod (NATi (osucc x)) (fun n => El (int (V.cons n (V.cons (osucc x) i)) U))).
+         cc_prod (NATi (osucc x)) (fun n => El (int U (V.cons n (V.cons (osucc x) i))))).
   apply ty_fix_body with (1:=H); trivial.
    apply ole_lts; auto.
 
    apply fix_typ with (1:=H); trivial.
  assert (F i o (NATREC (F i) o) ∈ 
-         cc_prod (NATi (osucc o)) (fun n => El (int (V.cons n (V.cons (osucc o) i)) U))).
+         cc_prod (NATi (osucc o)) (fun n => El (int U (V.cons n (V.cons (osucc o) i))))).
   apply ty_fix_body with (1:=H).
    apply ole_lts; trivial.
 
@@ -1479,19 +1478,19 @@ Qed.
 
 Lemma nat_fix_eqn : forall i j,
   val_ok e i j ->
-  NATREC (F i) (int i O) ==
-  cc_lam (NATi (int i O))
-    (fun x => cc_app (F i (int i O) (NATREC (F i) (int i O))) x).
+  NATREC (F i) (int O i) ==
+  cc_lam (NATi (int O i))
+    (fun x => cc_app (F i (int O i) (NATREC (F i) (int O i))) x).
 intros.
 destruct tyord_inv with (2:=ty_O) (3:=H); trivial.
 apply NATREC_eqn with
-  (ord:=int i O)
-  (U:=fun o x => El (int0 U (V.cons x (V.cons o i)))); auto.
+  (ord:=int O i)
+  (U:=fun o x => El (int U (V.cons x (V.cons o i)))); auto.
  intros.
  apply fix_codom_mono with (1:=H); trivial.
 
  intros; apply ty_fix_body with (1:=H); trivial.
- apply isOrd_plump with (int i O); auto.
+ apply isOrd_plump with (int O i); auto.
  apply lt_osucc; trivial.
 
  red; intros; apply fix_body_irrel with (1:=H); trivial.
@@ -1549,7 +1548,7 @@ destruct tyord_inv with (2:=ty_O)(3:=H); trivial.
 apply in_int_intro.
 discriminate.
 discriminate.
-assert (int i (NatFix O M) ∈ El(int i (Prod (NatI O) (subst_rec O 1 U)))).
+assert (int (NatFix O M) i ∈ El(int (Prod (NatI O) (subst_rec O 1 U)) i)).
  rewrite intProd_eq.
  eapply eq_elim.
  2:simpl.
@@ -1569,10 +1568,10 @@ rewrite Real_prod; trivial.
 2:red; intros ? ? ? eqn; rewrite eqn; reflexivity.
 simpl tm.
 unfold piSAT.
-cut (inSAT (NATFIX (Lc.Abs (tm (Lc.ilift (I.cons (tm j O) j)) M)))
-       (piSAT0 (fun n => n ∈ NATi (int0 O i)) (fNATi (int0 O i))
-          (fun n =>Real (int0 U (V.cons n (V.cons (int0 O i) i)))
-                    (cc_app (NATREC (F i) (int0 O i)) n)))).
+cut (inSAT (NATFIX (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j)))))
+       (piSAT0 (fun n => n ∈ NATi (int O i)) (fNATi (int O i))
+          (fun n =>Real (int U (V.cons n (V.cons (int O i) i)))
+                    (cc_app (NATREC (F i) (int O i)) n)))).
  apply interSAT_morph_subset.
   intros; simpl; rewrite El_def; reflexivity.
 
@@ -1589,7 +1588,7 @@ cut (inSAT (NATFIX (Lc.Abs (tm (Lc.ilift (I.cons (tm j O) j)) M)))
    apply int_morph; auto with *.
    intros [|[|k]]; reflexivity.
 
-apply NATFIX_sat with (X:=fun o n => Real (int0 U (V.cons n (V.cons o i)))
+apply NATFIX_sat with (X:=fun o n => Real (int U (V.cons n (V.cons o i)))
    (cc_app (NATREC (F i) o) n)); trivial.
  red; intros.
  red in fx_sub_U.
@@ -1599,13 +1598,13 @@ apply NATFIX_sat with (X:=fun o n => Real (int0 U (V.cons n (V.cons o i)))
   rewrite <- fix_irr with (1:=H) (o:=y); auto.
   split; trivial.
   unfold inX.
-  apply cc_prod_elim with (dom:=NATi y) (F:=fun n=>El(int(V.cons n (V.cons y i))U)); trivial.
+  apply cc_prod_elim with (dom:=NATi y) (F:=fun n=>El(int U (V.cons n (V.cons y i)))); trivial.
   apply fix_typ with (1:=H); trivial.
   transitivity y'; trivial.
 
  (* sat body *)
  apply interSAT_intro.
-  exists (int i O); auto.
+  exists (int O i); auto.
   apply lt_osucc; auto.
 
   intros.
@@ -1613,7 +1612,7 @@ apply NATFIX_sat with (X:=fun o n => Real (int0 U (V.cons n (V.cons o i)))
   cbv zeta.
   apply prodSAT_intro; intros.
   assert (val_ok (Prod (NatI(Ref 0)) U::OSucct O::e)
-    (V.cons (NATREC (F i) o') (V.cons o' i)) (I.cons v (I.cons (tm j O) j))).
+    (V.cons (NATREC (F i) o') (V.cons o' i)) (I.cons v (I.cons (tm O j) j))).
    apply vcons_add_var.
     3:discriminate.
     apply vcons_add_var; trivial.
@@ -1627,7 +1626,7 @@ apply NATFIX_sat with (X:=fun o n => Real (int0 U (V.cons n (V.cons o i)))
 
     rewrite intProd_eq.
     assert (NATREC (F i) o' ∈ cc_prod (NATi o')
-              (fun x => El(int(V.cons x(V.cons o' i)) U))).
+              (fun x => El(int U(V.cons x(V.cons o' i))))).
      apply fix_typ with (1:=H); trivial.
       eauto using isOrd_inv.
       apply olts_le in i0; trivial.
@@ -1667,8 +1666,8 @@ apply NATFIX_sat with (X:=fun o n => Real (int0 U (V.cons n (V.cons o i)))
   apply in_int_not_kind in ty_M.
   2:discriminate.
   destruct ty_M.
-  replace (Lc.subst v (tm (Lc.ilift (I.cons (tm j O) j)) M))
-     with (tm (I.cons v (I.cons (tm j O) j)) M).
+  replace (Lc.subst v (tm M (Lc.ilift (I.cons (tm O j) j))))
+     with (tm M (I.cons v (I.cons (tm O j) j))).
    rewrite intProd_eq in H6.
    rewrite Real_prod in H6; trivial.
     revert H6; apply interSAT_morph_subset.
@@ -1721,8 +1720,8 @@ Lemma nat_fix_eq : forall N,
 red; intros.
 unfold eqX.
 change
- (app (NATREC (F i) (int i O)) (int i N) ==
-  app (int i (subst O (subst (lift 1 (NatFix O M)) M))) (int i N)).
+ (app (NATREC (F i) (int O i)) (int N i) ==
+  app (int (subst O (subst (lift 1 (NatFix O M)) M)) i) (int N i)).
 do 2 rewrite <- int_subst_eq.
 rewrite int_cons_lift_eq.
 rewrite nat_fix_eqn with (1:=H0); trivial.
@@ -1748,14 +1747,14 @@ do 2 red; intros.
 simpl in H0; rewrite El_def in H0.
 assert (isval := proj1 H).
 assert (isval' := proj1 (proj2 H)).
-assert (oo: isOrd (int i O)).
+assert (oo: isOrd (int O i)).
  destruct tyord_inv with (2:=ty_O) (3:=isval); trivial.
-assert (oo': isOrd (int i' O)).
+assert (oo': isOrd (int O i')).
  destruct tyord_inv with (2:=ty_O) (3:=isval'); trivial.
-assert (inclo: int i O ⊆ int i' O).
+assert (inclo: int O i ⊆ int O i').
  apply subO in H; trivial.
 clear subO.
-change (cc_app (NATREC (F i) (int i O)) x == cc_app (NATREC (F i') (int i' O)) x).
+change (cc_app (NATREC (F i) (int O i)) x == cc_app (NATREC (F i') (int O i')) x).
 revert x H0.
 elim oo using isOrd_ind; intros.
 apply TI_elim in H3; auto.
@@ -1800,7 +1799,7 @@ rewrite <- fix_irr with (1:=isval) (o:=osucc o'); auto.
 
     red; intros.
     simpl in H5; rewrite El_def in H5.
-    rewrite fix_irr with (1:=isval') (o':=int i' O); auto with *.
+    rewrite fix_irr with (1:=isval') (o':=int O i'); auto with *.
 
 
    simpl; rewrite El_def; trivial.
@@ -1832,7 +1831,7 @@ apply fcompat_typ_eq with (3:=fxs).
  unfold inX, prod in H1; rewrite El_def in H1.
  eexact H1.
 
- setoid_replace (int i (NatI O)) with (int i' (NatI O)).
+ setoid_replace (int (NatI O) i) with (int (NatI O) i').
   eapply cc_prod_is_cc_fun.
   assert (h := typ_nat_fix _ _ (proj1 (proj2 H0))).
   apply in_int_not_kind in h.
@@ -1981,7 +1980,7 @@ split.
 
  red; simpl; intros.
  apply in_int_intro; try discriminate.
- assert (osucc (int i O) ∈ El (int i (Ordt (osucc o)))).
+ assert (osucc (int O i) ∈ El (int (Ordt (osucc o)) i)).
   simpl; rewrite El_def.
   apply lt_osucc_compat; trivial.
   destruct tyord_inv with (2:=H1)(3:=H2) as (_,(?,_)); trivial.

@@ -35,10 +35,10 @@ Axiom PredVary : forall e x y i j,
   typ e y sort ->
   val_ok e i j ->
   (exists j', val_ok e i j' /\ (forall n, closed_pure_trm (j' n)) /\
-    (exists P, P <> kind /\ [int i P, tm j' P] \real int i (Prod sort prop) /\ 
-      exists u, [int i u, tm j' u] \real (app (int i P) (int i x)) /\
-        ((exists v, [int i v, tm j' v] \real (app (int i P) (int i y))) -> 
-          int i x == int i y))).
+    (exists P, P <> kind /\ [int P i, tm P j'] \real int (Prod sort prop) i /\ 
+      exists u, [int u i, tm u j'] \real (app (int P i) (int x i)) /\
+        ((exists v, [int v i, tm v j'] \real (app (int P i) (int y i))) -> 
+          int x i == int y i))).
 
 End AbsSemSig.
 
@@ -70,9 +70,9 @@ destruct Ht as (_, Ht).
 
 apply Hxy; clear Hxy Hclsd e Hx Hy j' Hok' Hok.
 unfold EQ_trm in Ht. simpl int in Ht.
-apply SN.prod_elim with (x:=int i P) (u:=tm j P) in Ht; [
+apply SN.prod_elim with (x:=int P i) (u:=tm P j) in Ht; [
   |do 2 red; intros; apply prod_ext; [|do 2 red; intros; rewrite H2]; rewrite H0; reflexivity|trivial].
-apply SN.prod_elim with (x:=int i u) (u:=tm j u) in Ht.
+apply SN.prod_elim with (x:=int u i) (u:=tm u j) in Ht.
  exists (App (App t P) u). revert Ht; apply real_morph; simpl; [reflexivity| |reflexivity].
   rewrite split_lift. do 2 rewrite int_cons_lift_eq; reflexivity.
 
@@ -526,7 +526,7 @@ Lemma Fall_intro : forall e t B,
   typ (sort::e) t B -> 
   typ e (Abs sort t) (Fall B).
 intros e t B HB Ht i j Hok'.
-assert (exists x, [x, Sat.SatSet.daimon] \real int i sort).
+assert (exists x, [x, Sat.SatSet.daimon] \real int sort i).
  apply typs_non_empty with (e:=e) (j:=j); [left; apply typ_sort|]; trivial.
 destruct H as (x, H).
 assert (val_ok (sort :: e) (V.cons x i) (I.cons Sat.SatSet.daimon j)).
@@ -545,7 +545,7 @@ Lemma Fall_elim : forall e t u B,
   typ e (App t u) (subst u B).
 red; intros e t u B HB Ht Hu i j Hok.
 
-assert (exists x, [x, Sat.SatSet.daimon] \real int i sort).
+assert (exists x, [x, Sat.SatSet.daimon] \real int sort i).
  apply typs_non_empty with (e:=e) (j:=j); [left; apply typ_sort|]; trivial.
 destruct H as (x, H).
 assert (val_ok (sort :: e) (V.cons x i) (I.cons Sat.SatSet.daimon j)).
@@ -589,7 +589,7 @@ intros e A p a HA Ha Hp.
 exists (Abs prop (Abs (Prod (lift 1 sort) (Prod (subst (Ref 0) (lift_rec 2 1 A)) (Ref 2))) 
   (App (App (Ref 0) (lift 2 a)) (lift 2 p)))).
 red; intros i j Hok.
-assert (exists x, [x, Sat.SatSet.daimon] \real int i sort).
+assert (exists x, [x, Sat.SatSet.daimon] \real int sort i).
  apply typs_non_empty with (e:=e) (j:=j); [left; apply typ_sort|]; trivial.
 destruct H as (x, H).
 assert (val_ok (sort :: e) (V.cons x i) (I.cons Sat.SatSet.daimon j)).
@@ -680,12 +680,12 @@ assert (eq_trm (Prod (Prod sort (Prod A (lift 2 C))) (lift 1 C))
    apply Prod_morph; [|reflexivity].
     apply eq_trm_intro; [| |destruct A; simpl; trivial]; intros.
      rewrite int_subst_rec_eq. rewrite int_lift_rec_eq.
-     apply int_morph; [do 2 red; intros|reflexivity].
+     apply int_morph; [reflexivity|do 2 red; intros].
       destruct a; unfold V.lams, V.shift; simpl; intros; 
         [|replace (a-0) with a by omega]; reflexivity.
 
      rewrite tm_subst_rec_eq. rewrite tm_lift_rec_eq.
-     apply tm_morph; [do 2 red; intros|reflexivity].
+     apply tm_morph; [reflexivity|do 2 red; intros].
       destruct a; unfold I.lams, I.shift; simpl; intros; 
         [|replace (a-0) with a by omega]; reflexivity.
 
