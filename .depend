@@ -37,6 +37,7 @@ Lambda.vo Lambda.glob Lambda.v.beautified: Lambda.v basic.vo VarMap.vo
 Logics.vo Logics.glob Logics.v.beautified: Logics.v
 ModelCIC.vo ModelCIC.glob ModelCIC.v.beautified: ModelCIC.v Models.vo ZFfunext.vo ZFecc.vo ZFind_nat.vo ModelZF.vo
 ModelECC.vo ModelECC.glob ModelECC.v.beautified: ModelECC.v IntMap.vo TypeECC.vo Models.vo TypeJudgeECC.vo ZF.vo ZFcoc.vo ModelZF.vo ZFecc.vo
+ModelECCW.vo ModelECCW.glob ModelECCW.v.beautified: ModelECCW.v Models.vo SN_ECC_Real.vo ZFfunext.vo ZFind_w.vo ModelZF.vo ZFpairs.vo ZFecc.vo
 ModelHF.vo ModelHF.glob ModelHF.v.beautified: ModelHF.v HFcoc.vo Models.vo GenModelSyntax.vo Term.vo TypeJudge.vo
 ModelNat.vo ModelNat.glob ModelNat.v.beautified: ModelNat.v ZF.vo ZFnats.vo ZFrelations.vo basic.vo ModelZF.vo
 ModelNat_ZFind.vo ModelNat_ZFind.glob ModelNat_ZFind.v.beautified: ModelNat_ZFind.v ZF.vo ZFcoc.vo ZFind_nat.vo basic.vo ModelZF.vo ZFrepl.vo
@@ -115,6 +116,7 @@ ZFrepl.vo ZFrepl.glob ZFrepl.v.beautified: ZFrepl.v ZF.vo
 ZFskol.vo ZFskol.glob ZFskol.v.beautified: ZFskol.v basic.vo ZFdef.vo Sublogic.vo
 ZFskolEm.vo ZFskolEm.glob ZFskolEm.v.beautified: ZFskolEm.v basic.vo ZFdef.vo EnsEm.vo Sublogic.vo
 ZFspos.vo ZFspos.glob ZFspos.v.beautified: ZFspos.v ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFstable.vo ZFiso.vo ZFind_w.vo ZFgrothendieck.vo
+ZFspos_prop.vo ZFspos_prop.glob ZFspos_prop.v.beautified: ZFspos_prop.v ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFstable.vo ZFiso.vo ZFind_w.vo ZFgrothendieck.vo
 ZFsposd.vo ZFsposd.glob ZFsposd.v.beautified: ZFsposd.v ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFfixfun.vo ZFstable.vo ZFiso.vo ZFind_w.vo ZFspos.vo ZFind_wd.vo ZFnats.vo
 ZFstable.vo ZFstable.glob ZFstable.v.beautified: ZFstable.v ZF.vo
 ZFstrictpos.vo ZFstrictpos.glob ZFstrictpos.v.beautified: ZFstrictpos.v ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.vo ZFord.vo ZFfix.vo ZFstable.vo ZFind_w.vo ZFiso.vo ZFgrothendieck.vo
@@ -165,6 +167,7 @@ Lambda.html Lambda.glob Lambda.v.beautified: Lambda.v basic.html VarMap.html
 Logics.html Logics.glob Logics.v.beautified: Logics.v
 ModelCIC.html ModelCIC.glob ModelCIC.v.beautified: ModelCIC.v Models.html ZFfunext.html ZFecc.html ZFind_nat.html ModelZF.html
 ModelECC.html ModelECC.glob ModelECC.v.beautified: ModelECC.v IntMap.html TypeECC.html Models.html TypeJudgeECC.html ZF.html ZFcoc.html ModelZF.html ZFecc.html
+ModelECCW.html ModelECCW.glob ModelECCW.v.beautified: ModelECCW.v Models.html SN_ECC_Real.html ZFfunext.html ZFind_w.html ModelZF.html ZFpairs.html ZFecc.html
 ModelHF.html ModelHF.glob ModelHF.v.beautified: ModelHF.v HFcoc.html Models.html GenModelSyntax.html Term.html TypeJudge.html
 ModelNat.html ModelNat.glob ModelNat.v.beautified: ModelNat.v ZF.html ZFnats.html ZFrelations.html basic.html ModelZF.html
 ModelNat_ZFind.html ModelNat_ZFind.glob ModelNat_ZFind.v.beautified: ModelNat_ZFind.v ZF.html ZFcoc.html ZFind_nat.html basic.html ModelZF.html ZFrepl.html
@@ -243,6 +246,7 @@ ZFrepl.html ZFrepl.glob ZFrepl.v.beautified: ZFrepl.v ZF.html
 ZFskol.html ZFskol.glob ZFskol.v.beautified: ZFskol.v basic.html ZFdef.html Sublogic.html
 ZFskolEm.html ZFskolEm.glob ZFskolEm.v.beautified: ZFskolEm.v basic.html ZFdef.html EnsEm.html Sublogic.html
 ZFspos.html ZFspos.glob ZFspos.v.beautified: ZFspos.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFord.html ZFfix.html ZFstable.html ZFiso.html ZFind_w.html ZFgrothendieck.html
+ZFspos_prop.html ZFspos_prop.glob ZFspos_prop.v.beautified: ZFspos_prop.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFord.html ZFfix.html ZFstable.html ZFiso.html ZFind_w.html ZFgrothendieck.html
 ZFsposd.html ZFsposd.glob ZFsposd.v.beautified: ZFsposd.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFord.html ZFfix.html ZFfixfun.html ZFstable.html ZFiso.html ZFind_w.html ZFspos.html ZFind_wd.html ZFnats.html
 ZFstable.html ZFstable.glob ZFstable.v.beautified: ZFstable.v ZF.html
 ZFstrictpos.html ZFstrictpos.glob ZFstrictpos.v.beautified: ZFstrictpos.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFcoc.html ZFord.html ZFfix.html ZFstable.html ZFind_w.html ZFiso.html ZFgrothendieck.html

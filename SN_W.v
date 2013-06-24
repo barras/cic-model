@@ -745,7 +745,7 @@ apply and_split; intros.
     do 2 red; intros.
     rewrite H0; reflexivity.
 
-   apply W_fix''; auto.
+   apply W_stages'; auto.
    do 2 red; intros.
    rewrite H; reflexivity.
 

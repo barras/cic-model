@@ -8,9 +8,9 @@ Require Import ZFstable ZFiso ZFind_w.
    - isomorphism with a W-type
  *)
 
-(* Qu: does this notion of strict positivity is powerful enough to build a model
+(* Qu: is this notion of strict positivity powerful enough to build a model
    of IZF?
-   - partial answer: if we are in ZF + one Grothendieck universe (i.e. closed by
+   - partial answer: if we are in ZF + one Grothendieck universe U (i.e. closed by
      collection), then the fixpoint of (fun X -> sigma U (fun Y => cc_arr Y X))
      is the type Ens.set, and since we have a skolemized collection, we can
      prove that this W-type can interpret ZF theory.  *)

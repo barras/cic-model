@@ -678,7 +678,21 @@ rewrite <- H.
 apply W'_eqn.
 Qed.
 
+  Lemma W_stages o :
+    isOrd o ->
+    TI W_F o ⊆ W.
+induction 1 using isOrd_ind; intros.
+red; intros.
+apply TI_elim in H2; auto.
+2:apply Fmono_morph.
+2:apply W_F_mono.
+destruct H2 as (o',?,?).
+rewrite W_eqn.
+revert H3; apply W_F_mono; auto.
+Qed.
 
+
+(** * Dealing with bottom value *)
 
 Definition squash f := subset f (fun c => ~ fst c == empty).
 
@@ -1263,7 +1277,7 @@ rewrite TI_iso_fixpoint with (2:=Wf_mono') (g:=fun f => g (fbot f)).
  apply Wf_typ'.
 Qed.
 
-  Lemma W_fix'' o :
+  Lemma W_stages' o :
     isOrd o ->
     TI W_F' o ⊆ TI W_F' W_ord'.
 induction 1 using isOrd_ind; intros.

@@ -233,14 +233,56 @@ apply subset_intro.
    rewrite eqa; trivial.
 Qed.
 
-(*
-  Lemma W_ind : forall (P:set->Prop),
-  Proper (eq_set ==> iff) P ->
-  (forall o' x, isOrd o' -> x ∈ W_F (TI Wf o') ->
-   (forall i, i ∈ B (fst x) -> P (cc_app (snd x) i)) ->
-   P (Wsup x)) ->
-  forall a, a ∈ W' -> P a.
-*)
+Section WindColl.
+
+Hypothesis coll_ax :
+  forall A (R:set->set->Prop), 
+  Proper (eq_set ==> eq_set ==> iff) R ->
+  exists B, forall x, x ∈ A ->
+         (exists y, R x y) -> exists2 y, y ∈ B & R x y.
+
+  Lemma same_fix :
+    W == Ffix W_F (singl zero).
+assert (Ffix W_F (singl zero) == W_F (Ffix W_F (singl zero))).
+ apply Ffix_fix_coll; trivial.
+  apply W_F_mono.
+
+  apply W_F_typ.
+apply incl_eq.
+ apply lower_bound.
+ apply subset_intro.
+  apply power_intro; intros.
+  apply Ffix_inA in H0; trivial.
+
+  red; intros.
+  rewrite <- H; reflexivity.
+
+ red; intros.
+ rewrite Ffix_def in H0.
+ 2:apply W_F_mono.
+ 2:apply W_F_typ.
+ destruct H0.
+ revert H1; apply TI_FIX; trivial.
+ apply W_F_mono.
+ apply W_F_typ.
+Qed.
+
+  Lemma W_ind_coll (P:set->Prop) :
+    Proper (eq_set ==> iff) P ->
+    (forall o, isOrd o ->
+     (forall a, a ∈ Wi o -> P a) ->
+     (forall a, a ∈ Wi (osucc o) -> P a)) ->
+    forall a, a ∈ W -> P a.
+intros.
+rewrite same_fix in H1.
+destruct Ffix_fix_coll_stage with (1:=W_F_mono) (2:=W_F_typ); trivial.
+apply H3 in H1.
+apply Wi_ind with (o:=x); trivial.
+intros.
+apply H0 with (o:=o'); trivial.
+Qed.
+
+End WindColl.
 
 (** Recursor on W *)
 

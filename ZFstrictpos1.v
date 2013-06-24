@@ -553,7 +553,7 @@ Qed.
 intros.
 assert (isOrd (IND_clos_ord (tr_pos p))).
  unfold IND_clos_ord; apply ZFind_w.W_o_o.
- apply pos_to_w2_morph'; trivial.
+ apply pos_to_w2_morph; trivial.
 unfold DIND, IND.
 fold (DINDi p (IND_clos_ord (tr_pos p))).
 rewrite <- DINDi_eq; trivial.

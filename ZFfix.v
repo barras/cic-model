@@ -218,6 +218,157 @@ split; intros.
   exists x; trivial.
 Qed.
 
+(** Showing Ffix is a fixpoint if collection holds *)
+
+Section FixColl.
+
+Hypothesis coll_ax :
+  forall A (R:set->set->Prop), 
+  Proper (eq_set ==> eq_set ==> iff) R ->
+  exists B, forall x, x ∈ A ->
+         (exists y, R x y) -> exists2 y, y ∈ B & R x y.
+
+
+Lemma Ffix_fix_coll_stage : exists2 o, isOrd o & Ffix ⊆ TI F o.
+pose (R := fun x o => isOrd o /\ x ∈ TI F o).
+destruct coll_ax with (A:=Ffix) (R:=R) as (B,?).
+ do 3 red; intros.
+ unfold R; rewrite H; rewrite H0; reflexivity.
+pose (o:=osup (subset B isOrd) (fun x => x)).
+assert (oo : isOrd o).
+ apply isOrd_osup.
+  do 2 red; trivial.
+  intros.
+  apply subset_elim2 in H0; destruct H0.
+  rewrite H0; trivial.
+exists o; trivial.
+red; intros.
+destruct H with (1:=H0).
+ rewrite Ffix_def in H0.
+ destruct H0 as (o',?,?); exists o'; split; auto.
+
+ destruct H2.
+ revert H3; apply TI_mono; auto.
+apply osup_intro with (f:=fun x=>x)(x:=x).
+ do 2 red; trivial.
+
+ apply subset_intro; trivial.
+Qed.
+
+Lemma Ffix_fix_coll : Ffix == F Ffix.
+apply eq_intro; intros.
+ rewrite Ffix_def in H.
+ destruct H.
+ apply TI_elim in H0; trivial.
+ destruct H0 as (o,?,?).
+ revert H1; apply Fmono.
+ apply TI_Ffix.
+ apply isOrd_inv with x; trivial.
+
+ destruct Ffix_fix_coll_stage as (o,?,?).
+ apply Fmono in H1.
+ apply H1 in H.
+ rewrite <- TI_mono_succ in H; trivial.
+ revert H; apply TI_Ffix; auto.
+Qed.
+
+End FixColl.
+
+(*(* The same, but with universe size *)
+Section FixCollUniv.
+
+Hypothesis coll_ax :
+  forall A (R:set->set->Prop), 
+  Proper (eq_set ==> eq_set ==> iff) R ->
+  exists B, forall x, x ∈ A ->
+         (exists y, R x y) -> exists2 y, y ∈ B & R x y.
+
+Hypothesis K : set -> Prop.
+Hypothesis Km : Proper (eq_set==>iff) K.
+Hypothesis Kord : forall o, K o -> isOrd o.
+Hypothesis Kord_sup : forall I f,
+  morph1 f ->
+  I ⊆ A ->
+  (forall x, x ∈ I -> K (f x)) ->
+  K (osup I f).
+
+Definition Ffix' := subset A (fun a => exists o, K o /\ a ∈ TI F o).
+(*
+Lemma Ffix_inA' : Ffix' ⊆ A.
+red; intros.
+apply subset_elim1 in H; trivial.
+Qed.
+*)
+Lemma Ffix_def' : forall a, a ∈ Ffix' <-> exists2 o, K o & a ∈ TI F o.
+unfold Ffix'; intros.
+rewrite subset_ax.
+split; intros.
+ destruct H.
+ destruct H0.
+ destruct H1.
+ destruct H1.
+ exists x0; trivial.
+ rewrite H0; trivial.
+
+ destruct H.
+ split.
+  apply Ffix_inA.
+  revert a H0; apply TI_Ffix; auto.
+
+  exists a; auto with *.
+  exists x; auto.
+Qed.
+
+Lemma Ffix_fix_coll_stage' : exists2 o, K o & Ffix' ⊆ TI F o.
+pose (R := fun x o => K o /\ x ∈ TI F o).
+destruct coll_ax with (A:=Ffix') (R:=R) as (B,?).
+ do 3 red; intros.
+ unfold R; rewrite H; rewrite H0; reflexivity.
+pose (o:=osup (subset B K) (fun x => x)).
+assert (oo : K o).
+ apply Kord_sup.
+  do 2 red; trivial.
+
+  red; intros.
+  apply subset_elim2 in H0; destruct H0.
+  intros.
+  apply subset_elim2 in H0; destruct H0.
+  rewrite H0; auto.
+trivial.
+exists o; trivial.
+red; intros.
+destruct H with (1:=H0).
+ rewrite Ffix_def in H0.
+ destruct H0 as (o',?,?); exists o'; split; auto.
+
+ destruct H2.
+ revert H3; apply TI_mono; auto.
+apply osup_intro with (f:=fun x=>x)(x:=x).
+ do 2 red; trivial.
+
+ apply subset_intro; trivial.
+Qed.
+
+Lemma Ffix_fix_coll : Ffix == F Ffix.
+apply eq_intro; intros.
+ rewrite Ffix_def in H.
+ destruct H.
+ apply TI_elim in H0; trivial.
+ destruct H0 as (o,?,?).
+ revert H1; apply Fmono.
+ apply TI_Ffix.
+ apply isOrd_inv with x; trivial.
+
+ destruct Ffix_fix_coll_stage as (o,?,?).
+ apply Fmono in H1.
+ apply H1 in H.
+ rewrite <- TI_mono_succ in H; trivial.
+ revert H; apply TI_Ffix; auto.
+Qed.
+
+End FixColl.
+*)
+
 (***)
 (*
 Definition frules a :=
