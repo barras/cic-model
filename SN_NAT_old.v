@@ -5,10 +5,10 @@
  *)
 
 Set Implicit Arguments.
-Require Import basic Can Sat SATnat SN_CC_Real.
-Require Import ZF ZFcoc ZFind_nat.
+Require Import basic Can Sat SATnat_old SN_CC_Real_old.
+Require Import ZF ZFcoc ZFuniv_real ZFind_nat.
 Module Lc:=Lambda.
-Import CCSN SN.
+Import SN CCSN.
 
 (** * Nat and its constructors *)
 
@@ -130,6 +130,8 @@ split.
 Qed.
 
 Require Import ZFord.
+
+
 Require Import ZFrepl.
 
 (** * The recursor *)

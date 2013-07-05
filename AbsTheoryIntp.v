@@ -10,7 +10,7 @@ Require Import AbsTheorySem.
 Import Compare_dec.
 Import List.
 Import GenLemmas.
-Import SN_CC_Real.
+Import SN_CC_Real_old.
 Import SN CCSN.
 
 (************************************************************************************)

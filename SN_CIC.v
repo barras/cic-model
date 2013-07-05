@@ -5,17 +5,16 @@
 *)
 
 Require Import List Bool Models.
-Require SN_CC_Real.
+Require SN_CC_Real_old.
 Import ZFgrothendieck.
 Import ZF ZFsum ZFnats ZFrelations ZFord ZFfix.
-Require Import ZFfunext ZFfixrec ZFecc ZFind_nat SATtypes SATnat_real.
+Require Import ZFfunext ZFfixrec ZFecc ZFuniv_real ZFind_nat SATtypes SATnat_real.
 
-Import SN_CC_Real.
-Import SN_CC_Real.CCSN.
-Import SN_CC_Real.SN.
+Import SN_CC_Real_old.
+Import SN_CC_Real_old.SN.
+Import SN_CC_Real_old.CCSN.
 Opaque Real.
 Import Sat Sat.SatSet.
-Opaque inSAT.
 
 Lemma Real_intro x t T :
   x ∈ El T ->
@@ -44,44 +43,8 @@ split.
 Qed.
 
 
-(** Derived rules of the basic judgements *)
-
-Lemma eq_typ_betar : forall e N T M,
-  typ e N T ->
-  T <> kind ->
-  eq_typ e (App (Abs T M) N) (subst N M).
-intros.
-apply eq_typ_beta; trivial.
- reflexivity.
- reflexivity.
-Qed.
-
-Lemma typ_var0 : forall e n T,
-  match T, nth_error e n with
-    Some _, value T' => T' <> kind /\ sub_typ e (lift (S n) T') T
-  | _,_ => False end ->
-  typ e (Ref n) T.
-intros.
-case_eq T; intros.
- rewrite H0 in H.
-case_eq (nth_error e n); intros.
- rewrite H1 in H.
- destruct H.
- apply typ_subsumption with (lift (S n) t); auto.
-  apply typ_var; trivial.
-
-  destruct t as [(t,tm)|]; simpl; try discriminate.
-  elim H; trivial.
-
-  discriminate.
-
- rewrite H1 in H; contradiction.
- rewrite H0 in H; contradiction.
-Qed.
-
-
 (** Subtyping *)
-
+(*
 Definition sub_typ_covariant : forall e U1 U2 V1 V2,
   U1 <> kind ->
   eq_typ e U1 U2 ->
@@ -95,7 +58,7 @@ unfold inX in H2.
 unfold prod in H2; rewrite El_def in H2.
 apply cc_eta_eq in H2; trivial.
 Qed.
-
+*)
 (** Universes *)
 (*Module Lc:=Lambda.
 Definition type (n:nat) : trm :=

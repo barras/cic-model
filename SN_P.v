@@ -12,7 +12,7 @@ Import PSem PSyn.
 Module SNP := Abs_SN_Theory PresburgerTheory PresburgerSem IntpPresburger.
 
 Import SNP.
-Import Esub SN_CC_Real.
+Import Esub SN_CC_Real_old.
 Import SN CCSN.
 Import PresburgerTheory PresburgerSem IntpPresburger.
 

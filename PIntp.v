@@ -2,9 +2,9 @@ Require Import PSyn.
 Require Import PSem.
 Require Import AbsTheoryIntp.
 
-Import SN_NAT.
+Import SN_NAT_old.
 Import GenLemmas.
-Import SN_CC_Real.
+Import SN_CC_Real_old.
 Import ZF SN CCSN.
 Import List.
 

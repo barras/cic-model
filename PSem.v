@@ -1,10 +1,10 @@
 Require Import AbsTheorySem.
-Require Import SN_NAT.
+Require Import SN_NAT_old.
 
 Import GenLemmas.
-Import SN_CC_Real.
+Import SN_CC_Real_old.
 Import ZF SN CCSN.
-Import ZFind_nat Sat SATnat SN_NAT.
+Import ZFind_nat Sat SATnat_old SN_NAT_old.
 
 (*Instantiate the semantic of First Order Theory with Presburger*)
 Module PSemSig <: AbsSemSig.

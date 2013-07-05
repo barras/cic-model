@@ -2,7 +2,7 @@ Require Import InstInterp.
 Require Import Esub.
 
 Import InstSyn InstSem ModelTheory.
-Import SN_CC_Real.
+Import SN_CC_Real_old.
 Import List.
 Import GenLemmas.
 Import ZF SN CCSN.

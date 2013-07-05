@@ -1,5 +1,5 @@
 
-Require Export basic ZF ZFpairs ZFrelations ZFstable.
+Require Export basic ZF ZFpairs ZFrelations ZFstable ZFiso.
 Require Import ZFgrothendieck.
 
 (** * Impredicativity of props *)
@@ -352,6 +352,165 @@ rewrite H3; apply cc_prod_intro; trivial.
    rewrite H4; trivial.
 
  apply cc_prod_elim with (1:=H2); trivial.
+Qed.
+
+Definition fbot f x := cond_set (~x==empty) (f x).
+
+Lemma eqf_fbot X f f' :
+  ~ empty ∈ X ->
+  eq_fun X f f' ->
+  eq_fun (cc_bot X) (fbot f) (fbot f').
+red; intros.
+rewrite cc_bot_ax in H1; destruct H1.
+ unfold fbot; rewrite cond_set_mt;[|tauto].
+ rewrite H2 in H1; rewrite cond_set_mt;[|tauto].
+ reflexivity.
+
+ assert (~x==empty).
+  intro h; rewrite h in H1; contradiction.
+ unfold fbot; rewrite cond_set_ok; trivial.
+ rewrite H2 in H3; rewrite cond_set_ok; trivial.
+ apply H0; trivial.
+Qed.
+
+Lemma iso_cc_bot X Y f :
+  iso_fun X Y f ->
+  ~ empty ∈ X ->
+  ~ empty ∈ Y ->
+  iso_fun (cc_bot X) (cc_bot Y) (fbot f).
+unfold fbot.
+intros.
+assert (fm := iso_funm H).
+split; intros.
+ do 2 red; intros.
+ rewrite H2; reflexivity.
+
+ red; intros.
+ apply cc_bot_ax in H2; destruct H2.
+  rewrite cond_set_mt; auto.
+
+  rewrite cond_set_ok.
+   apply cc_bot_intro.
+   apply (iso_typ H); trivial.
+
+   intro h; rewrite h in H2; contradiction.
+
+ rewrite cc_bot_ax in H2,H3.
+ destruct H2; [rewrite H2|]; (destruct H3;[rewrite H3|]); try reflexivity.
+  rewrite cond_set_mt in H4;[|tauto].
+  rewrite cond_set_ok in H4.
+   elim H1.
+   rewrite H4.
+   apply (iso_typ H); trivial.
+
+   intro h; rewrite h in H3; contradiction.
+
+  rewrite cond_set_ok in H4.
+   rewrite cond_set_mt in H4;[|tauto].
+   elim H1.
+   rewrite <- H4.
+   apply (iso_typ H); trivial.
+
+   intro h; rewrite h in H2; contradiction.
+
+  rewrite cond_set_ok in H4.
+   rewrite cond_set_ok in H4.
+    apply (iso_inj H) in H4; trivial.
+
+    intro h; rewrite h in H3; contradiction.
+   intro h; rewrite h in H2; contradiction.
+
+ rewrite cc_bot_ax in H2; destruct H2.
+  exists empty; auto.
+  rewrite cond_set_mt; auto with *.
+
+  destruct (iso_surj H) with y; trivial.
+  exists x; auto.
+  rewrite cond_set_ok; trivial.
+  intro h; rewrite h in H3; contradiction.
+Qed.
+
+(** Taking the bottom value out of the domain of a function *)
+Definition squash f := subset f (fun c => ~ fst c == empty).
+
+Instance squash_morph : morph1 squash.
+do 2 red; intros.
+apply subset_morph; auto with *.
+Qed.
+
+Lemma squash_ax f z :
+  z ∈ squash f <-> z ∈ f /\ ~ fst z == empty.
+unfold squash; rewrite subset_ax.
+apply and_iff_morphism; auto with *.
+split; intros.
+ destruct H.
+ rewrite H; trivial.
+
+ exists z; auto with *.
+Qed.
+
+Lemma squash_eq  A B f :
+  ~ empty ∈ A ->
+  f ∈ cc_prod (cc_bot A) B ->
+  squash f == cc_lam A (cc_app f).
+intros.
+apply eq_set_ax; intros z.
+rewrite squash_ax.
+rewrite cc_lam_def.
+2:do 2 red; intros; apply cc_app_morph; auto with *.
+split; intros.
+ destruct H1.
+ destruct cc_prod_is_cc_fun with (1:=H0)(2:=H1).
+ apply union2_elim in H4; destruct H4.
+  apply singl_elim in H4; contradiction.
+ exists (fst z); trivial.
+ exists (snd z); trivial.
+ rewrite <- couple_in_app.
+ rewrite H3 in H1; trivial.
+
+ destruct H1 as (x,xty,(y,yty,eqc)).
+ rewrite <- couple_in_app in yty.
+ rewrite eqc; split; trivial.
+ rewrite fst_def; intro h; rewrite h in xty; auto.
+Qed.
+
+Lemma squash_typ A B f :
+  ext_fun (cc_bot A) B ->
+  ~ empty ∈ A ->
+  f ∈ cc_prod (cc_bot A) B ->
+  squash f ∈ cc_prod A B.
+intros.
+rewrite squash_eq with (2:=H1); trivial.
+apply cc_prod_intro; intros.
+ do 2 red; intros; apply cc_app_morph; auto with *.
+
+ do 2 red; intros; apply H; trivial.
+ apply cc_bot_intro; trivial.
+
+ apply cc_prod_elim with (1:=H1).
+ apply cc_bot_intro; trivial.
+Qed.
+
+Lemma squash_beta A B f x :
+  ~ empty ∈ A ->
+  f ∈ cc_prod (cc_bot A) B ->
+  x ∈ A ->
+  cc_app (squash f) x == cc_app f x.
+intros.
+rewrite squash_eq with (2:=H0); trivial.
+rewrite cc_beta_eq; auto with *.
+do 2 red; intros; apply cc_app_morph; auto with *.
+Qed.
+
+Lemma squash_mt A B f :
+  ~ empty ∈ A ->
+  f ∈ cc_prod (cc_bot A) B ->
+  cc_app (squash f) empty == empty.
+intros.
+apply cc_app_outside_domain with A; trivial.
+rewrite squash_eq with (2:=H0); trivial.
+apply is_cc_fun_lam.
+do 2 red; intros; apply cc_app_morph; auto with *.
 Qed.
 
 

@@ -60,13 +60,13 @@ Qed.
    x ∈ El T, which reads "x is a value of type T"
  *)
 Definition Elt T := fst T. (* total elements *)
-Definition El T := union2 (singl empty) (Elt T). (* partial elements *)
+Definition El T := cc_bot (Elt T). (* partial elements *)
 
 Instance Elt_morph : morph1 Elt.
 Proof fst_morph.
 
 Instance El_morph : morph1 El.
-do 2 red; intros; apply union2_morph; auto with *.
+do 2 red; intros; apply cc_bot_morph; auto with *.
 apply fst_morph; trivial.
 Qed.
 
@@ -88,7 +88,7 @@ unfold El,mkTY; intros.
 apply fst_def.
 Qed.
 
-Lemma El_def : forall X R, El (mkTY X R) == singl empty ∪ X.
+Lemma El_def : forall X R, El (mkTY X R) == cc_bot X.
 unfold El,Elt,mkTY; intros.
 rewrite fst_def; reflexivity.
 Qed.
@@ -109,10 +109,10 @@ Qed.
 
 
 Lemma Elt_El x y : x ∈ Elt y -> x ∈ El y.
-intros; apply union2_intro2; trivial.
+intros; apply cc_bot_intro; trivial.
 Qed.
 Lemma empty_El y : empty ∈ El y.
-apply union2_intro1; apply singl_intro.
+unfold El; auto.
 Qed.
 Hint Resolve Elt_El empty_El.
 
@@ -169,46 +169,42 @@ Lemma sn_sort_ax T K:
     (forall x x', x ∈ cc_bot P -> x==x' -> eqSAT (R x) (R x')) &
     T == mkTY P R.
 unfold sn_sort; rewrite El_def.
-rewrite union2_ax.
-apply or_iff_morphism.
- split; intros.
-  apply singl_elim in H; trivial.
-  apply singl_intro_eq; trivial.
+rewrite cc_bot_ax.
+apply or_iff_morphism; [reflexivity|].
+rewrite sup_ax.
+ apply ex2_morph; auto with *.
+ intros P.
+ rewrite repl_ax.
+  split; intros.
+   destruct H as (R,?,(?,?)).
+   exists (fun x => sSAT (cc_app R x)).
+    intros.
+    apply sSAT_morph.
+    apply cc_app_morph; auto with *.
 
- rewrite sup_ax.
-  apply ex2_morph; auto with *.
-  intros P.
-  rewrite repl_ax.
-   split; intros.
-    destruct H as (R,?,(?,?)).
-    exists (fun x => sSAT (cc_app R x)).
-     intros.
-     apply sSAT_morph.
-     apply cc_app_morph; auto with *.
+    rewrite H0; apply couple_morph; auto with *.
+    rewrite cc_eta_eq with (1:=H).
+    apply cc_lam_ext; auto with *.
+    red; intros.
+    symmetry.
+    rewrite <- H3; auto.
 
-     rewrite H0; apply couple_morph; auto with *.
-     rewrite cc_eta_eq with (1:=H).
-     apply cc_lam_ext; auto with *.
-     red; intros.
-     symmetry.
-     rewrite <- H3; auto.
+   destruct H as (R,?,?).
+   assert (ext_fun (cc_bot P) (fun x : set => iSAT (R x))).
+    do 2 red; intros; apply iSAT_morph; auto.
+   exists (cc_lam (cc_bot P) (fun x => iSAT (R x))).
+    apply cc_prod_intro; intros; auto.
+    apply power_intro; intros.
+    apply subset_elim1 in H3; trivial.
 
-    destruct H as (R,?,?).
-    assert (ext_fun (cc_bot P) (fun x : set => iSAT (R x))).
-     do 2 red; intros; apply iSAT_morph; auto.
-    exists (cc_lam (cc_bot P) (fun x => iSAT (R x))).
-     apply cc_prod_intro; intros; auto.
-     apply power_intro; intros.
-     apply subset_elim1 in H3; trivial.
+    split; intros; trivial.
+    rewrite cc_beta_eq; trivial.
+    rewrite iSAT_id; reflexivity.
 
-     split; intros; trivial.
-     rewrite cc_beta_eq; trivial.
-     rewrite iSAT_id; reflexivity.
+  apply sort_repl_morph.
+  apply sort_repl_morph.
 
-   apply sort_repl_morph.
-   apply sort_repl_morph.
-
-  do 2 red; intros; auto.
+ do 2 red; intros; auto.
 Qed.
 
 
@@ -351,16 +347,25 @@ Qed.
 Definition prod A F :=
   mkTY (cc_prod (El A) (fun x => El (F x))) (fun f => piSAT A F (cc_app f)).
 
-Lemma Real_prod : forall dom f F,
-    eq_fun (El dom) F F ->
-    f ∈ El (prod dom F) ->
-    eqSAT (Real (prod dom F) f) (piSAT dom F (cc_app f)).
-unfold prod; intros.
-rewrite El_def in H0; rewrite Real_def; trivial.
+Lemma El_prod dom F :
+  ext_fun (El dom) F ->
+  El (prod dom F) == cc_prod (El dom) (fun x => El (F x)).
+intros.
+unfold prod; rewrite El_def.
+rewrite cc_prod_mt; intros; auto with *.
+do 2 red; intros; apply El_morph; auto.
+Qed.
+
+Lemma Real_prod dom f F :
+  ext_fun (El dom) F ->
+  f ∈ El (prod dom F) ->
+  eqSAT (Real (prod dom F) f) (piSAT dom F (cc_app f)).
+intros.
+rewrite El_prod in H0; trivial.
+unfold prod; rewrite Real_def; auto.
  reflexivity.
 
- do 2 red; intros.
- apply piSAT_morph; auto with *.
+ intros; apply piSAT_morph; auto with *.
  red; intros; apply cc_app_morph; trivial.
 Qed.
 
@@ -374,13 +379,10 @@ Lemma prod_intro : forall dom f F,
   (forall x, x ∈ El dom -> f x ∈ El (F x)) ->
   lam dom f ∈ El (prod dom F).
 intros.
-unfold lam, prod.
-rewrite El_def.
-apply union2_intro2.
+unfold lam.
+rewrite El_prod; trivial.
 apply cc_prod_intro; intros; auto.
-do 2 red; intros.
-apply El_morph.
-apply H0;trivial.
+do 2 red; intros; apply El_morph; auto.
 Qed.
 
 Lemma prod_elim : forall dom f x F,
@@ -388,14 +390,9 @@ Lemma prod_elim : forall dom f x F,
   f ∈ El (prod dom F) ->
   x ∈ El dom ->
   cc_app f x ∈ El (F x).
-intros dom f x F _ H H0.
-unfold prod in H; rewrite El_def in H.
-apply union2_elim in H; destruct H.
- apply singl_elim in H.
- rewrite H.
- rewrite cc_app_empty; auto.
-
- apply cc_prod_elim with (dom:=El dom) (F:=fun x => El(F x)); trivial.
+intros dom f x F Fm H H0.
+rewrite El_prod in H; trivial.
+apply cc_prod_elim with (dom:=El dom) (F:=fun x => El(F x)); trivial.
 Qed.
 
 
@@ -416,8 +413,7 @@ apply sn_sort_intro.
  apply cc_app_morph; trivial.
 
  apply G_cc_prod; trivial.
-  do 2 red; intros.
-  apply El_morph; auto.
+  do 2 red; intros; apply El_morph; auto.
 
   apply El_in_grot; trivial.
 

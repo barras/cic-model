@@ -336,7 +336,7 @@ unfold pos_oper', P2p in H.
 unfold IND', P2p.
 rewrite cond_set_ax in H|-*.
 destruct H; split; trivial.
- unfold IND' in H0.
+unfold IND' in H0.
 cut (exists2 o, isOrd o & pos_oper p (p2P (INDi p o))).
  destruct 1.
  exists (osucc x); auto.
@@ -347,44 +347,42 @@ cut (exists2 o, isOrd o & pos_oper p (p2P (INDi p o))).
  split; trivial.
  apply singl_intro.
 
- revert H0.
- pattern p at 1 3.
- elim p; simpl; intros.
-  exists empty; auto.
+revert H0.
+pattern p at 1 3.
+elim p_ok using pos_rect; simpl; intros.
+ exists empty; auto.
 
-  rewrite P2p2P in H0; trivial.
+ rewrite P2p2P in H0; trivial.
 
-  destruct H2.
-   destruct H0; eauto.
-   destruct H1; eauto.
+ destruct H4.
+  destruct H2; eauto.
+  destruct H3; eauto.
 
-  destruct H2.
-  destruct H0; trivial.
-  destruct H1; trivial.
-  exists (x ⊔ x0).
-   apply isOrd_osup2; trivial.
+ destruct H4.
+ destruct H2; trivial.
+ destruct H3; trivial.
+ exists (x ⊔ x0).
+  apply isOrd_osup2; trivial.
 
-   split.
-    revert H4; apply pos_oper_mono.
-     admit.
-    red; unfold p2P.
-    apply INDi_mono; trivial.
-     apply isOrd_osup2; trivial.
-     apply osup2_incl1; auto.
+  split.
+   revert H6; apply pos_oper_mono; trivial.
+   red; unfold p2P.
+   apply INDi_mono; trivial.
+    apply isOrd_osup2; trivial.
+    apply osup2_incl1; auto.
 
-    revert H5; apply pos_oper_mono.
-     admit.
-    red; unfold p2P.
-    apply INDi_mono; trivial.
-     apply isOrd_osup2; trivial.
-     apply osup2_incl2; auto.
+   revert H7; apply pos_oper_mono; trivial.
+   red; unfold p2P.
+   apply INDi_mono; trivial.
+    apply isOrd_osup2; trivial.
+    apply osup2_incl2; auto.
 
-  destruct H1.
-  destruct H0 with x; eauto.
+ destruct H2 as (a,aty,?).
+ destruct H1 with a; eauto.
 
-  assert (forall x, x ∈ A -> exists2 o, isOrd o & pos_oper (p0 x) (p2P (INDi p o))).
-   eauto.
-  admit.
+ assert (forall x, x ∈ A -> exists2 o, isOrd o & pos_oper (p0 x) (p2P (INDi p o))).
+  eauto.
+ admit. (* collection axiom! *)
 Qed.
 
 

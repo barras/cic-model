@@ -73,4 +73,63 @@ assert (z ∈ power y).
 rewrite power_ax in H3; auto.
 Qed.
 
+Lemma union2_stable_disjoint K F G :
+  morph1 F ->
+  morph1 G ->
+  stable_class K F ->
+  stable_class K G ->
+  (forall X Y z, K X -> K Y -> z ∈ F X -> z ∈ G Y -> False) ->
+  stable_class K (fun X => F X ∪ G X).
+intros Fm Gm Fs Gs disj.
+intros X KX z zty.
+destruct inter_wit with (2:=zty) as (w,winX).
+ do 2 red; intros.
+ rewrite H; reflexivity.
+assert (forall x, x ∈ X -> z ∈ F x ∪ G x).
+ intros.
+ apply inter_elim with (1:=zty).
+ rewrite replf_ax.
+  exists x; auto with *.
+
+  red; red; intros.
+  rewrite H1; reflexivity.
+clear zty.
+assert (z ∈ F w ∪ G w) by auto.
+apply union2_elim in H0; destruct H0.
+ apply union2_intro1.
+ apply Fs; auto.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H1.
+  2:red;red;intros;apply Fm; trivial.
+  destruct H1.
+  rewrite H2; clear H2 y.
+  assert (z ∈ F x ∪ G x) by auto.
+  apply union2_elim in H2; destruct H2; trivial.
+  elim disj with (3:=H0) (4:=H2); auto.
+
+  exists (F w).
+  rewrite replf_ax.
+  2:red;red;intros;apply Fm;trivial.
+  exists w; auto with *.
+
+ apply union2_intro2.
+ apply Gs; auto.
+ apply inter_intro.
+  intros.
+  rewrite replf_ax in H1.
+  2:red;red;intros;apply Gm; trivial.
+  destruct H1.
+  rewrite H2; clear H2 y.
+  assert (z ∈ F x ∪ G x) by auto.
+  apply union2_elim in H2; destruct H2; trivial.
+  elim disj with (3:=H2) (4:=H0); auto.
+
+  exists (G w).
+  rewrite replf_ax.
+  2:red;red;intros;apply Gm;trivial.
+  exists w; auto with *.
+Qed.
+
+
 Definition stable := stable_class (fun _ => True).

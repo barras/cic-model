@@ -3,9 +3,7 @@
 *)
 
 Require Import List Bool Models.
-Require SN_ECC_Real.
-Import ZFgrothendieck.
-Import ZF ZFsum ZFnats ZFrelations ZFord ZFfix.
+Require Import ZF ZFsum ZFnats ZFrelations ZFord ZFfix ZFgrothendieck.
 Require Import ZFfunext ZFind_w.
 Require Import ModelZF.
 

@@ -903,7 +903,7 @@ Qed.
    Contravariance of product does not hold in set-theory.
  *)
 Definition sub_typ_covariant
-  (eta_eq : forall dom F f, f ∈ prod dom F -> f == lam dom (app f))
+  (eta_eq : forall dom F f, eq_fun dom F F -> f ∈ prod dom F -> f == lam dom (app f))
   e U1 U2 V1 V2 :
   U1 <> kind ->
   eq_typ e U1 U2 ->
@@ -913,11 +913,14 @@ unfold sub_typ; simpl; intros U1_nk eqU subV i j is_val x t in1.
 assert (eqx : x == lam (int U2 i) (app x)).
  destruct in1 as (tyx,_).
  apply eta_eq in tyx.
- apply (transitivity tyx).
- apply lam_ext.
-  apply eqU with (1:=is_val).
+  apply (transitivity tyx).
+  apply lam_ext.
+   apply eqU with (1:=is_val).
 
-  red; intros; apply app_ext; auto with *.
+   red; intros; apply app_ext; auto with *.
+
+  red; intros.
+  rewrite H0; reflexivity.
 rewrite eqx.
 apply prod_intro_sn.
  red; intros; apply app_ext; auto with *.
@@ -938,5 +941,41 @@ apply prod_intro_sn.
 
    rewrite (eqU _ _ is_val); trivial.
 Qed.
+
+(** Derived rules of the basic judgements *)
+
+Lemma eq_typ_betar : forall e N T M,
+  typ e N T ->
+  T <> kind ->
+  eq_typ e (App (Abs T M) N) (subst N M).
+intros.
+apply eq_typ_beta; trivial.
+ reflexivity.
+ reflexivity.
+Qed.
+
+Lemma typ_var0 : forall e n T,
+  match T, nth_error e n with
+    Some _, value T' => T' <> kind /\ sub_typ e (lift (S n) T') T
+  | _,_ => False end ->
+  typ e (Ref n) T.
+intros.
+case_eq T; intros.
+ rewrite H0 in H.
+case_eq (nth_error e n); intros.
+ rewrite H1 in H.
+ destruct H.
+ apply typ_subsumption with (lift (S n) t); auto.
+  apply typ_var; trivial.
+
+  destruct t as [(t,tm)|]; simpl; try discriminate.
+  elim H; trivial.
+
+  discriminate.
+
+ rewrite H1 in H; contradiction.
+ rewrite H0 in H; contradiction.
+Qed.
+
 
 End MakeModel.

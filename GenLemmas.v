@@ -1,10 +1,11 @@
 (*This files are the defintions and lemmas about general SN model*)
 
 
-Require Import SN_CC_Real.
+Require Import SN_CC_Real_old.
 
 Import ZF CCSN SN.
 Import List.
+Existing Instance in_ext.
 
 Reserved Notation "[ x , t ] \real A" (at level 60).
 
@@ -276,7 +277,7 @@ Definition closed_pure_trm t := forall k, ~ Lc.occur k t.
 (*This following lemma should be in SATnat.v.*)
 (*For any natural number, there exists a closed realizer*)
 (***************************************************************************************)
-Require Import SATnat.
+Require Import SATnat_old.
 
 Import Sat.
 Import ZFind_nat.

@@ -1,232 +1,20 @@
 (** Strong normalization of the model of CC+W in the type-based
   termination presentation.
 *)
-
-Require Import List Bool Models.
+Require Import basic Models.
 Require SN_ECC_Real.
 Import ZFgrothendieck.
 Import ZF ZFsum ZFnats ZFrelations ZFord ZFfix.
-Require Import ZFfunext ZFfixrec ZFecc ZFuniv_real ZFind_w SATtypes SATw.
+Require Import ZFfunext ZFfixrec ZFcoc ZFecc ZFuniv_real ZFind_wbot SATtypes SATw.
 
-Import SN_ECC_Real.
-Import SN_ECC_Real.SN_CC_Model.
-Import SN_ECC_Real.SN.
+Import SN_CC_Real.SN_CC_Model SN_CC_Real.SN SN_ECC_Real.
 Opaque Real.
 Import Sat Sat.SatSet.
 
-Import ZFcoc.
-
-Lemma El_int_prod U V i :
-  El (int (Prod U V) i) == cc_prod (El (int U i)) (fun x => El (int V (V.cons x i))).
-simpl.
-unfold prod, ZFuniv_real.prod.
-rewrite El_def.
-rewrite cc_prod_mt; auto with *.
-do 2 red; intros.
-rewrite H0; reflexivity.
-Qed.
-Lemma El_int_arr U V i :
-  El (int (Prod U (lift 1 V)) i) == cc_arr (El (int U i)) (El (int V i)).
-rewrite El_int_prod.
-apply cc_prod_morph; auto with *.
-red; intros.
-rewrite int_cons_lift_eq; reflexivity.
-Qed.
-
-Lemma Real_int_prod U V i f :
-  f ∈ cc_prod (El (int U i)) (fun x => El (int V (V.cons x i))) ->
-  eqSAT (Real (int (Prod U V) i) f)
-        (piSAT (int U i) (fun x => int V (V.cons x i)) (cc_app f)).
-simpl; intros.
-rewrite Real_prod.
- reflexivity.
-
- red; intros.
- rewrite H1; reflexivity.
-
- change (f ∈ El (int (Prod U V) i)).
- rewrite El_int_prod; trivial.
-Qed.
-Lemma Real_int_arr U V i f :
-  f ∈ cc_arr (El (int U i)) (El (int V i)) ->
-  eqSAT (Real (int (Prod U (lift 1 V)) i) f)
-        (piSAT (int U i) (fun _ => int V i) (cc_app f)).
-simpl; intros.
-rewrite Real_prod.
- apply piSAT_morph; auto with *.
-  red; intros.
-  apply int_cons_lift_eq.
-
-  red; intros; apply cc_app_morph; auto with *.
-
- red; intros.
- rewrite H1; reflexivity.
-
- change (f ∈ El (int (Prod U (lift 1 V)) i)).
- rewrite El_int_arr; trivial.
-Qed.
-
-(** Derived rules of the basic judgements *)
-
-Lemma eq_typ_betar : forall e N T M,
-  typ e N T ->
-  T <> kind ->
-  eq_typ e (App (Abs T M) N) (subst N M).
-intros.
-apply eq_typ_beta; trivial.
- reflexivity.
- reflexivity.
-Qed.
-
-Lemma typ_var0 : forall e n T,
-  match T, nth_error e n with
-    Some _, value T' => T' <> kind /\ sub_typ e (lift (S n) T') T
-  | _,_ => False end ->
-  typ e (Ref n) T.
-intros.
-case_eq T; intros.
- rewrite H0 in H.
-case_eq (nth_error e n); intros.
- rewrite H1 in H.
- destruct H.
- apply typ_subsumption with (lift (S n) t); auto.
-  apply typ_var; trivial.
-
-  destruct t as [(t,tm)|]; simpl; try discriminate.
-  elim H; trivial.
-
-  discriminate.
-
- rewrite H1 in H; contradiction.
- rewrite H0 in H; contradiction.
-Qed.
-
-
-(** Subtyping *)
-
-(*
-Definition sub_typ_covariant : forall e U1 U2 V1 V2,
-  U1 <> kind ->
-  eq_typ e U1 U2 ->
-  sub_typ (U1::e) V1 V2 ->
-  sub_typ e (Prod U1 V1) (Prod U2 V2).
-intros.
-apply sub_typ_covariant; trivial.
-intros.
-unfold eqX, lam, app.
-unfold inX in H2.
-unfold prod, ZFuniv_real.prod in H2; rewrite El_def in H2.
-apply cc_eta_eq in H2; trivial.
-Qed.
-*)
-
-(** Universes *)
-(*
-Lemma cumul_Type : forall e n, sub_typ e (type n) (type (S n)).
-red; simpl; intros.
-red; intros.
-apply ecc_incl; trivial.
-Qed.
-
-Lemma cumul_Prop : forall e, sub_typ e prop (type 0).
-red; simpl; intros.
-red; intros.
-apply G_trans with props; trivial.
- apply (grot_succ_typ gr).
-
- apply (grot_succ_in gr).
-Qed.
-*)
 
 (** Ordinals *)
 
-Definition Ordt (o:set) : trm :=
-  cst (mkTY o (fun _ => snSAT)) Lc.K (fun _ _ => eq_refl) (fun _ _ _ => eq_refl).
-
-Definition typ_ord_kind : forall e o, typ e (Ordt o) kind.
-red; simpl; intros.
-split; [|split]; simpl.
- discriminate.
-
- exists nil; exists (Ordt o);[reflexivity|].
- exists zero; intros; simpl.
- unfold inX; rewrite El_def; trivial.
-
- apply Lc.sn_K.
-Qed.
-
-Lemma El_int_ord o i :
-  zero ∈ o ->
-  El (int (Ordt o) i) == o.
-intros; simpl.
-rewrite El_def.
-apply eq_intro; intros; auto.
-rewrite cc_bot_ax in H0; destruct H0; trivial.
-rewrite H0; trivial.
-Qed.
-
-Definition OSucc : trm -> trm.
-(*begin show*)
-intros o; left; exists (fun i => osucc (int o i)) (fun j => tm o j).
-(*end show*)
- do 2 red; intros.
- rewrite H; reflexivity.
- (**)
- do 2 red; intros.
- rewrite H; reflexivity.
- (**)
- red; intros.
- apply tm_liftable.
- (**)
- red; intros.
- apply tm_substitutive.
-Defined.
-
-Definition OSucct : trm -> trm.
-(*begin show*)
-intros o; left; exists (fun i => mkTY (osucc (int o i)) (fun _ => snSAT)) (fun j => tm o j).
-(*end show*)
- do 2 red; intros.
- apply mkTY_ext; auto with *.
- rewrite H; reflexivity.
- (**)
- do 2 red; intros.
- rewrite H; reflexivity.
- (**)
- red; intros.
- apply tm_liftable.
- (**)
- red; intros.
- apply tm_substitutive.
-Defined.
-
-Lemma El_int_osucc O' i :
-  El (int (OSucct O') i) == osucc (int O' i).
-simpl; rewrite El_def.
-apply eq_intro; intros; auto.
-rewrite cc_bot_ax in H; destruct H; trivial.
-rewrite H.
-apply ole_lts; auto.
-red; intros.
-apply empty_ax in H0; contradiction.
-Qed.
-
-Lemma tyord_inv : forall e i j o o',
-  isOrd o' ->
-  zero ∈ o' ->
-  typ e o (Ordt o') ->
-  val_ok e i j ->
-  isOrd (int o i) /\ int o i < o' /\ Lc.sn (tm o j).
-unfold typ; intros.
-specialize H1 with (1:=H2).
-apply in_int_not_kind in H1.
-2:discriminate.
-destruct H1.
-red in H1; rewrite El_int_ord in H1; trivial.
-split;[apply isOrd_inv with o'; trivial|].
-split; trivial.
-apply sat_sn in H3; trivial.
-Qed.
+Require Import SN_ord.
 
 (** W *)
 
@@ -256,13 +44,10 @@ Hypothesis Btyp : typ (A::e) B kind.
 
 Let Aw i := El (int A i).
 Let Bw i x := El (int B (V.cons x i)).
-Let Ww i := W (Aw i) (Bw i).
-
 Let RAw i a := Real (int A i) a.
 Let RBw i a b := Real (int B (V.cons a i)) b.
 
 Definition WF' i X := W_F (Aw i) (Bw i) (cc_bot X).
-
 Definition RW i o w := rWi (Aw i) (Bw i) (RAw i) (RBw i) o w.
 
 Instance Aw_morph : Proper (eq_val==>eq_set) Aw.
@@ -490,16 +275,16 @@ Qed.
 
 (* Case analysis *)
 
-
 Definition W_CASE b w :=
   sigma_case (fun x f => app (app b x) f) w.
 
 Definition Wcase (b n : trm) : trm.
 (*begin show*)
-left; exists (fun i => sigma_case (fun x f => app (app (int b i) x) f) (int n i))
+left; exists (fun i => W_CASE (int b i) (int n i))
              (fun j => WCASE (tm b j) (tm n j)).
 (*end show*)
 do 2 red; intros.
+unfold W_CASE.
 apply cond_set_morph.
  rewrite H; reflexivity.
  rewrite H; reflexivity.
@@ -528,12 +313,11 @@ split; red; simpl; intros.
  rewrite H; rewrite H0; rewrite H1; reflexivity.
 Qed.
 
-Existing Instance Wcase_morph.
-
 Lemma Wcase_iota : forall X F G,
   eq_typ e (Wcase G (Wc X F)) (App (App G X) F).
-red; intros.
+red; red; intros.
 simpl.
+unfold W_CASE.
 rewrite sigma_case_couple with (a:=int X0 i) (b:=int F i).
  reflexivity.
 
@@ -544,7 +328,7 @@ rewrite sigma_case_couple with (a:=int X0 i) (b:=int F i).
 Qed.
 
 
-Lemma typ_Wcase : forall P O G n,
+Lemma typ_Wcase P O G n :
   typ e O (Ordt o) ->
   typ e G (Prod A (Prod (Prod B (lift 2 (WI O))) (App (lift 2 P) (Wc (Ref 1) (Ref 0))))) ->
   typ e n (WI (OSucc O)) ->
@@ -565,13 +349,13 @@ rewrite Real_int_W in H6; trivial.
 apply and_split; intros.
  red; simpl.
  rewrite cc_bot_ax in H1; destruct H1.
-  unfold sigma_case.
+  unfold W_CASE, sigma_case.
   rewrite H1.
   rewrite cond_set_mt; auto.
   apply discr_mt_pair.   
 
   simpl in H1; rewrite TI_mono_succ in H1; auto with *.
-  2:apply Wf_mono; trivial.
+  2:apply W_F'_mono; trivial.
   2:apply Bw_morph; reflexivity.
   assert (fst (int n i) ∈ Aw i).
    apply fst_typ_sigma in H1; trivial.
@@ -581,7 +365,7 @@ apply and_split; intros.
    rewrite H9; reflexivity.
   assert (int n i == couple (fst (int n i)) (snd (int n i))).
    apply (surj_pair _ _ _ (subset_elim1 _ _ _ H1)).
-  unfold sigma_case.
+  unfold W_CASE, sigma_case.
   rewrite cond_set_ok; trivial.
   specialize cc_prod_elim with (1:=H0) (2:=H7); clear H0; intro H0.
   rewrite El_int_prod in H0.
@@ -952,6 +736,7 @@ apply H in H0.
 rewrite H0; reflexivity.
 Qed.
 
+Require Import Bool.
 
 Definition spec_var e n :=
   ords e n || match fixs e n with Some _ => true | _ => false end.
@@ -2407,8 +2192,7 @@ split.
   rewrite El_int_ord.
   apply lt_osucc_compat; trivial.
   apply ole_lts; auto.
- split; trivial.
- unfold int at 1, Ordt, cst, iint.
+ split; simpl; trivial.
  rewrite Real_def; auto with *.
   assert (h:= H2 _ _ H3).
   apply in_int_sn in h.

@@ -1,4 +1,8 @@
 
+(** A theory about realizability of natural numbers.
+    It is similar to SATnat, but it supports type-based termination
+ *)
+
 Require Import ZF ZFpairs ZFsum ZFord ZFfix ZFind_nat Sat SATtypes.
 Require Import ZFlambda.
 Require Import Lambda.
@@ -212,7 +216,7 @@ Qed.
      --> (\x. m (G x)) (\x. m (G x)) n
      --> m (G (\x. m (G x))) n == m (NATFIX m) n
  *)
-
+(*
 Definition guard_sum m :=
   Lc.Abs (Lc.App2 (Lc.App2 (Lc.Ref 0) (Lc.Abs (Lc.lift 2 m)) (Lc.Abs (Lc.lift 2 m))) (Lc.lift 1 m) (Lc.Ref 0)).
 
@@ -272,50 +276,13 @@ apply G_sim.
 econstructor; exists 0; split; auto.
 reflexivity.
 Qed.
-
-
-(*
-Definition guard_couple m :=
-  Lc.Abs (Lc.App2 (Lc.App (Lc.Ref 0) (Lc.Abs (Lc.Abs (Lc.lift 3 m)))) (Lc.lift 1 m) (Lc.Ref 0)).
-
-(** (G m n) reduces to (m m n) when n is a constructor. Note that
-    n need not be closed. *)
-Lemma G_sim : forall m n,
-  (exists t1 t2, n = Lc.Abs (Lc.App2 (Lc.Ref 0) t1 t2)) ->
-  Lc.redp (Lc.App (guard_couple m) n) (Lc.App2 m m n).
-intros m n (t1,(t2,eqn)).
-unfold guard_couple.
-eapply t_trans.
- apply t_step.
- apply Lc.beta.
-unfold Lc.subst; simpl.
-repeat rewrite Lc.simpl_subst; auto.
-repeat rewrite Lc.lift0.
-apply Lc.redp_app_l.
-apply Lc.redp_app_l.
-rewrite eqn.
-eapply t_trans.
- apply t_step.
- apply Lc.beta.
-unfold Lc.subst; simpl.
-rewrite Lc.lift0.
-eapply t_trans.
- apply t_step.
- apply Lc.app_red_l.
- apply Lc.beta.
-unfold Lc.subst; simpl.
-rewrite Lc.simpl_subst; auto.
-apply t_step.
-apply Lc.red1_beta.
-unfold Lc.subst; simpl.
-rewrite Lc.simpl_subst; auto.
-rewrite Lc.lift0; trivial.
-Qed.
 *)
-
+(*
 Lemma G_sn m :
-  sn m -> sn (guard_sum m).
+  sn m -> sn (App guard_sum m).
 unfold guard_sum; intros.
+apply sat_sn with snSAT.
+
 apply sn_abs.
 apply sat_sn with snSAT.
 apply prodSAT_elim with snSAT;[|apply varSAT].
@@ -324,37 +291,22 @@ apply prodSAT_elim with snSAT;[|apply snSAT_intro;apply sn_abs;apply sn_lift;tri
 apply prodSAT_elim with snSAT;[|apply snSAT_intro;apply sn_abs;apply sn_lift;trivial].
 apply varSAT.
 Qed.
-
+*)
 Lemma G_sat_gen A k m t X :
   k ∈ NAT ->
   inSAT t (fNAT A k) ->
   inSAT (Lc.App2 m m t) X ->
-  inSAT (Lc.App (guard_sum m) t) X.
+  inSAT (Lc.App2 guard_sum m t) X.
 intros.
 unfold guard_sum.
-apply inSAT_exp; intros.
- right; apply sat_sn in H0; trivial.
-unfold Lc.subst; simpl Lc.subst_rec.
-repeat rewrite Lc.simpl_subst; auto.
-repeat rewrite Lc.lift0.
-revert X H1; apply inSAT_context.
+apply GUARD_sat.
+revert H1; apply inSAT_context.
 apply inSAT_context.
 intros.
-apply Real_NATCASE_gen with (X:=NAT) (A:=A) (C:=fun _ => S) (n:=k); auto.
- do 2 red; reflexivity.
-
- rewrite NAT_eq in H; trivial.
-
- apply piSAT0_intro; intros.
-  apply Lc.sn_abs.
-  apply Lc.sn_lift.
-  apply sat_sn in H1; trivial.
-
-  apply inSAT_exp;[right;apply sat_sn in H3; trivial|].
-  unfold Lc.subst; simpl Lc.subst_rec.
-  rewrite Lc.simpl_subst; auto.
-  rewrite Lc.lift0; trivial.
+rewrite NAT_eq in H.
+apply WHEN_SUM_sat with (1:=H) (2:=H0); trivial.
 Qed.
+
 
 (*
 Lemma sn_G_inv m : Lc.sn (guard_sum m) -> Lc.sn m.
@@ -374,7 +326,7 @@ Lemma G_sat o x t m (X:SAT):
   x ∈ NATi o ->
   inSAT t (fNATi o x) ->
   inSAT (Lc.App2 m m t) X ->
-  inSAT (Lc.App (guard_sum m) t) X.
+  inSAT (Lc.App2 guard_sum m t) X.
 intros.
 assert (x ∈ NAT).
  apply NATi_NAT in H0; trivial.
@@ -393,39 +345,21 @@ apply G_sat_gen with (2:=H1); trivial.
 Qed.
 
 
-
 (* specialized fix *)
 
-Definition NATFIX := FIXP (Lc.Abs (guard_sum (Lc.Ref 0))).
-
-Lemma NATFIX_sim : forall m n,
-  (exists t c, (c=0\/c=1) /\ n = Lc.Abs (Lc.Abs (Lc.App (Lc.Ref c) t))) ->
-  Lc.redp (Lc.App (NATFIX m) n) (Lc.App2 m (NATFIX m) n).
-intros.
-apply FIXP_sim.
-intros.
-eapply t_trans.
- eapply Lc.redp_app_l.
- apply t_step.
- apply beta.
-apply G_sim; trivial.
-Qed.
+Definition NATFIX := FIXP WHEN_SUM.
 
 Lemma ZE_iotafix m :
   Lc.redp (Lc.App (NATFIX m) ZE) (Lc.App2 m (NATFIX m) ZE).
-apply NATFIX_sim.
-econstructor.
-exists 1.
-split; auto.
-reflexivity.
+apply FIXP_sim.
+intros.
+apply WHEN_SUM_INL.
 Qed.
 Lemma SU_iotafix m n :
   Lc.redp (Lc.App (NATFIX m) (SU n)) (Lc.App2 m (NATFIX m) (SU n)).
-apply NATFIX_sim.
-econstructor.
-exists 0.
-split; auto.
-reflexivity.
+apply FIXP_sim.
+intros.
+apply WHEN_SUM_INR.
 Qed.
 
 Lemma NATFIX_sat : forall o m X,
@@ -440,17 +374,16 @@ Lemma NATFIX_sat : forall o m X,
 intros.
 apply FIXP_sat; trivial.
  intros.
+ cut (sn (App2 (GUARD WHEN_SUM) m0 (Ref 0))).
+  intro h; apply subterm_sn with (1:=h); auto.
+  unfold App2; auto.
  apply sat_sn with snSAT.
- apply inSAT_exp; auto.
- apply G_sn in H2; trivial.
+ apply GUARD_neutral; trivial.
+ apply WHEN_SUM_neutral.
+ apply varSAT.
 
  intros.
- eapply inSAT_context.
-  intros.
-  apply inSAT_exp; auto.
-  exact H6.
-
-  eapply G_sat with (3:=H4); auto.
+ apply G_sat with (3:=H4); auto.
 
  intros.
  apply TI_elim in H4; auto.

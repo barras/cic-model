@@ -3,7 +3,7 @@ Require Import InstSem.
 
 Import ModelTheory.
 Import GenLemmas.
-Import SN_CC_Real.
+Import SN_CC_Real_old.
 Import ZF SN CCSN.
 Import List.
 
@@ -11,7 +11,7 @@ Import List.
 Module InterpPresburger <: InterpTheory PresburgerSyn PresburgerSem.
 
 Import PresburgerSyn PresburgerSem.
-Import SN_NAT.
+Import SN_NAT_old.
 
 Fixpoint intp_fotrm t:=
   match t with
