@@ -22,7 +22,7 @@ all:: coq
 
 coq:: $(ALLVO)
 
-DOCHTML=$(shell cat libs.txt)
+DOCHTML=$(shell cat libs.txt graph/staticlibs.txt)
 DOCV=$(DOCHTML:.html=.v)
 #DOCV=$(shell sed -n -e "s|.*HREF=\"\([^\./\"]\+\)\.html\".*|\1.v|p" template/html/index.html)
 DOCVO=$(DOCV:.v=.vo)
@@ -61,11 +61,17 @@ html::
 
 graph::	graph/deps.png graph/deps.imap graph/graph.html
 
-graph/deps.g:	.depend libs.txt
-	graph/graph.sh lib2graph
+#graph/deps.g:	.depend libs.txt graph/staticlibs.txt
+#	cat libs.txt graph/staticlibs.txt \
+#	| graph/graph.sh lib2graph > $@
 
-graph/deps.dot: graph/deps.g
-	graph/graph.sh graph2dot
+#graph/deps.dot: graph/deps.g
+#	graph/graph.sh graph2dot graph/deps.g > $@
+graph/deps-raw.dot: .depend libs.txt
+	cat libs.txt | graph/graph.sh lib2graph > $@
+
+graph/deps.dot: graph/deps-raw.dot
+	tred $< > $@
 
 .dot.png:
 	dot -Tpng $< > $@
@@ -73,8 +79,8 @@ graph/deps.dot: graph/deps.g
 .dot.imap:
 	dot -Tcmapx $< > $@
 
-graph/index.html: g.html grpah/deps.imap
-	sed -e "/--IMAP--/ r deps.imap" g.html > $@
+graph/graph.html: graph/g.html graph/deps.imap graph/deps.png
+	sed -e "/--IMAP--/ r graph/deps.imap" graph/g.html > $@
 
 Ens0.v: Ens.v
 	cp Ens.v Ens0.v
@@ -98,8 +104,9 @@ clean::
 	rm -fr html
 
 depend:: Ens0.v
-	rm -f .depend
+	rm -f .depend .depend-html
 	$(COQDEP) -c $(COQINCLUDES) *.v *.ml > .depend
-	$(COQDEP) -suffix .html $(COQINCLUDES) *.v >> .depend
+	$(COQDEP) -suffix .html $(COQINCLUDES) *.v >> .depend-html
 
 -include .depend
+-include .depend-html

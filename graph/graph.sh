@@ -61,8 +61,10 @@ trclos () {
     fi
   }
   for i in ${!src[*]} ; do
-    time rec $i > /dev/null
+    rec $i > /dev/null
+#    time rec $i > /dev/null
   done
+declare -p dest > /tmp/dest.g
   copyarray dest $2
 }
 
@@ -91,8 +93,8 @@ writedot () {
   echo "strict digraph CicModel {"
 #  echo "  size=\"1000,1000\";"
 #  echo "  rankdir=LR;"
-  echo "  ratio=;"
-  echo "  node [shape=egg,style=filled,fillcolor=\"#ff8080\",href=\"../html/\N.html\",target=\"CicModel\"];"
+#  echo "  ratio=;"
+  echo "  node [shape=egg,style=filled,fillcolor=\"#ff8080\",target=\"CicModel\"];"
   echo "  edge [weight=10];"
 #  for i in ${!tmpw[*]} ; do  
 #    echo "  $i [href=\"../html/\N.html\"];"
@@ -115,7 +117,7 @@ lib2graph () {
 while read l ; do
   l=`basename $l .html`
   deps[$l]="<>"
-done < ../libs.txt
+done
 
 process () {
   case "$1" in
@@ -128,7 +130,7 @@ process () {
     *)
       return ;;
   esac
-  if [ ! "${deps[$l]}" == "<>" ] ; then return ; fi
+#  if [ ! "${deps[$l]}" == "<>" ] ; then return ; fi
 
   while true ; do
     case "$1" in
@@ -152,36 +154,41 @@ process () {
   done
   deps[$l]=`setof $nodes`
 }
-while read l ; do process $l ; done < ../.depend
+while read l ; do process $l ; done < .depend
 NODES=${#deps[*]}
 EDGES=`echo ${deps[*]} | wc -w`
-echo -e "Nodes: $NODES\tEdges: $EDGES"
+echo -e "Nodes: $NODES\tEdges: $EDGES" > /dev/stderr
 
-echo "* Begin trclos"
-time trclos deps acc
+#echo "* Begin trclos" > /dev/stderr
+#time trclos deps acc > /dev/stderr
 
-declare -p deps acc > deps.g
-
+#declare -p deps acc
+writedot deps
 }
 
 
 graph2dot () {
-  source deps.g
+  g=$1
+  if [ ! -f "$g" ] ; then
+    echo "*** Graph file \"$g\" not found"
+    exit 1
+  fi
+  source $1
 
 #declare -p deps
 N1=`echo ${deps[*]} | wc -w`
 N2=`echo ${acc[*]} | wc -w`
-echo "* Begin trdiff"
+echo "* Begin trdiff" > /devstderr
 trdiff deps acc
-echo "* End trdiff"
+echo "* End trdiff" > /dev/stderr
 N3=`echo ${deps[*]} | wc -w`
 echo
 #declare -p acc
 #declare -p deps
 #echo
-echo $N1 $N2 $N3
+echo $N1 $N2 $N3 > /dev/stderr
 
-writedot deps > deps.dot
+writedot deps
 
 }
 #cat deps.dot

@@ -111,6 +111,14 @@ Lemma in_int_el : forall i x T,
 destruct T as [(T,Tm)|]; simpl; trivial.
 Qed.
 
+Lemma in_int_not_kind T i x :
+  el T i x ->
+  T <> None ->
+  x ∈ int T i.
+destruct T as [(T,Tm)|]; simpl; intros; trivial.
+elim H0; trivial.
+Qed.
+
 (** Injecting sets into the model *)
 Definition cst (x:X) : term.
 (*begin show*)
@@ -761,6 +769,40 @@ Lemma typ_subsumption' : forall e M T T',
   typ e M T'.
 Proof.
 unfold typ, sub_typ'; simpl; intros; auto.
+Qed.
+
+(** Derived rules of the basic judgements *)
+
+Lemma eq_typ_betar : forall e N T M,
+  typ e N T ->
+  T <> kind ->
+  eq_typ e (App (Abs T M) N) (subst N M).
+intros.
+apply eq_typ_beta; trivial.
+ reflexivity.
+ reflexivity.
+Qed.
+
+Lemma typ_var0 : forall e n T,
+  match T, nth_error e n with
+    Some _, value T' => T' <> kind /\ sub_typ e (lift (S n) T') T
+  | _,_ => False end ->
+  typ e (Ref n) T.
+intros.
+case_eq T; intros.
+ rewrite H0 in H.
+ case_eq (nth_error e n); intros.
+  rewrite H1 in H.
+  destruct H.
+  apply typ_subsumption with (lift (S n) t); auto.
+   apply typ_var; trivial.
+
+   destruct t as [(t,tm)|]; simpl; try discriminate.
+   elim H; trivial.
+
+  rewrite H1 in H; contradiction.
+
+ rewrite H0 in H; contradiction.
 Qed.
 
 End R.

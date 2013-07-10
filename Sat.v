@@ -219,6 +219,13 @@ unfold inSAT, interSAT, Inter; simpl; intros.
 destruct H; trivial.
 Qed.
 
+Lemma incl_interSAT_l A (F:A->SAT) x :
+  inclSAT (interSAT F) (F x).
+red; intros.
+apply interSAT_elim with (1:=H).
+Qed.
+
+
   Lemma interSAT_mono A (F G:A->SAT):
     (forall x, inclSAT (F x) (G x)) ->
     inclSAT (interSAT F) (interSAT G).
@@ -241,6 +248,27 @@ split; red; intros.
  rewrite eqSAT_def in H|-*; symmetry; trivial.
  rewrite eqSAT_def in H,H0|-*; intros;
    transitivity (inSAT t y); trivial.
+Qed.
+
+  Instance inclSAT_morph : Proper (eqSAT==>eqSAT==>iff) inclSAT.
+apply morph_impl_iff2; auto with *.
+do 5 red; intros.
+ rewrite <- H0; rewrite <- H in H2; auto. 
+Qed.
+
+Lemma interSAT_mono_subset :
+  forall A (P Q:A->Prop) (F:sig P->SAT) (G:sig Q->SAT),
+  (forall x, Q x -> P x) ->
+  (forall x Px Qx,
+   inclSAT (F (exist P x Px)) (G (exist Q x Qx))) ->
+  inclSAT (interSAT F) (interSAT G).
+red; intros.
+split.
+ apply sat_sn in H1; trivial.
+intros (x,Qx).
+change (inSAT t (G (exist Q x Qx))).
+apply H0 with (Px:=H _ Qx).
+apply interSAT_elim with (1:=H1).
 Qed.
 
 Lemma interSAT_morph_subset :
@@ -294,6 +322,12 @@ apply interSAT_elim with (x:=exist P x H0) in H.
 trivial.
 Qed.
 
+Lemma depSAT_elim' A (P:A->Prop) F t :
+  inSAT t (depSAT P F) -> id (forall x, P x -> inSAT t (F x)).
+red; intros.
+apply depSAT_elim with (1:=H) (2:=H0).
+Qed.
+
 Lemma depSAT_intro A (P:A->Prop) F t :
   sn t ->
   (forall x, P x -> inSAT t (F x)) ->
@@ -307,6 +341,20 @@ Qed.
 
 Definition condSAT (P:Prop) (S:SAT) : SAT :=
   depSAT (fun C => P -> inclSAT S C) (fun C => C).
+
+Lemma condSAT_ext (P Q:Prop) S S':
+  (P -> Q) ->
+  (P -> Q -> inclSAT S S') ->
+  inclSAT (condSAT P S) (condSAT Q S').
+unfold condSAT, depSAT; red; intros.
+apply interSAT_intro.
+ econstructor; reflexivity.
+intros (C,?); simpl.
+assert (rmk : P -> inclSAT S C).
+ intros.
+ transitivity S'; auto.
+apply interSAT_elim with (1:=H1)(x:=exist (fun _=>_) C rmk). 
+Qed.
 
 Lemma condSAT_morph_gen (P P':Prop) S S' :
   (P<->P') ->
@@ -323,6 +371,18 @@ split; intros.
  rewrite H0 in H3; auto.
 Qed.
 
+Instance condSAT_mono :
+  Proper (impl ==> inclSAT ==> inclSAT) condSAT.
+unfold condSAT, depSAT; do 4 red; intros.
+apply interSAT_intro.
+ econstructor; reflexivity.
+intros (C,?); simpl.
+assert (rmk : x -> inclSAT x0 C).
+ intros.
+ transitivity y0; auto.
+apply interSAT_elim with (1:=H1)(x:=exist (fun _=>_) C rmk). 
+Qed.
+
 Instance condSAT_morph : Proper (iff==>eqSAT==>eqSAT) condSAT.
 do 3 red; intros.
 apply condSAT_morph_gen; auto with *.
@@ -336,6 +396,14 @@ split; intros.
  apply depSAT_intro; intros.
   apply sat_sn in H0; trivial.
   apply H1; trivial.
+Qed.
+
+Lemma condSAT_neutral P C S :
+  ~ P -> inclSAT (condSAT P C) S.
+red; intros.
+unfold condSAT in H0.
+eapply depSAT_elim' in H0; red in H0.
+apply H0; intros; contradiction.
 Qed.
 
 Lemma condSAT_smaller P S :
@@ -394,6 +462,7 @@ intros.
 apply interSAT_elim with (x:=exist _ x H0) in H.
 apply prodSAT_elim with (2:=H1); trivial.
 Qed.
+
 Lemma piSAT0_elim' A (P:A->Prop) (F G:A->SAT) t :
   inSAT t (piSAT0 P F G) ->
   id (forall x u, P x -> inSAT u (F x) -> inSAT (App t u) (G x)).

@@ -55,32 +55,6 @@ apply prodSAT_morph.
  apply prodSAT_morph; auto with *.
 Qed.
 
-Instance condSAT_mono :
-  Proper (impl ==> inclSAT ==> inclSAT) condSAT.
-unfold condSAT, depSAT; do 4 red; intros.
-apply interSAT_intro.
- econstructor; reflexivity.
-intros (C,?); simpl.
-assert (rmk : x -> inclSAT x0 C).
- intros.
- transitivity y0; auto.
-apply interSAT_elim with (1:=H1)(x:=exist (fun _=>_) C rmk). 
-Qed.
-
-Lemma condSAT_ext (P Q:Prop) S S':
-  (P -> Q) ->
-  (P -> Q -> inclSAT S S') ->
-  inclSAT (condSAT P S) (condSAT Q S').
-unfold condSAT, depSAT; red; intros.
-apply interSAT_intro.
- econstructor; reflexivity.
-intros (C,?); simpl.
-assert (rmk : P -> inclSAT S C).
- intros.
- transitivity S'; auto.
-apply interSAT_elim with (1:=H1)(x:=exist (fun _=>_) C rmk). 
-Qed.
-
 
 Lemma fNAT_mono : forall A B,
   (forall k, k ∈ cc_bot NAT' -> inclSAT (A k) (B k)) -> forall k, inclSAT (fNAT A k) (fNAT B k).
@@ -141,14 +115,6 @@ apply depSAT_intro; intros.
  red; intros.
  eapply depSAT_elim with (F:=fun P => P k0); [apply H1|].
  exact H.
-Qed.
-
-Lemma condSAT_neutral P C S :
-  ~ P -> inclSAT (condSAT P C) S.
-red; intros.
-unfold condSAT in H0.
-eapply depSAT_elim with (1:=H0).
-intro; contradiction.
 Qed.
 
 
@@ -531,15 +497,6 @@ split.
  apply cNAT_post; trivial.
 Qed.
 
-
-
-Lemma condSAT_neutral P C S :
-  ~ P -> inclSAT (condSAT P C) S.
-red; intros.
-unfold condSAT in H0.
-eapply depSAT_elim with (1:=H0).
-intro; contradiction.
-Qed.
 
 Lemma cNAT_mt k S :
   ~ k ∈ NAT' ->
