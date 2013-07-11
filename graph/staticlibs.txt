@@ -1,4 +1,6 @@
-ModelECCW.html
+ModelECCW_sized.html
+ModelNat.html
+ModelNat_ZFind.html
 SN_W.html
 SN_NAT.html
 SN_nat.html

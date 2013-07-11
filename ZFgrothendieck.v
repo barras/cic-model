@@ -11,9 +11,11 @@ Record grot_univ (U:set) : Prop := {
                 (forall x y, x ∈ I -> R x y -> y ∈ U) ->
                 union (repl I R) ∈ U }.
 
-Lemma grot_univ_ext : forall U U',
-  U == U' -> grot_univ U -> grot_univ U'.
-destruct 2; split; intros.
+Instance grot_univ_morph : Proper (eq_set==>iff) grot_univ.
+apply morph_impl_iff1; auto with *.
+do 3 red; intros.
+destruct H0 as (Gtr,G2,Gpow,Gsup).
+split; intros.
  rewrite <- H in H1|-*; eauto.
 
  rewrite <- H in H0,H1|-*; auto.
@@ -21,7 +23,7 @@ destruct 2; split; intros.
  rewrite <- H in H0|-*; auto.
 
  rewrite <- H in H1|-*.
- apply G_union_repl0; intros; auto.
+ apply Gsup; intros; auto.
  rewrite H; eauto.
 Qed.
 
@@ -547,6 +549,8 @@ End ZF_Universe.
 
 End GrothendieckUniverse.
 
+(** Intersection *)
+
 Lemma grot_inter : forall UU,
   (exists x, x ∈ UU) ->
   (forall x, x ∈ UU -> grot_univ x) ->
@@ -615,9 +619,115 @@ split; intros.
    rewrite H8; auto.
 Qed.
 
+(** Successor *)
+
 Definition grot_succ_pred x y :=
   grot_univ y /\ x ∈ y /\ forall U, grot_univ U -> x ∈ U -> y ⊆ U.
 
+Instance grot_succ_pred_morph : Proper (eq_set==>eq_set==>iff) grot_succ_pred.
+do 3 red; intros.
+apply and_iff_morphism.
+ apply grot_univ_morph; trivial.
+apply and_iff_morphism.
+ apply in_set_morph; trivial.
+apply fa_morph; intros U.
+rewrite H; rewrite H0; reflexivity.
+Qed.
+
+Definition grot_succ U := uchoice (grot_succ_pred U).
+
+Instance grot_succ_morph : morph1 grot_succ.
+do 2 red; intros.
+apply uchoice_morph_raw.
+apply grot_succ_pred_morph; trivial.
+Qed.
+
+Lemma grot_succ_incl x y :
+  x ∈ grot_succ y ->
+  uchoice_pred (grot_succ_pred x) ->
+  uchoice_pred (grot_succ_pred y) ->
+  grot_succ x ⊆ grot_succ y.
+intros.
+specialize uchoice_def with (1:=H0); intros (_,(_,xmin)).
+specialize uchoice_def with (1:=H1); intros (?,(?,_)).
+apply xmin; trivial.
+Qed.
+
+Lemma grot_succ_mono x y :
+  x ⊆ y ->
+  uchoice_pred (grot_succ_pred x) ->
+  uchoice_pred (grot_succ_pred y) ->
+  grot_succ x ⊆ grot_succ y.
+intros.
+apply grot_succ_incl; trivial.
+specialize uchoice_def with (1:=H1); intros (?,(?,_)).
+apply G_incl with y; trivial.
+Qed.
+
+Definition grot_succ_U U x :=
+  subset U (fun y => forall V, grot_univ V -> x ∈ V -> y ∈ V).
+
+Instance grot_succ_U_morph : morph2 grot_succ_U.
+do 3 red; intros; apply subset_morph; trivial.
+red; intros.
+apply fa_morph; intros z.
+rewrite H0; reflexivity.
+Qed.
+
+(** Build the successor from a larger universe *)
+Lemma grot_succ_from_U U x :
+  grot_univ U ->
+  x ∈ U ->
+  grot_succ_pred x (grot_succ_U U x).
+split;[|split]; intros.
+ apply grot_intersection; trivial.
+
+ apply subset_intro; auto.
+
+ red; intros.
+ unfold grot_succ_U in H3; rewrite subset_ax in H3; destruct H3 as (?,(z',eqz,?)).
+ rewrite eqz; auto.
+Qed.
+
+Lemma grot_succ_ex x y :
+  grot_succ_pred x y ->
+  uchoice_pred (grot_succ_pred x).
+split;[|split]; intros.
+ revert H1; apply grot_succ_pred_morph; auto with *.
+
+ exists y; trivial.
+
+ destruct H0 as (?,(?,?)).
+ destruct H1 as (?,(?,?)).
+ apply incl_eq; auto.
+Qed.
+
+Lemma grot_succ_U_typ x :
+  uchoice_pred (grot_succ_pred x) ->
+  grot_univ (grot_succ x).
+intro.
+apply uchoice_def in H; apply H.
+Qed.
+
+Lemma grot_succ_U_in x :
+  uchoice_pred (grot_succ_pred x) ->
+  x ∈ grot_succ x.
+intro.
+apply uchoice_def in H; destruct H as (_,(?,_)); trivial.
+Qed.
+
+Lemma grot_succ_U_lst U x :
+  grot_univ U ->
+  x ∈ U ->
+  grot_succ x ⊆ U.
+intros.
+specialize grot_succ_from_U with (1:=H)(2:=H0); intro.
+apply grot_succ_ex in H1.
+apply uchoice_def in H1.
+destruct H1 as (_,(_,?)); auto.
+Qed.
+
+(** The Tarski-Grothendieck set theory *)
 
 Definition grothendieck := forall x, exists2 U, grot_univ U & x ∈ U.
 
@@ -626,52 +736,22 @@ Section TarskiGrothendieck.
 Variable gr : grothendieck.
 
 Lemma grot_inter_unique : forall x, uchoice_pred (grot_succ_pred x).
-unfold grot_succ_pred.
-split; intros.
- destruct H0 as (H0,(H1,H2)).
- split.
-  apply grot_univ_ext with x0; trivial.
-
-  split; intros.
-   rewrite <- H; trivial.
-   rewrite <- H; auto.
-
- split; intros.
-  elim gr with x; intros.
-  exists (subset x0 (fun y =>
-    forall U, grot_univ U -> x ∈ U -> y ∈ U)).
-  split; intros.
-   apply (grot_intersection (fun U => x ∈ U) x0); trivial.
-
-   split; intros.
-    apply subset_intro; trivial.
-
-    red; intros.
-    elim subset_elim2 with (1:=H3); intros.
-    rewrite H4; auto.
-
- destruct H as (gr_x0,(in_x0,lst_x0)).
- destruct H0 as (gr_x',(in_x',lst_x')).
- red in lst_x0, lst_x'|-.
- apply eq_intro; eauto.
+intros.
+destruct (gr x) as (U, gU, xU).
+specialize grot_succ_from_U with (1:=gU) (2:=xU); intro.
+apply grot_succ_ex in H; trivial.
 Qed.
-
-Definition grot_succ U := uchoice (grot_succ_pred U).
 
 Lemma grot_succ_typ : forall x, grot_univ (grot_succ x).
 intros.
-destruct (uchoice_def (grot_succ_pred x)).
- exact (grot_inter_unique x).
-
- trivial.
+apply grot_succ_U_typ.
+apply grot_inter_unique.
 Qed.
 
 Lemma grot_succ_in : forall x, x ∈ grot_succ x.
 intros.
-destruct (uchoice_def (grot_succ_pred x)).
- exact (grot_inter_unique x).
-
- destruct H0; trivial.
+apply grot_succ_U_in.
+apply grot_inter_unique.
 Qed.
 
 End TarskiGrothendieck.
