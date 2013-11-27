@@ -723,3 +723,29 @@ Qed.
 End Equiv_ZF_CIC_TTColl.
 
 End Universe.
+
+(** Choices implies description:  ∃x. P(x) -> Σx. P(x) *)
+
+Section ChoicesImpliesDescription.
+
+Hypothesis choose : set -> set.
+Hypothesis choose_morph : morph1 choose.
+Hypothesis choose_ax : forall x, (exists y, y ∈ x) -> choose x ∈ x.
+
+Lemma description_from_choice A P (Pm:Proper (eq_set==>iff) P) : 
+  cc_lam (cc_exists A (fun x => P2p (P x))) (fun _ => choose (subset A P)) ∈
+  cc_arr (cc_exists A (fun x => P2p (P x))) (subset A P).
+apply cc_arr_intro; auto with *.
+intros.
+apply choose_ax.
+apply sup_ax in H.
+ destruct H as (y,?,?).
+ exists y; apply subset_intro; trivial.
+ apply cond_set_ax in H0.
+ destruct H0; trivial.
+
+ do 2 red; intros.
+ rewrite H1; reflexivity.
+Qed.
+
+End ChoicesImpliesDescription.
