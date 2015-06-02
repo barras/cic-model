@@ -971,6 +971,6 @@ apply G_incl with (TI (WF' A B i) (W_ord (int A i) (fun x => int B (V.cons x i))
 
    apply (ZFecc.ecc_grot (S n)).
 
- apply W_stages; trivial.
+ apply W_post; trivial.
  apply Bw_morph; reflexivity.
 Qed.

@@ -2,7 +2,7 @@ Require Import ZF ZFpairs ZFsum ZFrelations ZFcoc ZFord ZFfix.
 
 Require Import ZFstable.
 
-(** Here we define the (semantic) notion of strictly positiveness.
+(** Here we define the (semantic) notion of strict positiveness.
    We then show that it fulfills all the requirements for the existence
    of a fixpoint:
    - monotonicity

@@ -599,7 +599,7 @@ Definition Ffix_rel a y :=
   forall R:set->set->Prop,
   Proper (eq_set ==> eq_set ==> iff) R ->
   (forall x g,
-   ext_fun (fsub x) g ->
+   morph1 g ->
    (forall y, y ∈ fsub x -> R y (g y)) ->
    R x (G g x)) ->
   R a y.
@@ -613,7 +613,7 @@ Qed.
 
 
   Lemma Ffix_rel_intro : forall x g,
-    ext_fun (fsub x) g ->
+    morph1 g ->
     (forall y, y ∈ fsub x -> Ffix_rel y (g y)) ->
     Ffix_rel x (G g x).
 red; intros.
@@ -625,7 +625,7 @@ Qed.
     x ∈ Ffix ->
     Ffix_rel x o ->
     exists2 g,
-      ext_fun (fsub x) g /\
+      morph1 g /\
       (forall y, y ∈ fsub x -> Ffix_rel y (g y)) &
       o == G g x.
 intros x o xA Fr.
@@ -639,14 +639,12 @@ apply Fr; intros.
  split;[|exists g].
   rewrite <- H; rewrite <- H0; trivial.
 
-  split; intros.
-   red; red; intros; apply H3; trivial.
-   rewrite H; trivial.
-
-   rewrite <- H in H1; auto.
+  split; intros; trivial.
+  rewrite <- H in H1; auto.
 
   rewrite <- H0; rewrite H5.
   apply Gm; auto with *.
+  red; auto with *.
 
  split.
   apply Ffix_rel_intro; auto.
@@ -660,6 +658,7 @@ apply Fr; intros.
    apply subset_elim1 in H1; trivial.
 
   apply Gm; auto with *.
+  red; auto with *.
 Qed.
 
   Lemma Ffix_rel_fun :
@@ -675,7 +674,7 @@ destruct H2 as (g',(eg',Hg),eqy').
 rewrite eqy'; clear y' eqy'.
 apply Gm; auto with *.
 red; intros.
-rewrite <- (eg' _ _ H2 H4); auto.
+rewrite <- (eg' _ _ H4); auto.
 apply H1; auto.
 apply subset_elim1 in H2; trivial.
 Qed.
@@ -997,13 +996,9 @@ assert (fsub A x2 ==  fsub A' x2).
   red; intros.
   apply fa_morph; intro X.
   rewrite Ffix_indep; reflexivity.
-apply impl_morph.
- unfold ext_fun, eq_fun.
- apply fa_morph; intro x3.
- apply fa_morph; intro x4.
- rewrite H2; reflexivity.
 
- intros.
+apply fa_morph.
+intros gm.
  apply impl_morph; intros.
   apply fa_morph; intro y0.
   rewrite H2; reflexivity.
@@ -1013,7 +1008,7 @@ apply impl_morph.
   apply osup_morph; auto.
   red; intros.
   apply osucc_morph.
-  apply H3; trivial.
+  apply gm; trivial.
 
  apply x1; trivial.
 Qed.
@@ -1021,7 +1016,6 @@ Qed.
 End BoundIndep.
 
 End IterMonotone.
-
 
 Lemma TI_mono_gen G G' o o' :
   morph1 G ->
@@ -1043,6 +1037,96 @@ apply TI_intro with y'; auto.
  revert H8; apply H1.
  apply H5; auto with *.
  apply isOrd_inv with y; trivial.
+Qed.
+
+Instance Ffix_morph : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) Ffix. 
+do 3 red; intros.
+unfold Ffix.
+apply subset_morph; trivial.
+red; intros.
+apply ex2_morph'; intros.
+reflexivity.
+apply in_set_morph.
+reflexivity.
+apply TI_morph_gen; trivial.
+reflexivity.
+Qed.
+
+Instance fsub_morph_gen :
+  Proper ((eq_set==>eq_set)==>eq_set==>eq_set==>eq_set) fsub.
+do 4 red; intros.
+unfold fsub.
+apply subset_morph.
+ apply Ffix_morph; trivial.
+ red; intros.
+ apply fa_morph; intros X.
+ apply impl_morph.
+  apply incl_set_morph.
+  reflexivity.
+  apply Ffix_morph; trivial.
+
+  intros.
+  rewrite (H _ _ (reflexivity X)), H1.  
+  reflexivity.
+Qed.
+Local Notation E := eq_set (only parsing).
+
+Instance Fix_rec_morph :
+  Proper ((E==>E)==>E==>((E==>E)==>E==>E)==>E==>E) Fix_rec. 
+do 5 red; intros.
+unfold Fix_rec.
+apply uchoice_morph_raw.
+red; intros.
+unfold Ffix_rel.
+apply fa_morph; intro R.
+apply fa_morph; intro Rm.
+apply impl_morph.
+ apply fa_morph; intro.
+ apply fa_morph; intro.
+ apply fa_morph.
+ intros.
+ apply impl_morph.
+  apply fa_morph; intros.
+  apply impl_morph; intros.
+  apply in_set_morph. 
+  reflexivity.
+  apply fsub_morph_gen; trivial.
+  reflexivity.
+
+  reflexivity.
+
+ intros.
+ apply Rm.  
+ reflexivity.
+ apply H1; trivial.
+ reflexivity.
+
+ intros.
+ apply Rm; trivial. 
+Qed.
+
+Instance F_a_morph_gen :
+  Proper ((eq_set==>eq_set)==>eq_set==>(eq_set==>eq_set)==>eq_set==>eq_set) F_a.
+do 5 red; intros.
+unfold F_a.
+apply osup_morph.
+apply fsub_morph_gen; trivial.
+red; intros.
+apply osucc_morph.
+apply H1; trivial.
+Qed.
+  
+Instance Ffix_ord_morph : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) Ffix_ord. 
+do 3 red; intros.
+unfold Ffix_ord.
+apply osup_morph.
+ apply Ffix_morph; trivial.
+
+ red; intros.
+ apply osucc_morph.
+ apply Fix_rec_morph; trivial.
+ do 2 red; intros.
+ apply F_a_morph_gen; trivial.
 Qed.
 
 (** * Construction of the fixpoint "from above" *)

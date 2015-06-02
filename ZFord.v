@@ -1528,7 +1528,6 @@ red; intros.
 apply H; apply H1; trivial.
 Qed.
 
-
 (** * Supremum of directed ordinals *)
 
 (** ** Binary supremum *)

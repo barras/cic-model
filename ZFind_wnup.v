@@ -37,7 +37,7 @@ Hypothesis ftyp : forall a x y,
 (** The intended type operator: parameter is not part of the data-structure *)
 
 Definition W_Fd (X:set->set) a :=
-  sigma (A a) (fun x => cc_prod (B a x) (fun y => X (f a x y))).
+  Σ x ∈ A a, Π y ∈ B a x, X (f a x y).
 
 Definition Wi o a := TIF Arg W_Fd o a.
 
@@ -186,7 +186,7 @@ Qed.
    See also more refined result below.
  *)
 Definition tr f w :=
-  couple (snd (fst w)) (cc_lam (B'(fst w)) (fun i => f (cc_app (snd w) i))).
+  couple (snd (fst w)) (λ i ∈ B'(fst w), f (cc_app (snd w) i)).
 
 Instance tr_morph : Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) tr.
 do 3 red; intros.
@@ -352,8 +352,8 @@ do 2 red; intros; apply cc_prod_morph.
    apply (iso_funm (H1 _ H0)).
 
    rewrite H4; reflexivity.
- exists (couple (couple a (fst y)) (cc_lam (B' (couple a (fst y)))
-    (fun i => iso_inv (subset X (P (f a (fst y) i))) g (cc_app (snd y) i)))).
+ exists (couple (couple a (fst y))
+    (λ i ∈ B' (couple a (fst y)), iso_inv (subset X (P (f a (fst y) i))) g (cc_app (snd y) i))).
   apply subset_intro.
    apply W0.W_F_intro; intros; auto with *.
     apply A'_intro; auto.
@@ -662,7 +662,15 @@ End W_theory.
 Section MoreMorph.
 
 Local Notation E := eq_set.
-Lemma W_Fd_morph_all : Proper ((E==>E)==>(E==>E==>E)==>(E==>E==>E==>E)==>(E==>E)==>E==>E) W_Fd.
+
+Instance A'_morph_gen : Proper (eq_set==>(eq_set==>eq_set)==>eq_set) A'.
+do 3 red; intros.
+unfold A'.
+apply sigma_morph; auto.
+Qed.
+
+Lemma W_Fd_morph_all :
+  Proper ((E==>E)==>(E==>E==>E)==>(E==>E==>E==>E)==>(E==>E)==>E==>E) W_Fd.
 do 6 red; intros.
 unfold W_Fd.
 apply sigma_morph.
@@ -692,10 +700,18 @@ apply cc_app_morph.
 apply H5; trivial.
 Qed.
 
-Lemma W_ord_morph_all : Proper (E==>(E==>E)==>(E==>E==>E)==>E) W_ord.
+  Lemma W_ord_morph_all : Proper (E==>(E==>E)==>(E==>E==>E)==>E) W_ord.
 do 4 red; intros.
 unfold W_ord.
-Admitted.
+apply W0.W_ord_morph_gen.
+ apply A'_morph_gen; trivial.
+
+ red; intros.
+ unfold B'.
+ apply H1.
+  apply fst_morph; trivial. 
+  apply snd_morph; trivial. 
+Qed.
 
 Lemma W_morph_all : Proper (E==>(E==>E)==>(E==>E==>E)==>(E==>E==>E==>E)==>E==>E) W.
 do 6 red; intros.
@@ -794,45 +810,6 @@ Qed.
 
 End W_Simulation.
 
-(** Support for definitions by case *)
-(* --> ? *)
-Definition if_prop P x y :=
-  cond_set P x ∪ cond_set (~P) y.
-
-Instance if_prop_morph : Proper (iff ==> eq_set ==> eq_set ==> eq_set) if_prop.
-do 4 red; intros.
-unfold if_prop.
-apply union2_morph.
- apply cond_set_morph; auto.
- apply cond_set_morph; auto.
- rewrite H; reflexivity.
-Qed.
-
-Lemma if_left (P:Prop) x y : P -> if_prop P x y == x.
-unfold if_prop; intros.
-apply eq_intro; intros.
- apply union2_elim in H0; destruct H0.
-  rewrite cond_set_ax in H0.
-  destruct H0; trivial.
-
-  rewrite cond_set_ax in H0; destruct H0; contradiction.
-
- apply union2_intro1; rewrite cond_set_ax; auto.
-Qed.
-
-Lemma if_right (P:Prop) x y : ~P -> if_prop P x y == y.
-unfold if_prop; intros.
-apply eq_intro; intros.
- apply union2_elim in H0; destruct H0.
-  rewrite cond_set_ax in H0; destruct H0; contradiction.
-
-  rewrite cond_set_ax in H0.
-  destruct H0; trivial.
-
- apply union2_intro2; rewrite cond_set_ax; auto.
-Qed.
-
-
 (** * Waiving the universe constraint on Arg: *)
 
 Section BigParameter.
@@ -853,8 +830,7 @@ Hypothesis ftyp : forall a x y,
 (** Encoding big parameters as (small) paths from a fixed parameter [a].
     First, the type operator. *)
 Let L X a :=
-  singl empty ∪ sigma (A a) (fun x => sigma (B a x) (fun y => X (f a x y))).
-
+  singl empty ∪ Σ x ∈ A a, Σ y ∈ B a x, X (f a x y).
 
 Instance Lmorph : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) L.
 do 3 red; intros.

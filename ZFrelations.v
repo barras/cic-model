@@ -769,6 +769,9 @@ Qed.
 Definition cc_lam (x:set) (y:set->set) : set :=
   sup x (fun x' => replf (y x') (fun y' => couple x' y')).
 
+Notation "'λ'  x ∈ A , B" :=
+  (cc_lam A (fun x => B)) (x ident, at level 200, right associativity).
+
 Instance cc_lam_morph : Proper (eq_set ==> (eq_set ==> eq_set) ==> eq_set) cc_lam.
 unfold cc_lam; do 3 red; intros.
 apply sup_morph; trivial.
@@ -921,7 +924,7 @@ Qed.
 
 Lemma cc_eta_eq' : forall dom f,
   is_cc_fun dom f ->
-  f == cc_lam dom (fun x => cc_app f x).
+  f == λ x ∈ dom, cc_app f x.
 unfold is_cc_fun.
 intros.
 assert (am : ext_fun dom (fun x => cc_app f x)).
@@ -943,6 +946,9 @@ Qed.
 Definition cc_prod (x:set) (y:set->set) : set :=
   replf (dep_func x y)
     (fun f => cc_lam x (fun x' => app f x')).
+
+Notation "'Π'  x ∈ A , B" :=
+  (cc_prod A (fun x => B)) (x ident, at level 200, right associativity).
 
 Lemma cc_prod_ext :
   forall x1 x2 f1 f2,
@@ -1064,7 +1070,7 @@ Qed.
 (* Eta reduction : *)
 Lemma cc_eta_eq: forall dom F f,
   f ∈ cc_prod dom F ->
-  f == cc_lam dom (fun x => cc_app f x).
+  f == λ x ∈ dom, cc_app f x.
 intros.
 apply cc_eta_eq'; eauto.
 Qed.

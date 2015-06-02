@@ -18,7 +18,7 @@ Variable B : set -> set.
 Hypothesis Bm : morph1 B.
 
 (* The intended type operator *)
-Definition W_F X := sigma A (fun x => cc_arr (B x) X).
+Definition W_F X := Σ x ∈ A, cc_arr (B x) X.
 
 Lemma wfm1 : forall X, ext_fun A (fun x => cc_arr (B x) X).
 do 2 red; intros.
@@ -102,7 +102,7 @@ Qed.
 
 
   Definition WFmap f x :=
-    couple (fst x) (cc_lam (B (fst x)) (fun i => f (cc_app (snd x) i))).
+    couple (fst x) (λ i ∈ B (fst x), f (cc_app (snd x) i)).
 
   Lemma WFmap_ext : forall f f' x x',
     fst x ∈ A ->
@@ -679,19 +679,24 @@ rewrite <- H.
 apply W'_eqn.
 Qed.
 
-  Lemma W_stages o :
-    isOrd o ->
-    TI W_F o ⊆ W.
-induction 1 using isOrd_ind; intros.
+  Lemma W_post : forall o, isOrd o -> TI W_F o ⊆ W.
+intros.
+apply isOrd_ind with (2:=H).
+intros.
 red; intros.
-apply TI_elim in H2; auto.
-2:apply Fmono_morph.
-2:apply W_F_mono.
-destruct H2 as (o',?,?).
+apply TI_elim in H3; auto with *.
+destruct H3 as (y',?,?).
 rewrite W_eqn.
-revert H3; apply W_F_mono; auto.
+revert H4.
+apply W_F_mono.
+auto.
 Qed.
 
+  Lemma W_eta w : w ∈ W -> w == couple (fst w) (snd w).
+intros.
+rewrite W_eqn in H.
+apply surj_pair with (1:=subset_elim1 _ _ _ H).
+Qed.
 
 (** Recursor on W *)
 
@@ -893,7 +898,344 @@ Qed.
 
 End Recursor.
 
-(** * Universe facts: when A and B belong to a given (infinite) universe, then so does W(A,B). *)
+Section SimpleRecursor.
+
+  Variable F : set -> set.
+  Hypothesis Fm : morph1 F.
+  
+  Variable U : set -> set.
+  Hypothesis Um : morph1 U.
+
+  Hypothesis Ftyp : forall o f, isOrd o ->
+    (forall w, w ∈ TI W_F o -> cc_app f w ∈ U w) ->
+    (forall w, w ∈ TI W_F (osucc o) -> cc_app (F f) w ∈ U w).
+
+  Hypothesis Firr : forall o f g, isOrd o ->
+    fcompat (TI W_F o) f g ->
+    fcompat (TI W_F (osucc o)) (F f) (F g).
+    
+  Definition W_REC := WREC (fun o fct => λ w ∈ TI W_F (osucc o), cc_app (F fct) w) W_ord.
+
+  Lemma W_REC_eqn w :
+    w ∈ W ->
+    cc_app W_REC w == cc_app (F W_REC) w.
+intros.
+unfold W_REC.
+rewrite WREC_expand with (U:=fun _ w => U w); trivial.
+ rewrite cc_beta_eq; trivial.
+  reflexivity.
+
+  do 2 red; intros.
+  rewrite H1; reflexivity.
+
+  rewrite TI_mono_succ; auto with *.
+  fold W.
+  rewrite <- W_eqn; trivial.
+  
+  do 3 red; intros.
+  apply cc_lam_ext.
+   rewrite H0; reflexivity.
+
+   red; intros.
+   apply cc_app_morph; auto.
+
+ intros.
+ rewrite H5; reflexivity.
+
+ intros.
+ apply cc_prod_intro.
+  do 2 red; intros; apply cc_app_morph; auto with *.
+  do 2 red; intros; auto.
+  intros.
+  apply Ftyp with o; trivial.
+  intros.
+  apply cc_prod_elim with (1:=H2); trivial.
+
+ red; red; intros.
+ rewrite cc_beta_eq; trivial.
+  rewrite cc_beta_eq. 
+  red in Firr.
+  eapply Firr with o; trivial.
+
+  do 2 red; intros.
+  rewrite H9; reflexivity.
+
+ revert H7; apply TI_mono; auto with *.
+ apply osucc_mono; auto.
+
+ do 2 red; intros.
+ rewrite H9; reflexivity.
+Qed.
+
+  Lemma W_REC_typ : W_REC ∈ cc_prod W U.
+apply WREC_wt with (U:=fun _ w => U w); trivial.
+ do 3 red; intros.
+ apply cc_lam_ext.
+  rewrite H; reflexivity.
+
+  red; intros.
+  apply cc_app_morph; auto.
+
+ intros.
+ rewrite H4; reflexivity.
+
+ intros.
+ apply cc_prod_intro.
+  do 2 red; intros; apply cc_app_morph; auto with *.
+  do 2 red; intros; auto.
+  intros.
+  apply Ftyp with o; trivial.
+  intros.
+  apply cc_prod_elim with (1:=H1); trivial.
+
+ red; red; intros.
+ rewrite cc_beta_eq; trivial.
+  rewrite cc_beta_eq. 
+  red in Firr.
+  eapply Firr with o; trivial.
+
+  do 2 red; intros.
+  rewrite H8; reflexivity.
+
+ revert H6; apply TI_mono; auto with *.
+ apply osucc_mono; auto.
+
+ do 2 red; intros.
+ rewrite H8; reflexivity.
+Qed.
+
+  Lemma W_REC_unicity :
+    forall f,
+    f ∈ (Π w ∈ W, U w) ->
+    fcompat W f (F f) ->
+    f == W_REC.
+    intros.
+assert (forall w, w ∈ W -> cc_app f w ∈ U w).
+ intros.
+ apply cc_prod_elim with (1:=H); trivial.
+rename H into fty.
+assert (fcompat W f W_REC).
+revert H1 H0; unfold W.
+apply isOrd_ind with (2:=W_o_o).
+intros.
+red; intros.
+rewrite W_REC_eqn.
+red in H3.
+rewrite H3; trivial.
+red in Firr.
+apply TI_elim in H4; auto with *.
+destruct H4 as (o',o'o,H4).
+assert (isOrd o').
+ apply isOrd_inv with y; trivial.
+rewrite <- TI_mono_succ in H4; auto with *.
+assert (TI W_F o' ⊆ TI W_F y).
+ apply TI_mono; auto with *.
+apply Firr with (o:=o'); trivial.
+apply H1; trivial.
+ intros.
+ apply H2; auto.
+
+ red; intros.
+ apply H3; auto.
+
+ revert H4; apply TI_mono; auto with *.
+
+rewrite cc_eta_eq with (1:=fty).
+rewrite cc_eta_eq with (1:=W_REC_typ).
+apply cc_lam_ext.
+reflexivity.
+red; intros.
+red in H.
+rewrite <- H3.
+apply H.
+trivial.
+Qed.
+    
+  (*
+  Lemma W_REC_ind : forall P x,
+    Proper (eq_set==>eq_set==>iff) P ->
+    (forall x,
+     x ∈ W ->
+     (forall y, y ∈ W -> P y (cc_app WREC y)) ->
+     P x (cc_app (F WREC) x)) ->
+    x ∈ W -> P x (cc_app WREC x).
+*)
+End SimpleRecursor.
+
+Section PrimRecursor.
+
+  Variable P : set -> set.
+  Hypothesis Pm : morph1 P.
+  
+  Variable F : set -> set -> set -> set.
+  Hypothesis Fm : Proper (eq_set==>eq_set==>eq_set==>eq_set) F.
+
+  Hypothesis Ftyp : forall x y recy,
+    x ∈ A ->
+    y ∈ (Π i ∈ B x, W) ->
+    recy ∈ (Π i ∈ B x, P (cc_app y i)) ->
+    F x y recy ∈ P (couple x y).
+
+  Definition WPREC : set :=
+    W_REC (fun f =>
+             λ w ∈ W, F (fst w) (snd w) (λ i ∈ B (fst w), cc_app f (cc_app (snd w) i))).
+
+  Let lam_m1 : forall f f' w w', f==f' -> w ∈ W -> w==w' ->
+    F (fst w) (snd w) (λ i ∈ B (fst w), cc_app f (cc_app (snd w) i)) ==
+    F (fst w') (snd w') (λ i ∈ B (fst w'), cc_app f' (cc_app (snd w') i)).
+intros.
+apply Fm.
+ apply fst_morph; trivial.
+ apply snd_morph; trivial.
+apply cc_lam_ext.
+ apply Bm.
+ apply fst_morph; trivial.
+
+ red; intros.
+ rewrite H,H1,H3; reflexivity.
+Qed.
+
+  Let lam_m :
+    morph1
+     (fun f : set =>
+      λ w ∈ W,
+      F (fst w) (snd w) (λ i ∈ B (fst w), cc_app f (cc_app (snd w) i))).
+do 2 red; intros.
+apply cc_lam_ext.
+ reflexivity.
+red; intros.
+apply lam_m1; trivial.
+Qed.
+  
+Let lam_typ :
+ forall o f : set,
+ isOrd o ->
+ (forall w : set, w ∈ TI W_F o -> cc_app f w ∈ P w) ->
+ forall w : set,
+ w ∈ TI W_F (osucc o) ->
+ cc_app
+   (λ w0 ∈ W,
+    F (fst w0) (snd w0) (λ i ∈ B (fst w0), cc_app f (cc_app (snd w0) i))) w
+   ∈ P w.
+intros.
+rewrite cc_beta_eq.
+rewrite TI_mono_succ in H1; auto with *.
+  setoid_replace (P w) with (P (couple (fst w) (snd w))).
+ apply Ftyp.
+  apply fst_typ_sigma in H1; trivial.
+
+  eapply snd_typ_sigma in H1.
+  3:reflexivity.
+  revert H1; apply cc_prod_covariant.   
+  do 2 red; reflexivity.
+  reflexivity.   
+  intros.
+  apply W_post; trivial.
+  do 2 red; intros.
+  apply cc_arr_morph.
+  auto.
+  reflexivity.
+
+  apply cc_prod_intro.
+   do 2 red; intros.
+   rewrite H3; reflexivity.
+   do 2 red; intros.
+   rewrite H3; reflexivity.
+   intros.
+   apply H0.
+   eapply snd_typ_sigma in H1.
+   3:reflexivity.
+   apply cc_prod_elim with (1:=H1); trivial.
+   do 2 red; intros.
+   apply cc_arr_morph.
+   auto.
+   reflexivity.
+
+ apply Pm.
+ apply surj_pair with (1:=subset_elim1 _ _ _ H1).
+
+ do 2 red; intros.
+ apply lam_m1; trivial.
+ reflexivity. 
+
+ revert H1; apply W_post; auto.
+Qed.
+
+Let lam_irr :
+ forall o f f',
+ isOrd o ->
+ fcompat (TI W_F o) f f' ->
+ fcompat (TI W_F (osucc o))
+   (λ w ∈ W, F (fst w) (snd w) (λ i ∈ B (fst w), cc_app f (cc_app (snd w) i)))
+   (λ w ∈ W, F (fst w) (snd w) (λ i ∈ B (fst w), cc_app f' (cc_app (snd w) i))).
+red; intros.
+rewrite cc_beta_eq.
+rewrite cc_beta_eq.
+apply Fm.
+reflexivity.
+reflexivity.
+apply cc_lam_ext.
+reflexivity.
+red; intros.
+rewrite <- H3.
+apply H0.
+rewrite TI_mono_succ in H1; auto with *.
+eapply snd_typ_sigma in H1.
+3:reflexivity.
+apply cc_prod_elim with (1:=H1); trivial.
+do 2 red; intros.
+apply cc_arr_morph.
+auto.
+reflexivity.
+
+do 2 red; intros.
+apply lam_m1; trivial.
+reflexivity. 
+
+revert H1; apply W_post; auto.
+
+do 2 red; intros.
+apply lam_m1; trivial.
+reflexivity. 
+
+revert H1; apply W_post; auto.
+Qed.
+
+Lemma WPREC_typ : WPREC ∈ Π w ∈ W, P w.
+intros.
+unfold WPREC.
+apply W_REC_typ with (U:=P); trivial.
+Qed.
+
+  Lemma WPREC_eqn x y :
+    couple x y ∈ W ->
+    cc_app WPREC (couple x y) == F x y (λ i ∈ B x, cc_app WPREC (cc_app y i)).
+intros.
+unfold WPREC.
+rewrite W_REC_eqn with (U:=P); trivial.
+rewrite cc_beta_eq; trivial.
+apply Fm.
+ apply fst_def.
+ apply snd_def.
+
+ apply cc_lam_ext.
+ apply Bm.
+ apply fst_def.
+ red; intros.
+ rewrite snd_def.
+ rewrite H1.
+ reflexivity.
+
+do 2 red; intros.
+apply lam_m1; trivial.
+reflexivity.
+Qed.
+  
+
+
+End PrimRecursor.
+
+ (** * Universe facts: when A and B belong to a given (infinite) universe, then so does W(A,B). *)
 
 Section W_Univ.
 
@@ -959,6 +1301,15 @@ red; trivial.
 Qed.
 *)
 
+Instance W_F_morph_gen :
+  Proper (eq_set==>(eq_set==>eq_set)==>eq_set==>eq_set) W_F.
+do 4 red; intros.
+unfold W_F.
+apply sigma_ext; trivial.
+intros.
+rewrite (H0 _ _ H3),H1; reflexivity.
+Qed.
+
 Lemma W_F_ext : forall A A' B B' X X',
   A == A' ->
   eq_fun A B B' ->
@@ -969,6 +1320,64 @@ apply sigma_ext; trivial.
 intros.
 apply cc_prod_ext; auto with *.
 red; auto.
+Qed.
+
+Instance Wsup_morph_gen : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) Wsup.
+do 3 red; intros.
+unfold Wsup.
+apply union2_morph.
+ rewrite H0; reflexivity.
+
+ apply sup_morph.
+ apply H; rewrite H0; reflexivity.
+ red; intros.
+ apply replf_morph_raw.
+ rewrite H0,H2; reflexivity.
+ red; intros.
+ rewrite H2,H3; reflexivity.
+Qed.
+
+Instance Wf_morph_gen :
+  Proper (eq_set==>(eq_set==>eq_set)==>eq_set==>eq_set) Wf.
+do 4 red; intros.
+unfold Wf.
+apply replf_morph_raw.
+ apply W_F_morph_gen; trivial.
+
+ red; intros.
+ apply Wsup_morph_gen; trivial.
+Qed.
+
+Instance Wdom_morph : Proper (eq_set==>(eq_set==>eq_set)==>eq_set) Wdom.
+do 3 red; intros.
+unfold Wdom.
+apply rel_morph; trivial.
+apply List_morph.
+apply sup_morph; trivial.
+red; intros.
+auto.
+Qed.
+
+
+Lemma W_ord_morph_gen : Proper (eq_set==>(eq_set==>eq_set)==>eq_set) W_ord.
+do 3 red; intros.
+unfold W_ord.  
+apply Ffix_ord_morph.
+ red; intros.
+ apply Wf_morph_gen; trivial.
+
+ apply Wdom_morph; trivial.
+Qed.
+
+Lemma WREC_morph_gen : Proper ((eq_set==>eq_set==>eq_set)==>eq_set==>eq_set) WREC.
+do 3 red; intros.
+unfold WREC.
+unfold REC.
+apply TR_morph; trivial.
+do 2 red; intros.
+apply sup_morph; trivial.
+red; intros.
+apply H; auto.
 Qed.
 
 Hint Resolve wfm1.

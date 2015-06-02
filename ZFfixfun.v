@@ -874,3 +874,21 @@ End BoundedOperator.
 
 End IterMonotone.
 
+
+Local Notation E := eq_set (only parsing).
+  
+Instance TIF_morph_gen : Proper (E==>((E==>E)==>E==>E)==>E==>E==>E) TIF.
+do 5 red; intros.
+unfold TIF.
+apply cc_app_morph; trivial.
+apply TR_morph; trivial.
+do 3 red; intros.
+apply cc_lam_ext; trivial.
+red; intros.
+apply sup_morph; trivial.
+red; intros.
+apply H0; trivial.
+red; intros.
+apply cc_app_morph; auto.
+Qed.
+

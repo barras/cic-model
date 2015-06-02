@@ -254,6 +254,9 @@ Qed.
 Definition sigma A B :=
   subset (prodcart A (sup A B)) (fun p => snd p ∈ B (fst p)).
 
+Notation "'Σ'  x ∈ A , B" :=
+   (sigma A (fun x => B)) (x ident, at level 200, right associativity).
+
 Instance sigma_morph : Proper (eq_set ==> (eq_set ==> eq_set) ==> eq_set) sigma.
 unfold sigma; do 3 red; intros.
 apply subset_morph.
@@ -294,7 +297,7 @@ apply subset_ext; intros.
 Qed.
 
 Lemma sigma_nodep : forall A B,
-  prodcart A B == sigma A (fun _ => B).
+  prodcart A B == Σ _∈A, B.
 intros.
 apply eq_intro; intros.
  generalize (fst_typ _ _ _ H); intro.

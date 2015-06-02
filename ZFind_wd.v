@@ -36,7 +36,7 @@ Hypothesis gm : Proper (eq_set==>eq_set==>iff) g.
     [Inductive Wd' (a:Arg) : Type := C' (x:A) (_:g x=a) (_:forall i:B x, Wd(f x i)).
  *)
 Definition W_Fd (X:set->set) (a:set) :=
-  sigma (subset A (fun x => g x a)) (fun x => cc_prod (B x) (fun i => X (f x i))).
+  Σ x ∈ subset A (fun x => g x a), Π i ∈ B x, X (f x i).
 
 Instance W_Fd_morph :
   Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) W_Fd.

@@ -640,7 +640,7 @@ apply empty_ext; red; intros.
 rewrite cond_set_ax in H0.
 destruct H0; auto.
 Qed.
-
+  
 (** other properties of axioms *)
 
 Lemma pair_commut : forall x y, pair x y == pair y x.
@@ -894,7 +894,46 @@ apply eq_intro; intros.
  destruct H; eauto using union_intro.
 Qed.
 
-(** Russell's paradox *)
+(** Conditional set *)
+
+Definition if_prop P x y :=
+  cond_set P x ∪ cond_set (~P) y.
+
+Instance if_prop_morph : Proper (iff ==> eq_set ==> eq_set ==> eq_set) if_prop.
+do 4 red; intros.
+unfold if_prop.
+apply union2_morph.
+ apply cond_set_morph; auto.
+ apply cond_set_morph; auto.
+ rewrite H; reflexivity.
+Qed.
+
+Lemma if_left (P:Prop) x y : P -> if_prop P x y == x.
+unfold if_prop; intros.
+apply eq_intro; intros.
+ apply union2_elim in H0; destruct H0.
+  rewrite cond_set_ax in H0.
+  destruct H0; trivial.
+
+  rewrite cond_set_ax in H0; destruct H0; contradiction.
+
+ apply union2_intro1; rewrite cond_set_ax; auto.
+Qed.
+
+Lemma if_right (P:Prop) x y : ~P -> if_prop P x y == y.
+unfold if_prop; intros.
+apply eq_intro; intros.
+ apply union2_elim in H0; destruct H0.
+  rewrite cond_set_ax in H0; destruct H0; contradiction.
+
+  rewrite cond_set_ax in H0.
+  destruct H0; trivial.
+
+ apply union2_intro2; rewrite cond_set_ax; auto.
+Qed.
+
+
+(** Russel's paradox *)
 
 Section Russell.
 
