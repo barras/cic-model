@@ -681,15 +681,8 @@ Qed.
 
   Lemma W_post : forall o, isOrd o -> TI W_F o ⊆ W.
 intros.
-apply isOrd_ind with (2:=H).
-intros.
-red; intros.
-apply TI_elim in H3; auto with *.
-destruct H3 as (y',?,?).
-rewrite W_eqn.
-revert H4.
-apply W_F_mono.
-auto.
+apply TI_pre_fix; auto with *.
+rewrite <- W_eqn; reflexivity.
 Qed.
 
   Lemma W_eta w : w ∈ W -> w == couple (fst w) (snd w).

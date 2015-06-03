@@ -1129,6 +1129,24 @@ apply osup_morph.
  apply F_a_morph_gen; trivial.
 Qed.
 
+  Lemma TI_op_mono o o' f f' :
+    morph1 f ->
+    morph1 f' -> 
+    (incl_set ==> incl_set)%signature f f' ->
+    isOrd o ->
+    o == o' ->
+    TI f o ⊆ TI f' o'.
+intros.
+rewrite <- H3.
+clear o' H3.
+elim H2 using isOrd_ind; intros.
+red; intros.
+apply TI_elim in H6; trivial.
+destruct H6.
+apply TI_intro with x; trivial.
+revert H7; apply H1; auto.
+Qed.
+
 (** * Construction of the fixpoint "from above" *)
 
 Section KnasterTarski.

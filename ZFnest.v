@@ -1,14 +1,46 @@
 Require Import ZF.
 Require Import ZFstable ZFpairs ZFsum ZFrelations ZFord ZFfix ZFlimit.
 Require Import ZFiso ZFfixrec.
-Require Import ZFind_w ZFspos.
+Require Import ZFind_w.
 Require Import ZFlist.
-
 
 Section NestedInductive.
 
-  Variable F : set -> set -> set.
-  Hypothesis Fmono : Proper (incl_set==>incl_set==>incl_set) F.
+  Hypothesis A : set.
+Hypothesis B : set -> set.
+Hypothesis C : set -> set.
+Hypothesis Bm : morph1 B.
+Hypothesis Cm : morph1 C.
+
+(** F(X,Y): Y is the nested type with (uniform) parameter X *)
+
+(* F(X,Y) iso { x:A | B x -> X & C x -> Y } *)
+Definition F X Y :=
+  sigma A (fun x => prodcart (cc_arr (B x) X) (cc_arr (C x) Y)). 
+(*
+Hypothesis Fdef : forall X Y,
+  F X Y == sigma A (fun x => prodcart (cc_arr (B x) X) (cc_arr (C x) Y)). 
+*)
+
+  Instance Fmono : Proper (incl_set==>incl_set==>incl_set) F.
+do 3 red; intros.
+unfold F.
+apply sigma_mono.
+ do 2 red; intros.
+ rewrite H2; reflexivity.
+
+ do 2 red; intros.
+ rewrite H2; reflexivity.
+
+ reflexivity.
+
+ intros.
+ apply prodcart_mono.
+  apply cc_prod_covariant; auto with *.
+
+  rewrite H2.
+  apply cc_prod_covariant; auto with *.
+Qed.
 
   Instance Fmono_morph2 : morph2 F.
 do 3 red; intros; apply incl_eq.
@@ -27,17 +59,6 @@ Qed.
   Let Fnest_morph X : morph1 (fun Y => F X Y).
 apply Fmono_morph; trivial.
 Qed.
-
-(** F(X,Y): Y is the nested type with (uniform) parameter X *)
-
-(* F(X,Y) iso { x:A | B x -> X & C x -> Y } *)
-Hypothesis A : set.
-Hypothesis B : set -> set.
-Hypothesis C : set -> set.
-Hypothesis Bm : morph1 B.
-Hypothesis Cm : morph1 C.
-Hypothesis Fdef : forall X Y,
-  F X Y == sigma A (fun x => prodcart (cc_arr (B x) X) (cc_arr (C x) Y)). 
 
 Let ACm : morph1 (W_F A C).
 do 2 red; intros.
@@ -95,7 +116,6 @@ Lemma F_elim x X Y :
        (couple (cc_lam (B (fst x)) (cc_app (fst (snd x))))
                (cc_lam (C (fst x)) (cc_app (snd (snd x)))))).
 intros.
-rewrite Fdef in H.
 assert (ty1 := fst_typ_sigma _ _ _ H).
 assert (eq1 := surj_pair _ _ _ (subset_elim1 _ _ _ H)).
 apply snd_typ_sigma with (y:=fst x) in H; auto with *.
@@ -139,7 +159,6 @@ Lemma F_intro a fb fc X Y :
   (forall i, i ∈ C a -> fc i ∈ Y) ->
   couple a (couple (cc_lam (B a) fb) (cc_lam (C a) fc)) ∈ F X Y.
 intros.
-rewrite Fdef.
 apply couple_intro_sigma; trivial.
  do 2 red; intros.
  rewrite <- H5; reflexivity.
@@ -148,7 +167,7 @@ Qed.
 
 
 
-Let A'i := TI (W_F A C).
+Definition A'i := TI (W_F A C).
 
 Lemma fst_A'i o x' :
   isOrd o -> x' ∈ A'i o -> fst x' ∈ A.
@@ -173,7 +192,7 @@ Inductive B_ok (x':set) (b:set) : Prop :=
    b == Cons i b' ->
    B_ok x' b.
 
-Let B' x' := subset B'0 (B_ok x').
+Definition B' x' := subset B'0 (B_ok x').
 
 Instance B'm : morph1 B'.
 do 2 red; intros.
@@ -770,40 +789,68 @@ constructor; intros.
       rewrite cc_beta_eq; auto with *.
 Qed.
 
+Hypothesis Fop : set -> set -> set.
+Hypothesis Fop_mono : forall X, Proper (incl_set ==> incl_set) (fun Y : set => Fop X Y).
+
+Hypothesis h : set -> set.
+Hypothesis hm : morph1 h.
+Hypothesis hiso : forall X Y, iso_fun (Fop X Y) (F X Y) h.
+
+Definition nest_trad : set -> set -> set := TRF (fun f => comp_iso h (g f)).
+
 Lemma TRF_indep_g : forall X o o' x,
   isOrd o ->
   o' ∈ o ->
-  x ∈ F X (TI(fun Y=>F X Y) o') ->
-  TRF g o x == g (TRF g o') x.
+  x ∈ Fop X (TI(fun Y=>Fop X Y) o') ->
+  nest_trad o x == (g (nest_trad o')) (h x).
+unfold nest_trad.
 intros.
-rewrite <- TI_mono_succ in H1; eauto using isOrd_inv.
-rewrite TRF_indep with (6:=H1); auto with *.
+rewrite <- TI_mono_succ in H1; eauto using isOrd_inv; auto with *.
+apply TRF_indep with (6:=H1); trivial.
+ do 3 red; intros.
+ unfold comp_iso.
+ apply gm; trivial.
+ apply hm; trivial.
+
  intros; rewrite TI_mono_eq; auto with *.
  rewrite sup_ax; auto with *.
  do 2 red; intros; apply TI_morph; auto with *.
  apply osucc_morph; trivial.
 
  red; intros.
+ unfold comp_iso.
  rewrite TI_mono_succ in H4; auto with *.
- revert H4 H5; apply gext; trivial.
+ eapply gext with (1:=H3).
+  eapply (iso_typ (hiso _ _) H4).
+  apply hm; trivial.
 Qed.
 
-Lemma giso_it X o:
+Lemma nest_tradm : Proper (eq_set==>eq_set==>eq_set) nest_trad.
+do 3 red; intros.
+apply TRF_morph; trivial.
+do 3 red; intros.
+unfold comp_iso.
+apply gm; trivial.
+apply hm; trivial.
+Qed.
+
+Lemma nest_iso_it X o:
   isOrd o ->
-  iso_fun (TI(fun Y=>F X Y)o) (W_F (A'i o) B' X) (TRF g o).
+  iso_fun (TI(fun Y=>Fop X Y)o) (W_F (A'i o) B' X) (nest_trad o).
 intros.
 elim H using isOrd_ind; intros.
 constructor; intros.
  do 2 red; intros.
- apply TRF_morph; auto with *.
-
+ apply nest_tradm; auto with *.
+ 
  red; intros.
  assert (yo := isOrd_inv y).
  apply TI_elim in H3; auto with *.
  destruct H3.
- rewrite TRF_indep_g with (3:=H4); auto with *.
  specialize H2 with (1:=H3).
+ rewrite TRF_indep_g with (3:=H4); auto with *.
  apply giso in H2; eauto using isOrd_inv.
+ apply (iso_typ (hiso _ _)) in H4.
  apply (iso_typ H2) in H4.
  apply W_F_elim in H4; auto with *.
  destruct H4 as (?,(?,?)).
@@ -811,25 +858,28 @@ constructor; intros.
   do 2 red; intros; apply cc_app_morph; auto with *.
  apply TI_intro with x0; auto with *.
 
- apply TI_elim in H3; auto.
+ apply TI_elim in H3; auto with *.
  destruct H3.
- apply TI_elim in H4; auto.
+ apply TI_elim in H4; auto with *.
  destruct H4.
  destruct (isOrd_dir _ H0 x0 x1); trivial.
  destruct H9.
  specialize H2 with (1:=H8).
  apply giso in H2; eauto using isOrd_inv.
- assert (x ∈ F X (TI (fun Y=>F X Y) x2)).
-  revert H6; apply Fmono; auto with *.
-  apply TI_mono; eauto using isOrd_inv.
- assert (x' ∈ F X (TI (fun Y=>F X Y) x2)).
-  revert H7; apply Fmono; auto with *.
-  apply TI_mono; eauto using isOrd_inv.
+ assert (x ∈ Fop X (TI (fun Y=>Fop X Y) x2)).
+  revert H6; apply Fop_mono; auto with *.
+  apply TI_mono; eauto using isOrd_inv; auto with *.
+ assert (x' ∈ Fop X (TI (fun Y=>Fop X Y) x2)).
+  revert H7; apply Fop_mono; auto with *.
+  apply TI_mono; eauto using isOrd_inv; auto with *.
  clear H6 H7.
  rewrite TRF_indep_g with (3:=H11) in H5; auto.
  rewrite TRF_indep_g with (3:=H12) in H5; auto.
  apply (iso_inj H2) in H5; trivial.
-
+ 2:apply (iso_typ (hiso _ _)); trivial.
+ 2:apply (iso_typ (hiso _ _)); trivial.
+ apply (iso_inj (hiso _ _) H11) in H5; trivial.
+ 
  apply W_F_elim in H3; auto with *.
  destruct H3 as (?,(?,?)).
  apply TI_elim in H3; auto with *.
@@ -839,32 +889,15 @@ constructor; intros.
  destruct (iso_surj H2) with y0.
   rewrite H5; apply W_F_intro; auto with *.
   do 2 red; intros; apply cc_app_morph; auto with *.
- rewrite <- TRF_indep_g with (2:=H3)(3:=H7) in H8; auto.
- exists x0; trivial.
- apply TI_intro with x; trivial.
+ destruct (iso_surj (hiso _ _) H7).
+ exists x1.
+  apply TI_intro with x; auto with *.
+ rewrite <- H8.
+ rewrite TRF_indep_g with (2:=H3) (3:=H9); trivial.
+ apply gm; trivial.
+ apply nest_tradm.
+ reflexivity.
 Qed.
-
-
-Definition nest_pos (o:set) : positive :=
-  mkPositive (fun X => TI (fun Y => F X Y) o) (A'i o) B' (TRF g o).
-
-Lemma isPos_nest o :
-  isOrd o ->
-  isPositive (nest_pos o).
-constructor.
- do 2 red; intros.
- simpl.
- apply TI_mono_gen; auto with *; apply Fmono_morph;
-   do 2 red; intros; apply Fmono; auto with *.
-
- do 2 red; intros; simpl.
- apply B'm; trivial.
-
- simpl; intros.
- apply giso_it; trivial.
-Qed.
-(*Print Assumptions isPos_nest.*)
-
 
 
 (* Reverse order! *)
