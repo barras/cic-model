@@ -5,52 +5,49 @@ Require Import ZFstable ZFiso ZFind_w ZFspos.
     type defined without considering the index values.
  *)
 
-Require Import ZFind_wd.
+Require ZFind_wnup.
+Module W0 := ZFind_wnup.
 
 Section InductiveFamily.
 
 Variable Arg : set.
 
-(** Given a function [f] that computes the index of any element of [X],
-    [index(f)] shall compute the index of any element of [F(X)] it assumes
-    the index information is stored within the data (not the case of non-uniform
-    parameters...).
- *)
 Record dpositive := mkDPositive {
-  carrier :> positive;
-  dpos_oper : (set -> set) -> set -> set;
-  w3 : set -> set -> set;
-  w4 : set -> set -> Prop
+  dp_oper : (set -> set) -> set -> set;
+  w1 : set -> set;
+  w2 : set -> set -> set;
+  w3 : set -> set -> set -> set;
+  dp_iso : set -> set -> set
 }.
 
+(*
 Definition eqdpos (p1 p2:dpositive) :=
   eqpos p1 p2 /\
   (forall X X' a a', (eq_set==>eq_set)%signature X X' -> a==a' -> dpos_oper p1 X a == dpos_oper p2 X' a') /\
-  (forall x x' i i', x==x' -> i==i' -> w3 p1 x i == w3 p2 x' i') /\
-  (forall x x' i i', x==x' -> i==i' -> (w4 p1 x i <-> w4 p2 x' i')).
-
-Record isDPositive (p:dpositive) := {
-  dpos_pos : isPositive p;
-  dpm : Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) (dpos_oper p);
-  dpmono : mono_fam Arg (dpos_oper p);
-  w3m : morph2 (w3 p);
-  w4m : Proper (eq_set==>eq_set==>iff) (w4 p);
-  w3typ : forall x i, x ∈ w1 p -> i ∈ w2 p x -> w3 p x i ∈ Arg;
-  dpm_iso : forall X a,
-    ext_fun Arg X ->
-    a ∈ Arg ->
-    dpos_oper p X a == subset (pos_oper p (sup Arg X))
-      (fun w => let w := wf p w in
-       w4 p (fst w) a /\ forall i, i ∈ w2 p (fst w) -> cc_app (snd w) i ∈ X (w3 p (fst w) i))
+  (forall x x' i i', x==x' -> i==i' -> w3 p1 x i == w3 p2 x' i').
+*)
+Class isDPositive (p:dpositive) := {
+  dopm : Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) (dp_oper p);
+  dpmono : mono_fam Arg (dp_oper p);
+  w1m : morph1 (w1 p);
+  w2m : morph2 (w2 p);
+  w3m : Proper (eq_set==>eq_set==>eq_set==>eq_set) (w3 p);
+  w3typ : forall a x i, a ∈ Arg -> x ∈ w1 p a -> i ∈ w2 p a x -> w3 p a x i ∈ Arg;
+  dpm : morph2 (dp_iso p);
+  dpm_iso : forall a X, a ∈ Arg -> morph1 X -> iso_fun (dp_oper p X a) (W0.W_Fd (w1 p) (w2 p) (w3 p) X a) (dp_iso p a)
 }.
 
-Definition dINDi p := TIF Arg (dpos_oper p).
+Definition dINDi p := TIF Arg (dp_oper p).
 
+Existing Instance dopm.
 Existing Instance dpm.
+Existing Instance w1m.
+Existing Instance w2m.
+Existing Instance w3m.
 Hint Resolve dpmono.
 
 Lemma dINDi_succ_eq : forall p o a,
-  isDPositive p -> isOrd o -> a ∈ Arg -> dINDi p (osucc o) a == dpos_oper p (dINDi p o) a.
+  isDPositive p -> isOrd o -> a ∈ Arg -> dINDi p (osucc o) a == dp_oper p (dINDi p o) a.
 intros.
 unfold dINDi.
 apply TIF_mono_succ; auto with *.
@@ -66,125 +63,273 @@ unfold dINDi.
 apply tm; auto with *.
 Qed.
 
-Definition dIND (p:dpositive) := dINDi p (IND_clos_ord p).
+Definition dIND_clos_ord (p:dpositive) := W0.W_ord Arg (w1 p) (w2 p).
 
-Lemma dIND_eq : forall p a, isDPositive p -> a ∈ Arg -> dIND p a == dpos_oper p (dIND p) a.
-unfold dIND; intros.
+Lemma isOrd_clos_ord p : isDPositive p -> isOrd (dIND_clos_ord p).
+intros.
+unfold dIND_clos_ord.
+apply W0.W_o_o; auto with *.
+Qed.
+Hint Resolve isOrd_clos_ord.
+
+(*
+Definition dIND_clos_ord (p:dpositive) a :=
+  W0.W_ord (W0.Arg' Arg (w1 p) (w2 p) (w3 p) a)
+           (W0.A'' (w1 p) (w3 p) a)
+           (W0.B'' (w2 p) (w3 p) a).
+*)
+Definition dIND (p:dpositive) a := dINDi p (dIND_clos_ord p) a.
+
+Instance dINDi_morph p : morph2 (dINDi p).
+do 3 red; intros.
 unfold dINDi.
-assert (oo : isOrd (IND_clos_ord p)).
- unfold IND_clos_ord.
- apply W_o_o.
- apply H.
-(**)
-rewrite TIF_eq; auto with *.
-apply incl_eq.
-red; intros.
- rewrite sup_ax in H1.
- destruct H1.
- revert H2; apply (dpmono _ H); auto with *.
-  apply TIF_morph; reflexivity.
-  apply TIF_morph; reflexivity.
- red; intros.
- apply TIF_incl; auto with *.
- do 2 red; intros.
- apply dpm; trivial.
-  apply TIF_morph; trivial.
- reflexivity.
+apply TIF_morph; trivial.
+Qed.
+
+Instance dIND_morph p : isDPositive p -> morph1 (dIND p).
+intros.
+do 2 red; intros.
+unfold dIND.
+apply dINDi_morph; auto with *.
+Qed.
+
+
+Definition WFdmap p f a x :=
+  couple (fst x) (λ i ∈ w2 p a (fst x), f (w3 p a (fst x) i) (cc_app (snd x) i)).
+
+Instance WFdmapm : forall p, isDPositive p ->
+  Proper ((eq_set==>eq_set==>eq_set)==>eq_set==>eq_set==>eq_set) (WFdmap p).
+do 5 red; intros.
+unfold WFdmap.
+apply couple_morph.
+ apply fst_morph; trivial.
+apply cc_lam_morph.
+ apply w2m; trivial.
+ apply fst_morph; trivial.
 
  red; intros.
- rewrite sup_ax.
-rewrite (dpm_iso _ H) in H1.
-assert (H1' := subset_elim1 _ _ _ H1).
+ apply H0.
+  apply w3m; trivial.
+  apply fst_morph; trivial.
+
+  apply cc_app_morph; trivial.
+  apply snd_morph; trivial.
+Qed.
+
+Let wiso p f a :=
+  comp_iso (dp_iso p a) (WFdmap p f a).
+
+Instance wisom : forall p, isDPositive p -> 
+ Proper ((eq_set ==> eq_set ==> eq_set) ==> eq_set ==> eq_set ==> eq_set) (wiso p).
+do 4 red; intros.
+unfold wiso.
+unfold comp_iso.
+apply WFdmapm; trivial.
+apply dpm; trivial.
+Qed.
+
+Lemma wiso_iso : forall p X Y f,
+  (forall a, a ∈ Arg -> iso_fun (X a) (Y a) (f a)) ->
+  forall a, a ∈ Arg ->
+   iso_fun (W0.W_Fd (w1 p) (w2 p) (w3 p) X a)
+     (W0.W_Fd (w1 p) (w2 p) (w3 p) Y a) (WFdmap p f a).
 Admitted.
+
+Lemma wiso_iso' : forall p X Y f,
+  isDPositive p ->
+  morph1 X ->
+  (forall a, a ∈ Arg -> iso_fun (X a) (Y a) (f a)) ->
+  forall a, a ∈ Arg ->
+  iso_fun (dp_oper p X a) (W0.W_Fd (w1 p) (w2 p) (w3 p) Y a) (wiso p f a).
+intros.
+unfold wiso.
+eapply iso_fun_trans.
+ apply dpm_iso; trivial.
+
+ apply wiso_iso; trivial.
+Qed.
+
+Lemma wiso_ext p X f f' :
+  isDPositive p ->
+   morph1 X ->
+   morph2 f ->
+   morph2 f' ->
+   (forall a0 : set, a0 ∈ Arg -> eq_fun (X a0) (f a0) (f' a0)) ->
+   forall a0 : set,
+   a0 ∈ Arg -> eq_fun (dp_oper p X a0) (wiso p f a0) (wiso p f' a0).
+red; intros.
+unfold wiso, comp_iso, WFdmap.
+apply couple_morph.
+ apply fst_morph.
+ apply dpm; auto with *.
+
+ apply cc_lam_ext.
+  apply w2m; auto with *.
+  apply fst_morph.
+  apply dpm; auto with *.
+ red; intros.
+ red in H3.
+ assert (eq3: w3 p a0 (fst (dp_iso p a0 x)) x0 == w3 p a0 (fst (dp_iso p a0 x')) x'0).
+  apply w3m; auto with *.
+  apply fst_morph.
+  apply dpm; auto with *.
+ rewrite <- eq3.
+ assert (ty : dp_iso p a0 x ∈ W0.W_Fd (w1 p) (w2 p) (w3 p) X a0).
+  apply dpm_iso; trivial.
+ apply H3.
+  apply w3typ; trivial.
+  apply fst_typ_sigma in ty; trivial.
+
+  eapply snd_typ_sigma in ty;[| |reflexivity].
+   apply cc_prod_elim with (1:=ty); trivial.
+
+   do 2 red; intros.
+   apply cc_prod_morph.
+    apply w2m; auto with *.
+
+    red; intros.
+    apply H0.
+    apply w3m; auto with *.
+
+   apply cc_app_morph; trivial.
+   apply snd_morph.
+   apply dpm; auto with *.
+Qed.
+
+
+Lemma dIND_eq : forall p a, isDPositive p -> a ∈ Arg -> dIND p a == dp_oper p (dIND p) a.
+intros.
+pose (isow := TIF_iso Arg (dp_oper p) (wiso p) (dIND_clos_ord p)).
+destruct TIF_iso_fun with (A:=Arg) (F:=dp_oper p) (G:=W0.W_Fd (w1 p) (w2 p) (w3 p)) (g:=wiso p)
+  (o:=dIND_clos_ord p) as (isof, expTI); trivial.
+  apply dopm.
+
+  apply W0.W_Fd_morph; auto with *.
+  auto.
+
+  apply W0.W_Fd_mono; auto with *.
+  apply w3typ.
+
+  apply wisom; trivial.
+
+  intros.
+  apply wiso_ext; trivial.
+
+  intros.
+  apply wiso_iso'; trivial.
+
+  auto.
+fold isow in isof,expTI.
+eapply iso_fun_inj with (f:=wiso p isow a)
+  (Y:=W0.Wi Arg (w1 p) (w2 p) (w3 p) (dIND_clos_ord p) a).
+ unfold W0.Wi, dIND.
+ unfold dINDi.
+ generalize (isof _ H0). 
+  assert (isowm : morph2 isow).
+   admit.
+ apply iso_fun_ext.
+  apply wisom; auto with *.
+
+  reflexivity.
+  reflexivity.
+  red; intros.
+(*  assert (wm := wisom _ H).*)
+  rewrite <- H2.
+  apply expTI; trivial.
+
+ unfold dIND_clos_ord.
+ fold (W0.W Arg (w1 p) (w2 p) (w3 p) a).
+ apply iso_change_rhs with  (W0.W_Fd  (w1 p) (w2 p) (w3 p) (W0.W Arg (w1 p) (w2 p) (w3 p)) a).
+  symmetry; apply W0.W_eqn; auto with *.
+  apply w3typ.
+ apply wiso_iso'; trivial.
+  auto with *.
+
+ unfold dIND, dINDi.
+ rewrite <- TIF_mono_succ; auto with *.
+ apply TIF_incl; auto with *.
+Qed.
 
 Lemma dINDi_dIND : forall p o,
   isDPositive p ->
   isOrd o ->
   forall a, a ∈ Arg ->
   dINDi p o a ⊆ dIND p a.
-induction 2 using isOrd_ind; intros.
-unfold dINDi.
-rewrite TIF_eq; auto with *.
+intros.
+unfold dIND, dINDi.
+apply TIF_pre_fix; auto with *.
 red; intros.
-rewrite sup_ax in H4.
- destruct H4.
- rewrite dIND_eq; trivial.
- revert H5; apply H; auto.
-  apply TIF_morph; reflexivity.
-
-  unfold dIND, dINDi.
-  do 2 red; intros; apply TIF_morph; auto with *.
-
-  red; intros.
-  apply H2; trivial.
-
- do 2 red; intros; apply dpm; auto with *.
- red; intros.
- apply TIF_morph; auto with *.
+change (dp_oper p (dIND p) a0 ⊆ dIND p a0).
+rewrite <- dIND_eq; trivial.
+reflexivity.
 Qed.
-
 
 (** Library of dependent positive operators *)
 
 (** Constraint on the index: corresponds to the conclusion of the constructor *)
-Definition dpos_inst i :=
-  mkDPositive (pos_cst (singl empty)) (fun _ a => cond_set (i==a) (singl empty))
-    (fun _ _ => empty) (fun _ a => i==a).
+Require Import ZFcoc.
+(*Definition dpos_inst (i:set->set) :=
+  mkDPositive (fun a => pos_cst (P2p (i a == a))) (fun _ a => P2p (i a == a))
+    (fun a _ _ => a).
 
-Lemma isDPos_inst i : isDPositive (dpos_inst i).
+(*Lemma isDPos_inst i : morph1 i -> isDPositive (dpos_inst i).
 constructor; simpl; intros.
  apply isPos_cst.
 
  do 4 red; intros.
- rewrite H0; reflexivity.
+ rewrite H1; reflexivity.
 
  do 2 red; intros.
  reflexivity.
 
- do 3 red; reflexivity.
+ do 4 red; intros; trivial.
+
+ trivial.
+Qed.
+*)
+*)
+Definition trad_cst :=
+  sigma_1r_iso (fun _ => cc_lam empty (fun _ => empty)).
+
+Lemma iso_cst : forall A X i,
+  iso_fun (A i) (W0.W_Fd A (fun _ _ => empty) (fun i _ _ => i) X i) trad_cst.
+intros.
+unfold trad_cst, W0.W_Fd.
+apply sigma_iso_fun_1_r'; intros; auto with *.
+ do 2 red; reflexivity.
+apply cc_prod_iso_fun_0_l'.
+Qed.
+
+Definition dpos_cst A :=
+  mkDPositive (fun X i => A i) A (fun i a => empty) (fun i _ _ => i) (fun _ => trad_cst).
+
+Lemma isDPos_cst A : morph1 A -> isDPositive (dpos_cst A).
+intros.
+constructor; simpl; intros; auto.
+ do 3 red; intros; auto.
+
+ do 2 red; intros.
+ reflexivity.
+
+ do 3 red; intros; reflexivity.
+
+ do 3 red; auto.
+
+ red; intros; auto.
 
  do 3 red; intros.
- rewrite H0; reflexivity.
+ admit.
 
- apply empty_ax in H0; contradiction.
-
- apply eq_set_ax; intros z.
- rewrite cond_set_ax; rewrite subset_ax.
- split; destruct 1; split; trivial.
-  exists z; auto with *.
-  split; intros; trivial.
-  apply empty_ax in H3; contradiction.
-
-  destruct H2 as (?,_,(?,_)); trivial.
+ apply iso_cst.
 Qed.
 
-Definition dpos_cst A := mkDPositive (pos_cst A) (fun _ _ => A) (fun _ _ => empty) (fun _ _ => True).
 
-Lemma isDPos_cst A : isDPositive (dpos_cst A).
-constructor; simpl; intros.
- apply isPos_cst.
+Definition dpos_rec j :=
+  mkDPositive (fun X i => X (j i)) (fun _ => singl empty) (fun _ _ => singl empty) (fun i _ _ => j i)
+    (fun _ => trad_reccall).
 
- do 4 red; reflexivity.
-
- do 2 red; intros; reflexivity.
-
- do 3 red; reflexivity.
-
- do 3 red; reflexivity.
-
- apply empty_ax in H0; contradiction.
-
- apply eq_set_ax; intros z.
- rewrite subset_ax.
- split;[split|destruct 1]; trivial.
- exists z;[reflexivity|].
- split; intros; trivial.
- apply empty_ax in H2; contradiction.
-Qed.
-
-Definition dpos_rec j := mkDPositive pos_rec (fun X _ => X j) (fun _ _ => j) (fun _ _ => True).
-
-Lemma isDPos_rec j : j ∈ Arg -> isDPositive (dpos_rec j).
+Lemma isDPos_rec j : morph1 j ->
+  typ_fun j Arg Arg -> isDPositive (dpos_rec j).
 constructor; simpl; intros; trivial.
  apply isPos_rec.
 

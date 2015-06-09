@@ -2367,15 +2367,15 @@ Qed.
 
 
   Lemma TIF_iso_fun :
-    forall a, a ∈ A ->
-    iso_fun (TIF A F o a) (TIF A G o a) (TIF_iso g o a) /\
-    (forall x, x ∈ TIF A F o a -> TIF_iso g o a x == g (TIF_iso g o) a x).
-intros a tya.
-split; intros.
+    (forall a, a ∈ A -> iso_fun (TIF A F o a) (TIF A G o a) (TIF_iso g o a)) /\
+    (forall a x, a ∈ A -> x ∈ TIF A F o a -> TIF_iso g o a x == g (TIF_iso g o) a x).
+split.
+ intros a tya.
  unfold TIF_iso.
  revert a tya.
  apply REC_typing with (1:=oo) (2:=TIF_iso_recursor).
 
+ intros a x tya tyx.
  assert (couple a x ∈ sigma A (fun a' => TIF A F o a')).
   apply couple_intro_sigma; trivial.
   do 2 red; intros; apply TIF_morph; auto with *.
@@ -2390,7 +2390,7 @@ split; intros.
 
    apply snd_def.
 
- revert H0; apply sigma_mono; auto with *.
+ revert H; apply sigma_mono; auto with *.
   do 2 red; intros; apply TIF_morph; auto with *.
   do 2 red; intros; apply TIF_morph; auto with *.
 

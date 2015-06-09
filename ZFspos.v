@@ -7,6 +7,8 @@ Require Import ZFstable ZFiso ZFind_w.
    - monotonicity
    - isomorphism with a W-type
  *)
+(* This is an improved version of ZFstrictpos where we don't give 
+   a concrete type for the strictly positive type operators. *)
 
 (* Qu: is this notion of strict positivity powerful enough to build a model
    of IZF?

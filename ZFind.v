@@ -4,6 +4,25 @@ Require Import ZF ZFpairs ZFrelations ZFord ZFstable ZFfixfun.
 Require ZFind_wnup.
 Module W0 := ZFind_wnup.
 
+(* --> ZFpairs *)
+Lemma sigma_elim A B p :
+  ext_fun A B ->
+  p ∈ sigma A B ->
+  p == couple (fst p) (snd p) /\
+  fst p ∈ A /\
+  snd p ∈ B (fst p).
+intros.
+split.
+ apply subset_elim1 in H0.
+ apply surj_pair in H0; trivial.
+
+ split.
+ apply fst_typ_sigma in H0; trivial.
+
+ apply snd_typ_sigma with (2:=H0); auto with *.
+Qed.
+
+
 Section InductiveFamilies.
 
   (** This file models inductive types of the form [[
@@ -93,46 +112,70 @@ Proof.
 Qed.
 Hint Resolve A'm B'm f'm f'typ.
   
-  Definition W ia := W0.WW Arg' A' B' f' ia.
+  Definition Wi o ia := W0.Wi Arg' A' B' f' o ia.
+
+  Instance Wi_morph : morph2 Wi.
+do 3 red; intros.
+apply W0.Wi_morph_all; trivial.
+ reflexivity.
+ apply A'm.
+ apply B'm.
+ apply f'm.
+Qed.
+
+    Lemma Wi_succ o a : isOrd o -> a ∈ Arg' -> Wi (osucc o) a == W0.W_Fd A' B' f' (Wi o) a. 
+unfold Wi, W0.Wi.
+intros.
+apply TIF_mono_succ; trivial.
+ apply W0.W_Fd_morph; auto.
+
+ apply W0.W_Fd_mono; auto.
+Qed.
+
+  Lemma Wi_mono o o' ia : isOrd o -> isOrd o' -> o ⊆ o' -> ia ∈ Arg' -> Wi o ia ⊆ Wi o' ia.
+unfold Wi, W0.Wi.
+intros.
+apply TIF_mono; trivial.
+ apply W0.W_Fd_morph; auto.
+
+ apply W0.W_Fd_mono; auto.
+Qed.
+
+  (** The fixpoint *)
+  Definition W ia := W0.W Arg' A' B' f' ia.
 
   Instance W_morph : morph1 W.
 do 2 red; intros.
-unfold W, W0.WW.
-apply W0.W_morph_all.
-5:reflexivity.
-4:apply W0.extln_morph.
- unfold W0.Arg'.
- apply TIF_morph_gen; trivial.
+apply W0.W_morph_all; trivial.
  reflexivity.
- 2:reflexivity.
- do 2 red; intros. 
- apply union2_morph.
- reflexivity.
- apply sigma_morph.
- apply A'm; trivial.
- red; intros.
- apply sigma_morph.
- apply B'm; trivial.
- red; intros.
- apply H0.
- apply f'm; trivial.
-
- red; intros.
- unfold W0.A''.
  apply A'm.
- apply W0.Dec_morph; trivial.
+ apply B'm.
+ apply f'm.
+Qed.
 
- do 2 red; intros.
- apply B'm; trivial.
- apply W0.Dec_morph; trivial.
+  Lemma W_post o ia : isOrd o -> ia ∈ Arg' -> Wi o ia ⊆ W ia.
+intros.
+apply W0.W_post; auto.
+Qed.
+
+  (** Closure ordinal of the whole family. May escape the universe of
+      A and B. *)
+  Definition W_ord := W0.W_ord Arg' A' B'.
+
+  Lemma W_o_o : isOrd W_ord.
+apply W0.W_o_o; auto.
+Qed.
+
+  Lemma W_def ia : ia ∈ Arg' -> W ia == Wi W_ord ia.
+reflexivity.
 Qed.
 
   Lemma W_eqn ia : ia ∈ (Σ i ∈ m, Arg i) -> W ia == W0.W_Fd A' B' f' W ia.
 intros.
-apply W0.WW_eqn; trivial.
+apply W0.W_eqn; trivial.
 apply f'typ.
-  Qed.
-  
+Qed.
+
   Lemma W_intro i a x y :
     i ∈ m ->
     a ∈ Arg i ->
@@ -192,90 +235,307 @@ Qed.
       recy ∈ (Π b ∈ B i x, P (couple (j i x b) (f i x b)) (cc_app y b)) ->
       F i a x y recy ∈ P (couple i a) (couple x y).
 
-(* W a ==  W0.Wi (W0.Arg' Arg' A' B' f' a) (W0.A'' A' f' a) 
-     (W0.B'' B' f' a) W0.extln
-     (W0.W_ord (W0.Arg' Arg' A' B' f' a) (W0.A'' A' f' a) (W0.B'' B' f' a))
-*)
-    Definition Wi o ia :=
-      W0.Wi (W0.Arg' Arg' A' B' f' ia) (W0.A'' A' f' ia) 
-            (W0.B'' B' f' ia) W0.extln o empty.
-
-    Instance Wi_morph : morph2 Wi.
-do 3 red; intros.
-unfold Wi.
-apply W0.Wi_morph_all.
- unfold W0.Arg'.
- apply TIF_morph; auto with *.
-
- red; intros.
- unfold W0.A''.
- apply A'm.
- apply W0.Dec_morph; trivial.
-
- do 2 red; intros.
- unfold W0.B''.
- apply B'm; trivial.
- apply W0.Dec_morph; trivial.
-
- apply W0.extln_morph.
-
- trivial.
- reflexivity.
+    Lemma wim1 o : ext_fun Arg' (fun ia : set => Wi o ia).
+do 2 red; intros.
+apply Wi_morph; auto with *.
 Qed.
-
-
-    Definition W_ord ia :=
-      W0.W_ord (W0.Arg' Arg' A' B' f' ia) (W0.A'' A' f' ia) (W0.B'' B' f' ia).
-
-    Instance W_ord_morph : morph1 W_ord.
-do 3 red; intros.
-unfold W_ord.
-apply W0.W_ord_morph_all.
- unfold W0.Arg'.
- apply TIF_morph; auto with *.
-
- red; intros.
- unfold W0.A''.
- apply A'm.
- apply W0.Dec_morph; trivial.
-
- do 2 red; intros.
- unfold W0.B''.
- apply B'm; trivial.
- apply W0.Dec_morph; trivial.
-Qed.
-
-    Lemma W_o_o : forall i a, i ∈ m -> a ∈ Arg i -> isOrd (W_ord (couple i a)).
-intros.
-unfold W_ord.
-apply W0.W_o_o.      
-apply W0.B''_morph.
-apply B'm.
-Qed.
+Hint Resolve wim1.
 
     Let WF o fct :=
-      λ p ∈ (Σ ia ∈ Arg', Wi o ia),
+      λ p ∈ (Σ ia ∈ Arg', Wi (osucc o) ia),
       F (fst (fst p)) (snd (fst p)) (fst (snd p)) (snd (snd p))
         (λ b ∈ B (fst (fst p)) (fst (snd p)),
          cc_app fct
                 (couple (couple (j (fst (fst p)) (fst (snd p)) b)
                                 (f (fst (fst p)) (fst (snd p)) b))
                         (cc_app (snd (snd p)) b))).
+
+    Let WFm1 : Proper (eq_set ==> eq_set ==> eq_set) (fun fct p =>
+ F (fst (fst p)) (snd (fst p)) (fst (snd p)) (snd (snd p))
+        (λ b ∈ B (fst (fst p)) (fst (snd p)),
+         cc_app fct
+                (couple (couple (j (fst (fst p)) (fst (snd p)) b)
+                                (f (fst (fst p)) (fst (snd p)) b))
+                        (cc_app (snd (snd p)) b)))).
+do 3 red; intros.
+apply Fm.
+ rewrite H0; reflexivity.
+ rewrite H0; reflexivity.
+ rewrite H0; reflexivity.
+ rewrite H0; reflexivity.
+apply cc_lam_ext.
+ rewrite H0; reflexivity.
+red; intros.
+apply cc_app_morph; trivial.
+apply couple_morph.
+ apply couple_morph.
+  apply jm; trivial.
+   rewrite H0; reflexivity.
+   rewrite H0; reflexivity.
+  apply fm; trivial.
+   rewrite H0; reflexivity.
+   rewrite H0; reflexivity.
+ apply cc_app_morph; trivial.
+ rewrite H0; reflexivity.
+Qed.
+
+    Let WFm : morph2 WF.
+do 3 red; intros.
+unfold WF.
+apply cc_lam_ext.
+ apply sigma_morph; auto with *.
+ red; intros.
+ rewrite H,H1; reflexivity.
+red; intros.
+apply WFm1; trivial.
+Qed.
     
     Definition W_REC i a w :=
-      cc_app (REC WF (W_ord (couple i a))) (couple (couple i a) w).
-(* forall ord : set,
-       isOrd ord ->
-       forall (T : set -> set) (Q : set -> set -> Prop)
-         (F : set -> set -> set),
-       recursor ord T Q F ->
-       REC F ord == (λ x ∈ T ord, cc_app (F ord (REC F ord)) x)*)
+      cc_app (REC WF W_ord ) (couple (couple i a) w).
 
     Let Q o f :=
       forall p, p ∈ (Σ ia ∈ Arg', Wi o ia) -> cc_app f p ∈ P (fst p) (snd p).
     
+
+Let wi_elim x o :
+  isOrd o ->
+  x ∈ (Σ ia ∈ Arg', Wi o ia) ->
+  x == couple (couple (fst (fst x)) (snd (fst x))) (snd x) /\
+  fst (fst x) ∈ m /\
+  snd (fst x) ∈ Arg (fst (fst x)) /\
+  snd x ∈ Wi o (fst x).
+intros.
+destruct sigma_elim with (2:=H0) as (x_eta & x1ty & x2ty); auto.
+destruct sigma_elim with (2:=x1ty) as (x1_eta & mty & ity); auto.
+split; auto.
+rewrite <- x1_eta; trivial.
+Qed.
+
+Let succ_elim0 x o :
+  isOrd o ->
+  x ∈ (Σ ia ∈ Arg', Wi (osucc o) ia) ->
+  x == couple (couple (fst (fst x)) (snd (fst x))) (couple (fst (snd x)) (snd (snd x))) /\
+  fst (fst x) ∈ m /\
+  snd (fst x) ∈ Arg (fst (fst x)) /\
+  fst (snd x) ∈ A' (fst x) /\
+  snd (snd x) ∈ (Π i ∈ B' (fst x) (fst (snd x)), Wi o (f' (fst x) (fst (snd x)) i)).
+intros.
+destruct wi_elim with (2:=H0) as (x_eta & mty & ity & wty); auto.
+rewrite Wi_succ in wty; trivial.
+destruct sigma_elim with (2:=wty) as (w_eta & aty & bty); auto.
+ do 2 red; intros.
+ apply cc_prod_morph.
+  rewrite H2; reflexivity.
+  red; intros.
+  rewrite H2,H3; reflexivity.
+split.
+ rewrite <- w_eta; trivial.
+split; trivial.
+split; trivial.
+split; trivial.
+rewrite x_eta,fst_def.
+apply couple_intro_sigma; auto.
+Qed.
+
+Let succ_elim x o :
+  isOrd o ->
+  x ∈ (Σ ia ∈ Arg', Wi (osucc o) ia) ->
+  x == couple (couple (fst (fst x)) (snd (fst x))) (couple (fst (snd x)) (snd (snd x))) /\
+  fst (fst x) ∈ m /\
+  snd (fst x) ∈ Arg (fst (fst x)) /\
+  fst (snd x) ∈ A' (fst x) /\
+  (forall i, i ∈ B' (fst x) (fst (snd x)) -> cc_app (snd (snd x)) i ∈ Wi o (f' (fst x) (fst (snd x)) i)).
+intros.
+apply succ_elim0 in H0; trivial.
+destruct H0 as (x_eta & mty & ity & aty & bty); auto.
+split; trivial.
+split; trivial.
+split; trivial.
+split; trivial.
+intros.
+apply cc_prod_elim with (1:=bty); trivial.
+Qed.
+
+  Lemma Ftyp' o fct x :
+    isOrd o ->
+    Q o fct ->
+    x ∈ (Σ ia ∈ Arg', Wi (osucc o) ia) ->
+    F (fst (fst x)) (snd (fst x)) (fst (snd x)) (snd (snd x))
+     (λ b ∈ B (fst (fst x)) (fst (snd x)),
+      cc_app fct
+        (couple
+           (couple (j (fst (fst x)) (fst (snd x)) b)
+              (f (fst (fst x)) (fst (snd x)) b)) (cc_app (snd (snd x)) b)))
+    ∈ P (fst x) (snd x).
+intros.
+apply succ_elim0 in H1; trivial.
+destruct H1 as (x_eta & mty & ity & aty & bty).
+apply eq_elim with (P (couple (fst (fst x)) (snd (fst x))) (couple (fst (snd x)) (snd (snd x)))).
+ apply Pm.
+  rewrite x_eta,!fst_def,snd_def.
+  reflexivity.
+
+  rewrite x_eta,!snd_def, fst_def.
+  reflexivity.
+apply Ftyp; trivial.
+ apply subset_elim1 in aty; trivial.
+
+ unfold B' in bty.
+ generalize bty; apply cc_prod_covariant.
+  do 2 red; intros; apply W_morph.
+  rewrite H2; reflexivity.
+
+  reflexivity.
+
+  intros.
+  apply W_post; trivial.
+  apply couple_intro_sigma; auto.
+   apply jtyp; trivial.
+   apply subset_elim1 in aty; trivial.
+
+   apply ftyp; trivial.
+   apply subset_elim1 in aty; trivial.
+
+ apply subset_elim2 in aty.
+ destruct aty as (z, eqz, inst).
+ rewrite <- eqz in inst.
+ trivial.
+
+ apply cc_prod_intro.
+  do 2 red; intros.
+  rewrite H2; reflexivity.
+
+  do 2 red; intros.
+  rewrite H2; reflexivity.
+ intros.
+ red in H0.
+ generalize (H0 (couple (couple (j (fst (fst x)) (fst (snd x)) x0)
+          (f (fst (fst x)) (fst (snd x)) x0)) (cc_app (snd (snd x)) x0))).
+ rewrite fst_def.
+ rewrite snd_def.
+ intro.
+ apply H2.
+ apply couple_intro_sigma; auto.
+  apply couple_intro_sigma; auto.
+   apply jtyp; trivial.
+   apply subset_elim1 in aty; trivial.
+
+   apply ftyp; trivial.
+   apply subset_elim1 in aty; trivial.
+
+  generalize (cc_prod_elim _ _ _ _ bty H1).
+  apply eq_elim; apply Wi_morph; auto with *.
+  reflexivity.
+Qed.
+
     Lemma recur o : isOrd o -> recursor o (fun o => Σ ia ∈ Arg', Wi o ia) Q WF.
-    Admitted.
+intros.
+split; intros.
+ do 2 red; intros; apply sigma_morph; auto with *.
+ red; intros; apply Wi_morph; auto.
+
+ rewrite <- ZFcont.sigma_cont.
+  apply sigma_ext; auto with *.
+  intros.
+  unfold Wi,W0.Wi; rewrite TIF_eq; trivial.
+   apply sup_morph; auto with *.
+   red; intros.
+   rewrite TIF_mono_succ.
+    apply W0.W_Fd_morph; auto with *.
+    red; intros; apply TIF_morph; trivial.
+
+    apply W0.W_Fd_morph; auto.
+    apply W0.W_Fd_mono; auto.
+
+    rewrite <- H4; trivial.
+    apply isOrd_inv with o0; auto.
+
+    rewrite <- H2; trivial.
+
+   apply W0.W_Fd_morph; auto.
+   apply W0.W_Fd_mono; auto.
+
+  do 3 red; intros.
+  rewrite H1,H2; reflexivity.
+
+ red in H4|-*; intros.
+ red in H3.
+ rewrite <- H3.
+ apply H4.
+ revert H5; apply eq_elim; apply sigma_morph; auto with *.
+ red; intros.
+ apply Wi_morph; auto with *.
+ revert H5; apply eq_elim; apply sigma_morph; auto with *.
+ red; intros.
+ apply Wi_morph; auto with *.
+
+ red; intros.
+ red in H3.
+ assert (pfst := fst_typ_sigma _ _ _ H4).
+ assert (psnd : snd p ∈ Wi o0 (fst p)).
+  apply snd_typ_sigma with (3:=reflexivity _) in H4; auto.
+ unfold Wi, W0.Wi in psnd.
+ apply TIF_elim in psnd; auto.
+ destruct psnd as (o',?,?).
+ apply H3 with o'; trivial.
+ rewrite surj_pair with (1:=subset_elim1 _ _ _  H4).
+ apply couple_intro_sigma; auto.
+ rewrite Wi_succ; auto.
+ apply isOrd_inv with o0; auto.
+  apply W0.W_Fd_morph; auto.
+  apply W0.W_Fd_mono; auto.
+
+ apply WFm.  
+
+ split.
+  apply is_cc_fun_lam.
+  do 2 red; intros.
+  apply WFm1; auto with *.
+
+  red; intros.
+  unfold WF.
+  rewrite cc_beta_eq; trivial.
+   apply Ftyp' with o0; trivial.
+
+   do 2 red; intros.
+   apply WFm1; auto with *.
+
+ red; red; intros.
+ unfold WF.
+ destruct H2; destruct H3.
+ rewrite cc_beta_eq; trivial.
+ rewrite cc_beta_eq; trivial.
+  apply succ_elim in H5; trivial.
+  destruct H5 as (x_eta & mty & ity & aty & bty).
+  apply Fm; auto with *.
+  apply cc_lam_ext; auto with *.
+  red; intros.
+  rewrite <- H8.
+  apply H4.
+   apply couple_intro_sigma; auto.
+    apply couple_intro_sigma; auto.
+     apply jtyp; auto.
+     apply subset_elim1 in aty; trivial.
+     apply ftyp; auto.
+     apply subset_elim1 in aty; trivial.
+
+    apply bty; trivial.
+
+ do 2 red; intros.
+ apply WFm1; auto with *.
+
+ revert H5; apply sigma_mono; auto with *.
+ intros.
+ rewrite <- H8.
+ apply TIF_mono; auto with *.
+  apply W0.W_Fd_morph; auto.
+  apply W0.W_Fd_mono; auto.
+  apply osucc_mono; auto.
+
+ do 2 red; intros.
+ apply WFm1; auto with *.
+Qed.
+
     
     Lemma W_REC_typ i a w :
       i ∈ m ->
@@ -285,38 +545,18 @@ Qed.
 intros.
 unfold W_REC.
 pose (X:=fun o => Π p ∈ (Σ ia ∈ Arg', Wi o ia), P (fst p) (snd p)).
-assert (REC WF (W_ord (couple i a)) ∈ X (W_ord (couple i a))).
- apply REC_typ with (X:=X); auto with *.
-  admit.
-
-  apply W_o_o; trivial.
-
-  intros.
-  admit.
-
-  intros.
-  admit.
-
-assert (couple (couple i a) w ∈ Σ ia ∈ Arg', Wi (W_ord (couple i a)) ia).
- apply couple_intro_sigma; trivial.
- do 2 red; intros.
- apply Wi_morph; auto with *.
-
+specialize REC_typing with (1:=W_o_o) (2:= recur _ W_o_o).  
+unfold Q.
+intro.
+generalize (H2 (couple (couple i a) w)).
+ rewrite fst_def, snd_def; intros.
+apply H3.
+apply couple_intro_sigma; auto.
  apply couple_intro_sigma; auto.
-(*assert (couple (couple i a) w ∈ Σ ia ∈ Arg', W ia).
- apply couple_intro_sigma; trivial.
- do 2 red; intros.
- apply W_morph; trivial.
-
+(*
+ rewrite W_def in H1; trivial.
  apply couple_intro_sigma; auto.*)
-subst X.
-simpl in H2.
-specialize cc_prod_elim with (1:=H2) (2:=H3).
-apply eq_elim.
-rewrite fst_def; rewrite snd_def.
-reflexivity.
-    Qed.
-    
+Qed.
                                                  
 Lemma W_REC_eqn i a x y :
   i ∈ m ->
@@ -327,9 +567,14 @@ Lemma W_REC_eqn i a x y :
   W_REC i a (couple x y) ==
   F i a x y (λ b ∈ B i x, W_REC (j i x b) (f i x b) (cc_app y b)).
 intros.
+assert (tyw : couple (couple i a) (couple x y) ∈ (Σ ia ∈ Arg', Wi W_ord ia)).
+ apply couple_intro_sigma; trivial.
+  apply couple_intro_sigma; auto.
+
+  apply W_intro; try assumption.
 unfold W_REC at 1.
-rewrite REC_eqn with (1:=W_o_o _ _ H H0) (2:= recur _ (W_o_o _ _ H H0)).  
-rewrite cc_beta_eq.
+rewrite REC_eqn with (1:=W_o_o) (2:= recur _ W_o_o).  
+rewrite cc_beta_eq; trivial.
  unfold WF at 1.
  rewrite cc_beta_eq.
 
@@ -341,56 +586,9 @@ rewrite cc_beta_eq.
  apply cc_lam_ext.
   rewrite snd_def,!fst_def; reflexivity.
  red; intros.
- unfold W_REC.
- transitivity (cc_app (REC WF (W_ord (couple i a))) (couple (couple (j i x x') (f i x x')) (cc_app y x'))).
-  apply cc_app_morph.
-  reflexivity.
-  apply couple_morph.
-   rewrite !fst_def, !snd_def, !fst_def.
-   rewrite H5; reflexivity.
-
-   apply cc_app_morph; trivial.  
-   rewrite !snd_def; reflexivity.
-  symmetry.
-  rewrite !snd_def, !fst_def in H4.
-  rewrite H5 in H4.
-  apply REC_ord_irrel with (1:=W_o_o _ _ H H0) (2:= recur _ (W_o_o _ _ H H0)).
-   apply W_o_o.
-   apply jtyp; trivial.
-   apply ftyp; trivial.
-
-   apply W_o_o; trivial.
-
-   unfold W_ord.
-   red; intros.
-   apply (W0.smaller_parameter Arg' A' B' f' A'm B'm f'm f'typ _ x x').
-   apply couple_intro_sigma; trivial.
-    auto with *.
-   unfold A'.
-   apply subset_intro.
-    rewrite fst_def; trivial.
-    rewrite fst_def,snd_def; trivial.
-   unfold B'.
-   rewrite fst_def; trivial.
-   unfold f'; fold f'.
-   revert H6; apply eq_elim.
-   change (W_ord (couple (j i x x') (f i x x')) ==
-           W_ord (couple (j (fst (couple i a)) x x') (f (fst (couple i a)) x x'))).
-   rewrite fst_def; reflexivity.
-
-   reflexivity.
-
-   apply couple_intro_sigma.
-    do 2 red; intros.
-    apply Wi_morph; auto with *.
-
-    apply couple_intro_sigma.
-     auto with *.
-     apply jtyp; trivial.
-     apply ftyp; trivial.
-
-    change (cc_app y x' ∈ W (couple (j i x x') (f i x x'))).
-    apply cc_prod_elim with (1:=H2); trivial.
+ rewrite !snd_def,!fst_def.
+ rewrite H5.
+ reflexivity.
 
 do 2 red; intros.
 apply Fm.
@@ -406,22 +604,24 @@ apply cc_app_morph.
  rewrite H5,H7.
  reflexivity.
 
-apply couple_intro_sigma.
-    do 2 red; intros.
-    apply Wi_morph; auto with *.
-apply couple_intro_sigma; auto.
-change (couple x y ∈ W (couple i a)).
-apply W_intro; try assumption.
+revert tyw; apply sigma_mono; auto.
+ reflexivity.
+
+ intros.
+ unfold Wi,W0.Wi.
+ rewrite <- H5.
+ apply TIF_incl; trivial.
+  apply W0.W_Fd_morph; auto.
+  apply W0.W_Fd_mono; auto.
+
+  apply isOrd_succ.
+  apply W_o_o.
+
+  apply lt_osucc.
+  apply W_o_o.
 
 do 2 red; intros.
 rewrite H5; reflexivity.
-
-apply couple_intro_sigma.
-    do 2 red; intros.
-    apply Wi_morph; auto with *.
-apply couple_intro_sigma; auto.
-change (couple x y ∈ W (couple i a)).
-apply W_intro; try assumption.
 Qed.
 
   End Recursor.
@@ -441,7 +641,7 @@ Qed.
       intros ityp atyp.
       assert (iatyp : couple i a ∈ Arg').
         apply couple_intro_sigma; auto.
-      apply W0.G_WW; trivial.
+      apply W0.G_W_big; trivial.
       apply f'typ.
 
       intros.
@@ -460,6 +660,6 @@ Qed.
 End InductiveFamilies.
 
 Section Test.
-Let x := (W_eqn, W_typ).
+Let x := (W_eqn, W_typ, W_REC_typ, W_REC_eqn).
 Print Assumptions x.
 End Test.
