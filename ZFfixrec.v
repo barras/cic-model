@@ -665,6 +665,17 @@ End REC_Eqn.
 
 End Recursor.
 
+Global Instance REC_morph_gen : Proper ((eq_set==>eq_set==>eq_set)==>eq_set==>eq_set) REC.
+do 4 red; intros.
+unfold REC.
+apply TR_morph; trivial.
+do 2 red; intros.
+apply sup_morph; trivial.
+red; intros.
+apply H; trivial.
+apply H1; trivial.
+Qed.
+
 (* begin hide *)
 Module Hidden.
 (* Building a function by recursion over an ordinal. The step function is given

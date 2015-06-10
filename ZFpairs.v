@@ -371,6 +371,23 @@ apply couple_intro_sigma; trivial.
   apply snd_typ_sigma with (2:=H3); auto with *.
 Qed.
 
+Lemma sigma_elim A B p :
+  ext_fun A B ->
+  p ∈ sigma A B ->
+  p == couple (fst p) (snd p) /\
+  fst p ∈ A /\
+  snd p ∈ B (fst p).
+intros.
+split.
+ apply subset_elim1 in H0.
+ apply surj_pair in H0; trivial.
+
+ split.
+ apply fst_typ_sigma in H0; trivial.
+
+ apply snd_typ_sigma with (2:=H0); auto with *.
+Qed.
+
 Definition sigma_case b c :=
   cond_set (c == couple (fst c) (snd c)) (b (fst c) (snd c)).
 

@@ -13,7 +13,7 @@ Hint Resolve W0.W_F_mono Fmono_morph.
 
 Section W_theory.
 
-(** We want to model the following inductive type with non-uniform parameter a:
+(** We want to model the following inductive type with non-uniform parameter [a]:
 [[
 Inductive Wd (a:Arg) :=
 | C : forall (x:A a), (forall (i:B a x), Wd (f a x i)) -> Wd a.
@@ -117,6 +117,222 @@ apply couple_intro_sigma; trivial.
   rewrite <- H1; rewrite H3; auto.
 Qed.
 
+Lemma W_Fd_elim X a w :
+  morph1 X ->
+  w ∈ W_Fd X a ->
+  w == couple (fst w) (snd w) /\
+  fst w ∈ A a /\
+  (forall i, i ∈ B a (fst w) -> cc_app (snd w) i ∈ X (f a (fst w) i)).
+intros.
+apply sigma_elim in H0.
+ destruct H0 as (?&?&?).
+ split; trivial.
+ split; trivial.
+ intros.
+ apply cc_prod_elim with (1:=H2); trivial.
+
+ do 2 red; intros.
+ apply cc_prod_ext.
+  apply Bm; auto with *.
+
+  red; intros.
+  apply H; apply fm; auto with *.
+Qed.
+
+Definition W_Fd_map g a w :=
+  couple (fst w) (λ i ∈ B a (fst w), g (f a (fst w) i) (cc_app (snd w) i)).
+
+Instance W_Fd_map_morph :
+  Proper ((eq_set==>eq_set==>eq_set)==>eq_set==>eq_set==>eq_set) W_Fd_map.
+do 5 red; intros.
+unfold W_Fd_map.
+apply couple_morph.
+ apply fst_morph; trivial.
+apply cc_lam_morph.
+ apply Bm; trivial.
+ apply fst_morph; trivial.
+
+ red; intros.
+ apply H.
+  apply fm; trivial.
+  apply fst_morph; trivial.
+
+  apply cc_app_morph; trivial.
+  apply snd_morph; trivial.
+Qed.
+
+Lemma W_Fd_map_eq X g a w :
+  morph1 X ->
+  morph2 g ->
+  a ∈ Arg ->
+  w ∈ W_Fd X a ->
+  fst (W_Fd_map g a w) == fst w /\
+  (forall i, i ∈ B a (fst w) -> cc_app (snd (W_Fd_map g a w)) i == g (f a (fst w) i)(cc_app (snd w) i)).
+intros.
+unfold W_Fd_map.
+split; intros.
+ apply fst_def.
+
+ rewrite snd_def.
+ rewrite cc_beta_eq; auto with *.
+ do 2 red; intros.
+ rewrite <- H5; reflexivity.
+Qed.
+
+Lemma W_Fd_map_typ X Y g :
+  morph1 X ->
+  morph1 Y ->
+  morph2 g ->
+  (forall a x, a ∈ Arg -> x ∈ X a -> g a x ∈ Y a) ->
+  forall a w, a ∈ Arg ->
+  w ∈ W_Fd X a ->
+  W_Fd_map g a w ∈ W_Fd Y a.
+intros Xm Ym gm gty a w aty wty.
+apply W_Fd_elim in wty; trivial.
+destruct wty as (eta & w1 & w2).
+apply W_Fd_intro; auto with *.
+do 2 red; intros.
+rewrite <- H0; reflexivity.
+Qed.
+
+Lemma W_Fd_map_inj X g a w w' :
+  morph1 X ->
+  morph2 g ->
+  (forall a x x', a ∈ Arg -> x ∈ X a -> x' ∈ X a -> g a x == g a x' -> x == x') ->
+  a ∈ Arg ->
+  w ∈ W_Fd X a ->
+  w' ∈ W_Fd X a ->
+  W_Fd_map g a w == W_Fd_map g a w' ->
+  w == w'.
+intros Xm gm ginj aty wty wty' eqw.
+destruct W_Fd_map_eq with (4:=wty) (g:=g) as (wm1,wm2); trivial.
+destruct W_Fd_map_eq with (4:=wty') (g:=g) as (wm1',wm2'); trivial.
+assert (eqw1 : fst w == fst w').
+ rewrite <- wm1, <- wm1'.
+ rewrite eqw; reflexivity.
+apply sigma_elim in wty.
+destruct wty as (e & w1 & w2).
+apply sigma_elim in wty'.
+destruct wty' as (e' & w1' & w2').
+rewrite e,e'.
+rewrite cc_eta_eq with (1:=w2).
+rewrite cc_eta_eq with (1:=w2').
+apply couple_morph; trivial.
+apply cc_lam_ext; auto.
+ apply Bm; auto with *.
+red; intros.
+apply ginj with (f a (fst w) x); auto.
+ apply cc_prod_elim with (1:=w2); trivial.
+
+ rewrite <- H0, eqw1.
+ apply cc_prod_elim with (1:=w2'); trivial.
+ rewrite <- eqw1; trivial.
+
+ rewrite <- wm2; trivial.
+ rewrite <- H0, eqw1.
+ rewrite <- wm2'; trivial.
+ rewrite eqw; reflexivity.
+ rewrite <- eqw1; trivial.
+
+do 2 red; intros.
+apply cc_prod_ext.
+ apply Bm; auto with *.
+
+ red; intros.
+ apply Xm; apply fm; auto with *.
+do 2 red; intros.
+apply cc_prod_ext.
+ apply Bm; auto with *.
+
+ red; intros.
+ apply Xm; apply fm; auto with *.
+Qed.
+
+Require Import ZFiso.
+Lemma W_Fd_map_surj X Y g :
+  morph1 X ->
+  morph1 Y ->
+  morph2 g ->
+  (forall a, a ∈ Arg -> iso_fun (X a) (Y a) (g a)) ->
+  forall a w', a ∈ Arg ->
+  w' ∈ W_Fd Y a ->
+  exists2 w, w ∈ W_Fd X a & W_Fd_map g a w == w'.
+intros Xm Ym gm giso a w' aty wty'.
+destruct W_Fd_elim with (2:=wty') as (etaw' & w1' & w2'); trivial.
+exists (couple (fst w')
+        (λ i ∈ B a (fst w'),
+         union (subset (X (f a (fst w') i)) (fun x => cc_app (snd w') i == g (f a (fst w') i) x)))).
+ apply W_Fd_intro; auto with *.
+   do 2 red; intros.
+   apply union_morph; apply subset_morph.
+    rewrite H0; reflexivity.
+    red; intros.
+    rewrite H0; reflexivity.
+
+  intros.
+  assert (iso' := giso (f a (fst w') i) (ftyp _ _ _ aty w1' H)).
+  destruct (iso_surj iso') with (y:=cc_app (snd w') i); auto.
+  rewrite union_subset_singl with (y:=x) (y':=x); auto with *.
+  intros.
+  rewrite H4 in H5.
+  apply (iso_inj iso') in H5; auto.
+
+ apply transitivity with (2:=symmetry etaw').
+ unfold W_Fd_map; apply couple_morph.
+  rewrite fst_def; reflexivity.
+
+  destruct sigma_elim with (2:=wty') as (_ & _ & w2).
+do 2 red; intros.
+apply cc_prod_ext.
+ apply Bm; auto with *.
+
+ red; intros.
+ apply Ym; apply fm; auto with *.
+
+  symmetry.
+  rewrite cc_eta_eq with (1:=w2).
+  apply cc_lam_ext.
+   rewrite fst_def; reflexivity.
+  red; intros.
+  rewrite H0 in H|-*. clear x H0.
+  rewrite fst_def, snd_def.
+  rewrite cc_beta_eq; trivial.
+   assert (iso' := giso (f a (fst w') x') (ftyp _ _ _ aty w1' H)).
+   destruct (iso_surj iso') with (y:=cc_app (snd w') x'); auto.
+   rewrite union_subset_singl with (y:=x) (y':=x); auto with *.
+   intros.
+   rewrite H4 in H5.
+   apply (iso_inj iso') in H5; auto.
+
+   do 2 red; intros.
+   apply union_morph; apply subset_morph.
+    rewrite H1; reflexivity.
+    red; intros.
+    rewrite H1; reflexivity.
+Qed.
+
+Lemma W_Fd_map_iso X Y g :
+  morph1 X ->
+  morph1 Y ->
+  morph2 g ->
+  (forall a, a ∈ Arg -> iso_fun (X a) (Y a) (g a)) ->
+  forall a, a ∈ Arg -> iso_fun (W_Fd X a) (W_Fd Y a) (W_Fd_map g a).
+intros.
+split; intros.
+ do 2 red; intros.
+ apply W_Fd_map_morph; auto with *.
+
+ red; intros.
+ eapply W_Fd_map_typ with (X:=X); auto.
+ intros.
+ apply (iso_typ (H2 _ H5)); trivial.
+
+ apply W_Fd_map_inj with (5:=H4) (6:=H5) in H6; auto.
+ intros.
+ apply (iso_inj (H2 _ H7)); trivial.
+
+ eapply W_Fd_map_surj with (6:=H4); auto.
+Qed.
 
 (**************************************************)
 

@@ -4,24 +4,6 @@ Require Import ZF ZFpairs ZFrelations ZFord ZFstable ZFfixfun.
 Require ZFind_wnup.
 Module W0 := ZFind_wnup.
 
-(* --> ZFpairs *)
-Lemma sigma_elim A B p :
-  ext_fun A B ->
-  p ∈ sigma A B ->
-  p == couple (fst p) (snd p) /\
-  fst p ∈ A /\
-  snd p ∈ B (fst p).
-intros.
-split.
- apply subset_elim1 in H0.
- apply surj_pair in H0; trivial.
-
- split.
- apply fst_typ_sigma in H0; trivial.
-
- apply snd_typ_sigma with (2:=H0); auto with *.
-Qed.
-
 
 Section InductiveFamilies.
 
@@ -536,7 +518,6 @@ split; intros.
  apply WFm1; auto with *.
 Qed.
 
-    
     Lemma W_REC_typ i a w :
       i ∈ m ->
       a ∈ Arg i ->

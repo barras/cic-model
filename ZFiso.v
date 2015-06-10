@@ -2404,3 +2404,28 @@ split.
 Qed.
 
 End TIF_iso.
+
+Lemma TIF_iso_morph :
+  Proper (eq_set==>((eq_set==>eq_set)==>eq_set==>eq_set)==>((eq_set==>eq_set==>eq_set)==>
+          eq_set==>eq_set==>eq_set)==>eq_set==>eq_set==>eq_set==>eq_set)
+    TIF_iso.
+do 7 red; intros.
+unfold TIF_iso.
+apply cc_app_morph.
+2:apply couple_morph; trivial.
+apply REC_morph_gen; trivial.
+do 2 red; intros.
+apply cc_lam_ext.
+ apply sigma_morph; auto.
+ red; intros.
+ apply TIF_morph_gen; trivial.
+ apply osucc_morph; trivial.
+red; intros.
+apply H1.
+ do 2 red; intros.
+ apply cc_app_morph; trivial.
+ apply couple_morph; trivial.
+
+ apply fst_morph; trivial.
+ apply snd_morph; trivial.
+Qed.
