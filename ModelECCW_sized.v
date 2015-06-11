@@ -1,4 +1,4 @@
-(** Strong normalization of the model of CC+W in the type-based
+(** Strong normalization of the model of ECC+W in the type-based
   termination presentation.
 *)
 
