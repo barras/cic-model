@@ -1,5 +1,5 @@
 Require Import ZF.
-Require Import ZFpairs ZFsum ZFrelations ZFrepl ZFwf ZFord ZFfix.
+Require Import ZFpairs ZFsum ZFrelations ZFrepl ZFwf ZFord ZFfix ZFfixfun.
 Require Import ZFstable.
 Require Import ZFlist.
 
@@ -360,6 +360,30 @@ Qed.
 intros.
 unfold Ffix.
 apply G_subset; trivial.
+Qed.
+
+  Lemma G_TIF A F :
+    Proper ((eq_set==>eq_set)==>eq_set==>eq_set) F ->
+    mono_fam A F ->
+    (forall X a, a ∈ A -> morph1 X -> typ_fun X A U -> F X a ∈ U) ->
+    forall o a, isOrd o -> o ∈ U -> a ∈ A -> TIF A F o a ∈ U.
+intros Fm Fmono Uty o a oo oty aty.
+revert a aty.
+apply isOrd_ind with (2:=oo); intros o' oo' o'le orec; intros.
+rewrite TIF_eq; trivial.
+apply G_sup; trivial.
+ do 2 red; intros.
+ apply Fm; auto with *.
+ apply TIF_morph; trivial.
+
+ apply G_incl with o; trivial.
+
+ intros.
+ apply Uty; trivial.
+  apply TIF_morph; auto with *.
+
+  red; intros.
+  apply orec; trivial.
 Qed.
 
 Section NonTrivial.

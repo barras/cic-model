@@ -1,5 +1,4 @@
-(** Strong normalization of the model of ECC+W in the type-based
-  termination presentation.
+(** Model of ECC+W in the type-based termination presentation.
 *)
 
 Require Import List Bool Models.

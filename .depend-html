@@ -34,6 +34,7 @@ InstSyn.html InstSyn.glob InstSyn.v.beautified: InstSyn.v ModelTheory.html
 IntMap.html IntMap.glob IntMap.v.beautified: IntMap.v
 Lambda.html Lambda.glob Lambda.v.beautified: Lambda.v basic.html VarMap.html
 Logics.html Logics.glob Logics.v.beautified: Logics.v
+ModelCIC.html ModelCIC.glob ModelCIC.v.beautified: ModelCIC.v Models.html ZF.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFgrothendieck.html ZFfunext.html ZFind_wnup.html ZFspos_nup2.html ModelZF.html ModelECC.html Model_variance.html ZFpairs.html ZFcoc.html
 ModelECC.html ModelECC.glob ModelECC.v.beautified: ModelECC.v Models.html ZF.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFgrothendieck.html ZFcoc.html ZFecc.html ModelZF.html
 ModelECCW_sized.html ModelECCW_sized.glob ModelECCW_sized.v.beautified: ModelECCW_sized.v Models.html ZF.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFgrothendieck.html ZFfunext.html ZFind_w.html ModelZF.html ModelECC.html Model_variance.html ZFpairs.html
 ModelECC_oldstyle.html ModelECC_oldstyle.glob ModelECC_oldstyle.v.beautified: ModelECC_oldstyle.v IntMap.html TypeECC.html Models.html TypeJudgeECC.html ZF.html ZFcoc.html ModelZF.html ZFecc.html
@@ -97,7 +98,7 @@ ZFfix.html ZFfix.glob ZFfix.v.beautified: ZFfix.v ZF.html ZFrelations.html ZFnat
 ZFfixfun.html ZFfixfun.glob ZFfixfun.v.beautified: ZFfixfun.v ZF.html ZFrelations.html ZFnats.html ZFord.html
 ZFfixrec.html ZFfixrec.glob ZFfixrec.v.beautified: ZFfixrec.v ZF.html ZFrelations.html ZFnats.html ZFord.html ZFfunext.html
 ZFfunext.html ZFfunext.glob ZFfunext.v.beautified: ZFfunext.v basic.html ZF.html ZFpairs.html ZFrelations.html ZFnats.html
-ZFgrothendieck.html ZFgrothendieck.glob ZFgrothendieck.v.beautified: ZFgrothendieck.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFrepl.html ZFwf.html ZFord.html ZFfix.html ZFstable.html ZFlist.html
+ZFgrothendieck.html ZFgrothendieck.glob ZFgrothendieck.v.beautified: ZFgrothendieck.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFrepl.html ZFwf.html ZFord.html ZFfix.html ZFfixfun.html ZFstable.html ZFlist.html
 ZFinaccessible.html ZFinaccessible.glob ZFinaccessible.v.beautified: ZFinaccessible.v ZFnats.html ZFord.html ZFrank.html ZFgrothendieck.html
 ZFind.html ZFind.glob ZFind.v.beautified: ZFind.v ZF.html ZFpairs.html ZFrelations.html ZFord.html ZFstable.html ZFfixfun.html ZFind_wnup.html ZFfixrec.html ZFgrothendieck.html
 ZFind_basic.html ZFind_basic.glob ZFind_basic.v.beautified: ZFind_basic.v ZF.html ZFnats.html
@@ -127,7 +128,8 @@ ZFrepl.html ZFrepl.glob ZFrepl.v.beautified: ZFrepl.v ZF.html
 ZFskol.html ZFskol.glob ZFskol.v.beautified: ZFskol.v basic.html ZFdef.html Sublogic.html
 ZFskolEm.html ZFskolEm.glob ZFskolEm.v.beautified: ZFskolEm.v basic.html ZFdef.html EnsEm.html Sublogic.html
 ZFspos.html ZFspos.glob ZFspos.v.beautified: ZFspos.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFord.html ZFfix.html ZFstable.html ZFiso.html ZFind_w.html ZFgrothendieck.html
-ZFspos_nup.html ZFspos_nup.glob ZFspos_nup.v.beautified: ZFspos_nup.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFord.html ZFfix.html ZFfixfun.html ZFstable.html ZFiso.html ZFind_w.html ZFspos.html ZFind_wnup.html ZFcoc.html ZFnats.html
+ZFspos_nup.html ZFspos_nup.glob ZFspos_nup.v.beautified: ZFspos_nup.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFord.html ZFfix.html ZFfixfun.html ZFstable.html ZFiso.html ZFind_w.html ZFspos.html ZFind_wnup.html ZFgrothendieck.html ZFcoc.html ZFnats.html
+ZFspos_nup2.html ZFspos_nup2.glob ZFspos_nup2.v.beautified: ZFspos_nup2.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFord.html ZFfix.html ZFfixfun.html ZFstable.html ZFiso.html ZFind_w.html ZFspos.html ZFind_wnup.html ZFgrothendieck.html ZFcoc.html ZFnats.html
 ZFspos_prop.html ZFspos_prop.glob ZFspos_prop.v.beautified: ZFspos_prop.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFord.html ZFfix.html ZFstable.html ZFiso.html ZFind_w.html ZFgrothendieck.html
 ZFsposd.html ZFsposd.glob ZFsposd.v.beautified: ZFsposd.v ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFord.html ZFfix.html ZFfixfun.html ZFstable.html ZFiso.html ZFind_w.html ZFspos.html ZFind_wd.html ZFnats.html
 ZFstable.html ZFstable.glob ZFstable.v.beautified: ZFstable.v ZF.html
@@ -140,4 +142,3 @@ ZFuniv.html ZFuniv.glob ZFuniv.v.beautified: ZFuniv.v Sat.html ZF.html ZFcoc.htm
 ZFuniv_real.html ZFuniv_real.glob ZFuniv_real.v.beautified: ZFuniv_real.v Sat.html ZF.html ZFcoc.html ZFord.html ZFgrothendieck.html ZFlambda.html
 ZFwf.html ZFwf.glob ZFwf.v.beautified: ZFwf.v basic.html ZF.html ZFrepl.html ZFpairs.html ZFrelations.html
 basic.html basic.glob basic.v.beautified: basic.v
-hEnsEm.html hEnsEm.glob hEnsEm.v.beautified: hEnsEm.v basic.html Sublogic.html ZFdef.html Choice.html

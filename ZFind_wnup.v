@@ -2005,7 +2005,8 @@ Qed.
 
 
 
-(** [WW] is the encoded type with small index
+(** We show the above encoding with small index simulates [W], and
+    hence the closure ordinal of [W a] is small for each parameter [a].
  *)
 Definition A'' a q := A (Dec a q).
 Definition B'' a q := B (Dec a q).
@@ -2034,7 +2035,6 @@ do 3 red; intros.
 apply W_Fd_morph; auto with *.
 Qed.
 
-
 Lemma Wi_rebase o a :
   isOrd o ->
   a ∈ Arg ->
@@ -2058,33 +2058,49 @@ apply W_simul with (g:=Dec a); intros; auto with *.
  apply Dec_mt; trivial.
 Qed.
 
+
+(** The closure ordinal for a given value of the parameter *)
+Definition W_ord_a a :=
+  W_ord (Arg' a) (A'' a) (B'' a).
+
+Lemma isOrd_W_ord_a a : isOrd (W_ord_a a).
+intros.
+unfold W_ord_a.
+apply W_o_o.
+apply B''_morph'.
+Qed.
+Hint Resolve isOrd_W_ord_a.
+
+Lemma W_ord_a_smaller a :
+  a ∈ Arg -> W_ord_a a ⊆ W_ord Arg A B.
+unfold W_ord_a.
+intros.
+apply smaller_parameter with (g:=Dec a); intros; auto with *.
+ apply Dec_morph; reflexivity.
+
+ apply Dec_typ; trivial.
+
+ reflexivity.
+
+  reflexivity.
+Qed.
+
 Lemma W_rebase a :
   a ∈ Arg ->
   W Arg A B f a == W (Arg' a) (A'' a) (B'' a) extln empty.
 intros.
 unfold W.
-rewrite Wi_rebase; trivial.
-2:apply W_o_o; auto with *.
-assert (W_ord (Arg' a) (A'' a) (B'' a) ⊆ W_ord Arg A B).
- apply smaller_parameter with (g:=Dec a); intros; auto with *.
-  apply Dec_morph; reflexivity.
-
-  apply Dec_typ; trivial.
-
-  reflexivity.
-
-  reflexivity.
+rewrite Wi_rebase; auto using W_o_o.
 apply incl_eq.
- apply W_post; auto with *.
+ fold (W (Arg' a) (A'' a) (B'' a) extln empty).
+ apply W_post; auto using W_o_o with *.
   intros.
   apply extln_typ; auto.
-
-  apply W_o_o; auto with *.
 
   apply Arg'_intro1; trivial.
 
  unfold Wi.
- apply TIF_mono; auto with *.
+ apply TIF_mono; auto using W_o_o with *.
   red; intros.
   apply W_Fd_mono; auto with *.
   intros.
@@ -2092,141 +2108,18 @@ apply incl_eq.
 
   apply Arg'_intro1; trivial.
 
-  apply W_o_o; auto with *.
-
-  apply W_o_o; auto with *.
+  assert (tmp := W_ord_a_smaller).
+  unfold W_ord_a in tmp; auto.
 Qed.
 
-Definition WWi o a := Wi (Arg' a) (A'' a) (B'' a) o a.
-Definition WW a := W (Arg' a) (A'' a) (B'' a) extln empty.
-(*
-Lemma WWi_def o a : isOrd o -> a ∈ Arg ->
-  WWi o a == Wi Arg A B f o a.
+Lemma W_eqn_a a :
+  a ∈ Arg ->
+  W Arg A B f a == Wi Arg A B f (W_ord_a a) a.
 intros.
-unfold WWi.
-transitivity (Wi (Arg' a) (A'' a) (B'' a) extln o empty).
- unfold Wi.
-, Wi
-
-
-
-Lemma WW_eqn a : a ∈ Arg -> WW a == W_Fd A B f WW a.
-intros.
-unfold WW.
-rewrite W_eqn; auto with *.
- apply sigma_ext.
-  apply Am.
-  apply Dec_mt; trivial.
-
-  intros.
-  unfold A'' in H0; rewrite Dec_mt in H0; trivial.
-  symmetry; symmetry in H1.
-  apply cc_prod_ext; intros.
-   apply Bm; trivial.
-   symmetry; apply Dec_mt; trivial.
-
-   red; intros.
-   set (a' := f a x' x0).
-   assert (tya' : a' ∈ Arg).
-    unfold a'; apply ftyp; auto.
-    rewrite H1; trivial.
-   unfold W.
-   set (Wo1 := W_ord (Arg' a') (A'' a') (B'' a')).
-   set (Wo := W_ord (Arg' a) (A'' a) (B'' a)).
-   assert (Wo1 ⊆ Wo).
-    (* Wo1 is smaller than Wo because there are less parameters reachable from
-       [f a x x' x0] than from [a]. *)
-    apply smaller_parameter; trivial.
-    rewrite H1; trivial.
-   transitivity (Wi (Arg' a') (A'' a') (B'' a') extln Wo empty).
-    apply incl_eq.
-     unfold Wi; apply TIF_mono; auto with *.
-      apply W_Fd_mono; auto with *; intros.
-      apply extln_typ; trivial.    
-      apply Arg'_intro1; trivial.
-      apply W_o_o; auto with *.
-      apply W_o_o; auto with *.
-
-     apply W_post; intros; auto with *.
-      intros; apply extln_typ; trivial.
-      apply W_o_o; auto with *.
-      apply Arg'_intro1; trivial.
-   apply W_simul with (g:=fun q => couple x (couple x0 q)); intros ; auto with *.
-    apply extln_typ; auto.
-
-    apply extln_typ; auto.
-
-    do 2 red; intros; rewrite H5; reflexivity.
-
-    apply Arg'_intro2; trivial.
-     rewrite <- H1; trivial.
-     rewrite <- H1; trivial.
-
-    apply Am.
-    rewrite Dec_cons; trivial.
-     unfold a'; rewrite H1; reflexivity.
-     rewrite <- H1; trivial.
-     rewrite <- H1; trivial.
-
-    apply Bm; auto with *.
-    rewrite Dec_cons; trivial.
-     unfold a'; rewrite H1; reflexivity.
-     rewrite <- H1; trivial.
-     rewrite <- H1; trivial.
-
-    rewrite extln_cons with (a:=a); auto with *.
-     rewrite <- H1; trivial.
-     rewrite <- H1; trivial.
-     rewrite <- H1; trivial.
-     rewrite <- H1; trivial.
-
-    apply W_o_o; auto with *.
-
-    apply Arg'_intro1; trivial.
-
-    rewrite <- extln_nil with (a:=a); auto with *.
-     rewrite H3; reflexivity.
-     rewrite <- H1; trivial.
-
- intros.
- apply extln_typ; trivial.
-
- apply Arg'_intro1; trivial.
+rewrite W_rebase; trivial.
+rewrite Wi_rebase; trivial.
+reflexivity.
 Qed.
-
-(** Closure ordinal for the whole family. May lie in a big universe (containing A,B *and* Arg) *)
-Definition WW_ord := osup Arg (fun a => W_ord (Arg' a) (A'' a) (B'' a)) .
-
-Let WW_ord_m1 : ext_fun Arg (fun a : set => W_ord (Arg' a) (A'' a) (B'' a)).
-do 2 red; intros.
-apply W_ord_morph_all; auto with *.
- apply Arg'_morph; trivial.
- apply A''_morph; trivial.
- apply B''_morph; trivial.
-Qed.
-
-Lemma WW_o_ord : isOrd WW_ord.
-apply isOrd_osup; trivial.
-intros.
-apply W_o_o; auto with *.
-Qed.
-
-Lemma WW_ord_top a : a ∈ Arg -> W_ord (Arg' a) (A'' a) (B'' a) ⊆ WW_ord.
-intros.
-unfold WW_ord.
-apply osup_intro with (f:=fun a=> W_ord (Arg' a) (A'' a) (B'' a)) (x:= a); trivial.
-Qed.
-
-Lemma WW_closure a : a ∈ Arg -> WW a == WWi WW_ord a.
-intros aty.
-transitivity (WWi (W_ord (
-apply incl_eq.
-apply TIF_mono.
-unfold WW,WWi,W,Wi.
-unfold WW.
-unfold W.
-unfold Wi.
-*)
 
 (** Showing the encoding [WW] is small even when Arg is big
  *)
@@ -2275,32 +2168,105 @@ apply G_sup; trivial.
 Qed.
 
 
-  Lemma G_WW a : a ∈ Arg -> WW a ∈ U.
+  Lemma G_W_ord_a a : a ∈ Arg -> W_ord_a a ∈ U.
 intros.
-unfold WW.
-apply G_W; intros; auto with *.
- apply extln_typ; auto.
-
+unfold W_ord_a.
+apply G_W_ord; auto with *.
  apply G_Arg'; trivial.
 
+ intros.
  apply aU.
  apply Dec_typ; trivial.
 
+ intros.
  apply bU; trivial.
- apply Dec_typ; trivial. 
-
- apply Arg'_intro1; trivial.
+ apply Dec_typ; trivial.
 Qed.
 
   Lemma G_W_big a : a ∈ Arg -> W Arg A B f a ∈ U.
 intros.
 rewrite W_rebase; trivial.
-apply G_WW; trivial.
+unfold W.
+apply G_Wi; auto using W_o_o with *.
+intros; apply extln_typ; trivial.
+
+ apply G_Arg'; trivial.
+
+ intros.
+ apply aU.
+ apply Dec_typ; trivial.
+
+ intros.
+ apply bU; trivial.
+ apply Dec_typ; trivial. 
+
+ change (W_ord_a a ∈ U).
+ apply G_W_ord_a; trivial.
+
+ apply Arg'_intro1; trivial.
 Qed.
 
 End UniverseFacts.
 
 End BigParameter.
+
+Instance Dec_morph_gen :
+  Proper ((eq_set==>eq_set==>eq_set==>eq_set)==>eq_set==>eq_set==>eq_set) Dec.
+do 4 red; intros.
+unfold Dec.
+unfold Arg'_rec.
+apply uchoice_morph_raw.
+red; intros.
+apply ex2_morph'.
+ reflexivity.
+intros f fm.
+unfold Arg'_rec_rel.
+apply and_iff_morphism.
+2:rewrite H2,H0; reflexivity.
+apply fa_morph; intros P.
+apply fa_morph; intros Pm.
+apply fa_morph; intros _.
+apply impl_morph; intros.
+ apply fa_morph; intros ?.
+ apply fa_morph; intros ?.
+ apply fa_morph; intros ?.
+ apply fa_morph; intros f'.
+ apply fa_morph; intros f'm.
+ apply fa_morph; intros ?.
+ apply Pm; auto with *.
+ red; intros.
+ apply f'm; auto.
+ apply H; auto with *.
+
+ apply Pm; auto with *.
+Qed.
+
+Instance W_ord_a_morph :
+  Proper (eq_set==>(eq_set==>eq_set)==>(eq_set==>eq_set==>eq_set)==>
+          (eq_set==>eq_set==>eq_set==>eq_set)==>eq_set==>eq_set)
+    W_ord_a.
+do 6 red; intros.
+unfold W_ord_a.
+apply W_ord_morph_all.
+ unfold Arg'.
+ apply TIF_morph_gen; auto with *.
+ do 2 red; intros.
+ apply union2_morph; auto with *.
+ apply sigma_morph; auto with *.
+ red; intros; apply sigma_morph; auto with *.
+  apply H1; trivial.
+
+  red; intros; apply H4; apply H2; auto with *.
+
+ red; intros.
+ unfold A''.
+ apply H0; apply Dec_morph_gen; auto with *.
+
+ do 2 red; intros.
+ unfold B''.
+ apply H1; trivial.
+ apply Dec_morph_gen; auto with *.
+Qed.
 
 Section Test.
 Let x := (W_eqn, G_W_big).
