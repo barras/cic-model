@@ -127,80 +127,65 @@ left; exists (fun _ => x).
 do 2 red; reflexivity.
 Defined.
 
-(** Syntax of the Calculus of Constructions *)
-Definition prop := cst props.
 
-Definition kind : term := None.
+(** General substitutions *)
+Record sub := mkSub {
+  sub_f :> val -> val;
+  sub_m : Proper (eq_val ==> eq_val) sub_f
+}.
+Existing Instance sub_m.
 
-Definition Ref (n:nat) : term.
-(*begin show*)
-left; exists (fun i => i n).
-(*end show*)
-do 2 red; simpl; auto.
+Definition eq_sub (s1 s2:sub) :=
+  (eq_val==>eq_val)%signature s1 s2.
+  
+Definition Sub (t:term) (s:sub) : term.
+(* begin show *)
+destruct t as [(t,tm)|];
+ [left; exists (fun i => t (s i))|right].
+(* end show *)
+do 2 red; intros; auto.
+apply tm; apply sub_m; trivial.
 Defined.
 
-Definition App (u v:term) : term.
-(*begin show*)
-left; exists (fun i => app (int u i) (int v i)).
-(*end show*)
-do 2 red; simpl; intros.
-rewrite H; reflexivity.
+Definition sub_id : sub.
+exists (fun x => x).
+do 2 red; auto.
 Defined.
 
-Global Instance App_morph : Proper (eq_term ==> eq_term ==> eq_term) App.
-unfold App; do 3 red; simpl; intros.
-red; intros.
-rewrite H; rewrite H0; rewrite H1; reflexivity.
-Qed.
-
-Definition Abs (A M:term) : term.
-(*begin show*)
-left; exists (fun i => lam (int A i) (fun x => int M (V.cons x i))).
-(*end show*)
-do 2 red; simpl; intros.
-apply lam_ext.
- rewrite H; reflexivity.
-(**)
- red; intros.
- rewrite H; rewrite H1; reflexivity.
+Definition sub_comp (s1 s2:sub) : sub.
+exists (fun i => s2 (s1 i)).
+do 2 red; intros.
+apply sub_m.
+apply sub_m.
+trivial.
 Defined.
 
-Global Instance Abs_morph : Proper (eq_term ==> eq_term ==> eq_term) Abs.
-unfold Abs; do 5 red; simpl; intros.
-apply lam_ext.
- apply int_morph; auto.
-
- red; intros.
- rewrite H0; rewrite H1; rewrite H3; reflexivity.
-Qed.
-
-Definition Prod (A B:term) : term.
-(*begin show*)
-left; exists (fun i => prod (int A i) (fun x => int B (V.cons x i))).
-(*end show*)
-do 2 red; simpl; intros.
-apply prod_ext.
- rewrite H; reflexivity.
-(**)
- red; intros.
- rewrite H; rewrite H1; reflexivity.
+Definition sub_lift (m:nat) (s:sub) : sub.
+exists (V.lams m s).
+do 2 red; intros.
+apply V.lams_morph; trivial.
+apply sub_m.
 Defined.
 
-Global Instance Prod_morph : Proper (eq_term ==> eq_term ==> eq_term) Prod.
-unfold Prod; do 5 red; simpl; intros.
-apply prod_ext.
- apply int_morph; auto.
+Definition sub_shift (n:nat) : sub.
+exists (V.shift n); auto with *.
+apply V.shift_morph; trivial.
+Defined.
 
- red; intros.
- rewrite H0; rewrite H1; rewrite H3; reflexivity.
-Qed.
+Definition sub_cons (t:term) (s:sub) : sub.
+exists (fun i => V.cons (int t i) (s i)).
+do 2 red; intros.
+apply V.cons_morph.
+ apply int_morph; auto with *.
+ apply sub_m; trivial.
+Defined.
 
 (** Relocations *)
 Section Lift.
 
 Definition lift_rec (n m:nat) (t:term) : term.
 (*begin show*)
-destruct t as [(t,tm)|]; [left|exact kind].
+destruct t as [(t,tm)|]; [left|exact None].
 exists (fun i => t (V.lams m (V.shift n) i)).
 (*end show*)
  do 2 red; intros.
@@ -213,6 +198,14 @@ destruct x as [(x,xm)|]; destruct y as [(y,ym)|]; simpl in H|-*; try contradicti
 red; intros.
 apply H.
 rewrite H0; reflexivity.
+Qed.
+
+Lemma lift_rec_equiv n k t :
+  eq_term (lift_rec n k t) (Sub t (sub_lift k (sub_shift n))).
+destruct t as [(t,tm)|]; simpl; trivial.
+red; intros.
+rewrite H.
+reflexivity.
 Qed.
 
 Definition lift1 n := lift_rec n 1.
@@ -285,40 +278,6 @@ red; simpl; intros.
 red; reflexivity.
 Qed.
 
-Lemma eq_lift_abs : forall n A B k,
-  eq_term (lift_rec n k (Abs A B))
-    (Abs (lift_rec n k A) (lift_rec n (S k) B)).
-do 5 red; simpl; intros.
-apply lam_ext; intros.
- rewrite int_lift_rec_eq.
- rewrite H; reflexivity.
-
- red; intros.
- rewrite int_lift_rec_eq.
- rewrite <- V.cons_lams; auto with *.
-  rewrite H1; rewrite H; reflexivity.
-
-  do 2 red; intros.
-  rewrite H2; reflexivity.
-Qed.
-
-Lemma eq_lift_prod : forall n A B k,
-  eq_term (lift_rec n k (Prod A B))
-    (Prod (lift_rec n k A) (lift_rec n (S k) B)).
-do 5 red; simpl; intros.
-apply prod_ext; intros.
- rewrite int_lift_rec_eq.
- rewrite H; reflexivity.
-
- red; intros.
- rewrite int_lift_rec_eq.
- rewrite <- V.cons_lams; auto with *.
-  rewrite H1; rewrite H; reflexivity.
-
-  do 2 red; intros.
-  rewrite H2; reflexivity.
-Qed.
-
 End Lift.
 
 (** Substitution *)
@@ -340,6 +299,17 @@ red; intros.
 apply H1.
 rewrite H; rewrite H0; rewrite H2; reflexivity.
 Qed.
+
+Lemma subst_rec_equiv a k t :
+  eq_term (subst_rec a k t) (Sub t (sub_lift k (sub_cons a sub_id))).
+destruct t as [(t,tm)|]; simpl; trivial.
+red; intros.
+apply tm.
+unfold V.lams; do 2 red; intros.
+destruct (le_gt_dec k a0); auto with *.
+rewrite H; reflexivity.
+Qed.
+
 
 Lemma int_subst_rec_eq : forall arg k T i,
   int (subst_rec arg k T) i == int T (V.lams k (V.cons (int arg (V.shift k i))) i).
@@ -375,6 +345,36 @@ rewrite V.shift0.
 reflexivity.
 Qed.
 
+End Substitution.
+
+
+
+(** Syntax of the Calculus of Constructions *)
+Definition prop := cst props.
+
+Definition kind : term := None.
+
+Definition Ref (n:nat) : term.
+(*begin show*)
+left; exists (fun i => i n).
+(*end show*)
+do 2 red; simpl; auto.
+Defined.
+
+Definition App (u v:term) : term.
+(*begin show*)
+left; exists (fun i => app (int u i) (int v i)).
+(*end show*)
+do 2 red; simpl; intros.
+rewrite H; reflexivity.
+Defined.
+
+Global Instance App_morph : Proper (eq_term ==> eq_term ==> eq_term) App.
+unfold App; do 3 red; simpl; intros.
+red; intros.
+rewrite H; rewrite H0; rewrite H1; reflexivity.
+Qed.
+
 Lemma eqterm_subst_App : forall N u v,
   eq_term (subst N (App u v)) (App (subst N u) (subst N v)).
 red; simpl; intros.
@@ -383,6 +383,82 @@ unfold subst.
 do 2 rewrite int_subst_rec_eq.
 rewrite H.
 reflexivity.
+Qed.
+
+Definition Abs (A M:term) : term.
+(*begin show*)
+left; exists (fun i => lam (int A i) (fun x => int M (V.cons x i))).
+(*end show*)
+do 2 red; simpl; intros.
+apply lam_ext.
+ rewrite H; reflexivity.
+(**)
+ red; intros.
+ rewrite H; rewrite H1; reflexivity.
+Defined.
+
+Global Instance Abs_morph : Proper (eq_term ==> eq_term ==> eq_term) Abs.
+unfold Abs; do 5 red; simpl; intros.
+apply lam_ext.
+ apply int_morph; auto.
+
+ red; intros.
+ rewrite H0; rewrite H1; rewrite H3; reflexivity.
+Qed.
+
+Lemma eq_lift_abs : forall n A B k,
+  eq_term (lift_rec n k (Abs A B))
+    (Abs (lift_rec n k A) (lift_rec n (S k) B)).
+do 5 red; simpl; intros.
+apply lam_ext; intros.
+ rewrite int_lift_rec_eq.
+ rewrite H; reflexivity.
+
+ red; intros.
+ rewrite int_lift_rec_eq.
+ rewrite <- V.cons_lams; auto with *.
+  rewrite H1; rewrite H; reflexivity.
+
+  do 2 red; intros.
+  rewrite H2; reflexivity.
+Qed.
+
+Definition Prod (A B:term) : term.
+(*begin show*)
+left; exists (fun i => prod (int A i) (fun x => int B (V.cons x i))).
+(*end show*)
+do 2 red; simpl; intros.
+apply prod_ext.
+ rewrite H; reflexivity.
+(**)
+ red; intros.
+ rewrite H; rewrite H1; reflexivity.
+Defined.
+
+Global Instance Prod_morph : Proper (eq_term ==> eq_term ==> eq_term) Prod.
+unfold Prod; do 5 red; simpl; intros.
+apply prod_ext.
+ apply int_morph; auto.
+
+ red; intros.
+ rewrite H0; rewrite H1; rewrite H3; reflexivity.
+Qed.
+
+Lemma eq_lift_prod : forall n A B k,
+  eq_term (lift_rec n k (Prod A B))
+    (Prod (lift_rec n k A) (lift_rec n (S k) B)).
+do 5 red; simpl; intros.
+apply prod_ext; intros.
+ rewrite int_lift_rec_eq.
+ rewrite H; reflexivity.
+
+ red; intros.
+ rewrite int_lift_rec_eq.
+ rewrite <- V.cons_lams; auto with *.
+  rewrite H1; rewrite H; reflexivity.
+
+  do 2 red; intros.
+  rewrite H2; reflexivity.
 Qed.
 
 Lemma eq_subst_prod : forall u A B k,
@@ -401,9 +477,6 @@ apply prod_ext; intros.
   do 2 red; intros.
   rewrite H2; reflexivity.
 Qed.
-
-
-End Substitution.
 
 End T.
 Import T.
@@ -465,6 +538,10 @@ Definition eq_typ' e M M' :=
 (** Subtyping as inclusion of values *)
 Definition sub_typ' (e:env) (M M':term) :=
   forall i x, val_ok e i -> el M i x -> el M' i x.
+
+
+Definition typ_sub (e:env) (s:sub) (f:env) :=
+  forall i, val_ok e i -> val_ok f (s i).
 
 Global Instance typ_morph : forall e, Proper (eq_term ==> eq_term ==> iff) (typ e).
 intros.
@@ -586,6 +663,16 @@ apply vcons_add_var0; simpl; auto.
 Qed.
 
 (** Typing rules *)
+
+Lemma typ_Sub e f s m u :
+  typ f m u ->
+  typ_sub e s f ->
+  typ e (Sub m s) (Sub u s).
+unfold typ, typ_sub; intros.
+destruct u as [(u,um)|]; simpl in *; trivial.
+ simpl.
+ destruct m as [(m,mm)|]; simpl in *; auto.
+Qed.
 
 Lemma typ_prop : forall e, typ e prop kind.
 red; simpl; trivial.
