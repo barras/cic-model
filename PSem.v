@@ -1169,7 +1169,7 @@ apply Impl_intro; [|discriminate|].
      rewrite V.lams0. rewrite <- V.cons_lams; [|do 2 red; intros; rewrite H0; reflexivity].
      rewrite V.lams0; unfold V.shift at 1; simpl. apply int_morph; [reflexivity|].
       apply V.cons_ext; [unfold V.lams, V.shift; simpl
-        |rewrite V.shift_lams; rewrite V.lams0; rewrite V.shift_split]; reflexivity.
+        |rewrite V.shift_lams; rewrite V.lams0; rewrite V.shiftS_split]; reflexivity.
 
     apply typ_var; trivial.
 Qed.

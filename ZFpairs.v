@@ -106,6 +106,13 @@ split.
  rewrite <- (snd_def x y);rewrite H; rewrite snd_def; reflexivity.
 Qed.
 
+Lemma couple_mt_discr a b :
+  ~ couple a b == empty.
+intro.
+apply empty_ax with (x:=singl a).
+rewrite <- H; apply pair_intro1.
+Qed.
+
 (* 2- typing *)
 
 Definition prodcart A B :=

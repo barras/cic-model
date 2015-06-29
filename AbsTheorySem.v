@@ -622,11 +622,11 @@ apply typ_abs; [right| |discriminate].
    apply Prod_morph; [rewrite subst0_lift|reflexivity].
     apply eq_trm_intro; intros.
      unfold lift, subst. rewrite int_lift_rec_eq.
-     do 2 rewrite int_subst_rec_eq. do 2 rewrite int_lift_rec_eq. do 5 rewrite V.lams0.
+     do 2 rewrite int_subst_rec_eq. do 2 rewrite int_lift_rec_eq. do 4 rewrite V.lams0.
      rewrite <- V.cons_lams; [rewrite V.lams0|do 2 red; intros; rewrite H]; reflexivity.
 
      unfold lift, subst. rewrite tm_lift_rec_eq.
-     do 2 rewrite tm_subst_rec_eq. do 2 rewrite tm_lift_rec_eq. do 5 rewrite I.lams0. 
+     do 2 rewrite tm_subst_rec_eq. do 2 rewrite tm_lift_rec_eq. do 4 rewrite I.lams0. 
      rewrite <- I.cons_lams; [rewrite I.lams0|do 2 red; intros; rewrite H]; reflexivity.
 
      destruct A; simpl; trivial.

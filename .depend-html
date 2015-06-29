@@ -35,6 +35,7 @@ IntMap.html IntMap.glob IntMap.v.beautified: IntMap.v
 Lambda.html Lambda.glob Lambda.v.beautified: Lambda.v basic.html VarMap.html
 Logics.html Logics.glob Logics.v.beautified: Logics.v
 ModelCIC.html ModelCIC.glob ModelCIC.v.beautified: ModelCIC.v Models.html ZF.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFgrothendieck.html ZFfunext.html ZFind_wnup.html ZFspos_nup.html ModelZF.html ModelECC.html Model_variance.html ZFpairs.html ZFcoc.html
+ModelCIC2.html ModelCIC2.glob ModelCIC2.v.beautified: ModelCIC2.v Models.html ZF.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFgrothendieck.html ZFfunext.html ZFind_wnup.html ZFspos_nup.html ModelZF.html ModelECC.html Model_variance.html ZFpairs.html ZFcoc.html
 ModelECC.html ModelECC.glob ModelECC.v.beautified: ModelECC.v Models.html ZF.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFgrothendieck.html ZFcoc.html ZFecc.html ModelZF.html
 ModelECCW_sized.html ModelECCW_sized.glob ModelECCW_sized.v.beautified: ModelECCW_sized.v Models.html ZF.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFgrothendieck.html ZFfunext.html ZFind_w.html ModelZF.html ModelECC.html Model_variance.html ZFpairs.html
 ModelECC_oldstyle.html ModelECC_oldstyle.glob ModelECC_oldstyle.v.beautified: ModelECC_oldstyle.v IntMap.html TypeECC.html Models.html TypeJudgeECC.html ZF.html ZFcoc.html ModelZF.html ZFecc.html

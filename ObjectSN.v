@@ -172,6 +172,115 @@ destruct (Lc.eqterm (Lc.lift_rec 1 (Lc.subst_rec (Lc.Abs (Lc.Ref 0)) (j a) k) k)
 contradiction.
 Qed.
 
+(** Lift and substitution *)
+
+Definition lift_rec (n m:nat) (t:trm) : trm.
+(*begin show*)
+destruct t as [t|]; [left|exact None].
+exists (fun i => iint t (V.lams m (V.shift n) i))
+       (fun j => itm t (I.lams m (I.shift n) j)).
+(*end show*)
+ do 2 red; intros.
+ rewrite H; reflexivity.
+(**)
+ do 2 red; intros.
+ rewrite H; reflexivity.
+(**)
+ red; intros.
+ rewrite <- itm_lift.
+ apply itm_morph; do 2 red; intros.
+ unfold I.lams.
+ destruct (le_gt_dec m a); trivial.
+(**)
+ red; intros.
+ rewrite <- itm_subst.
+ apply itm_morph; do 2 red; intros.
+ unfold I.lams.
+ destruct (le_gt_dec m a); trivial.
+Defined.
+
+Instance lift_rec_morph n k :
+  Proper (eq_trm ==> eq_trm) (lift_rec n k).
+ do 2 red; intros.
+ destruct x; destruct y; try contradiction; try exact I.
+ red; simpl.
+ destruct H.
+ split; red; intros.
+  apply H.
+  rewrite H1; reflexivity.
+
+  apply H0.
+  rewrite H1; reflexivity.
+Qed.
+
+Lemma int_lift_rec_eq : forall n k T i,
+  int (lift_rec n k T) i == int T (V.lams k (V.shift n) i).
+intros; destruct T as [T|]; simpl; reflexivity.
+Qed.
+
+Definition lift n := lift_rec n 0.
+
+Instance lift_morph : forall k, Proper (eq_trm ==> eq_trm) (lift k).
+do 2 red; simpl; intros.
+destruct x as [x|]; destruct y as [y|];
+  simpl in *; (contradiction||trivial).
+destruct H; split.
+ red; intros.
+ apply H; rewrite H1; reflexivity.
+
+ red; intros.
+ apply H0; rewrite H1; reflexivity.
+Qed.
+
+Lemma int_lift_eq : forall n T i,
+  int (lift n T) i == int T (V.shift n i).
+unfold int; intros;
+  destruct T as [T|]; simpl; auto. (* BUG: intros needed before destruct *)
+2:reflexivity.
+rewrite V.lams0.
+reflexivity.
+Qed.
+
+Lemma int_cons_lift_eq : forall i T x,
+  int (lift 1 T) (V.cons x i) == int T i.
+intros.
+rewrite int_lift_eq.
+rewrite V.shift_cons; reflexivity.
+Qed.
+
+Lemma tm_lift_rec_eq : forall n k T j,
+  tm (lift_rec n k T) j = tm T (I.lams k (I.shift n) j).
+intros; destruct T; simpl; reflexivity.
+Qed.
+
+Lemma lift0 : forall A, eq_trm (lift 0 A) A.
+intros; apply eq_trm_intro; intros; [| |destruct A; simpl; trivial].
+ unfold lift; rewrite int_lift_rec_eq; rewrite V.lams0; reflexivity.
+
+ unfold lift; rewrite tm_lift_rec_eq; rewrite I.lams0; reflexivity.
+Qed.
+
+Lemma split_lift : forall n T,
+  eq_trm (lift (S n) T) (lift 1 (lift n T)).
+destruct T as [T|]; simpl; auto.
+split; red; intros.
+ do 2 rewrite V.lams0.
+ change (V.shift n (fun k => V.lams 0 (V.shift 1) y k)) with
+   (V.shift n (V.lams 0 (V.shift 1) y)).
+ rewrite V.lams0.
+ rewrite V.shiftS_split.
+ change (eq_val (fun k => x k) (fun k => y k)) in H.
+ rewrite H; reflexivity.
+
+ do 2 rewrite I.lams0.
+ change (I.shift n (fun k => I.lams 0 (I.shift 1) y k)) with
+   (I.shift n (I.lams 0 (I.shift 1) y)).
+ rewrite I.lams0.
+ rewrite I.shiftS_split.
+ change (Lc.eq_intt (fun k => x k) (fun k => y k)) in H.
+ rewrite H; reflexivity.
+Qed.
+
 (** Pseudo-term constructors *)
 
 Definition cst (x:X) (t:Lc.term)
@@ -275,106 +384,6 @@ Defined.
 Lemma intProd_eq i A B :
   int (Prod A B) i = prod (int A i) (fun x => int B (V.cons x i)).
 reflexivity.
-Qed.
-
-Definition lift_rec (n m:nat) (t:trm) : trm.
-(*begin show*)
-destruct t as [t|]; [left|exact kind].
-exists (fun i => iint t (V.lams m (V.shift n) i))
-       (fun j => itm t (I.lams m (I.shift n) j)).
-(*end show*)
- do 2 red; intros.
- rewrite H; reflexivity.
-(**)
- do 2 red; intros.
- rewrite H; reflexivity.
-(**)
- red; intros.
- rewrite <- itm_lift.
- apply itm_morph; do 2 red; intros.
- unfold I.lams.
- destruct (le_gt_dec m a); trivial.
-(**)
- red; intros.
- rewrite <- itm_subst.
- apply itm_morph; do 2 red; intros.
- unfold I.lams.
- destruct (le_gt_dec m a); trivial.
-Defined.
-
-Instance lift_rec_morph n k :
-  Proper (eq_trm ==> eq_trm) (lift_rec n k).
- do 2 red; intros.
- destruct x; destruct y; try contradiction; try exact I.
- red; simpl.
- destruct H.
- split; red; intros.
-  apply H.
-  rewrite H1; reflexivity.
-
-  apply H0.
-  rewrite H1; reflexivity.
-Qed.
-
-Lemma int_lift_rec_eq : forall n k T i,
-  int (lift_rec n k T) i == int T (V.lams k (V.shift n) i).
-intros; destruct T as [T|]; simpl; reflexivity.
-Qed.
-
-Definition lift n := lift_rec n 0.
-
-Instance lift_morph : forall k, Proper (eq_trm ==> eq_trm) (lift k).
-do 2 red; simpl; intros.
-destruct x as [x|]; destruct y as [y|];
-  simpl in *; (contradiction||trivial).
-destruct H; split.
- red; intros.
- apply H; rewrite H1; reflexivity.
-
- red; intros.
- apply H0; rewrite H1; reflexivity.
-Qed.
-
-Lemma int_lift_eq : forall n T i,
-  int (lift n T) i == int T (V.shift n i).
-unfold int; intros;
-  destruct T as [T|]; simpl; auto. (* BUG: intros needed before destruct *)
-2:reflexivity.
-rewrite V.lams0.
-reflexivity.
-Qed.
-
-Lemma int_cons_lift_eq : forall i T x,
-  int (lift 1 T) (V.cons x i) == int T i.
-intros.
-rewrite int_lift_eq.
-rewrite V.shift_cons; reflexivity.
-Qed.
-
-Lemma tm_lift_rec_eq : forall n k T j,
-  tm (lift_rec n k T) j = tm T (I.lams k (I.shift n) j).
-intros; destruct T; simpl; reflexivity.
-Qed.
-
-Lemma split_lift : forall n T,
-  eq_trm (lift (S n) T) (lift 1 (lift n T)).
-destruct T as [T|]; simpl; auto.
-split; red; intros.
- do 2 rewrite V.lams0.
- change (V.shift n (fun k => V.lams 0 (V.shift 1) y k)) with
-   (V.shift n (V.lams 0 (V.shift 1) y)).
- rewrite V.lams0.
- rewrite V.shift_split.
- change (eq_val (fun k => x k) (fun k => y k)) in H.
- rewrite H; reflexivity.
-
- do 2 rewrite I.lams0.
- change (I.shift n (fun k => I.lams 0 (I.shift 1) y k)) with
-   (I.shift n (I.lams 0 (I.shift 1) y)).
- rewrite I.lams0.
- rewrite I.shift_split.
- change (Lc.eq_intt (fun k => x k) (fun k => y k)) in H.
- rewrite H; reflexivity.
 Qed.
 
 Definition subst_rec (arg:trm) (m:nat) (t:trm) : trm.

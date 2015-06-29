@@ -91,6 +91,22 @@ unfold int; do 3 red; intros.
 destruct x; destruct y; simpl in *; (contradiction||reflexivity||auto).
 Qed.
 
+Definition Op1 (f:X->X) {fm:Proper(eqX==>eqX) f} (t:term) : term.
+(* begin show *)
+left; exists (fun i => f (int t i)).
+(*end show*)
+do 2 red; intros.
+apply fm; apply int_morph; auto with *.
+Defined.
+
+Definition Op2 (f:X->X->X) {fm:Proper(eqX==>eqX==>eqX) f} (t1 t2:term) : term.
+(* begin show *)
+left; exists (fun i => f (int t1 i) (int t2 i)).
+(*end show*)
+do 2 red; intros.
+apply fm; apply int_morph; auto with *.
+Defined.
+
 (** Denotation as type *)
 Definition el (t:term) (i:val) (x:X) :=
   match t with
@@ -138,6 +154,20 @@ Existing Instance sub_m.
 Definition eq_sub (s1 s2:sub) :=
   (eq_val==>eq_val)%signature s1 s2.
   
+Instance eq_sub_equiv : Equivalence eq_sub.
+split; red; intros.
+ apply x.
+
+ do 2 red; intros.
+ symmetry; apply H.
+ symmetry; trivial.
+
+ do 2 red; intros.
+ transitivity (y y0); auto. 
+ transitivity (y x0); auto.
+ apply y; symmetry; trivial.
+Qed.
+
 Definition Sub (t:term) (s:sub) : term.
 (* begin show *)
 destruct t as [(t,tm)|];
@@ -147,13 +177,21 @@ do 2 red; intros; auto.
 apply tm; apply sub_m; trivial.
 Defined.
 
+Instance Sub_morph : Proper (eq_term ==> eq_sub ==> eq_term) Sub.
+do 3 red; intros.
+destruct x as [(x,xm)|]; destruct y as [(y,ym)|];simpl in *; try contradiction; trivial.
+red; intros.
+apply H.
+apply H0; trivial.
+Qed.
+
 Definition sub_id : sub.
 exists (fun x => x).
 do 2 red; auto.
 Defined.
 
 Definition sub_comp (s1 s2:sub) : sub.
-exists (fun i => s2 (s1 i)).
+exists (fun i => s1 (s2 i)).
 do 2 red; intros.
 apply sub_m.
 apply sub_m.
@@ -167,6 +205,12 @@ apply V.lams_morph; trivial.
 apply sub_m.
 Defined.
 
+Instance sub_lift_morph : Proper (eq ==> eq_sub ==> eq_sub) sub_lift.
+do 4 red; simpl; intros.
+red; intros.
+apply V.lams_morph; auto with *.
+Qed.
+
 Definition sub_shift (n:nat) : sub.
 exists (V.shift n); auto with *.
 apply V.shift_morph; trivial.
@@ -179,6 +223,33 @@ apply V.cons_morph.
  apply int_morph; auto with *.
  apply sub_m; trivial.
 Defined.
+
+Lemma eq_sub_comp t s1 s2 :
+  Sub (Sub t s1) s2 = Sub t (sub_comp s1 s2).
+destruct t as [(t,tm)|]; simpl; reflexivity.
+Qed.
+
+Lemma sub_lift_split m n s :
+  eq_sub (sub_lift (m+n) s) (sub_lift m (sub_lift n s)).
+red; simpl.
+red; intros.
+rewrite <- V.lams_split.
+ apply V.lams_morph; trivial.
+ apply sub_m.
+apply sub_m.
+Qed.
+
+Lemma sub_lift0 s : eq_sub (sub_lift 0 s) s.
+red; red; intros.
+simpl.
+rewrite V.lams0.
+apply sub_m; trivial.
+Qed.
+
+Lemma int_Sub_eq T s i :
+  int (Sub T s) i = int T (s i).
+intros; destruct T as [(T,Tm)|]; simpl; reflexivity.
+Qed.
 
 (** Relocations *)
 Section Lift.
@@ -206,6 +277,13 @@ destruct t as [(t,tm)|]; simpl; trivial.
 red; intros.
 rewrite H.
 reflexivity.
+Qed.
+
+Lemma lift_rec_nk n t k :
+  t <> None <->
+  lift_rec n k t <> None.
+destruct t as [(t,tm)|]; simpl; auto with *.
+split; intros; discriminate.
 Qed.
 
 Definition lift1 n := lift_rec n 1.
@@ -237,13 +315,25 @@ apply H.
 rewrite H0; reflexivity.
 Qed.
 
-Lemma lift0_term : forall T, eq_term (lift 0 T) T.
+Lemma lift0_term T : eq_term (lift 0 T) T.
 destruct T as [(T,Tm)|]; simpl; trivial.
 red; intros.
 apply Tm.
 rewrite V.lams0.
 rewrite V.shift0.
 do 2 red; apply H.
+Qed.
+
+Lemma eq_term_liftS n t : eq_term (lift (S n) t) (lift 1 (lift n t)).
+destruct t as [(t,tm)|]; simpl; trivial.
+red; intros.
+apply tm.
+rewrite V.lams0.
+rewrite V.lams0.
+rewrite V.lams0.
+rewrite V.shiftS_split.
+apply V.shift_morph; trivial.
+apply V.shift_morph; trivial.
 Qed.
 
 Lemma simpl_int_lift : forall i n x T,
@@ -310,6 +400,12 @@ destruct (le_gt_dec k a0); auto with *.
 rewrite H; reflexivity.
 Qed.
 
+Lemma subst_rec_nk a t k :
+  t <> None <->
+  subst_rec a k t <> None.
+destruct t as [(t,tm)|]; simpl; auto with *.
+split; intros; discriminate.
+Qed.
 
 Lemma int_subst_rec_eq : forall arg k T i,
   int (subst_rec arg k T) i == int T (V.lams k (V.cons (int arg (V.shift k i))) i).
@@ -373,6 +469,18 @@ Global Instance App_morph : Proper (eq_term ==> eq_term ==> eq_term) App.
 unfold App; do 3 red; simpl; intros.
 red; intros.
 rewrite H; rewrite H0; rewrite H1; reflexivity.
+Qed.
+
+Lemma eq_sub_App a b s :
+  eq_term (Sub (App a b) s) (App (Sub a s) (Sub b s)).
+red; simpl.
+red; intros.
+apply app_ext.
+ rewrite H.
+ rewrite int_Sub_eq; reflexivity.
+
+ rewrite H.
+ rewrite int_Sub_eq; reflexivity.
 Qed.
 
 Lemma eqterm_subst_App : forall N u v,
@@ -487,6 +595,35 @@ Definition env := list term.
 Definition val_ok (e:env) (i:val) :=
   forall n T, nth_error e n = value T -> el (lift (S n) T) i (i n).
 
+Lemma val_ok_shift1 e ty i :
+  val_ok (ty::e) i ->
+  val_ok e (V.shift 1 i).
+intros iok n T itm.
+generalize (iok (S n) T itm).
+destruct T as [(T,Tm)|]; simpl; auto.
+Qed.
+
+Instance val_ok_morph : Proper (list_eq eq_term ==> eq_val ==> iff) val_ok.
+apply morph_impl_iff2; auto with *.
+do 4 red.
+induction 1; simpl; intros.
+ red; intros.
+ destruct n; discriminate.
+
+ red; intros.
+ destruct n; simpl in *.
+  generalize (H2 0 _ eq_refl).
+  injection H3; intros; subst T.
+  revert H5; apply el_morph; symmetry; auto.
+  apply lift_morph; trivial.
+
+  red in IHForall2.
+  apply (V.shift_morph 1 _ eq_refl) in H1.
+  apply val_ok_shift1 in H2.
+  specialize IHForall2 with (1:=H1)(2:=H2)(3:=H3).
+  destruct T as [(T,Tm)|]; simpl in *; auto.
+Qed.
+
 Lemma vcons_add_var0 : forall e T i x,
   val_ok e i -> el T i x -> val_ok (T::e) (V.cons x i).
 unfold val_ok; simpl; intros.
@@ -580,6 +717,19 @@ unfold sub_typ'; do 4 red; intros.
 rewrite <- H in H3; rewrite <- H0; auto.
 Qed.
 
+Instance typ_sub_morph :
+  Proper (list_eq eq_term ==> eq_sub ==> list_eq eq_term ==> iff) typ_sub.
+do 4 red; intros.
+unfold typ_sub.
+apply fa_morph; intros i.
+apply impl_morph.
+ apply val_ok_morph; trivial.
+ reflexivity.
+intros.
+apply val_ok_morph; trivial.
+apply H0; reflexivity.
+Qed.
+
 End J.
 Import J.
 
@@ -663,16 +813,6 @@ apply vcons_add_var0; simpl; auto.
 Qed.
 
 (** Typing rules *)
-
-Lemma typ_Sub e f s m u :
-  typ f m u ->
-  typ_sub e s f ->
-  typ e (Sub m s) (Sub u s).
-unfold typ, typ_sub; intros.
-destruct u as [(u,um)|]; simpl in *; trivial.
- simpl.
- destruct m as [(m,mm)|]; simpl in *; auto.
-Qed.
 
 Lemma typ_prop : forall e, typ e prop kind.
 red; simpl; trivial.
@@ -857,6 +997,60 @@ Lemma typ_subsumption' : forall e M T T',
 Proof.
 unfold typ, sub_typ'; simpl; intros; auto.
 Qed.
+
+(** Subtitution *)
+
+Lemma typ_Sub e f s m u :
+  typ f m u ->
+  typ_sub e s f ->
+  typ e (Sub m s) (Sub u s).
+unfold typ, typ_sub; intros.
+destruct u as [(u,um)|]; simpl in *; trivial.
+ simpl.
+ destruct m as [(m,mm)|]; simpl in *; auto.
+Qed.
+
+Lemma typ_sub_shift1 e ty :
+  typ_sub (ty::e) (sub_shift 1) e.
+red; intros.
+eapply val_ok_shift1.
+exact H.
+Qed.
+
+Lemma typ_sub_lams1 e s f t :
+  typ_sub e s f ->
+  typ_sub (Sub t s :: e) (sub_lift 1 s) (t::f).
+unfold typ_sub; simpl; intros.
+intros n T getn.
+destruct n.
+ injection getn; clear getn; intros; subst T.
+ destruct t as [(t,tm)|]; simpl; trivial.
+ rewrite V.lams_bv; auto with arith.
+ rewrite V.lams0.
+ unfold shift; simpl.
+ generalize (H0 0 _ eq_refl); simpl.
+ apply in_ext.
+  reflexivity.
+ apply tm.
+ intros a; simpl.
+ unfold lams, shift; simpl.
+ replace (a-0) with a by auto with *.
+ apply sub_m.
+ intros a'.
+ replace (a'-0) with a' by omega.
+ reflexivity.
+
+ apply val_ok_shift1 in H0.
+ apply H in H0.
+ generalize (H0 n _ getn).
+ clear getn.
+ destruct T as [(T,Tm)|]; simpl; trivial.
+ apply in_ext.
+  unfold lams; simpl.
+  replace (n-0) with n; auto with *.
+ reflexivity.
+Qed.
+
 
 (** Derived rules of the basic judgements *)
 

@@ -715,11 +715,11 @@ apply typ_abs; [right| |discriminate].
    apply Prod_morph; [rewrite subst0_lift|reflexivity].
     apply eq_trm_intro; intros.
      unfold lift, subst. rewrite int_lift_rec_eq.
-     do 2 rewrite int_subst_rec_eq. do 2 rewrite int_lift_rec_eq. do 5 rewrite V.lams0.
+     do 2 rewrite int_subst_rec_eq. do 2 rewrite int_lift_rec_eq. do 4 rewrite V.lams0.
      rewrite <- V.cons_lams; [rewrite V.lams0|do 2 red; intros; rewrite H]; reflexivity.
 
      unfold lift, subst. rewrite tm_lift_rec_eq.
-     do 2 rewrite tm_subst_rec_eq. do 2 rewrite tm_lift_rec_eq. do 5 rewrite I.lams0. 
+     do 2 rewrite tm_subst_rec_eq. do 2 rewrite tm_lift_rec_eq. do 4 rewrite I.lams0. 
      rewrite <- I.cons_lams; [rewrite I.lams0|do 2 red; intros; rewrite H]; reflexivity.
 
      destruct A; simpl; trivial.
@@ -1474,7 +1474,7 @@ apply Impl_intro; [|discriminate|].
      rewrite V.lams0. rewrite <- V.cons_lams; [|do 2 red; intros; rewrite H0; reflexivity].
      rewrite V.lams0; unfold V.shift at 1; simpl. apply int_morph; [reflexivity|].
       apply V.cons_ext; [unfold V.lams, V.shift; simpl
-        |rewrite V.shift_lams; rewrite V.lams0; rewrite V.shift_split]; reflexivity.
+        |rewrite V.shift_lams; rewrite V.lams0; rewrite V.shiftS_split]; reflexivity.
 
      setoid_replace Nat with (lift 1 Nat) using relation eq_trm at 3; 
        [apply typ_var; trivial|simpl; split; red; reflexivity].

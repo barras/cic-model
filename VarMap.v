@@ -12,10 +12,11 @@ End Eqv.
 Module Make (X:Eqv).
   Import X.
 
-  Definition map := nat -> t.
-  Definition eq_map : relation map := (pointwise_relation nat eq).
+Definition map := nat -> t.
+Definition eq_map : relation map := (pointwise_relation nat eq).
 
-  Definition nil (x:t) : map := fun _ => x.
+Definition nil (x:t) : map := fun _ => x.
+
 Definition cons (x:t) (i:map) : map :=
   fun k => match k with
   | 0 => x
@@ -53,7 +54,7 @@ rewrite H1.
 reflexivity.
 Qed.
 
-Lemma cons_ext : forall (x:t) i i',
+Lemma cons_ext (x:t) i i' :
   eq x (i' 0) ->
   eq_map i (shift 1 i') ->
   eq_map (cons x i) i'.
@@ -62,23 +63,55 @@ destruct a; simpl; auto.
 apply H0.
 Qed.
 
-Lemma shift0 : forall i, eq_map (shift 0 i) i.
+Lemma shift0 i : eq_map (shift 0 i) i.
 do 2 red; reflexivity.
 Qed.
 
-Lemma shift_split : forall n i, 
+Lemma shift_split m n i :
+  eq_map (shift (m+n) i) (shift n (shift m i)).
+intros k.
+unfold shift; simpl.
+rewrite plus_assoc; reflexivity.
+Qed.
+
+Lemma shiftS_split n i :
   eq_map (shift (S n) i) (shift n (shift 1 i)).
 do 2 red; unfold shift; intros.
 replace (1+(n+a)) with (1+n+a); simpl; auto with *.
 Qed.
 
-Lemma shift_cons : forall x i,
+Lemma shift_cons x i :
   eq_map (shift 1 (cons x i)) i.
 do 2 red; intros.
 reflexivity.
 Qed.
 
-Lemma lams_bv : forall m f i k,
+Lemma shiftS_cons n x i :
+  eq_map (shift (S n) (cons x i)) (shift n i).
+rewrite shiftS_split.
+rewrite shift_cons.
+reflexivity.
+Qed.
+
+Lemma lams_split k k' f i :
+  Proper (eq_map ==> eq_map) f -> 
+  eq_map (lams (k+k') f i) (lams k (lams k' f) i).
+intros fm n; unfold lams; simpl.
+destruct (le_gt_dec k n).
+ destruct (le_gt_dec k' (n-k)); destruct (le_gt_dec (k+k') n); try (exfalso; omega).
+  replace (n-k-k') with (n-(k+k')) by omega.
+  apply fm.
+  rewrite shift_split; reflexivity.
+
+  unfold shift; simpl.
+  replace (k+(n-k)) with n by omega; reflexivity.
+
+ destruct (le_gt_dec (k+k') n).
+  exfalso; omega.
+ reflexivity.
+Qed.
+
+Lemma lams_bv m f i k :
   k < m -> eq (lams m f i k) (i k).
 unfold lams; intros.
 destruct (le_gt_dec m k).
@@ -95,7 +128,7 @@ destruct (le_gt_dec m (m+a)).
 apply False_ind; omega.
 Qed.
 
-Lemma lams0 : forall f i, eq_map (lams 0 f i) (f (fun k => i k)).
+Lemma lams0 f i : eq_map (lams 0 f i) (f i).
 intros.
 rewrite <- (shift0 (lams 0 f i)).
 rewrite lams_shift.
@@ -103,14 +136,13 @@ reflexivity.
 Qed.
 
 
-Lemma shift_lams : forall k f i,
+Lemma shift_lams k f i :
   eq_map (shift 1 (lams (S k) f i)) (lams k f (shift 1 i)).
 do 2 red; unfold lams, shift; simpl; intros.
 destruct (le_gt_dec k a); simpl; reflexivity.
 Qed.
 
-Lemma cons_lams :
-  forall  k f i x,
+Lemma cons_lams k f i x :
   Proper (eq_map ==> eq_map) f ->
   eq_map (cons x (lams k f i)) (lams (S k) f (cons x i)).
 intros.

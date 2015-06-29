@@ -3,7 +3,7 @@
 
 Set Implicit Arguments.
 (*Require Export Utf8_core.*)
-Require Export Peano_dec Compare_dec Max.
+Require Export Minus Peano_dec Compare_dec Max.
 Require Export List.
 Require Export Relations Relation_Operators Transitive_Closure.
 Require Import Wellfounded.
@@ -236,6 +236,48 @@ induction 1.
  apply t_trans with y; trivial.
 Qed.
 
+Instance prod_equiv A B (R1:relation A) (R2:relation B) :
+  Equivalence R1 ->
+  Equivalence R2 ->
+  Equivalence (prod_eq R1 R2).
+intros eq1 eq2.
+split; red; intros.
+ split; reflexivity.
+
+ destruct H; split; symmetry; trivial.
+
+ destruct H; destruct H0.
+ split; [transitivity (fst y)|transitivity (snd y)]; trivial. 
+Qed.
+
+Notation list_eq := List.Forall2.
+
+Instance list_eq_refl A (R:relation A) : Reflexive R -> Reflexive (list_eq R).
+red; intros.
+induction x; simpl; auto.
+Qed.
+
+Instance list_eq_sym A (R:relation A) : Symmetric R -> Symmetric (list_eq R).
+red; intros.
+revert y H0; induction x; destruct y; intros; auto.
+ inversion H0.
+ inversion H0.
+inversion_clear H0.
+constructor; auto.
+Qed.
+
+Instance list_eq_trans A (R:relation A) : Transitive R -> Transitive (list_eq R).
+red.
+induction x; destruct y; destruct z; intros; auto.
+ inversion H0.
+ inversion H1.
+ inversion H1.
+inversion_clear H0.
+inversion_clear H1.
+constructor; eauto.
+Qed.
+
+
 (******************************************************************)
 (** More arithmetics... *)
 Require Import Omega.
@@ -274,4 +316,14 @@ induction x; simpl; intros.
 
    assert (z < max x y) by omega.
    specialize IHx with (1:=H0). destruct IHx; [left | right]; omega.
+Qed.
+
+Fixpoint plus_rev m n :=
+  match m with 0 => n | S m' => plus_rev m' (S n) end.
+
+Lemma plus_rev_def m n :
+  plus_rev m n = m+n.
+revert n; induction m; simpl; intros; auto.
+rewrite IHm; trivial.
+rewrite plus_n_Sm; trivial.
 Qed.

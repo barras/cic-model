@@ -828,7 +828,7 @@ apply Impl_intro.
           replace ((fun k : nat => V.cons y1 (V.lams 0 (V.shift 1) 
           (V.lams 0 (V.shift 2) i)) k)) with (V.cons y1 (V.lams 0 (V.shift 1) 
           (V.lams 0 (V.shift 2) i))); trivial.
-          rewrite V.shift_cons. rewrite V.lams0. apply V.shift_split.
+          rewrite V.shift_cons. rewrite V.lams0. apply V.shiftS_split.
     rewrite Haux2 in Hsucc. clear Haux1 Haux2.
          
    case_eq (lift_rec 2 1 P); intros.

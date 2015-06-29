@@ -12,12 +12,6 @@ Reserved Notation "[ x , t ] \real A" (at level 60).
 (***************************************************************************************)
 (*This following lemmas should be put in ObjectSN, about properties of lift and subst*)
 (***************************************************************************************)
-Lemma lift0 : forall A, eq_trm (lift 0 A) A.
-intros; apply eq_trm_intro; intros; [| |destruct A; simpl; trivial].
- unfold lift; rewrite int_lift_rec_eq; rewrite V.lams0; reflexivity.
-
- unfold lift; rewrite tm_lift_rec_eq; rewrite I.lams0; reflexivity.
-Qed.
 
 Lemma lift_rec_acc : forall t m n p q,
   q <= p <= n + q  ->
@@ -154,7 +148,7 @@ Lemma subst0_lift : forall A n,
    apply V.cons_ext; reflexivity. rewrite <- H at 3. 
   rewrite <- V.cons_lams; [|do 2 red; intros; rewrite H0; reflexivity].
   rewrite <- V.cons_lams; [|do 2 red; intros; rewrite H0; reflexivity].
-  do 2 rewrite V.lams0. rewrite V.shift_split; reflexivity.
+  do 2 rewrite V.lams0. rewrite V.shiftS_split; reflexivity.
 
   intros j0. rewrite tm_lift_rec_eq. rewrite tm_subst_eq; simpl.
   rewrite <-tm_subst_cons. rewrite tm_lift_rec_eq.
@@ -162,7 +156,7 @@ Lemma subst0_lift : forall A n,
    apply I.cons_ext; reflexivity. rewrite <- H at 3. 
   rewrite <- I.cons_lams; [|do 2 red; intros; rewrite H0; reflexivity].
   rewrite <- I.cons_lams; [|do 2 red; intros; rewrite H0; reflexivity].
-  do 2 rewrite I.lams0. rewrite I.shift_split; trivial.
+  do 2 rewrite I.lams0. rewrite I.shiftS_split; trivial.
 
   destruct A; simpl; trivial.
 Qed.
@@ -239,14 +233,14 @@ assert (val_ok (C :: e) (V.lams 1 (V.shift 1) i) (I.lams 1 (I.shift 1) j)).
    simpl int in Hok |- *. simpl tm in Hok |- *.
    do 2 rewrite V.lams0 in Hok. rewrite V.lams0. rewrite V.lams_shift. exact Hok.
 
-   do 6 red in Hok. split; [discriminate|do 3 red; simpl tm; trivial].
+   split; [discriminate|simpl tm; trivial].
 
   specialize Hok with (n:=(S (S n))) (T:=T) (1:=H); clear H.
   destruct Hok as (_, Hok). split; [discriminate|].
-  destruct T; [do 2 red in Hok|-*|do 3 red in Hok |-*].
+  destruct T; [do 2 red in Hok|-*|do 2 red in Hok |-*].
    simpl int in Hok |- *. simpl tm in Hok |- *.
-   rewrite V.lams0 in Hok |- *. rewrite V.shift_split.
-   rewrite V.lams_shift. do 2 rewrite <- V.shift_split.
+   rewrite V.lams0 in Hok |- *. rewrite V.shiftS_split.
+   rewrite V.lams_shift. do 2 rewrite <- V.shiftS_split.
    revert Hok; apply real_morph; [|reflexivity|].
     unfold V.lams, V.shift; simpl.
     replace (n-0) with n; [reflexivity|omega].
@@ -263,7 +257,7 @@ red in HA. specialize HA with (1:=H). clear H.
 destruct HA as (HSA, HA). 
 split; [case_eq A; intros; [discriminate|contradiction]|clear HSA].
 destruct D; rewrite tm_lift_rec_eq; 
-  [red; do 2 rewrite int_lift_rec_eq|do 2 red; rewrite <- kind_ok_lift]; trivial.
+  [red; do 2 rewrite int_lift_rec_eq|red; rewrite <- kind_ok_lift]; trivial.
 Qed.
 
 

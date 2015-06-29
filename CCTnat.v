@@ -264,7 +264,7 @@ induction f; do 2 red; simpl; intros.
 
  red; intros. rewrite prod_ext; try reflexivity.
   red; intros. rewrite <- IHf. rewrite V.cons_lams.
-   rewrite int_subst_rec_eq. rewrite H. rewrite V.shift_split.
+   rewrite int_subst_rec_eq. rewrite H. rewrite V.shiftS_split.
    rewrite V.shift_cons. rewrite H1. reflexivity.
 
    do 4 red; intros. rewrite H2; reflexivity.
@@ -272,7 +272,7 @@ induction f; do 2 red; simpl; intros.
  do 2 red; intros. apply union_morph. 
  apply replf_morph; try reflexivity.
   red; intros. rewrite <- IHf. rewrite int_subst_rec_eq.
-   rewrite V.cons_lams. rewrite V.shift_split. 
+   rewrite V.cons_lams. rewrite V.shiftS_split. 
    rewrite V.shift_cons. rewrite H1; rewrite H. reflexivity.
 
    do 4 red; intros. rewrite H2; reflexivity.

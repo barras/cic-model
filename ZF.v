@@ -20,6 +20,10 @@ split; red; intros; rewrite eq_set_ax in *; intros.
  transitivity (x0 ∈ y); trivial.
 Qed.
 
+Lemma eq_set_morph : Proper (eq_set ==> eq_set ==> iff) eq_set.
+auto with *.
+Qed.
+
 Lemma eq_intro : forall x y,
   (forall z, z ∈ x -> z ∈ y) ->
   (forall z, z ∈ y -> z ∈ x) ->
@@ -58,9 +62,13 @@ unfold incl_set; do 4 red; intros.
 rewrite <- H0; rewrite <- H in H2; auto.
 Qed.
 
-Lemma incl_eq : forall x y, x ⊆ y -> y ⊆ x -> x == y.
+Lemma incl_eq x y : x ⊆ y -> y ⊆ x -> x == y.
 intros.
 apply eq_intro; auto.
+Qed.
+
+Lemma eq_incl x y : x == y -> x ⊆ y.
+intro h; rewrite h; reflexivity.
 Qed.
 
 Instance Fmono_morph F : Proper (incl_set==>incl_set) F -> morph1 F.
