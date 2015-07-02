@@ -2857,26 +2857,23 @@ Section Test.
   Variable S : term -> term.
   Variable i :val.
   Definition vect :=
-    mkInd (ctxt_of(A::N::nil)) 42
+    mkInd (ctxt_of(A::nil)) (ctxt_of (N::nil)) 42
      (mkCstr nil (O::nil) ::
-      mkCstr (CA_Const N :: CA_Const(lift 3 A) :: CA_Rec nil (Ref 1::nil)::nil) (S (Ref 1) :: nil) ::
+      mkCstr (CA_Const N ::
+              CA_Const(lift 2 A) ::
+              CA_Rec nil (Ref 2::nil) (Ref 1::nil)::nil) (S (Ref 2) :: nil) ::
       nil).
 
 (*  Definition t := inductive_type vect.*)
 (*  Definition t := inductive_obj vect i.*)
- Definition t := List.map (constructor_type (ctxt_of(A::N::nil)) (Ind vect) (Ind vect)) myvect.(ind_cstrs).
+ Definition t := List.map (constructor_type vect.(ind_par) (Ind vect) (Ind vect)) vect.(ind_cstrs).
   Goal t=t.
 unfold t at 2.
 unfold constructor_type.
 Opaque Sub Ind.
 simpl.
 unfold cstr_arg_concl; simpl.
-
-unfold inductive_type; simpl.
-unfold inductive_obj, lam_ctxt_obj.
-simpl.
-unfold int_constructor; simpl.
-unfold mkvecti; simpl.
+Abort.
 
 (* List.fold_right () idx (dpos_rec (fun p => int (mkvect inst)))*)
 
