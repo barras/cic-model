@@ -69,29 +69,6 @@ split.
  apply lt_osucc_compat; trivial.
 Qed.
 
-(** General substitutions *)
-(*
-Definition Sub (t:term) (s:val->val) {sm : Proper (eq_val==>eq_val) s} : term.
-(* begin show *)
-destruct t as [(t,tm)|];
- [left; exists (fun i => t (s i))|right].
-(* end show *)
-do 2 red; intros; auto.
-Defined.
-
-Definition typ_sub (e:env) (s:val->val) (f:env) :=
-  forall i, val_ok e i -> val_ok f (s i).
-
-Lemma typ_Sub e f s m u (sm: Proper (eq_val==>eq_val) s) :
-  typ f m u ->
-  typ_sub e s f ->
-  typ e (Sub m s) (Sub u s).
-unfold typ, typ_sub; intros.
-destruct u as [(u,um)|]; simpl in *; trivial.
- simpl.
- destruct m as [(m,mm)|]; simpl in *; auto.
-Qed.
-*)
 
 (** Syntax for telescopes *)
 
@@ -117,6 +94,8 @@ apply sigma_ext.
  red; intros.
  rewrite H0; rewrite H1; rewrite H3; reflexivity.
 Qed.
+
+Definition Couple := Op2 couple.
 
 Definition val_couple : sub.
 exists (fun i => V.cons (couple (i 1) (i 0)) (V.shift 2 i)).
@@ -196,6 +175,23 @@ induction n; simpl; intros.
  reflexivity.
 Qed.
 
+Lemma eq_lams_cons_vect n (s:sub) v i :
+  eq_val (V.lams n s (cons_vect n v i)) (cons_vect n v (s i)).
+revert s v i; induction n; simpl; intros.
+ rewrite V.lams0; reflexivity.
+
+ replace (S n) with (n+1); auto with *.
+ rewrite V.lams_split.
+ rewrite IHn with (s:=sub_lift 1 s).
+ simpl.
+ rewrite <- V.cons_lams.
+ rewrite V.lams0.
+ reflexivity.
+
+ apply sub_m.
+ apply sub_m.
+Qed.
+
 Lemma cons_vect_dom n v i j k :
   (forall a, a <> k -> i a == j a) ->
   forall a, a <> n+k -> cons_vect n v i a == cons_vect n v j a.
@@ -225,6 +221,15 @@ Instance push_rev_ctxt_morph :
 do 3 red; intros.
 revert x y H; induction H0; simpl; intros; trivial.
 constructor; auto.
+Qed.
+
+Lemma push_ctxt_item e g n :
+  nth_error (push_ctxt e g) (n + length g) = nth_error e n.
+revert e n; induction g; simpl; intros.
+ rewrite <- plus_n_O; trivial.
+
+ rewrite <- plus_n_Sm.
+ exact (IHg (a::e) (S n)).
 Qed.
 
 Lemma typ_sub_shift e ctx :
@@ -272,43 +277,15 @@ constructor.
  apply sub_lift_morph; trivial.
 Qed.
 
+Lemma sub_ctxt_length s ctx : length (sub_ctxt s ctx) = length ctx.
+revert s; induction ctx; simpl; auto with arith.
+Qed.
+
 Fixpoint sub_rev_ctxt s rctx :=
   match rctx with
   | nil => nil
   | ty::l => Sub ty (sub_lift (length l) s) :: sub_rev_ctxt s l
   end.
-(*
-Lemma nth_sub_rev l e f s n T :
-  (n < length l)%nat ->
-  nth_error (push_rev_ctxt f (sub_rev_ctxt s l)) n = Some T ->
-  exists2 T', nth_error (push_rev_ctxt e l) n = value T' &
-    T = Sub T' (sub_lift (length l - S n) s).
-revert e f s n T; induction l; simpl; intros.
- inversion H.
- destruct n; simpl in *.
-  injection H0; clear H0; intros; subst T.
-  exists a; trivial.
-  rewrite <- Minus.minus_n_O.
-  trivial.
-
-  destruct IHl with (e:=e)(2:=H0); auto with *.
-  eauto.
-Qed.
-Lemma nth_sub_rev' l e f s n T :
-  (n < length l)%nat ->
-  nth_error (push_rev_ctxt e l) n = value T ->
-  nth_error (push_rev_ctxt f (sub_rev_ctxt s l)) n = Some (Sub T (sub_lift (length l - S n) s)).
-revert s n T; induction l; simpl; intros.
- inversion H.
- destruct n; simpl in *.
-  injection H0; clear H0; intros; subst T.
-  rewrite <- Minus.minus_n_O.
-  trivial.
-
-  eapply IHl; eauto with arith.
-Qed.
-*)
-
 
 Lemma typs_lams_rev e s f l :
   typ_sub e s f ->
@@ -360,6 +337,11 @@ Fixpoint vect_of_ctxt' n (e:nat) : list term :=
   | S e' => Ref (n+e') :: vect_of_ctxt' n e'
   end.
 
+Lemma vect_of_ctxt'_length k n :
+  length (vect_of_ctxt' k n) = n.
+induction n; simpl; auto.
+Qed.
+
 (*Parameter mksig : ctxt -> term.*)
 Fixpoint mksig (e:ctxt) : term :=
   match e with
@@ -368,7 +350,39 @@ Fixpoint mksig (e:ctxt) : term :=
   end.
 Notation mksigi e i := (int (mksig e) i).
 
-Eval simpl in fun A B C i (*f*) => mksigi (A::B::C::nil) (*f*) i.
+Instance mksig_morph : Proper (list_eq eq_term ==> eq_term) mksig.
+do 2 red; intros.
+induction H; simpl.
+ red; reflexivity.
+red; intros.
+apply sigma_ext.
+ apply int_morph; trivial.
+intros.
+apply int_morph; trivial.
+apply V.cons_morph; trivial.
+Qed.
+
+(*Eval simpl in fun A B C i (*f*) => mksigi (A::B::C::nil) (*f*) i.*)
+
+Lemma sub_ctxt_eq s e i :
+  mksigi (sub_ctxt s e) i == mksigi e (s i).
+revert s i; induction e; simpl; intros; auto with *.
+apply sigma_morph.
+ rewrite int_Sub_eq.
+ reflexivity.
+
+ red; intros.
+ rewrite IHe.
+ apply int_morph.
+  reflexivity.
+ simpl.
+ rewrite <- V.cons_lams.
+ rewrite V.lams0.
+ rewrite H.
+ reflexivity.
+
+ apply sub_m.
+Qed.
 
 Lemma subst_ctxt_eq k v e i :
   mksigi (subst_ctxt k v e) i == mksigi e (V.lams k (V.cons (int v (V.shift k i))) i).
@@ -497,7 +511,88 @@ apply couple_morph; auto.
 apply int_morph; trivial.
 Qed.
 
-Definition Couple := Op2 couple.
+Lemma typ_ctxt_length_inv i j v ctx :
+  mkvecti v i ∈ mksigi ctx j -> length v = length ctx.
+revert i j ctx; induction v; destruct ctx; simpl; intros; trivial.
+ apply subset_elim1 in H.
+ specialize surj_pair with (1:=H); intro.
+ symmetry in H0.
+ apply couple_mt_discr in H0; contradiction.
+
+ apply singl_elim in H.
+ unfold mkvecti in H.
+ simpl in H.
+ apply couple_mt_discr in H; contradiction.
+
+ apply snd_typ_sigma with (3:=reflexivity _) in H.
+  unfold mkvecti in H; simpl in H.
+  rewrite snd_def in H.
+  apply IHv in H; auto.
+
+  do 2 red; intros.
+  apply int_morph; auto with *.
+  rewrite H1; reflexivity.
+Qed.
+
+Lemma vect_of_ctxt'_reloc n dp dp' i :
+  mkvecti (vect_of_ctxt' dp n) (V.shift dp' i) ==
+  mkvecti (vect_of_ctxt' dp' n) (V.shift dp i).
+induction n; simpl; intros.
+ reflexivity.
+unfold mkvecti; simpl.
+apply couple_morph.
+ unfold V.shift.
+ replace (dp'+(dp+n)) with (dp+(dp'+n)) by omega.
+ reflexivity.
+
+ apply IHn.
+Qed.
+
+Lemma vect_of_ctxt'_typ e ctx i :
+  val_ok (push_ctxt e ctx) i ->
+  Forall (fun t => t <> kind) ctx ->
+  mkvecti (vect_of_ctxt' 0 (length ctx)) i ∈ mksigi ctx (V.shift (length ctx) i).
+revert e i; induction ctx; simpl; intros.
+ apply singl_intro.
+unfold mkvecti; simpl.
+inversion_clear H0.
+apply couple_intro_sigma.
+ do 2 red; intros.
+ rewrite H3; reflexivity.
+
+ generalize (H _ _ (push_ctxt_item (a::e) ctx 0)); intro itm.
+ simpl in itm.
+ apply in_int_not_kind in itm.
+ 2:apply lift_rec_nk; trivial.
+ unfold lift in itm.
+ rewrite int_lift_rec_eq in itm.
+ rewrite V.lams0 in itm.
+ trivial.
+
+ generalize (IHctx (a::e) i H H2).
+ apply eq_elim.
+ apply int_morph; auto with *.
+ intro k; unfold V.cons,V.shift; simpl.
+ destruct k; simpl.
+  rewrite <- plus_n_O; reflexivity.
+  rewrite plus_n_Sm; reflexivity.
+Qed.
+
+Lemma cons_vect_of_ctxt' n i :
+  eq_val (cons_vect n (mkvecti (vect_of_ctxt' 0 n) i) (V.shift n i)) i.
+revert i; induction n; simpl; intros.
+ reflexivity.
+ unfold mkvecti; simpl.
+ rewrite fst_def.
+ rewrite snd_def.
+ replace (S n) with (n+1) by omega.
+ rewrite V.shift_split.
+ replace (i n) with (V.shift n i 0).
+ 2:unfold V.shift; rewrite <- plus_n_O; trivial.
+ rewrite <- V.surj_pair.
+ apply IHn.
+Qed.
+
 Fixpoint mkv v :=
   match v with
   | nil => cst empty
@@ -719,6 +814,48 @@ rewrite val_mkblock_lams2; trivial.
 2:apply V.shift_morph; trivial.
 rewrite H0; reflexivity.
 Qed.
+Definition sub_unblock (n:nat) : sub.
+exists (fun i => cons_vect n (i 0) (V.shift 1 i)).
+do 2 red; intros.
+apply cons_vect_morph; trivial.
+ apply H.
+rewrite H; reflexivity.
+Defined.
+Lemma sub_unblock_block n i :
+  eq_val (sub_unblock n (sub_mkblock n i)) i.
+induction n; simpl; intros.
+ rewrite V.shift_cons; reflexivity.
+
+ rewrite V.shift_cons.
+ rewrite fst_def.
+ rewrite snd_def.
+ apply transitivity with (2:=IHn).
+ simpl.
+ apply cons_vect_morph; auto with *.
+ rewrite mkblock_after; simpl.
+ rewrite shift_mkblock.
+ rewrite V.shiftS_split.
+ rewrite shift_mkblock.
+
+ intros [|a]; unfold V.shift; simpl; auto with *.
+ replace (n+0) with n; auto with *.  
+Qed.
+Lemma sub_comp_block_unblock n :
+  eq_sub (sub_comp (sub_unblock n) (sub_mkblock n)) sub_id.
+red; simpl; red; intros.
+rewrite <- H.
+apply sub_unblock_block.
+Qed.
+
+Lemma vect_of_ctxt'_eq_mkblock n i :
+  mkvecti (vect_of_ctxt' 0 n) i == val_mkblock n i 0.
+revert i; induction n; simpl; intros.
+ reflexivity.
+unfold mkvecti; simpl.
+apply couple_morph.
+ rewrite mkblock_after; reflexivity.
+apply IHn.
+Qed.
 
 
 
@@ -837,118 +974,147 @@ simpl.
 apply cc_app_morph; trivial.
 Qed.
 
-Lemma eq_betan e ctx t v :
-  typ_ctxt e v ctx ->
-  eq_typ e (mkapp (Absn ctx (Sub t (sub_mkblock (length ctx)))) v)
-    (subst (mkv v) t).
+
+Fixpoint sub_consn l s :=
+  match l with
+  | nil => s
+  | a::l' => sub_consn l' (sub_cons a s)
+  end.
+
+Lemma sub_consn_vecti v s i :
+  eq_val (sub_consn v s i) (cons_vect (length v) (mkvecti v i) (s i)).
+revert s i; induction v; simpl; intros; auto with *.
+rewrite IHv.
+apply cons_vect_morph; trivial.
+ unfold mkvecti; simpl; rewrite snd_def; reflexivity.
+
+ simpl.
+ apply V.cons_morph; auto with *.
+ unfold mkvecti; simpl; rewrite fst_def; reflexivity.
+Qed.
+
+Lemma sub_consn_lams n v1 (s1 s2:sub) i :
+  n = length v1 ->
+  eq_val
+     (V.lams n s1 (sub_consn v1 s2 i))
+     (sub_consn v1 (sub_comp s1 s2) i).
+intros; subst n.
+revert s1 s2 i; induction v1; simpl; intros.
+ rewrite V.lams0; reflexivity.
+
+ replace (S (length v1)) with (length v1 + 1) by auto with *.
+ rewrite V.lams_split.
+ rewrite IHv1 with (s1:=sub_lift 1 s1) (s2:=sub_cons a s2).
+rewrite sub_consn_vecti.
+rewrite sub_consn_vecti.
+apply cons_vect_morph; auto with *.
+simpl.
+rewrite <- V.cons_lams.
+rewrite V.lams0; reflexivity.
+apply sub_m.
+apply sub_m.
+Qed.
+
+Lemma val_mkblock_consn n v s i :
+  n = length v ->
+  eq_val (val_mkblock n (sub_consn v s i)) (V.cons (mkvecti v i) (s i)).
+intros; subst n.
+revert i s; induction v; simpl; intros.
+ reflexivity.
+
+ apply V.cons_morph.
+  unfold mkvecti; simpl.
+  apply couple_morph.
+   generalize (IHv i (sub_cons a s) 1).
+   simpl; trivial.
+
+   apply IHv.
+
+  simpl.
+  rewrite IHv; simpl.
+  rewrite V.shiftS_cons.
+  rewrite V.shiftS_cons.
+  reflexivity.
+Qed.
+
+Lemma eq_betan e ctx s t v :
+  typ_ctxt e v (sub_ctxt s ctx) ->
+  eq_typ e (mkapp (Sub (Absn ctx t) s) v) (Sub t (sub_consn v s)).
 red; intros.
 apply H in H0.
-rewrite mkvecti_def in H0.
 clear e H.
-revert i t ctx H0; induction v; destruct ctx; simpl in *; intros.
- apply int_morph; auto with *.
- unfold subst; rewrite subst_rec_equiv.
- apply Sub_morph; auto with *.
- do 2 red; simpl; intros.
- rewrite V.lams0. 
- apply V.cons_morph; auto with *.
+revert i s t ctx H0; induction v; destruct ctx; intros.
+ reflexivity.
 
+ simpl in H0.
  apply subset_elim1 in H0.
  specialize surj_pair with (1:=H0); intro.
  symmetry in H.
  apply couple_mt_discr in H; contradiction.
 
+ unfold mkvecti in H0; simpl in H0.
  apply singl_elim in H0.
  apply couple_mt_discr in H0; contradiction.
 
- red; simpl.
- transitivity (int (mkapp (Absn (subst_ctxt 0 a ctx)
-               (Sub (subst_rec a 1 (Sub t val_couple)) (sub_mkblock (length (subst_ctxt 0 a ctx))))) v) i).
-  apply eq_int_mkapp.
-   reflexivity.
-  simpl.
-  rewrite cc_beta_eq.
-   rewrite <- int_subst_eq.
-   unfold subst; rewrite eq_subst_absn.
-   rewrite <- plus_n_O.
-   apply int_morph; auto with *.
-   2:reflexivity.
-   apply Absn_morph; auto with *.
-   destruct t as [(t,tm)|]; simpl;[|reflexivity].
-   red; intros.
-   apply tm.
-   apply V.cons_morph.
-    apply couple_morph.
-     rewrite mkblock_after; simpl.
-     unfold V.lams; simpl.
-     destruct (le_gt_dec (length ctx) (length ctx)).
-     2:exfalso; omega.
-     rewrite Minus.minus_diag; simpl.
-     rewrite shift_mkblock.
-     rewrite subst_ctxt_length.
-     rewrite H; reflexivity.
+ red.
+ simpl (Absn _ _).
+ rewrite eq_sub_Abs.
+ simpl.
+ rewrite <- IHv with (ctx := (*subst_ctxt 0 a*) ctx).
+  apply eq_int_mkapp; auto with *.
+   simpl.
+   rewrite cc_beta_eq.
+    rewrite int_Sub_eq.
+    rewrite int_Sub_eq.
+    apply int_morph; auto with *.
+    simpl.
+    rewrite <- V.cons_lams.
+    rewrite V.lams0; reflexivity.
+    apply sub_m.
 
-     unfold V.lams at 2; simpl.
-     rewrite subst_ctxt_length.
-     rewrite val_mkblock_lams; auto with arith.
-     apply val_mkblock_morph; trivial.
+    do 2 red; intros.
+    rewrite H1; reflexivity.
 
-    apply V.shift_morph; trivial.
-    rewrite subst_ctxt_length.
-    rewrite val_mkblock_lams2; auto with *.
-     rewrite Minus.minus_diag.
-     unfold V.lams; intros [|a']; simpl.
-      apply val_mkblock_morph; trivial.
-      rewrite H; reflexivity.
-
-     do 2 red; intros; apply V.cons_morph; trivial.
-     rewrite H1; reflexivity.
-
-   do 2 red; intros.
-   rewrite H1; reflexivity.
-
-   apply fst_typ_sigma in H0.
-   rewrite fst_def in H0; trivial.
+    simpl in H0.
+    apply fst_typ_sigma in H0.
+    unfold mkvecti in H0; simpl in H0.
+    rewrite fst_def in H0.
+    trivial.
 
    assert (Reflexive (fun a a' => int a i == int a' i)).
     red; intros; apply int_morph; auto with *.
    reflexivity.
 
-  rewrite IHv.
-  rewrite int_subst_eq.
-  rewrite int_subst_rec_eq.
-  rewrite int_subst_eq.
-simpl.
-destruct t as [(t,tm)|]; simpl; auto with *.
-apply tm.
-reflexivity.
-
+unfold mkvecti in H0; simpl in H0.
 apply snd_typ_sigma with (3:=reflexivity _) in H0.
-rewrite snd_def in H0.
+ rewrite snd_def in H0.
  revert H0; apply eq_elim.
- rewrite subst_ctxt_eq.
- rewrite V.lams0.
+ rewrite sub_ctxt_eq.
+ simpl.
+ rewrite sub_ctxt_eq.
  apply int_morph; auto with *.
- red; intros; apply V.cons_morph; auto with *.
+ simpl.
+ rewrite <- V.cons_lams.
+ 2:apply sub_m.
+ rewrite V.lams0.
+ apply V.cons_morph.
  2:reflexivity.
- rewrite fst_def.
+ red; rewrite fst_def.
  reflexivity.
 
  do 2 red; intros.
  rewrite H1; reflexivity.
 Qed.
 
-Lemma eq_betan_lift e ctx n t v :
-  typ_ctxt e v (lift_ctxt 0 n ctx) ->
-  eq_typ e (mkapp (lift n (Absn ctx (Sub t (sub_mkblock (length ctx))))) v)
-    (subst (mkv v) (lift_rec n 1 t)).
+Lemma eq_betan0 e ctx t v :
+  typ_ctxt e v ctx ->
+  eq_typ e (mkapp (Absn ctx t) v) (Sub t (sub_consn v sub_id)).
 intros.
-unfold lift; rewrite lift_rec_absn.
-rewrite <- plus_n_O.
-rewrite lift_rec_mkblock; auto.
-rewrite Minus.minus_diag.
-replace (length ctx) with (length (lift_ctxt 0 n ctx)) by (rewrite lift_ctxt_length;reflexivity).
-apply eq_betan; trivial.
+rewrite <- eq_sub_id with (t:=Absn ctx t).
+apply eq_betan.
+red; intros.
+rewrite sub_ctxt_eq.
+apply H; trivial.
 Qed.
 
 (*Parameter mktag : nat -> set -> set.*)
@@ -1051,6 +1217,12 @@ Qed.
 
 
 Definition dum := cst (singl empty).
+
+Lemma typ_dum_ e : typ e (cst (singl empty)) kind.
+red; simpl; intros; trivial.
+Qed.
+Hint Resolve typ_dum_.
+
 (*
 Definition nfv ty k :=
   forall u, eq_term ty (lift_rec 1 k (subst_rec u k ty)).
@@ -1094,24 +1266,6 @@ rewrite H with (u:=u) at 1.
 destruct t as [(t,tm)|]; simpl; auto with *.
 reflexivity.
 Qed.
-(*
-simpl.
-intros.
-red in H.
-rewrite H with (u:=cst empty) at 1.
-rewrite int_lift_rec_eq.
-rewrite int_subst_rec_eq.
-apply int_morph; auto with *.
-intros a.
-red.
-unfold V.lams, V.cons, V.shift; simpl.
-destruct (le_gt_dec k a); auto with *.
-destruct (a-k); auto with *.
-destruct (le_gt_dec k (k+n)).
- replace (k+(S(k+n-k))) with (k+S n); [reflexivity|omega].
- exfalso; omega.
-Qed.
-*)
 
 Lemma nfv_intro t k :
   (forall i j, (forall a, a <> k -> i a == j a) -> int t i == int t j) ->
@@ -1215,6 +1369,16 @@ apply sigma_morph.
  apply H1; omega.
 Qed.
 
+Lemma nfv_Couple a b k :
+  nfv a k -> nfv b k -> nfv (Couple a b) k.
+intros.
+apply nfv_intro; intros.
+simpl.
+apply couple_morph.
+ apply nfv_elim with (1:=H); trivial.
+ apply nfv_elim with (1:=H0); trivial.
+Qed.
+
 Lemma nfv_mksig ctx k :
   nfv_ctxt ctx k ->
   nfv (mksig ctx) k.
@@ -1307,14 +1471,15 @@ Qed.
 
 Inductive constr_arg :=
 | CA_Const (ty:term)
-| CA_Rec (idx:ctxt) (inst:list term).
+| CA_Rec (idx:ctxt) (par inst:list term).
 
 Inductive eq_ca : relation constr_arg :=
 | Eqca_const ty1 ty2 : eq_term ty1 ty2 -> eq_ca (CA_Const ty1) (CA_Const ty2)
-| Eqca_rec idx1 idx2 inst1 inst2 :
+| Eqca_rec idx1 idx2 par1 par2 inst1 inst2 :
     list_eq eq_term idx1 idx2 ->
+    list_eq eq_term par1 par2 ->
     list_eq eq_term inst1 inst2 ->
-    eq_ca (CA_Rec idx1 inst1) (CA_Rec idx2 inst2).
+    eq_ca (CA_Rec idx1 par1 inst1) (CA_Rec idx2 par2 inst2).
 
 Instance eq_ca_equiv : Equivalence eq_ca.
 split; red; intros.
@@ -1325,6 +1490,7 @@ split; red; intros.
  destruct H; inversion_clear H0; constructor.
   transitivity ty2; trivial.
   transitivity idx2; trivial.
+  transitivity par2; trivial.
   transitivity inst2; trivial.
 Qed.
 
@@ -1347,12 +1513,14 @@ split; red; intros.
 Qed.
 
 Record inductive := mkInd {
+  ind_par : ctxt;
   ind_idx : ctxt;
   ind_kind : nat;
   ind_cstrs : list constructor
 }.
 
 Definition eq_ind i1 i2 :=
+  list_eq eq_term i1.(ind_par) i2.(ind_par) /\
   list_eq eq_term i1.(ind_idx) i2.(ind_idx) /\
   i1.(ind_kind) = i2.(ind_kind) /\
   list_eq eq_c i1.(ind_cstrs) i2.(ind_cstrs).
@@ -1361,9 +1529,9 @@ Instance eq_ind_equiv : Equivalence eq_ind.
 split; red; intros.
  destruct x; simpl; repeat split; reflexivity.
 
- destruct H as (?&?&?); split; [|split]; symmetry; trivial.
+ destruct H as (?&?&?&?); split; [|split;[|split]]; symmetry; trivial.
 
- destruct H as (?&?&?); destruct H0 as (?&?&?); split; [|split];
+ destruct H as (?&?&?&?); destruct H0 as (?&?&?&?); split; [|split;[|split]];
    eapply transitivity; eauto.
 Qed.
 
@@ -1371,11 +1539,11 @@ Qed.
 Parameter A_ B_ N_ O_ D_ : term.
 Parameter S_ : term -> term.
 Definition myvect :=
-  mkInd (ctxt_of(A_::lift 1 N_::nil)) 42
+  mkInd nil (ctxt_of(A_::lift 1 N_::nil)) 42
      (mkCstr nil (Ref 1::lift 2 O_::nil) ::
       mkCstr (CA_Const (lift 2 N_) ::
               CA_Const (lift 3 A_) ::
-              CA_Rec nil (Ref 3::Ref 1::nil)::nil)
+              CA_Rec nil nil (Ref 3::Ref 1::nil)::nil)
                 (Ref 4 :: S_ (Ref 2) :: nil) ::
       nil).
 
@@ -1385,49 +1553,55 @@ Definition myvect :=
 Fixpoint nfv_cstr args inst k :=
   match args with
   | CA_Const ty :: args' => nfv ty k /\ nfv_cstr args' inst (S k)
-  | CA_Rec par rinst :: args' =>
-      List.fold_right (fun p kont k => nfv p k /\ kont (S k)) (nfv_list rinst) par k /\
+  | CA_Rec par rpar rinst :: args' =>
+      List.fold_right (fun p kont k => nfv p k /\ kont (S k))
+         (fun k => nfv_list rpar k /\ nfv_list rinst k) par k /\
       nfv_cstr args' inst (S k)
   | nil => nfv_list inst k
   end. 
 
-Fixpoint check_constructor_data (e:env) (idx:ctxt) (knd:nat) n args inst :=
+Fixpoint check_constructor_data (e:env) (ipar idx:ctxt) (knd:nat) n args inst :=
   match args with
   | CA_Const ty :: args' =>
       ty <> kind /\
       typ e ty (type knd) /\
-      check_constructor_data (ty::e) idx knd (S n) args' inst
-  | CA_Rec par rinst :: args' =>
+      check_constructor_data (ty::e) ipar idx knd (S n) args' inst
+  | CA_Rec par rpar rinst :: args' =>
       List.fold_right (fun p chk_cont f => typ f p (type knd) /\ chk_cont (p::f))
-        (fun f => typ_ctxt f rinst (lift_ctxt 0 (plus_rev (List.length par) n) idx)) par e /\
+        (fun f => let ipar' := lift_ctxt 0 (plus_rev (List.length par) (n + length ipar)) ipar in
+                  let idx' := lift_ctxt (length ipar) (plus_rev (List.length par) (n + length ipar)) idx in
+                  typ_ctxt f rpar ipar' /\
+                  typ_ctxt f rinst (sub_ctxt (sub_consn rpar sub_id) idx')
+) par e /\
       nfv_cstr args' inst 0 /\
-      check_constructor_data (dum::e) idx knd (S n) args' inst
+      check_constructor_data (dum::e) ipar idx knd (S n) args' inst
   | nil => typ_ctxt e inst (lift_ctxt 0 n idx)
   end.
 
-Definition check_constructor (e:env) (idx:ctxt) (knd:nat) (c:constructor) :=
-  check_constructor_data (push_ctxt e idx) idx knd (List.length idx) c.(cstr_args) c.(cstr_inst).
+Definition check_constructor (e:env) (par idx:ctxt) (knd:nat) (c:constructor) :=
+  check_constructor_data (push_ctxt e par) par idx knd 0 c.(cstr_args) c.(cstr_inst).
 
 Record check_inductive (e:env) (ind:inductive) := mkChkInd {
+  par_nk : Forall (fun ty => ty <> kind) (ind_par ind);
   idx_nk : Forall (fun ty => ty <> kind) (ind_idx ind);
-  cstrs_ok : Forall (check_constructor e ind.(ind_idx) ind.(ind_kind)) ind.(ind_cstrs)
+  cstrs_ok : Forall (check_constructor e ind.(ind_par) ind.(ind_idx) ind.(ind_kind)) ind.(ind_cstrs)
   }.
 
 (** The type of an inductive type *)
 Definition inductive_type (i:inductive) : term :=
-  mkprod i.(ind_idx) (type i.(ind_kind)).
+  mkprod i.(ind_par) (mkprod i.(ind_idx) (type i.(ind_kind))).
 
 Fixpoint cstr_arg_ctxt X args dpth :=
   match args with
   | CA_Const ty :: args' => ty :: cstr_arg_ctxt X args' (S dpth)
-  | CA_Rec par rinst :: args' =>
-      mkprod par (mkapp (lift (length par + dpth) X) rinst) ::
+  | CA_Rec par rpar rinst :: args' =>
+      mkprod par (mkapp (mkapp (lift (length par + dpth) X) rpar) rinst) ::
       cstr_arg_ctxt X args' (S dpth)
   | nil => nil
   end.
 
-Definition cstr_arg_concl Y (args:list constr_arg) inst dpth :=
-  mkapp (lift (List.length args + dpth) Y) inst.
+Definition cstr_arg_concl Y (args:list constr_arg) npar inst :=
+  mkapp (mkapp (lift (List.length args + npar) Y) (vect_of_ctxt' (List.length args) npar)) inst.
   
 Definition cstr_argument_ctxt X ind n dpth :=
   match nth_error ind.(ind_cstrs) n with
@@ -1435,11 +1609,11 @@ Definition cstr_argument_ctxt X ind n dpth :=
   | None => nil
   end.
 
-Definition constructor_type idx X Y c : term :=
-  let dpth := List.length idx in
-  mkprod idx
+Definition constructor_type par X Y c : term :=
+  let dpth := List.length par in
+  mkprod par
  (mkprod (cstr_arg_ctxt X c.(cstr_args) dpth)
-    (cstr_arg_concl Y c.(cstr_args) c.(cstr_inst) dpth)).
+    (cstr_arg_concl Y c.(cstr_args) dpth c.(cstr_inst))).
 
 
 Lemma cstr_ctxt_same_length X args d :
@@ -1449,6 +1623,35 @@ induction args; simpl; intros; auto.
 destruct a; simpl; rewrite IHargs; reflexivity.
 Qed.
 
+Lemma nfv_cstr_arg_ctxt k X dp cargs v :
+  nfv_cstr cargs v k ->
+  nfv (lift dp X) k ->
+  nfv_ctxt (cstr_arg_ctxt X cargs dp) k.
+revert dp k; induction cargs; simpl; intros; trivial.
+destruct a; simpl.
+ destruct H.
+ split; trivial.
+ apply IHcargs; trivial.
+ apply nfv_liftS; trivial.
+
+ destruct H.
+ split.
+  clear H1; revert dp k H H0.
+  induction idx; simpl; intros.
+   destruct H.
+   apply nfv_mkapp; trivial.
+   apply nfv_mkapp; trivial.
+
+   destruct H.
+   apply nfv_prod; trivial.
+   rewrite plus_n_Sm.
+   apply IHidx; trivial.
+   apply nfv_liftS; trivial.
+
+  apply IHcargs; trivial.
+  apply nfv_liftS; trivial.
+Qed.
+(*
 Lemma nfv_cstr_args cargs cinst X dp k :
   nfv (lift dp X) k ->
   nfv_cstr cargs cinst k ->
@@ -1464,6 +1667,8 @@ destruct a; simpl.
  split.
   clear H1; revert dp k H H0.
   elim idx; simpl; intros.
+   destruct H0.
+   apply nfv_mkapp; trivial.
    apply nfv_mkapp; trivial.
 
    destruct H1.
@@ -1475,7 +1680,7 @@ destruct a; simpl.
   apply IHcargs; trivial.
   apply nfv_liftS; trivial.
 Qed.
-
+*)
 Lemma nfv_cstr_inst cargs cinst k :
   nfv_cstr cargs cinst k ->
   nfv_list cinst (length cargs + k).
@@ -1542,6 +1747,8 @@ induction cargs; simpl; intros.
    revert H0 H2.
    generalize dp (length g).
    elim idx; simpl; intros.
+    destruct H0.
+    apply nfv_mkapp; trivial.
     apply nfv_mkapp; trivial.
 
     destruct H2.
@@ -1553,11 +1760,11 @@ induction cargs; simpl; intros.
    apply nfv_liftS; trivial.
 Qed.
 
-Lemma cstr_ctxt_nk e idx knd X dp cargs cinst :
-  check_constructor_data e idx knd dp cargs cinst ->
+Lemma cstr_ctxt_nk e par idx knd X dp dp' cargs cinst :
+  check_constructor_data e par idx knd dp cargs cinst ->
   X <> kind ->
-  Forall (fun ty : term => ty <> kind) (cstr_arg_ctxt X cargs dp).
-revert e dp; induction cargs; simpl; intros; auto.
+  Forall (fun ty : term => ty <> kind) (cstr_arg_ctxt X cargs dp').
+revert e dp dp'; induction cargs; simpl; intros; auto.
 destruct a.
  destruct H as (?&_&?).
  constructor; eauto.
@@ -1566,21 +1773,22 @@ destruct a.
  constructor; eauto.
  apply mkprod_nk.
  apply mkapp_nk.
+ apply mkapp_nk.
  apply lift_rec_nk; trivial.
 Qed.
 
-Lemma check_cstr_inst X e idx knd dp cargs cinst :
-  check_constructor_data e idx knd dp cargs cinst ->
-  typ_ctxt (push_ctxt e (cstr_arg_ctxt X cargs dp))
+Lemma check_cstr_inst X e par idx knd dp dp' cargs cinst :
+  check_constructor_data e par idx knd dp cargs cinst ->
+  typ_ctxt (push_ctxt e (cstr_arg_ctxt X cargs dp'))
     cinst (lift_ctxt 0 (length cargs + dp) idx).
-revert e dp; induction cargs; simpl; intros; trivial.
+revert e dp dp'; induction cargs; simpl; intros; trivial.
 destruct a; simpl. 
  destruct H as (_&?&?).
- specialize IHcargs with (1:=H0).
+ specialize IHcargs with (1:=H0) (dp':=S dp').
  rewrite plus_n_Sm; trivial.
 
  destruct H as (?&?&?).
- specialize IHcargs with (1:= H1).
+ specialize IHcargs with (1:= H1) (dp':=S dp').
  rewrite plus_n_Sm.
  apply nfv_change_typ_ctxt with (g:=nil); simpl; auto with *.
   apply nfv_ctxt_lift_rec1.
@@ -1588,7 +1796,7 @@ destruct a; simpl.
 
   apply nfv_lift_rec1; simpl; auto with arith.
 Qed.
-
+(*
 Fixpoint rec_branch_ctxt X P args dpth s :=
   match args with
   | CA_Const ty :: args' => Sub ty s :: rec_branch_ctxt X P args' (S dpth) (sub_lift 1 s)
@@ -1675,21 +1883,24 @@ destruct a.
   rewrite V.shiftS_split with (n:=dpth).
   reflexivity.
 Qed.
-
+*)
 
 (** Translate an inductive declaration into a positive operator *)
+
+Definition ind_par' ind i :=
+  Σ p ∈ mksigi ind.(ind_par) i, mksigi ind.(ind_idx) (cons_vect (length ind.(ind_par)) p i).
 
 Definition int_constr_arg (c:constr_arg) (cont : val->dpositive) (i:val) : dpositive :=
   match c with
   | CA_Const ty =>
       dpos_norec (int ty i)
         (fun x => cont (V.cons x i))
-  | CA_Rec idx inst =>
+  | CA_Rec idx par inst =>
       dpos_consrec
         (List.fold_right
            (fun ty cont i =>
               dpos_param (int ty i) (fun x => cont (V.cons x i)))
-           (fun i => dpos_rec (mkvecti inst i))
+           (fun i => dpos_rec (couple (mkvecti par i) (mkvecti inst i)))
            idx
            i)
         (cont (V.cons empty i))
@@ -1697,22 +1908,37 @@ Definition int_constr_arg (c:constr_arg) (cont : val->dpositive) (i:val) : dposi
 
 Definition int_constructor a (c:constructor) (i:val) : dpositive :=
   List.fold_right int_constr_arg
-     (fun j => dpos_inst (mkvecti c.(cstr_inst) j) a)
+     (fun j => dpos_cst (P2p (a == mkvecti c.(cstr_inst) j)))
      c.(cstr_args)
      i.
 
+Instance ind_par'_morph : Proper (eq_ind ==> eq_val ==> eq_set) ind_par'.
+do 3 red; intros; unfold ind_par'.
+apply sigma_ext; intros.
+ apply int_morph; auto with *.
+ apply mksig_morph.
+ apply H.
+
+ apply int_morph.
+  apply mksig_morph.
+  apply H.
+
+  apply cons_vect_morph; trivial.
+  destruct H as (?,_).
+  elim H; simpl; auto with *.
+Qed.
 
 Lemma pm_ok :
-  Proper (list_eq eq_term ==> list_eq eq_term ==> eq_val ==> eqdpos)
-     (fun idx inst j =>
+  Proper (list_eq eq_term ==> list_eq eq_term ==> list_eq eq_term ==> eq_val ==> eqdpos)
+     (fun idx par inst j =>
       fold_right
         (fun ty cont i => dpos_param (int ty i) (fun x => cont (V.cons x i)))
-        (fun i => dpos_rec (mkvecti inst i)) idx 
+        (fun i => dpos_rec (couple (mkvecti par i) (mkvecti inst i))) idx 
         j).
-do 4 red.
+do 5 red.
 induction 1; simpl; intros.
  apply dpos_rec_morph.
- apply mkvecti_morph; trivial.
+ apply couple_morph; apply mkvecti_morph; trivial.
 
  apply dpos_param_morph.
   apply int_morph; trivial. 
@@ -1727,7 +1953,9 @@ do 4 red.
 unfold int_constructor.
 intros ? ? ? ? ? (?&?).
 elim H0; simpl; intros.
- apply dpos_inst_morph; trivial.
+ apply dpos_cst_morph.
+ apply P2p_morph.
+ apply eq_set_morph; trivial.
  apply mkvecti_morph; trivial.
 
  destruct H2; simpl.
@@ -1748,7 +1976,7 @@ Lemma pm_ok' :
   Proper (eq_set ==> list_eq eq_term ==> eq ==> eq_val ==> eqdpos)
      (fun a inst args j =>
       fold_right int_constr_arg
-        (fun i => dpos_inst (mkvecti inst i) a) args 
+        (fun i => dpos_cst (P2p (a == mkvecti inst i))) args 
         j).
 do 4 red.
 (*apply int_constructor_morph.*)
@@ -1789,24 +2017,21 @@ Qed.
 
 (** Soundness of int_constructors *)
 
-Lemma typ_dum_ e : typ e (cst (singl empty)) kind.
-red; simpl; intros; trivial.
-Qed.
-Hint Resolve typ_dum_.
 
-Lemma check_inductive_pos_cstr e idx knd c i a :
-  check_constructor e idx knd c ->
+Lemma check_inductive_pos_cstr e par idx knd c i a :
+  check_constructor e par idx knd c ->
   val_ok e i ->
-  a ∈ mksigi idx i ->
-  isPositive (mksigi idx i) (int_constructor a c (cons_vect (length idx) a i)).
+  let par' := Σ p ∈ mksigi par i, mksigi idx (cons_vect (length par) p i) in
+  a ∈ par' ->
+  isPositive par' (int_constructor (snd a) c (cons_vect (length par) (fst a) i)).
 intros.
 unfold check_constructor in H.
 cut (forall j g,
-   eq_val (V.shift (List.length g + List.length idx) j) i ->
-   check_constructor_data (push_rev_ctxt (push_ctxt e idx) g) idx
-     knd (List.length g + List.length idx) c.(cstr_args) c.(cstr_inst) -> 
-  (val_ok (push_rev_ctxt (push_ctxt e idx) g) j) ->
-   isPositive (mksigi idx i) (int_constructor a c j)).
+   eq_val (V.shift (List.length g + List.length par) j) i ->
+   check_constructor_data (push_rev_ctxt (push_ctxt e par) g) par idx
+     knd (List.length g) c.(cstr_args) c.(cstr_inst) -> 
+  (val_ok (push_rev_ctxt (push_ctxt e par) g) j) ->
+   isPositive par' (int_constructor (snd a) c j)).
   intros h.
   apply h with nil.
    simpl.
@@ -1817,10 +2042,11 @@ cut (forall j g,
 
    simpl.
    apply cons_vect_typ; trivial.
+   apply fst_typ_sigma in H1; trivial.
 
  unfold int_constructor.
  elim c.(cstr_args); simpl; intros.
-  apply isDPos_inst.
+  apply isPos_cst.
 
   destruct a0; simpl.
    destruct H4 as (_&?&?).
@@ -1839,13 +2065,35 @@ cut (forall j g,
    2:apply singl_intro.
    clear H6 H7.
    revert j g H3 H4 H5; induction idx0; simpl; intros.
+    destruct H4.
     apply isDPos_rec.
-    red in H4.
-    specialize H4 with (1:=H5).
-    rewrite lift_ctxt_eq in H4.
-    rewrite V.lams0 in H4.
-    rewrite H3 in H4.
-    trivial.
+    apply couple_intro_sigma.
+     do 2 red; intros.
+     apply int_morph; auto with *.
+     apply cons_vect_morph; auto with *.
+
+     red in H4.
+     specialize H4 with (1:=H5).
+     rewrite lift_ctxt_eq in H4.
+     rewrite V.lams0 in H4.
+     rewrite H3 in H4.
+     trivial.
+
+     red in H6.
+     specialize H6 with (1:=H5).
+     rewrite sub_ctxt_eq in H6.
+     rewrite lift_ctxt_eq in H6.
+     revert H6; apply eq_elim.
+     apply int_morph; auto with *.
+     assert (length par = length par0).
+      apply H4 in H5.
+      apply typ_ctxt_length_inv in H5; trivial.
+      rewrite lift_ctxt_length in H5; auto.
+     rewrite sub_consn_vecti; simpl.
+     rewrite <- H6.
+     rewrite eq_lams_cons_vect with (s:=sub_shift (length g + length par)).
+     simpl.
+     rewrite H3; reflexivity.
 
     destruct H4.
     apply isDPos_param.
@@ -1860,11 +2108,11 @@ Qed.
 Lemma check_inductive_pos e ind i a :
   check_inductive e ind ->
   val_ok e i ->
-  a ∈ mksigi ind.(ind_idx) i ->
-  isPositive (mksigi (ind_idx ind) i)
-     (int_constructors (ind_cstrs ind) (cons_vect (length (ind_idx ind)) a i) a).
+  a ∈ ind_par' ind i ->
+  isPositive (ind_par' ind i)
+     (int_constructors ind.(ind_cstrs) (cons_vect (length ind.(ind_par)) (fst a) i) (snd a)).
 intros.
-destruct H as (_ & cstrs_ok).
+destruct H as (_,_,cstrs_ok).
 revert cstrs_ok.
 induction ind.(ind_cstrs); simpl; intros.
  apply isPos_cst.
@@ -1878,10 +2126,9 @@ Qed.
 Lemma check_inductive_univ e ind i a :
   check_inductive e ind ->
   val_ok e i ->
-  a ∈ mksigi ind.(ind_idx) i ->
-  pos_universe (mksigi ind.(ind_idx) i)
-               (ZFecc.ecc (S ind.(ind_kind)))
-     (int_constructors (ind_cstrs ind) (cons_vect (length (ind_idx ind)) a i) a).
+  a ∈ ind_par' ind i ->
+  pos_universe (ind_par' ind i) (ZFecc.ecc (S ind.(ind_kind)))
+     (int_constructors (ind_cstrs ind) (cons_vect (length ind.(ind_par)) (fst a) i) (snd a)).
 intros.
 generalize (cstrs_ok _ _ H).
 induction 1; simpl; intros.
@@ -1900,15 +2147,15 @@ induction 1; simpl; intros.
  clear H IHForall l H3.
  red in H2; simpl in H2.
  cut (forall j g,
-  (val_ok (push_rev_ctxt (push_ctxt e ind.(ind_idx)) g) j) ->
-   eq_val (V.shift (List.length g + List.length ind.(ind_idx)) j) i ->
-   check_constructor_data (push_rev_ctxt (push_ctxt e (ind_idx ind)) g) 
-         (ind_idx ind) (ind_kind ind) (length g + length (ind_idx ind)) x.(cstr_args) x.(cstr_inst) ->
-   pos_universe (mksigi ind.(ind_idx) i) (ZFecc.ecc (S ind.(ind_kind)))
-     (int_constructor a x j)).
+  (val_ok (push_rev_ctxt (push_ctxt e ind.(ind_par)) g) j) ->
+   eq_val (V.shift (List.length g + List.length ind.(ind_par)) j) i ->
+   check_constructor_data (push_rev_ctxt (push_ctxt e (ind_par ind)) g) 
+     ind.(ind_par) ind.(ind_idx) ind.(ind_kind) (length g) x.(cstr_args) x.(cstr_inst) ->
+   pos_universe (ind_par' ind i) (ZFecc.ecc (S ind.(ind_kind))) (int_constructor (snd a) x j)).
   intros h.
   apply h with nil; simpl.
    apply cons_vect_typ; trivial.
+   apply fst_typ_sigma in H1; trivial.
 
    apply shift_cons_vect.
 
@@ -1939,13 +2186,34 @@ induction 1; simpl; intros.
    2:apply singl_intro.
    clear H4 H5.
    revert j g H H2 H3; induction idx; simpl; intros.
+    destruct H3.
     apply isUPos_rec; auto.
-    red in H3.
-    specialize H3 with (1:=H).
-    rewrite lift_ctxt_eq in H3.
-    rewrite V.lams0 in H3.
-    rewrite H2 in H3.
-    trivial.
+    apply couple_intro_sigma.
+     do 2 red; intros.
+     rewrite H6; reflexivity.
+
+     red in H3.
+     specialize H3 with (1:=H).
+     rewrite lift_ctxt_eq in H3.
+     rewrite V.lams0 in H3.
+     rewrite H2 in H3.
+     trivial.
+
+     red in H4.
+     specialize H4 with (1:=H).
+     rewrite sub_ctxt_eq in H4.
+     rewrite lift_ctxt_eq in H4.
+     revert H4; apply eq_elim.
+     apply int_morph; auto with *.
+     assert (length par = length ind.(ind_par)).
+      apply H3 in H.
+      apply typ_ctxt_length_inv in H; trivial.
+      rewrite lift_ctxt_length in H; auto.
+     rewrite sub_consn_vecti; simpl.
+     rewrite H4.
+     rewrite eq_lams_cons_vect with (s:=sub_shift (length g + length ind.(ind_par))).
+     simpl.
+     rewrite H2; reflexivity.
 
     destruct H3.
     apply isUPos_param; trivial.
@@ -1966,54 +2234,72 @@ Definition SInd (ind:inductive) : term.
 (* begin show *)
 left; exists (fun i =>
   let pos a := int_constructors ind.(ind_cstrs)
-                 (cons_vect (List.length ind.(ind_idx)) a (V.shift 1 i)) a in
-  dIND (int (mksig ind.(ind_idx)) (V.shift 1 i)) pos (i 0)).
+                 (cons_vect (List.length ind.(ind_par)) (fst a) (V.shift 2 i)) (snd a) in
+  dIND (ind_par' ind (V.shift 2 i)) pos (couple (i 1) (i 0))).
 (* end show *)
 do 2 red; intros.
 apply dIND_morph_gen.
- apply int_morph; auto with *.
- rewrite H; reflexivity.
+ apply sigma_morph.
+  apply int_morph; auto with *.
+  rewrite H; reflexivity.
+
+  red; intros.
+  apply int_morph; auto with *.
+  rewrite H,H0; reflexivity.
 
  red; intros.
  apply int_constructors_morph; auto with *.
- rewrite H,H0; reflexivity.
+  rewrite H,H0; reflexivity.
+  apply snd_morph; trivial.
 
- apply H.
+ apply couple_morph; apply H.
 Defined.
 
 Definition Ind (ind:inductive) : term :=
-  Absn ind.(ind_idx)
-    (Sub
-      (SInd ind)
-      (sub_mkblock (List.length ind.(ind_idx)))).
+  Absn ind.(ind_par)
+    (Absn ind.(ind_idx)
+      (Sub
+        (SInd ind)
+           (sub_comp
+               (sub_lift 1 (sub_mkblock (List.length ind.(ind_par))))
+               (sub_mkblock (List.length ind.(ind_idx)))))).
+
 
 Lemma typ_SInd e ind :
   check_inductive e ind ->
-  typ (mksig (ind_idx ind) :: e) (SInd ind) (type (ind_kind ind)).
+  typ (Sub (mksig ind.(ind_idx)) (sub_unblock (length ind.(ind_par))) :: mksig ind.(ind_par) :: e)
+    (SInd ind) (type (ind_kind ind)).
 red; intros.
 apply in_int_el.
 red.
 simpl.
-assert (val_ok e (V.shift 1 i)).
- red; intros.
- assert (tmp := H0 (S n) _ H1).
- destruct T as [(T,Tm)|]; simpl in *; trivial.
-assert (i 0 ∈ int (mksig ind.(ind_idx)) (V.shift 1 i)).
- assert (tmp := H0 0 _ eq_refl).
- destruct ind.(ind_idx); simpl in *; trivial.
- revert tmp; apply eq_elim.
- apply sigma_morph.
-  rewrite V.lams0; reflexivity.
- red; intros.
- rewrite V.lams0, H2.
- reflexivity.
+assert (val_ok e (V.shift 2 i)).
+ apply typ_sub_shift with
+   (ctx:= mksig (ind_par ind) :: Sub(mksig (ind_idx ind))(sub_unblock (length ind.(ind_par))) :: nil); trivial.
+assert (couple (i 1) (i 0) ∈ ind_par' ind (V.shift 2 i)).
+ apply couple_intro_sigma.
+  do 2 red; intros.
+  apply int_morph; auto with *.
+  rewrite H3; reflexivity.
 
+  assert (tmp := H0 1 _ eq_refl).
+  destruct ind.(ind_par); simpl in *; trivial.
+  revert tmp; apply eq_elim.
+  apply sigma_morph.
+   rewrite V.lams0; reflexivity.
+  red; intros.
+  rewrite V.lams0, H2.
+  reflexivity.
+
+  assert (tmp := H0 0 _ eq_refl).
+  destruct ind.(ind_idx); simpl in *; trivial.
 apply G_dIND; auto.
  apply isDP_intro.
   do 2 red; intros.
   apply int_constructors_morph; auto.
   reflexivity.
   rewrite H3; reflexivity.
+  apply snd_morph; trivial.
 
   intros.
   apply check_inductive_pos with (e:=e); trivial.
@@ -2022,45 +2308,108 @@ apply G_dIND; auto.
  apply check_inductive_univ with (e:=e); trivial.
 Qed.
 
+
 Lemma typ_Ind e ind :
   check_inductive e ind ->
   typ e (Ind ind) (inductive_type ind).
 intros ind_ok.
 unfold Ind, inductive_type.
+set (sb := sub_comp _ _).
+apply typ_Absn.
+ apply mkprod_nk.
+ discriminate.
 apply typ_Absn.
  discriminate.
-pose (k := Sub (type ind.(ind_kind)) (sub_mkblock (List.length ind.(ind_idx)))).
-assert (type ind.(ind_kind) = k).
- reflexivity.
-rewrite H.
-apply typ_Sub with (mksig ind.(ind_idx) :: e).
+pose (k := Sub (type ind.(ind_kind)) sb).
+change (type ind.(ind_kind)) with k.
+apply typ_Sub with (Sub (mksig ind.(ind_idx)) (sub_unblock (length ind.(ind_par))) :: mksig ind.(ind_par) :: e).
  apply typ_SInd; trivial.
 
- apply val_ok_mkblock.
- apply ind_ok.
+ apply typ_sub_comp with (mksig ind.(ind_idx) :: push_ctxt e ind.(ind_par)).
+  apply val_ok_mkblock.
+  apply ind_ok.
+
+  red; intros.
+  assert (tmp := typ_sub_lams1).
+  red in tmp.
+  eapply tmp.
+   apply val_ok_mkblock.
+   apply ind_ok.
+
+   rewrite eq_sub_comp.
+   revert H; apply val_ok_morph; auto with *.
+   constructor; auto with *.
+   rewrite sub_comp_block_unblock.
+   rewrite eq_sub_id.
+   reflexivity.
 Qed.
 
-
-Lemma eq_Ind_app e ind n v i :
-  typ_ctxt e v (lift_ctxt 0 n ind.(ind_idx)) ->
+Lemma eq_Ind_app e ind n v1 v2 i :
+  typ_ctxt e v1 (lift_ctxt 0 n ind.(ind_par)) ->
+  typ_ctxt e v2 (sub_ctxt (sub_consn v1 sub_id) (lift_ctxt (length ind.(ind_par)) n ind.(ind_idx))) ->
   val_ok e i ->
-  int (mkapp (lift n (Ind ind)) v) i ==
-  int (SInd ind) (V.cons (mkvecti v i) (V.shift n i)).
+  int (mkapp (mkapp (lift n (Ind ind)) v1) v2) i ==
+  int (SInd ind) (V.cons (mkvecti v2 i) (V.cons (mkvecti v1 i) (V.shift n i))).
 intros.
-specialize eq_betan_lift with (1:=H) (t:=SInd ind); intro.
-red in H1.
-specialize H1 with (1:=H0).
-red in H1.
 unfold Ind.
-rewrite H1.
-rewrite int_subst_eq.
-rewrite int_lift_rec_eq.
-apply int_morph; auto with *.
-rewrite <- V.cons_lams.
-2:apply V.shift_morph; trivial.
-rewrite V.lams0.
-apply V.cons_morph; [|reflexivity].
-symmetry; apply mkvecti_def.
+rewrite <- eq_sub_comp.
+unfold lift; rewrite lift_rec_equiv.
+assert (lg1 : length v1 = length ind.(ind_par)).
+ apply H in H1.
+ apply typ_ctxt_length_inv in H1.
+ rewrite lift_ctxt_length in H1.
+ trivial.
+assert (lg2 : length v2 = length ind.(ind_idx)).
+ apply H0 in H1.
+ apply typ_ctxt_length_inv in H1.
+ rewrite sub_ctxt_length in H1.
+ rewrite lift_ctxt_length in H1.
+ trivial.
+assert (r : Reflexive (fun a a' => int a i == int a' i)).
+ red; intros; reflexivity.
+assert (tmp := eq_betan).
+red in tmp.
+eapply transitivity.
+ apply eq_int_mkapp.
+ reflexivity.
+ 2:reflexivity.
+ eapply tmp with (e:=e); trivial.
+ red in H|-*.
+ intros; rewrite sub_ctxt_eq.
+ apply H in H2.
+ rewrite lift_ctxt_eq in H2.
+ trivial.
+
+ rewrite tmp with (2:=H1). 
+  rewrite int_Sub_eq.
+  rewrite int_Sub_eq.
+  rewrite int_Sub_eq.
+  apply int_morph; auto with *.
+  simpl.
+  rewrite val_mkblock_consn; auto.
+  rewrite <- V.cons_lams.
+  apply V.cons_morph; auto with *.
+  rewrite V.lams0.
+  rewrite val_mkblock_consn; auto.
+  simpl.
+  rewrite V.lams0.
+  reflexivity.
+
+  apply val_mkblock_morph.
+
+ red; intros.
+ apply H0 in H2.
+ revert H2; apply eq_elim.
+ rewrite sub_ctxt_eq.
+ rewrite lift_ctxt_eq.
+ rewrite sub_ctxt_eq.
+ apply int_morph; auto with *.
+ rewrite sub_consn_lams with (s1:= sub_shift n); auto.
+ rewrite sub_consn_vecti.
+ rewrite sub_consn_vecti.
+ apply cons_vect_morph; auto with *.
+ simpl.
+ rewrite V.lams0; reflexivity.
 Qed.
 
 
@@ -2069,27 +2418,29 @@ Definition SCstr (n ar:nat) : term :=
   Sub (Op1 (mktag n) (Ref 0)) (sub_mkblock ar).
 
 
-Lemma eq_oper_sigma e i idx knd X X' c dp a z :
+Lemma eq_oper_sigma e i' i par idx knd X X' c dp z :
   morph1 X' ->
-  check_constructor_data e idx knd dp c.(cstr_args) c.(cstr_inst) ->
-  (forall g j v,
-   typ_ctxt (push_ctxt e g) v (lift_ctxt 0 (length g + dp) idx) ->
+  check_constructor_data e par idx knd dp c.(cstr_args) c.(cstr_inst) ->
+  let dp' := dp + length par in
+  (forall g j v1 v2,
+   typ_ctxt (push_ctxt e g) v1 (lift_ctxt 0 (length g + dp') par) ->
+   typ_ctxt (push_ctxt e g) v2 (sub_ctxt (sub_consn v1 sub_id) (lift_ctxt (length par) (length g + dp') idx)) ->
    val_ok (push_ctxt e g) j ->
-   eq_val (V.shift (length g + dp) j) (V.shift dp i) ->
-   int (mkapp (lift (length g + dp) X) v) j == X' (mkvecti v j)) ->
+   eq_val (V.shift (length g + dp') j) (V.shift dp' i) ->
+   int (mkapp (mkapp (lift (length g + dp') X) v1) v2) j == X' (couple (mkvecti v1 j) (mkvecti v2 j))) ->
   val_ok e i ->
-  a == mkvecti c.(cstr_inst) (cons_vect (length c.(cstr_args)) z i) ->
-  z ∈ mksigi (cstr_arg_ctxt X c.(cstr_args) dp) i ->
-  z ∈ dp_oper (int_constructor a c i) X'.
+  mkvecti c.(cstr_inst) (cons_vect (length c.(cstr_args)) z i') ==
+  mkvecti c.(cstr_inst) (cons_vect (length c.(cstr_args)) z i) ->
+  z ∈ mksigi (cstr_arg_ctxt X c.(cstr_args) dp') i ->
+  z ∈ dp_oper (int_constructor (mkvecti c.(cstr_inst) (cons_vect (length c.(cstr_args)) z i')) c i) X'.
 intros X'm.
 unfold int_constructor.
 destruct c as (cargs,cinst); simpl.
-revert z e i dp.
+revert z e i i' dp.
 induction cargs; simpl; intros.
- unfold P2p; rewrite cond_set_ax.
- auto.
+ unfold P2p; rewrite cond_set_ax; auto.
 
- destruct a0; simpl.
+ destruct a; simpl.
   destruct H as (_&?&?).
   simpl in H3.
   apply sigma_elim in H3.
@@ -2102,12 +2453,12 @@ induction cargs; simpl; intros.
     rewrite H7; reflexivity.
    apply IHcargs with (1:=H4); trivial.
     intros.
-    rewrite <- plus_n_Sm in H6|-*.
+    simpl in H6, H7|-*; rewrite <- plus_n_Sm in H6, H7|-*.
     apply H0 with (g:=ty::g); trivial.
     simpl.
-    rewrite V.shiftS_split in H8.
-    rewrite V.shift_cons in H8.
-    rewrite <- plus_n_Sm in H8.
+    simpl in H9; rewrite V.shiftS_split in H9.
+    rewrite V.shift_cons in H9.
+    rewrite <- plus_n_Sm in H9.
     trivial.
    apply vcons_add_var; trivial.
 
@@ -2121,10 +2472,11 @@ induction cargs; simpl; intros.
  destruct H3 as (zet&?&?).
  rewrite zet; clear zet.
  apply couple_intro.
-  clear H2 H5 H6.
   revert H3; apply eq_elim.
-  revert dp e i H H0 H1.
+  clear H4 H5 H6.
+  revert dp e i i' H H0 H1 H2.
   elim idx0; simpl; intros.
+   destruct H.
    apply H0 with (g:=nil); trivial.
    reflexivity.
 
@@ -2135,72 +2487,75 @@ induction cargs; simpl; intros.
    rewrite H6 in H5|-*.
    clear x H6; rename x' into x.  
    rewrite plus_n_Sm.
-   apply H with (e:=a0::e); trivial.
+
+   apply H with (dp:=S dp)(e:=a::e)(i':=V.cons x i); trivial.
     intros.
-    rewrite <- plus_n_Sm in H6|-*.
-    apply H1 with (g:=a0::g); trivial.
-    rewrite V.shiftS_cons in H8.
-    rewrite <- plus_n_Sm in H8.
+    simpl in H6,H7|-*.
+    rewrite <- plus_n_Sm in H6,H7|-*.
+    apply H1 with (g:=a::g); trivial.
+    simpl in H9.
+    rewrite V.shiftS_cons in H9.
+    rewrite <- plus_n_Sm in H9.
     trivial.
 
     apply vcons_add_var; trivial.
 
+    reflexivity.
+    
   apply IHcargs with (1:=H5); trivial.
    intros.
-   rewrite <- plus_n_Sm in H7|-*.
+   simpl in H7,H8|-*.
+   rewrite <- plus_n_Sm in H7,H8|-*.
    apply H0 with (g:=dum::g); trivial.
-   rewrite V.shiftS_cons in H9.
-   rewrite <- plus_n_Sm in H9.
+   simpl in H10.
+   rewrite V.shiftS_cons in H10.
+   rewrite <- plus_n_Sm in H10.
    trivial.
 
    apply vcons_add_var; auto.
    apply singl_intro.
 
-   apply transitivity with (1:=H2).
-   apply nfv_cstr_inst in H4.
-   revert H4; elim cinst; simpl; intros.
-    unfold mkvecti; simpl.
-    reflexivity.
+   rewrite H2.
+   rewrite mkvecti_def.
+   rewrite mkvecti_def.
+   eapply nfv_elim with (length cargs).
+    apply nfv_cstr_inst in H4.
+    rewrite <- plus_n_O in H4.
+    elim H4; simpl; intros.
+     red; reflexivity.
+     apply nfv_Couple; trivial.
 
-    unfold mkvecti; simpl.
-    simpl in H7.
-    inversion_clear H7.
-    apply couple_morph.
-     apply nfv_elim with (1:=H8).
-     intros.
-     apply cons_vect_dom with (k:=0); trivial.
-     intros [|a'] h; [elim h; trivial| reflexivity].
+    intros.
+    apply cons_vect_dom with (k:=0).
+    2:omega.
+    intros [|a'] h; [elim h;reflexivity|simpl;reflexivity].
 
-     apply H4; trivial.
+   revert H6; apply eq_elim.
+   simpl.
+   apply nfv_elim with (k:=0).
+    apply nfv_mksig.
+  apply nfv_cstr_arg_ctxt with (1:=H4).
+  apply nfv_lift_rec1; auto with arith.
 
-   apply nfv_cstr_args with (X:=X) (dp:=S dp) in H4.
-    apply nfv_mksig in H4.
-    revert H6; apply eq_elim.
-    apply nfv_elim with (1:=H4).
-    intros [|k] ?.
-     elim H6; trivial.
-    reflexivity.
-
-    apply nfv_lift_rec1.
-    auto with arith.
+  intros [|a] h;[elim h; trivial|simpl].
+  reflexivity.
 Qed.
 
 
 Lemma typ_SCstr e ind n c :
   check_inductive e ind ->
   nth_error ind.(ind_cstrs) n = Some c ->
-  typ (push_ctxt (push_ctxt e ind.(ind_idx))
-        (cstr_arg_ctxt (Ind ind) (cstr_args c)
-          (length (ind_idx ind))))
+  typ (push_ctxt (push_ctxt e ind.(ind_par))
+        (cstr_arg_ctxt (Ind ind) (cstr_args c) (length (ind_par ind))))
     (SCstr n (length c.(cstr_args)))
-    (cstr_arg_concl (Ind ind) c.(cstr_args) c.(cstr_inst) (length (ind_idx ind))).
+    (cstr_arg_concl (Ind ind) c.(cstr_args) (length ind.(ind_par)) c.(cstr_inst)).
 intros chk_ind get_cstr.
 unfold SCstr.
 red; intros.
 simpl.
 apply in_int_el.
 red.
-assert (cstr_ok : check_constructor e ind.(ind_idx) ind.(ind_kind) c).
+assert (cstr_ok : check_constructor e ind.(ind_par) ind.(ind_idx) ind.(ind_kind) c).
  revert n get_cstr.
  elim (cstrs_ok _ _ chk_ind); simpl; intros.
   destruct n; discriminate.
@@ -2209,161 +2564,247 @@ assert (cstr_ok : check_constructor e ind.(ind_idx) ind.(ind_kind) c).
   apply H2 with n; exact get_cstr.
 red in cstr_ok.
 assert (val_ok1 :
-  val_ok (push_ctxt e ind.(ind_idx)) (V.shift (length c.(cstr_args)) i)).
+  val_ok (push_ctxt e ind.(ind_par)) (V.shift (length c.(cstr_args)) i)).
  apply typ_sub_shift in H.
  rewrite cstr_ctxt_same_length in H.
  trivial.
-pose (i0 := V.shift (length c.(cstr_args) + length ind.(ind_idx)) i).
+pose (i0 := V.shift (length c.(cstr_args) + length ind.(ind_par)) i).
 assert (val_ok0 : val_ok e i0).
  apply typ_sub_shift in val_ok1.
  unfold i0.
  revert val_ok1; apply val_ok_morph; auto with *.
  rewrite V.shift_split; reflexivity.
-pose (Arg := mksigi ind.(ind_idx) i0).
-pose (a := val_mkblock (length ind.(ind_idx)) (V.shift (length c.(cstr_args)) i) 0).
+pose (p := val_mkblock (length ind.(ind_par)) (V.shift (length c.(cstr_args)) i) 0).
+pose (cinst := mkvecti c.(cstr_inst) i).
+pose (a := couple p cinst).
 assert (eq_i1 : eq_val (V.shift (length c.(cstr_args)) i)
-           (cons_vect (length (ind_idx ind)) a i0)).
+           (cons_vect (length (ind_par ind)) p i0)).
  unfold i0.
  rewrite V.shift_split.
- unfold a.
+ unfold p.
  apply cons_mkblock.
 
+(* parameter well-typed *)
+assert (pty : p ∈ mksigi ind.(ind_par) i0).
+  apply val_ok_mkblock in val_ok1.
+  2:apply chk_ind.
+  red in val_ok1.
+  assert (tmp := val_ok1 0 _ eq_refl).
+  apply in_int_not_kind in tmp.
+  2:apply lift_rec_nk.
+  2:apply mksig_nk.
+  red in tmp.
+  simpl in tmp; fold p in tmp.
+  revert tmp; apply eq_elim.
+  unfold lift; rewrite int_lift_rec_eq.
+  rewrite V.lams0.
+  apply int_morph; auto with *.
+  rewrite shift_mkblock.
+  rewrite <- V.shift_split.
+  reflexivity.
+
 (* argument well-typed *)
-assert (tya : a ∈ Arg).
- apply val_ok_mkblock in val_ok1.
- 2:apply chk_ind.
- red in val_ok1.
- assert (tmp := val_ok1 0 _ eq_refl).
- apply in_int_not_kind in tmp.
- 2:apply lift_rec_nk.
- 2:apply mksig_nk.
- red in tmp.
- fold a in tmp.
- revert tmp; apply eq_elim.
- unfold lift; rewrite int_lift_rec_eq.
- rewrite V.lams0.
- subst Arg.
- apply int_morph; auto with *.
- simpl.
- rewrite shift_mkblock.
- rewrite <- V.shift_split.
- reflexivity.
+specialize check_cstr_inst with (X:=Ind ind) (dp':=length ind.(ind_par)) (1:=cstr_ok);
+  intros tyinst.
 
-specialize check_cstr_inst with (X:=Ind ind) (1:=cstr_ok);
-intros tyinst.
-specialize eq_Ind_app with (1:=tyinst) (2:=H).
-intros eq_ind_app.
+assert (tya : a ∈ ind_par' ind i0).
+ apply couple_intro_sigma; trivial.
+  do 2 red; intros.
+  rewrite H1; reflexivity.
 
-assert (inst_eqn : mkvecti c.(cstr_inst) i == a).
- admit. (* family index constraints !!! *)
+  red in tyinst.
+  specialize tyinst with (1:=H).
+  revert tyinst; apply eq_elim.
+  rewrite lift_ctxt_eq.
+  apply int_morph; auto with *.
+  rewrite V.lams0.
+  rewrite <- plus_n_O; trivial.
 
 (* positivity *)
 pose (pos a := int_constructors ind.(ind_cstrs)
-                  (cons_vect (length ind.(ind_idx)) a i0) a).
-assert (posp : isDPositive Arg pos).
+                  (cons_vect (length ind.(ind_par)) (fst a) i0) (snd a)).
+assert (posp : isDPositive (ind_par' ind i0) pos).
  unfold pos.
- unfold Arg.
+ unfold ind_par'.
  apply isDP_intro.
   do 2 red; intros.
   apply int_constructors_morph; auto with *.
-  rewrite H0; reflexivity.
+   rewrite H0; reflexivity.
+   apply snd_morph; trivial.
  intros.
  apply check_inductive_pos with (1:=chk_ind); trivial.
 
-assert (int (cstr_arg_concl (Ind ind) (cstr_args c) (cstr_inst c)
-          (length (ind_idx ind))) i ==
-        dIND Arg pos a).
+assert (eq_ind_app :
+        int (cstr_arg_concl (Ind ind) (cstr_args c) (length ind.(ind_par)) (cstr_inst c)) i ==
+        dIND (ind_par' ind i0) pos a).
  unfold cstr_arg_concl.
- rewrite eq_ind_app.
- simpl.
- apply dIND_morph_gen; trivial.
-  unfold Arg.
-  apply int_morph; auto with *.
-  rewrite V.shift_cons.
-  reflexivity.
+ rewrite eq_Ind_app with (3:=H).
+   simpl.
+   apply dIND_morph_gen; auto with *.
+    apply ind_par'_morph; auto with *.
+    rewrite V.shift_split with (m:=1).
+    rewrite V.shift_cons.
+    rewrite V.shift_cons.
+    reflexivity.
+
+    red; intros.
+    unfold pos.
+    apply int_constructors_morph; auto with *.
+     apply cons_vect_morph; auto with *.
+      rewrite H0; reflexivity.
+     rewrite V.shift_split with (m:=1).
+     rewrite V.shift_cons.
+     rewrite V.shift_cons.
+     reflexivity.
+
+     rewrite H0; reflexivity.
+
+    apply couple_morph.
+    2:reflexivity.
+    unfold p.
+    rewrite (vect_of_ctxt'_reloc _  _ 0 i).
+    apply vect_of_ctxt'_eq_mkblock.
 
   red; intros.
-  unfold pos.
-  apply int_constructors_morph; auto with *.
-  apply cons_vect_morph; auto.
-  rewrite V.shift_cons.
+  rewrite (vect_of_ctxt'_reloc _  _ 0 i1).
+  rewrite lift_ctxt_eq.
+  rewrite V.lams0.
+  rewrite V.shift_split.
+  apply typ_sub_shift in H0.
+  simpl in H0; rewrite cstr_ctxt_same_length in H0.
+  apply vect_of_ctxt'_typ with (1:=H0).
+  apply chk_ind.
+
+  red; intros.
+  apply tyinst in H0.
+  revert H0; apply eq_elim.
+  rewrite lift_ctxt_eq.
+  rewrite sub_ctxt_eq.
+  rewrite lift_ctxt_eq.
+  rewrite V.lams0.
+  apply int_morph; auto with *.
+  rewrite <- plus_n_O.
+  rewrite sub_consn_vecti.
+  rewrite vect_of_ctxt'_length.
+  rewrite eq_lams_cons_vect with (s:=sub_shift (length c.(cstr_args) + length ind.(ind_par))).
+  simpl.
+  rewrite (vect_of_ctxt'_reloc _  _ 0 i1).
+  rewrite V.shift_split.
+  rewrite cons_vect_of_ctxt'.
   reflexivity.
 
-rewrite H0.
+rewrite eq_ind_app.
 rewrite dIND_eq; trivial.
 
 (* type arg block *)
+pose (cinst' := mkvecti c.(cstr_inst)
+        (cons_vect (length c.(cstr_args)) (val_mkblock (length c.(cstr_args)) i 0)
+            (V.shift (length c.(cstr_args)) i))).
+assert (eqi : cinst == cinst').
+ unfold cinst, cinst'.
+ rewrite <- cons_mkblock.
+ reflexivity.
+pose (cinst'' := mkvecti c.(cstr_inst)
+        (cons_vect (length c.(cstr_args)) (val_mkblock (length c.(cstr_args)) i 0)
+            (cons_vect (length ind.(ind_par)) p i0))).
+assert (eqi' : cinst == cinst'').
+ unfold cinst, cinst''.
+ rewrite <- eq_i1.
+ rewrite <- cons_mkblock.
+ reflexivity.
 assert (tyblk : val_mkblock (length c.(cstr_args)) i 0 ∈
-        dp_oper (int_constructor a c (cons_vect (length ind.(ind_idx)) a i0)) (dIND Arg pos)).
- eapply eq_oper_sigma with (2:=cstr_ok) (X:=Ind ind).
-  apply dIND_morph; trivial.
+        dp_oper (int_constructor cinst'' c (cons_vect (length ind.(ind_par)) p i0)) (dIND (ind_par' ind i0) pos)).
+ eapply eq_oper_sigma with (2:=cstr_ok) (X:=Ind ind); auto with *.
+  apply dIND_morph; auto with *.
 
   intros.
-  rewrite eq_Ind_app with (1:=H1) (2:=H2).
   simpl.
-  rewrite shift_cons_vect in H3.
-  apply dIND_morph_gen; auto with *.
-   unfold Arg.
-   rewrite V.shift_cons.
-   apply int_morph; auto with *.
+  rewrite eq_Ind_app with (1:=H0); trivial.
+   simpl.
+   apply dIND_morph_gen; auto with *.
+    apply ind_par'_morph; auto with *.
+    rewrite V.shift_split with (m:=1).
+    rewrite V.shift_cons.
+    rewrite V.shift_cons.
+    simpl in H3.
+    rewrite shift_cons_vect in H3; trivial.
 
-   red; intros.
-   unfold pos.
-   apply int_constructors_morph; auto with *.
-   rewrite V.shift_cons.
-   rewrite H3,H4; reflexivity.
+    red; intros.
+    unfold pos.
+    apply int_constructors_morph; auto with *.
+    apply cons_vect_morph; auto with *.
+     rewrite H4; reflexivity.
+    rewrite V.shift_split with (m:=1).
+    rewrite V.shift_cons.
+    rewrite V.shift_cons.
+    simpl in H3.
+    rewrite shift_cons_vect in H3; trivial.
 
-  apply cons_vect_typ; trivial.
-  rewrite <- eq_i1.
-  rewrite <- cons_mkblock.
-  symmetry; trivial.
+    rewrite H4; reflexivity.
+
+   rewrite <- eq_i1.
+   trivial.
 
   apply val_ok_mkblock in H.
   generalize (H 0 _ eq_refl).
   intro.
-  apply in_int_not_kind in H1.
+  apply in_int_not_kind in H0.
   2:apply lift_rec_nk.
   2:apply mksig_nk.
-  red in H1.
-  simpl in H1.
-  rewrite cstr_ctxt_same_length in H1.
-   unfold lift in H1; rewrite int_lift_rec_eq in H1.
-   rewrite V.lams0 in H1.
-   rewrite shift_mkblock in H1.
-   rewrite eq_i1 in H1.
+  red in H0.
+  simpl in H0.
+  rewrite cstr_ctxt_same_length in H0.
+  unfold lift in H0; rewrite int_lift_rec_eq in H0.
+   rewrite V.lams0 in H0.
+   rewrite shift_mkblock in H0.
+   rewrite eq_i1 in H0.
    trivial.
 
-   apply cstr_ctxt_nk with (1:=cstr_ok).
+   eapply cstr_ctxt_nk with (1:=cstr_ok).
+   apply Absn_nk.
    apply Absn_nk.
    discriminate.
 
-(* type tag *)
-revert tyblk.
-change (fun k => i k) with i.
-generalize (val_mkblock (length c.(cstr_args)) i 0).
-unfold pos at 2.
-revert get_cstr.
-generalize n.
-elim ind.(ind_cstrs); simpl; intros.
- destruct n0; discriminate get_cstr.
-destruct n0; simpl.
- injection get_cstr; clear get_cstr; intro.
- subst a0.
- apply inl_typ; trivial.
 
- apply inr_typ; auto.
+(* type tag *)
+ revert tyblk.
+ change (fun k => i k) with i.
+ generalize (val_mkblock (length c.(cstr_args)) i 0).
+ unfold pos at 2.
+ revert get_cstr.
+ generalize n.
+ elim ind.(ind_cstrs); simpl; intros.
+  destruct n0; discriminate get_cstr.
+ destruct n0; simpl.
+  injection get_cstr; clear get_cstr; intro.
+  subst a0.
+  apply inl_typ; trivial.
+  revert tyblk; apply eq_elim.
+  apply @eq_dop.
+   apply int_constructor_morph; auto with *.
+   unfold a.
+   rewrite snd_def.
+   auto with *.
+
+   unfold a.
+   rewrite fst_def.
+   reflexivity.
+
+  apply dIND_morph; trivial.
+
+  apply inr_typ; auto.
 Qed.
 
 
 Definition Cstr (ind:inductive) (n:nat) : term :=
-  let cargs := cstr_argument_ctxt (Ind ind) ind n (List.length ind.(ind_idx)) in
-  Absn ind.(ind_idx) (Absn cargs (SCstr n (List.length cargs))).
+  let cargs := cstr_argument_ctxt (Ind ind) ind n (List.length ind.(ind_par)) in
+  Absn ind.(ind_par) (Absn cargs (SCstr n (List.length cargs))).
 
 
 Lemma typ_Cstr e ind n c :
   check_inductive e ind ->
   nth_error ind.(ind_cstrs) n = Some c ->
-  typ e (Cstr ind n) (constructor_type ind.(ind_idx) (Ind ind) (Ind ind) c).
+  typ e (Cstr ind n) (constructor_type ind.(ind_par) (Ind ind) (Ind ind) c).
 intros chk_ind get_cstr.
 unfold Cstr.
 unfold constructor_type.
@@ -2372,12 +2813,16 @@ rewrite get_cstr.
 apply typ_Absn.
  apply mkprod_nk.
  apply mkapp_nk.
+ apply mkapp_nk.
  apply lift_rec_nk.
+ apply Absn_nk.
  apply Absn_nk.
  discriminate.
 apply typ_Absn.
  apply mkapp_nk.
+ apply mkapp_nk.
  apply lift_rec_nk.
+ apply Absn_nk.
  apply Absn_nk.
  discriminate.
 rewrite cstr_ctxt_same_length.

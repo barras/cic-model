@@ -63,6 +63,11 @@ destruct a; simpl; auto.
 apply H0.
 Qed.
 
+Lemma surj_pair i :
+  eq_map i (cons (i 0) (shift 1 i)).
+intros [|a]; simpl; reflexivity.
+Qed.
+
 Lemma shift0 i : eq_map (shift 0 i) i.
 do 2 red; reflexivity.
 Qed.

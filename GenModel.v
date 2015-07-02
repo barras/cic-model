@@ -190,6 +190,10 @@ exists (fun x => x).
 do 2 red; auto.
 Defined.
 
+Lemma eq_sub_id t : eq_term (Sub t sub_id) t.
+destruct t as [(t,tm)|]; simpl; trivial.
+Qed.
+
 Definition sub_comp (s1 s2:sub) : sub.
 exists (fun i => s1 (s2 i)).
 do 2 red; intros.
@@ -512,6 +516,24 @@ apply lam_ext.
 
  red; intros.
  rewrite H0; rewrite H1; rewrite H3; reflexivity.
+Qed.
+
+Lemma eq_sub_Abs a b s :
+  eq_term (Sub (Abs a b) s) (Abs (Sub a s) (Sub b (sub_lift 1 s))).
+red; simpl.
+red; intros.
+apply lam_ext.
+ rewrite H.
+ rewrite int_Sub_eq; reflexivity.
+
+ red; intros.
+ rewrite int_Sub_eq; simpl.
+ rewrite <- V.cons_lams.
+ 2:apply sub_m.
+ rewrite V.lams0.
+ apply int_morph; auto with *.
+ apply V.cons_morph; auto.
+ apply sub_m; trivial.
 Qed.
 
 Lemma eq_lift_abs : forall n A B k,
@@ -999,6 +1021,14 @@ unfold typ, sub_typ'; simpl; intros; auto.
 Qed.
 
 (** Subtitution *)
+
+Lemma typ_sub_comp e f g s1 s2 :
+  typ_sub e s1 f ->
+  typ_sub f s2 g ->
+  typ_sub e (sub_comp s2 s1) g.
+unfold typ_sub; simpl; intros.
+auto.
+Qed.
 
 Lemma typ_Sub e f s m u :
   typ f m u ->
