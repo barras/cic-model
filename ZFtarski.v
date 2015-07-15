@@ -115,15 +115,14 @@ Qed.
 
 Definition FIX := inf M'.
 
-Lemma lfp_typ : FIX ⊆ A.
-unfold FIX.
-apply inf_le.
-apply member_A.
-Qed.
-
 Lemma lower_bound x : x ∈ M' -> FIX ⊆ x.
 unfold FIX, M'; intros.
 apply inf_le; trivial.
+Qed.
+
+Lemma lfp_typ : FIX ⊆ A.
+apply lower_bound.
+apply member_A.
 Qed.
 
 Lemma post_fix2 x : x ∈ M' -> F FIX ⊆ F x.
@@ -186,6 +185,34 @@ split.
 
    apply Ftyp.
    apply inf_le; apply pair_intro2.
+Qed.
+
+Lemma FIX_ind : forall P,
+  (forall X, X ⊆ FIX -> X ⊆ P -> F X ⊆ P) ->
+  FIX ⊆ P.
+intros.
+transitivity (inf (pair P FIX)).
+ apply knaster_tarski.
+ apply inf_least.
+  exists FIX; apply pair_intro2.
+ intros.
+ apply pair_elim in H0; destruct H0; rewrite H0.
+  apply H.
+   apply inf_le.
+   apply pair_intro2.
+
+   apply inf_le.
+   apply pair_intro1.
+
+  transitivity (F FIX).
+   apply Fmono.
+   apply inf_le.
+   apply pair_intro2.
+
+   apply post_fix_lfp.
+
+ apply inf_le.
+ apply pair_intro1.
 Qed.
 
 End KnasterTarski.
