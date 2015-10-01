@@ -958,7 +958,7 @@ Lemma eq_sub_mkapp t l s :
 revert t; induction l; simpl; intros; auto with *.
 rewrite IHl.
 apply mkapp_morph.
-apply eq_sub_App.
+apply eq_Sub_app.
 reflexivity.
 Qed.
 

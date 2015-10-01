@@ -255,6 +255,13 @@ Lemma int_Sub_eq T s i :
 intros; destruct T as [(T,Tm)|]; simpl; reflexivity.
 Qed.
 
+Lemma sub_nk t s :
+  t <> None <->
+  Sub t s <> None.
+destruct t as [(t,tm)|]; simpl; auto with *.
+split; intros; discriminate.
+Qed.
+
 (** Relocations *)
 Section Lift.
 
@@ -475,7 +482,7 @@ red; intros.
 rewrite H; rewrite H0; rewrite H1; reflexivity.
 Qed.
 
-Lemma eq_sub_App a b s :
+Lemma eq_Sub_app a b s :
   eq_term (Sub (App a b) s) (App (Sub a s) (Sub b s)).
 red; simpl.
 red; intros.
@@ -572,6 +579,24 @@ apply prod_ext.
 
  red; intros.
  rewrite H0; rewrite H1; rewrite H3; reflexivity.
+Qed.
+
+Lemma eq_Sub_prod s A B :
+  eq_term (Sub (Prod A B) s) (Prod (Sub A s) (Sub B (sub_lift 1 s))).
+simpl.
+red; intros.
+apply prod_ext.
+ rewrite int_Sub_eq.
+ rewrite H; reflexivity.
+
+ red; intros.
+ rewrite int_Sub_eq.
+ simpl; rewrite <- V.cons_lams.
+  apply int_morph; auto with *.
+  apply V.cons_morph; trivial.
+  rewrite V.lams0; apply sub_m; trivial.
+
+  apply sub_m.
 Qed.
 
 Lemma eq_lift_prod : forall n A B k,
@@ -754,6 +779,16 @@ Qed.
 
 End J.
 Import J.
+
+Lemma typ_elim e M T i :
+  typ e M T ->
+  T <> kind ->
+  val_ok e i ->
+  int M i ∈ int T i.
+intros.
+apply H in H1.
+apply in_int_not_kind in H1; trivial.
+Qed.
 
 (** * Inference rules *)
 

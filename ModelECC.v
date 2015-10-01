@@ -9,6 +9,23 @@ Require Import ModelZF.
 Import BuildModel.
 Import T J R.
 
+Lemma sub_typ_covariant e U1 U2 V1 V2 :
+  U1 <> kind ->
+  eq_typ e U1 U2 ->
+  sub_typ (U1::e) V1 V2 ->
+  sub_typ e (Prod U1 V1) (Prod U2 V2).
+red; intros.
+revert H3; apply cc_prod_covariant.
+ do 2 red; intros.
+ rewrite H4; reflexivity.
+
+ apply H0; trivial.
+
+ red; intros.
+ revert H4; apply H1.
+ apply vcons_add_var; trivial.
+Qed.
+
 (** Universes: version where type 0 is a universe of hereditarily
     finite sets (HF). Hence it does not contain nat. It is a model
     of ECC.

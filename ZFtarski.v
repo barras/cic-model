@@ -217,3 +217,19 @@ Qed.
 
 End KnasterTarski.
 
+Instance FIX_morph_gen :
+  Proper ((eq_set==>eq_set==>iff)==>(eq_set==>eq_set)==>eq_set==>eq_set==>(eq_set==>eq_set)==>eq_set)
+    FIX.
+do 6 red; intros.
+unfold FIX.
+apply H0.
+unfold M'.
+apply subset_morph.
+ apply subset_morph; trivial.
+ red; intros.
+ apply H; auto with *.
+
+ red; intros.
+ unfold post_fix.
+ apply H; auto with *.
+Qed.
