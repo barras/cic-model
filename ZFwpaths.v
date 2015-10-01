@@ -23,92 +23,61 @@ Definition Wdom := rel (List (sup A B)) A.
 
 Definition Wsup x f :=
    singl (couple Nil x) ∪
-   sup (B x)
-     (fun y => replf (subset (cc_app f y) (fun p => p == couple (fst p) (snd p)))
-                     (fun p => couple (Cons y (fst p)) (snd p))).
+   replf (subset f (fun z => z == couple (fst z) (couple (fst (snd z)) (snd (snd z)))))
+     (fun z => couple (Cons (fst z) (fst (snd z))) (snd (snd z))).
 
-Instance Wsup_morph : morph2 Wsup.
+Global Instance Wsup_morph : morph2 Wsup.
 do 3 red; intros.
 unfold Wsup.
 apply union2_morph.
  rewrite H; reflexivity.
 
- apply sup_morph.
-  rewrite H; reflexivity.
+ apply replf_morph_raw.
+  apply subset_morph; trivial.
+  red; intros; reflexivity.
 
   red; intros.
-  apply replf_morph_raw; auto.
-   apply subset_morph.
-    rewrite H0; rewrite H2; reflexivity.
-   red; intros.
-   reflexivity.
-
-   red; intros.
-   rewrite H2; rewrite H3; reflexivity.
+  rewrite H1; reflexivity.
 Qed.
-
-Lemma wext1 : forall i y,
-  ext_fun y (fun p => couple (Cons i (fst p)) (snd p)).
-do 2 red; intros.
-rewrite H0; reflexivity.
-Qed.
-
-Lemma wext2 : forall X g,
-  ext_fun X (fun y =>
-     replf (subset (cc_app g y) (fun p => p == couple (fst p) (snd p)))
-           (fun p => couple (Cons y (fst p)) (snd p))).
-do 2 red; intros.
-apply replf_morph_raw; auto.
- apply subset_morph.
-  rewrite H0; reflexivity.
- red; intros.
- reflexivity.
-
- red; intros.
- rewrite H0; rewrite H1; reflexivity.
-Qed.
-Hint Resolve wext1 wext2.
 
 Lemma Wsup_def x f p :
   (p ∈ Wsup x f <->
    p == couple Nil x \/
-   exists2 i, i ∈ B x &
-   exists l y, couple l y ∈ cc_app f i /\ p == couple (Cons i l) y).
+   exists i l y, couple i (couple l y) ∈ f /\ p == couple (Cons i l) y).
 unfold Wsup.
-split; intros.
- apply union2_elim in H; destruct H;[left|right].
+rewrite union2_ax.
+rewrite replf_ax.
+apply or_iff_morphism.
+ split; intros.
   apply singl_elim in H; trivial.
+  rewrite H; apply singl_intro.
 
-  rewrite sup_ax in H; auto.
-  destruct H as (i,?,?); exists i; trivial.
-  rewrite replf_ax in H0; trivial.
-  destruct H0 as (p',tyx,eqp).
-  rewrite subset_ax in tyx.
-  destruct tyx as (?,(p'',?,?)).
-  rewrite <- H1 in H2; clear H1 p''.
-  rewrite H2 in H0.
-  exists (fst p'); exists (snd p'); split; trivial.
+ split; intros.
+  destruct H as (z,z_in_f,eqp).
+  rewrite subset_ax in z_in_f.
+  destruct z_in_f as (z_in_f,(z',eqz,etaz)).
+  rewrite <- eqz in etaz; clear z' eqz.
+  rewrite etaz in z_in_f.
+  do 3 econstructor; split; [exact z_in_f|trivial].
 
- destruct H as [eqp|(i,?,(l&y&?&eqp))]; rewrite eqp; clear eqp.  
-  apply union2_intro1.
-  apply singl_intro.
-
-  apply union2_intro2.
-  rewrite sup_ax; auto.
-  exists i; trivial.
-  rewrite replf_ax; trivial.
-  exists (couple l y).
+  destruct H as (i&l&y&in_f&etap).
+  exists (couple i (couple l y)).
    apply subset_intro; trivial.
-   rewrite fst_def, snd_def; reflexivity.
+   rewrite snd_def, !fst_def, snd_def.
+   reflexivity.
 
-   rewrite fst_def, snd_def; reflexivity.
+   rewrite snd_def, !fst_def, snd_def.
+   trivial.
+
+ do 2 red; intros.
+ rewrite H0; reflexivity.
 Qed.
 
 Lemma Wsup_hd_prop a x f :
   couple Nil a ∈ Wsup x f <-> a == x.
 rewrite Wsup_def.
 split; intros.
- destruct H as [eqc|(i,tyi,(l&y&?&eqc))].
+ destruct H as [eqc|(i&l&y&_&eqc)].
   apply couple_injection in eqc; destruct eqc; trivial.
 
   apply couple_injection in eqc; destruct eqc as (eqc,_).
@@ -118,10 +87,11 @@ split; intros.
 Qed.
 
 Lemma Wsup_tl_prop i l a x f :
-  couple (Cons i l) a ∈ Wsup x f <-> i ∈ B x /\ couple l a ∈ cc_app f i.
+  couple (Cons i l) a ∈ Wsup x f <-> couple l a ∈ cc_app f i.
 rewrite Wsup_def.
+rewrite <- couple_in_app.
 split; intros.
- destruct H as [eqc|(i',tyi,(l'&y&?&eqc))].
+ destruct H as [eqc|(i'&l'&y&in_f&eqc)].
   apply couple_injection in eqc; destruct eqc as (eqc,_).
   symmetry in eqc.
   apply discr_mt_pair in eqc; contradiction.
@@ -131,11 +101,130 @@ split; intros.
   rewrite eqi,eql,eqa; auto.
 
  right.
- destruct H.
- exists i; trivial.
- exists l; exists a; auto with *.
+ exists i; exists l; exists a; auto with *.
 Qed.
 
+Lemma Wsup_typ_gen x f :
+  x ∈ A ->
+  f ∈ (Π i ∈ B x, Wdom) ->
+  Wsup x f ∈ Wdom.
+intros.
+assert (tyf := cc_prod_is_cc_fun _ _ _ H0).
+apply power_intro; intros.
+rewrite Wsup_def in H1; trivial.
+destruct H1 as [eqz|(i&l&y&in_f&eqz)]; rewrite eqz.
+ apply couple_intro; trivial.
+ apply Nil_typ.
+
+ destruct tyf with (1:=in_f) as (_,tyi).
+ rewrite fst_def in tyi.
+ specialize cc_prod_elim with (1:=H0) (2:=tyi); intros tyapp.
+ rewrite couple_in_app in in_f.
+ apply power_elim with (2:=in_f) in tyapp.
+ apply couple_intro.
+  apply Cons_typ.
+   rewrite sup_ax; eauto with *.
+   apply fst_typ in tyapp; rewrite fst_def in tyapp; trivial.
+
+  apply snd_typ in tyapp; rewrite snd_def in tyapp; trivial.
+Qed.
+
+Definition Wfst w :=
+  snd (union (subset w (fun p => exists x, p == couple Nil x))).
+
+Global Instance Wfst_morph : morph1 Wfst.
+do 2 red; intros.
+unfold Wfst.
+apply snd_morph; apply union_morph.
+apply subset_morph; trivial.
+red; intros.
+reflexivity.
+Qed.
+
+Definition Wsnd w i :=
+  replf (subset w (fun p => exists l, fst p == Cons i l)) (fun p => couple (snd (fst p)) (snd p)).
+
+Global Instance Wsnd_morph : morph2 Wsnd.
+do 3 red; intros.
+unfold Wsnd.
+apply replf_morph_raw.
+ apply subset_morph; trivial.
+ red; intros.
+ apply ex_morph; intros l.
+ rewrite H0; reflexivity.
+
+ red; intros.
+ rewrite H1; reflexivity.
+Qed.
+
+Lemma Wfst_def x f :
+  Wfst (Wsup x f) == x.
+unfold Wfst.
+rewrite union_subset_singl with (y:=couple Nil x)(y':=couple Nil x); auto with *.
+ apply snd_def.
+
+ rewrite Wsup_hd_prop; reflexivity.
+
+ exists x; reflexivity.
+
+ intros y y' tyy tyy' (x1,eqy) (x2,eqy').
+ rewrite eqy in tyy|-*.
+ rewrite eqy' in tyy'|-*.
+ rewrite Wsup_hd_prop in tyy.
+ rewrite Wsup_hd_prop in tyy'.
+ rewrite tyy,tyy'; reflexivity.
+Qed.
+
+Lemma Wsnd_def_raw x f i :
+  (forall p, p ∈ cc_app f i -> p == couple (fst p) (snd p)) ->
+  Wsnd (Wsup x f) i == cc_app f i.
+intros tyapp.
+unfold Wsnd.
+apply eq_set_ax.
+intros z.
+rewrite replf_ax.
+ split; intros.
+  rewrite <- couple_in_app.
+  destruct H as (p,pok,eqz).
+  rewrite subset_ax in pok.
+  destruct pok as (pok,(p',eqp,(l,eql))).
+  rewrite <- eqp in eql; clear p' eqp.
+  rewrite eql in eqz.
+  rewrite snd_def in eqz.
+  rewrite eqz.
+  rewrite Wsup_def in pok.
+  destruct pok as [abs|(i'&l'&z'&in_f&eqp)].
+   rewrite abs in eql; rewrite fst_def in eql.
+   apply discr_mt_pair in eql; contradiction.
+  rewrite eqp in eql; rewrite fst_def in eql.
+  apply couple_injection in eql; destruct eql as (eqi,eql).
+  rewrite eqp,snd_def.
+  rewrite <-eqi,<-eql; trivial.
+
+  exists (couple (Cons i (fst z)) (snd z)).
+   apply subset_intro.
+    rewrite Wsup_tl_prop.
+    rewrite <- tyapp with (1:=H); trivial.
+
+    exists (fst z).
+    rewrite fst_def.
+    reflexivity.
+
+   rewrite fst_def,!snd_def.
+   auto.
+
+ do 2 red; intros.
+ rewrite H0; reflexivity.
+Qed.
+
+Lemma Wsnd_def x f i :
+  cc_app f i ∈ Wdom ->
+  Wsnd (Wsup x f) i == cc_app f i.
+intros tyapp.
+apply Wsnd_def_raw; intros.
+specialize power_elim with (1:=tyapp) (2:=H); intros ty_p.
+apply surj_pair with (1:=ty_p).
+Qed.
 
 Lemma Wsup_inj x x' f f' :
   x ∈ A ->
@@ -144,62 +233,40 @@ Lemma Wsup_inj x x' f f' :
   (forall i, i ∈ B x' -> cc_app f' i ∈ Wdom) ->
   Wsup x f == Wsup x' f' -> x == x' /\ (forall i, i ∈ B x -> cc_app f i == cc_app f' i).
 intros tyx tyx' tyf tyf' eqw.
-assert (eqh1 := Wsup_hd_prop x x f).
-assert (eqh2 := Wsup_hd_prop x x' f').
-rewrite <- eqw in eqh2.
-rewrite eqh1 in eqh2.
-apply and_split.
- apply eqh2; reflexivity.
-clear eqh1 eqh2.
-intros eqx i tyi.
-apply eq_set_ax; intros z.
-assert (eqt1 := Wsup_tl_prop i (fst z) (snd z) x f).
-assert (eqt2 := Wsup_tl_prop i (fst z) (snd z) x' f').
-rewrite <- eqw in eqt2.
-rewrite eqt1 in eqt2.
-specialize tyf with (1:=tyi).
-assert (tyi' := tyi).
-rewrite eqx in tyi'.
-specialize tyf' with (1:=tyi').
-split; intros.
- apply power_elim with (2:=H) in tyf.
- rewrite surj_pair with (1:=tyf).
- apply eqt2.
- split; trivial.
- rewrite <- surj_pair with (1:=tyf); trivial.
-
- apply power_elim with (2:=H) in tyf'.
- rewrite surj_pair with (1:=tyf').
- apply eqt2.
- split; trivial.
- rewrite <- surj_pair with (1:=tyf'); trivial.
+assert (eqx : x==x').
+ rewrite <- (Wfst_def x f).
+ rewrite <- (Wfst_def x' f').
+ rewrite eqw; reflexivity.
+split; intros; trivial.
+rewrite <- (Wsnd_def x f i); auto.
+rewrite eqx in H.
+rewrite <- (Wsnd_def x' f' i); auto.
+rewrite eqw; reflexivity.
 Qed.
 
-Lemma Wsup_typ_gen x f :
-  x ∈ A ->
-  (forall i, i ∈ B x -> cc_app f i ∈ Wdom) ->
-  Wsup x f ∈ Wdom.
-intros.
-apply power_intro; intros.
-rewrite Wsup_def in H1; trivial.
-destruct H1 as [eqz|(i,tyi,(l&y&ty&eqz))]; rewrite eqz.
- apply couple_intro; trivial.
- apply Nil_typ.
 
- specialize H0 with (1:=tyi).
- apply power_elim with (2:=ty) in H0. 
- apply couple_intro.
-  apply Cons_typ.
-  rewrite sup_ax; eauto with *.
+Definition Wcase (h:set->set->set) w := h (Wfst w) (λ i ∈ B (Wfst w), Wsnd w i).
 
-  apply fst_typ in H0; rewrite fst_def in H0; trivial.
-
-  apply snd_typ in H0; rewrite snd_def in H0; trivial.
+Lemma Wcase_eqn h x f :
+  morph2 h ->
+  f ∈ (Π i ∈ B x, Wdom) ->
+  Wcase h (Wsup x f) == h x f.
+intros hm tyf.
+unfold Wcase.
+apply hm.
+ apply Wfst_def.
+symmetry; eapply transitivity; [apply cc_eta_eq with (1:=tyf)|].
+apply cc_lam_ext.
+ rewrite Wfst_def; reflexivity.
+red; intros.
+rewrite <- H0.
+symmetry; apply Wsnd_def; trivial.
+apply cc_prod_elim with (1:=tyf); trivial.
 Qed.
 
 (** The type operator on the construction domain *)
 Definition Wf X :=
-  sup A (fun x => replf (cc_prod (B x) (fun _ => X)) (fun f => Wsup x f)). 
+  sup A (fun x => replf (Π _ ∈ B x, X) (fun f => Wsup x f)). 
 
 Hint Resolve Wsup_morph.
 
@@ -263,12 +330,77 @@ Lemma Wf_typ X :
 red; intros.
 apply Wf_elim in H0; destruct H0 as (x,tyx,(f,tyf,eqz)); rewrite eqz.
 apply Wsup_typ_gen; trivial.
-intros.
+revert tyf; apply cc_prod_covariant; auto with *.
+(*intros.
 apply H.
-apply cc_prod_elim with (1:=tyf); trivial.
+apply cc_prod_elim with (1:=tyf); trivial.*)
 Qed.
 Hint Resolve Wf_typ.
 
+Lemma Wfst_typ_gen X w :
+  w ∈ Wf X ->
+  Wfst w ∈ A.
+intros tyw.
+apply Wf_elim in tyw; trivial.
+destruct tyw as (x,tyx,(f,tyf,eqw)).
+rewrite eqw,Wfst_def; trivial.
+Qed.
+
+Lemma Wsnd_typ_gen X w i :
+  X ⊆ Wdom ->
+  w ∈ Wf X ->
+  i ∈ B (Wfst w) ->
+  Wsnd w i ∈ X.
+intros XinclW tyw tyi.
+apply Wf_elim in tyw; trivial.
+destruct tyw as (x,tyx,(f,tyf,eqw)).
+rewrite eqw in tyi.
+rewrite Wfst_def in tyi.
+rewrite eqw,Wsnd_def; trivial.
+ apply cc_prod_elim with (1:=tyf); trivial. 
+
+ apply XinclW.
+ apply cc_prod_elim with (1:=tyf); trivial. 
+Qed.
+
+Lemma Wcase_typ X Q h w :
+  morph1 Q ->
+  X ⊆ Wdom ->
+  (forall x f, x ∈ A -> f ∈ (Π i ∈ B x, X) -> h x f ∈ Q (Wsup x f)) ->
+  w ∈ Wf X ->
+  Wcase h w ∈ Q w.
+intros Qm tyX tyh tyw.
+apply Wf_elim in tyw.
+destruct tyw as (x,tyx,(f,tyf,eqw)).
+unfold Wcase.
+eapply eq_elim.
+2:apply tyh.
+ apply Qm.
+ symmetry; apply transitivity with (1:=eqw).
+ apply Wsup_morph.
+  symmetry; rewrite eqw; apply Wfst_def.
+
+  rewrite cc_eta_eq with (1:=tyf).
+  apply cc_lam_ext.
+   rewrite eqw,Wfst_def; reflexivity.
+
+   red; intros.
+   symmetry; rewrite eqw.
+   rewrite <- H0.
+   apply Wsnd_def; trivial.
+   apply tyX; apply cc_prod_elim with (1:=tyf); trivial.   
+
+ rewrite eqw; rewrite Wfst_def; trivial.
+ apply cc_prod_intro; intros; auto with *.
+  do 2 red; intros.
+  rewrite H0; reflexivity.
+ assert (x0 ∈ B x).
+  rewrite eqw,Wfst_def in H; trivial.
+ rewrite eqw; rewrite Wsnd_def; trivial.
+  apply cc_prod_elim with (1:=tyf); trivial.
+
+  apply tyX; apply cc_prod_elim with (1:=tyf); trivial.
+Qed.
 
 Require Import ZFstable.
 
@@ -318,6 +450,9 @@ intros.
 rewrite H; apply Ffix_inA.
 Qed.
 *)
+
+(* Using the impredicative construction of the fixpoint of a monotonic
+   operator (Tarski), we get the type W. *)
 Definition W := FIX incl_set inter Wdom (power Wdom) Wf.
 
 Lemma W_lfp : is_lfp incl_set Wf W. 
@@ -384,6 +519,24 @@ apply subset_intro.
   rewrite tyw'; trivial.
 Qed.
 
+Lemma Wfst_typ w :
+  w ∈ W ->
+  Wfst w ∈ A.
+intros tyw.
+rewrite W_eqn in tyw; trivial.
+apply Wfst_typ_gen in tyw; trivial.
+Qed.
+
+Lemma Wsnd_typ w i :
+  w ∈ W ->
+  i ∈ B (Wfst w) ->
+  Wsnd w i ∈ W.
+intros tyw tyi.
+rewrite W_eqn in tyw.
+apply Wsnd_typ_gen with (2:=tyw) (3:=tyi).
+apply W_typ.
+Qed.
+
 (** The primitive recursor *)
 
 Section PrimRecursor.
@@ -398,6 +551,214 @@ Hypothesis f_typ : forall x f recf,
   f ∈ (Π i ∈ B x, W) ->
   recf ∈ (Π i ∈ B x, P (cc_app f i)) -> 
   F x f recf ∈ P (Wsup x f).
+(*
+Definition Wrec_rel w y :=
+  forall Q, Proper (eq_set==>eq_set==>iff) Q ->
+  (forall x f recf,
+   x ∈ A ->
+   f ∈ (Π i ∈ B x, W) ->
+   is_cc_fun (B x) recf ->
+   (forall i, i ∈ B x -> Q (cc_app f i) (cc_app recf i)) -> 
+   Q (Wsup x f) (F x f recf)) -> 
+  Q w y.
+
+Instance Wrec_rel_morph : Proper (eq_set==>eq_set==>iff) Wrec_rel.
+do 3 red; intros.
+apply fa_morph; intros Q.
+apply fa_morph; intros Qm.
+apply fa_morph; intros.
+apply Qm; trivial.
+Qed.
+
+Lemma Wrec_rel_intro x f recf :
+  x ∈ A ->
+  f ∈ (Π i ∈ B x, W) ->
+  is_cc_fun (B x) recf ->
+  (forall i, i ∈ B x -> Wrec_rel (cc_app f i) (cc_app recf i)) ->
+  Wrec_rel (Wsup x f) (F x f recf).
+red; intros.
+apply H4; trivial.
+intros.
+apply H2; trivial.
+Qed.
+
+Lemma Wrec_rel_elim w y :
+  w ∈ W ->
+  Wrec_rel w y ->
+  exists2 x, x ∈ A &
+  exists2 f, f ∈ (Π i ∈ B x, W) /\ w == Wsup x f &
+  exists2 recf,
+   is_cc_fun (B x) recf &
+   y == F x f recf /\
+  (forall i, i ∈ B x -> Wrec_rel (cc_app f i) (cc_app recf i)).
+intros tyw inv.
+apply proj2 with (A:=Wrec_rel w y).
+pattern w, y.
+apply inv; intros.
+ do 3 red; intros.
+ apply and_iff_morphism.
+  rewrite H,H0; reflexivity.
+ apply ex2_morph; intros x'; auto with *.
+ apply ex2_morph; intros f'; auto with *.
+  rewrite H; reflexivity.
+ apply ex2_morph; intros recf; auto with *.
+ rewrite H0; reflexivity.
+
+ split.
+ apply Wrec_rel_intro; trivial.
+ intros.
+ apply H2; trivial.
+
+ exists x; trivial.
+ exists f; auto with *.
+ exists recf; trivial.
+ split; auto with *.
+ intros.
+ apply H2.
+ trivial.
+Qed.
+
+Lemma Wrec_rel_elim' x f y :
+  x ∈ A ->
+  f ∈ (Π i ∈ B x, W) ->
+  Wrec_rel (Wsup x f) y ->
+  exists2 recf,
+   is_cc_fun (B x) recf &
+   y == F x f recf /\
+  (forall i, i ∈ B x -> Wrec_rel (cc_app f i) (cc_app recf i)).
+intros.
+assert (tyw : Wsup x f ∈ W).
+ rewrite W_eqn; apply Wf_intro; trivial.
+apply Wrec_rel_elim in H1; trivial.
+destruct H1 as (x',tyx',(f',(tyf',eqw),(recf,tyrecf,(eqf,?)))).
+apply Wsup_inj in eqw; trivial.
+ destruct eqw.
+ exists recf.
+  rewrite H2; trivial.
+ split.
+  rewrite eqf.
+  apply Fm; auto with *.
+  rewrite cc_eta_eq with (1:=H0).
+  rewrite cc_eta_eq with (1:=tyf').
+  apply cc_lam_ext; auto with *.
+  red; intros.
+  rewrite <- H5.
+  rewrite <- H2 in H4.
+  rewrite H3; auto with *.
+
+  intros.
+  rewrite H3; auto with *.
+  rewrite H2 in H4; auto.
+
+    intros. 
+    apply W_typ.
+    apply cc_prod_elim with (1:=H0); trivial.
+
+    intros. 
+    apply W_typ.
+    apply cc_prod_elim with (1:=tyf'); trivial.
+Qed.
+
+Lemma Wrec_ex w :
+  w ∈ W -> uchoice_pred (Wrec_rel w).
+intros tyw.
+pattern w; apply W_ind; intros; trivial.
+ do 2 red; intros.
+ rewrite H; reflexivity.
+
+ split; intros.
+  rewrite <- H2; trivial.
+
+ pose (recf := λ i ∈ B x, uchoice (Wrec_rel (cc_app f i))).
+ split; intros.
+  exists (F x f recf); intros.
+  apply Wrec_rel_intro; intros; trivial.
+   apply is_cc_fun_lam.
+   do 2 red; intros.
+   apply uchoice_morph_raw.
+   red; intros.
+   rewrite H3,H4.
+   reflexivity.
+  unfold recf; rewrite cc_beta_eq; trivial.
+   apply uchoice_def; auto.
+
+   do 2 red; intros.
+   apply uchoice_morph_raw.
+   red; intros.
+   rewrite H4,H5.
+   reflexivity.
+
+   apply Wrec_rel_elim' in H2; trivial.
+   apply Wrec_rel_elim' in H3; trivial.
+   destruct H2 as (recf',tyrecf',(eqy,?)).
+   destruct H3 as (recf'',tyrecf'',(eqy',?)).
+   rewrite eqy,eqy'.
+   apply Fm; auto with *.
+   rewrite cc_eta_eq' with (1:=tyrecf').
+   rewrite cc_eta_eq' with (1:=tyrecf'').
+   apply cc_lam_ext; auto with *.
+   red; intros.
+   rewrite <- H5.
+   transitivity (uchoice (Wrec_rel (cc_app f x1))).
+    apply uchoice_ext; auto.
+    symmetry; apply uchoice_ext; auto.
+Qed.
+
+Definition WREC w := uchoice (Wrec_rel w).
+
+Lemma WREC_ok w :
+  w ∈ W ->
+  Wrec_rel w (WREC w).
+intros.
+unfold WREC.
+apply uchoice_def.
+apply Wrec_ex; trivial.
+Qed.
+
+Lemma WREC_eqn x f :
+  x ∈ A ->
+  f ∈ (Π i ∈ B x, W) ->
+  WREC (Wsup x f) == F x f (λ i ∈ B x, WREC (cc_app f i)).
+intros tya tyf.
+assert (Wrec_rel (Wsup x f) (WREC (Wsup x f))).  
+ apply WREC_ok.
+ rewrite W_eqn; apply Wf_intro; auto.
+apply Wrec_rel_elim' in H; trivial.
+destruct H as (recf,tyrecf,(eqf,?)).
+rewrite eqf.
+apply Fm; auto with *.
+rewrite cc_eta_eq' with (1:=tyrecf).
+apply cc_lam_ext; auto with *.
+red; intros.
+rewrite H1 in H0|-*.
+unfold WREC.
+apply uchoice_ext; auto.
+apply Wrec_ex.
+apply cc_prod_elim with (1:=tyf); trivial.
+Qed.
+
+Lemma WREC_typ w :
+  w ∈ W -> 
+  WREC w ∈ P w.
+intros tyw.
+pattern w; apply W_ind; intros; trivial.
+ do 2 red; intros.
+ unfold WREC.
+ rewrite H.
+ reflexivity.
+
+ rewrite WREC_eqn; trivial.
+ apply f_typ; trivial.
+ apply cc_prod_intro; intros; auto.
+  do 2 red; intros.
+  unfold WREC.
+  rewrite H3; reflexivity.
+
+  do 2 red; intros.
+  rewrite H3; reflexivity.
+Qed.
+*)
+(**)
 
 Definition Wrec_rel w y :=
   forall Q, Proper (eq_set==>eq_set==>iff) Q ->
@@ -579,7 +940,6 @@ pattern w; apply W_ind; intros; trivial.
     reflexivity.
 Qed.
 
-
 Definition WREC w := union (subset (P w) (Wrec_rel w)).
 
 Lemma WREC_ok w :
@@ -593,6 +953,18 @@ rewrite union_subset_singl with (y:=x)(y':=x); auto with *.
 intros.
 rewrite <- H2 with (1:=H5).
 rewrite <- H2 with (1:=H6).
+reflexivity.
+Qed.
+
+Lemma WREC_typ w :
+  w ∈ W -> 
+  WREC w ∈ P w.
+intros tyw.
+destruct Wrec_ex with (1:=tyw) as (y,tyy,(ydef,?)).
+unfold WREC.
+rewrite union_subset_singl with (y:=y)(y':=y); intros; auto with *.
+rewrite <- H with (1:=H2).
+rewrite <- H with (1:=H3).
 reflexivity.
 Qed.
 
@@ -910,19 +1282,23 @@ Section TransitiveRecursor.
 Variable P : set -> set.
 Hypothesis Pm : morph1 P.
 
-Variable F : set -> set -> set.
-Hypothesis Fm : Proper (eq_set==>eq_set==>eq_set) F.
+Variable F : set -> set -> set -> set.
+Hypothesis Fm : Proper (eq_set==>eq_set==>eq_set==>eq_set) F.
 Hypothesis f_typ : forall X x recf,
   X ⊆ W ->
   X ⊆ Wf X -> (* allow indirect subterms *)
   x ∈ Wf X ->
   recf ∈ (Π w ∈ X, P w) ->
-  F recf x ∈ P x.
-Hypothesis Firr : forall X recf recf',
+  F X recf x ∈ P x.
+Hypothesis Firr : forall X X' recf recf',
   X ⊆ W ->
   X ⊆ Wf X -> (* allow indirect subterms *)
-  (forall x, x ∈ X -> cc_app recf x == cc_app recf' x) ->
-  forall x, x ∈ Wf X -> F recf x == F recf' x.
+  X' ⊆ W ->
+  X' ⊆ Wf X' -> (* allow indirect subterms *)
+  recf ∈ (Π w ∈ X, P w) ->
+  recf' ∈ (Π w ∈ X', P w) ->
+  (forall x, x ∈ X -> x ∈ X' -> cc_app recf x == cc_app recf' x) ->
+  forall x, x ∈ Wf X -> x ∈ Wf X' -> F X recf x == F X' recf' x.
 
 Definition Wsrec_rel' w y :=
   forall Q, Proper (eq_set==>eq_set==>iff) Q ->
@@ -932,7 +1308,7 @@ Definition Wsrec_rel' w y :=
    x ∈ Wf X ->
    recf ∈ (Π w ∈ X, P w) ->
    (forall w, w ∈ X -> Q w (cc_app recf w)) -> 
-   Q x (F recf x)) -> 
+   Q x (F X recf x)) -> 
   Q w y.
 
 Instance Wsrec_rel_morph' : Proper (eq_set==>eq_set==>iff) Wsrec_rel'.
@@ -949,9 +1325,9 @@ Lemma Wsrec_rel_intro' X x recf :
   x ∈ Wf X ->
   recf ∈ (Π w ∈ X, P w) ->
   (forall w, w ∈ X -> Wsrec_rel' w (cc_app recf w)) -> 
-  Wsrec_rel' x (F recf x).
+  Wsrec_rel' x (F X recf x).
 red; intros.
-apply H5 with X; trivial.
+apply H5; trivial.
 intros.
 apply H3; trivial.
 Qed.
@@ -961,7 +1337,7 @@ Lemma Wsrec'_rel_elim w y :
   Wsrec_rel' w y ->
   exists2 X, X ⊆ W /\ X ⊆ Wf X /\ w ∈ Wf X &
   exists2 recf, recf ∈ (Π w ∈ X, P w) &
-    y == F recf w /\
+    y == F X recf w /\
     (forall w, w ∈ X -> Wsrec_rel' w (cc_app recf w)).
 intros tyw inv.
 apply proj2 with (A:=Wsrec_rel' w y).
@@ -976,7 +1352,7 @@ apply inv; intros.
   rewrite H,H0; reflexivity.
 
  split.
-  apply Wsrec_rel_intro' with X; trivial.
+  apply Wsrec_rel_intro'; trivial.
   intros.
   apply H3; trivial.
 
@@ -995,7 +1371,7 @@ Lemma Wsrec'_rel_elim' x f y :
   Wsrec_rel' (Wsup x f) y ->
   exists2 X, X ⊆ W /\ X ⊆ Wf X /\ f ∈ (Π i ∈ B x, X) &
   exists2 recf, recf ∈ (Π w ∈ X, P w) &
-    y == F recf (Wsup x f) /\
+    y == F X recf (Wsup x f) /\
    (forall w, w ∈ X -> Wsrec_rel' w (cc_app recf w)).
 intros.
 assert (tyw : Wsup x f ∈ W).
@@ -1028,6 +1404,98 @@ Qed.
 
 Definition fsub w :=
   subset W (fun w' => forall X, X ⊆ W -> X ⊆ Wf X -> w ∈ Wf X -> w' ∈ X).
+
+Definition fsub' w := singl w ∪ fsub w.
+
+Definition sub X :=
+  inter (subset (power W) (fun Y => Y ⊆ Wf Y /\ X ∩ W ⊆ Y)).
+
+Lemma sub_incl_W X : sub X ⊆ W.
+unfold sub.
+red; intros.
+apply inter_elim with (1:=H).
+apply subset_intro.
+ apply power_intro; auto.
+split.
+ rewrite <- W_eqn; reflexivity.
+ apply inter2_incl2.
+Qed.
+
+Lemma sub_trans X : sub X ⊆ Wf (sub X).
+red; intros.
+assert (zw := sub_incl_W _ _ H).
+rewrite W_eqn in zw.
+apply Wf_elim in zw.
+destruct zw as (x,tyx,(f,tyf,eqz)).
+rewrite eqz; apply Wf_intro; trivial.
+rewrite cc_eta_eq with (1:=tyf).
+apply cc_prod_intro; intros.
+ do 2 red; intros; apply cc_app_morph; auto with *.
+ auto with *.
+
+apply inter_intro; intros.
+assert (z ∈ y).
+ apply inter_elim with (1:=H); trivial.
+rewrite subset_ax in H1.
+destruct H1 as (yinclW,(y',eqy,(transy,incly))).
+rewrite <- eqy in transy,incly.
+apply transy in H2.
+rewrite eqz in H2.
+apply Wf_elim in H2.
+destruct H2 as (x',tyx',(f',tyf',eqw)).
+apply Wsup_inj in eqw; trivial.
+ destruct eqw as (eqx,eqf).
+ rewrite eqf; trivial.
+ apply cc_prod_elim with (1:=tyf').
+ rewrite <- eqx; trivial.
+
+ intros.
+ apply W_typ.
+ apply cc_prod_elim with (1:=tyf); trivial.
+
+ intros.
+ apply W_typ.
+ apply power_elim with (1:=yinclW).
+ apply cc_prod_elim with (1:=tyf'); trivial.
+
+exists W; apply subset_intro.
+ apply power_intro; auto.
+split.
+ rewrite <- W_eqn; reflexivity.
+ apply inter2_incl2.
+Qed.
+
+Lemma sub_compl X : X ∩ W ⊆ sub X.
+red; intros.
+apply inter_intro.
+ intros.
+rewrite subset_ax in H0.
+destruct H0 as (yinclW,(y',eqy,(transy,incly))).
+rewrite <- eqy in transy,incly.
+auto.
+
+exists W; apply subset_intro.
+ apply power_intro; auto.
+split.
+ rewrite <- W_eqn; reflexivity.
+ apply inter2_incl2.
+Qed.
+
+Lemma sub_proj X : X ⊆ W -> X ⊆ Wf X -> sub X == X.
+intros XinclW Xtrans.
+apply incl_eq.
+ red; intros.
+ apply inter_elim with (1:=H). 
+ apply subset_intro.
+  apply power_intro; auto with *.
+
+  split; trivial.
+  apply inter2_incl1.
+
+ transitivity (X ∩ W).
+  apply inter2_incl; auto with *.
+  apply sub_compl.
+Qed.
 
 Instance fsub_morph : morph1 fsub.
 do 2 red; intros.
@@ -1131,6 +1599,7 @@ apply cc_prod_intro; intros.
 apply fsub_intro' with x; trivial.
 rewrite <- eqw; trivial.
 Qed.
+
 
 Lemma fsub_elim' w x f :
   x ∈ A ->
@@ -1250,8 +1719,8 @@ pattern w; apply W_ind; intros; trivial.
    apply Wf_intro; trivial.
 
  destruct H2.
-  exists (F recf w').
-   apply f_typ with X; trivial.
+  exists (F X recf w').
+   apply f_typ; trivial.
   split; intros.
   apply Wsrec_rel_intro' with (X:=X); intros; trivial.
   assert (tyw0 := H3).
@@ -1274,11 +1743,11 @@ pattern w; apply W_ind; intros; trivial.
   apply Wsrec'_rel_elim in H3; trivial.
    destruct H3 as (X',(X'inclW,(X'trans,tyf')),(recf',tyrecf',(eqy,?))).
    rewrite eqy.
-   apply Firr with X; trivial.
+   apply Firr; trivial.
    intros.
-   assert (x0 ∈ X').
+(*   assert (x0 ∈ X').
     apply fsub_elim with (y:=w'); trivial.
-    rewrite <- H2; trivial.
+    rewrite <- H2; trivial.*)
    unfold recf; rewrite cc_beta_eq; trivial.
     apply union_subset_singl with (y':=cc_app recf' x0); intros; auto with *.
      apply cc_prod_elim with (1:=tyrecf'); trivial.
@@ -1308,6 +1777,14 @@ Qed.
 
 Definition WSREC' w := union (subset (P w) (Wsrec_rel' w)).
 
+Instance WSREC'_morph : morph1 WSREC'.
+do 2 red; intros.
+apply union_morph; apply subset_morph.
+ rewrite H; reflexivity.
+red; intros.
+rewrite H; reflexivity.
+Qed.
+
 Lemma Wsrec_ex2 w :
   w ∈ W ->
   exists2 y, y ∈ P w & Wsrec_rel' w y /\ (forall y', Wsrec_rel' w y' -> y==y').
@@ -1329,37 +1806,65 @@ rewrite <- H2 with (1:=H6).
 reflexivity.
 Qed.
 
-Lemma WSREC_eqn' x f :
-  x ∈ A ->
-  f ∈ (Π i ∈ B x, W) ->
-  WSREC' (Wsup x f) == F (λ w ∈ W, WSREC' w) (Wsup x f).
-intros tya tyf.
-assert (Wsrec_rel' (Wsup x f) (WSREC' (Wsup x f))).  
- apply WSREC_ok'.
- rewrite W_eqn; apply Wf_intro; auto.
-apply Wsrec'_rel_elim' in H; trivial.
+Lemma WSREC_typ' w :
+  w ∈ W -> 
+  WSREC' w ∈ P w.
+intros tyw.
+destruct Wsrec_ex2 with (1:=tyw) as (y,tyy,(ydef,?)).
+unfold WSREC'.
+rewrite union_subset_singl with (y:=y)(y':=y); intros; auto with *.
+rewrite <- H with (1:=H2).
+rewrite <- H with (1:=H3).
+reflexivity.
+Qed.
+
+Lemma WSREC_eqn' w :
+  w ∈ W ->
+  WSREC' w == F W (λ w ∈ W, WSREC' w) w.
+intros tyw.
+assert (Wsrec_rel' w (WSREC' w)).  
+ apply WSREC_ok'; trivial.
+apply Wsrec'_rel_elim in H; trivial.
 destruct H as (X,(XinclW,(Xtrans,tyf')),(recf,tyrecf,(eqf,?))).
 rewrite eqf.
-apply Firr with X; auto with *.
-2:apply Wf_intro; trivial.
-intros.
-rewrite cc_beta_eq; auto.
- symmetry.
- apply union_subset_singl with (y':=cc_app recf x0); auto with *.
-  apply cc_prod_elim with (1:=tyrecf); trivial.
+apply Firr; auto with *.
+ rewrite <- W_eqn; reflexivity.
 
-  intros.
-  destruct Wsrec_ex2 with (w:=x0); auto.
-  destruct H6.
-  rewrite <- H7 with (1:=H3).
-  rewrite <- H7 with (1:=H4).
-  reflexivity.
+ apply cc_prod_intro; intros.
+  do 2 red; intros.
+  apply WSREC'_morph; trivial.
 
- do 2 red; intros.
-     apply union_morph; apply subset_morph.
-      rewrite H2; reflexivity.
-     red; intros.
-     rewrite H2; reflexivity.
+  do 2 red; intros; apply Pm; trivial.
+
+  apply WSREC_typ'; trivial.
+
+ intros.
+ rewrite cc_beta_eq; auto.
+  symmetry.
+  apply union_subset_singl with (y':=cc_app recf x); auto with *.
+   apply cc_prod_elim with (1:=tyrecf); trivial.
+
+   intros.
+   destruct Wsrec_ex2 with (w:=x); auto.
+   destruct H7.
+   rewrite <- H8 with (1:=H4).
+   rewrite <- H8 with (1:=H5).
+   reflexivity.
+
+  do 2 red; intros.
+  apply WSREC'_morph; trivial.
+
+ rewrite <- W_eqn; trivial.
+Qed.
+
+
+Lemma WSREC_eqn2' x f :
+  x ∈ A ->
+  f ∈ (Π i ∈ B x, W) ->
+  WSREC' (Wsup x f) == F W (λ w ∈ W, WSREC' w) (Wsup x f).
+intros tya tyf.
+apply WSREC_eqn'.
+rewrite W_eqn; apply Wf_intro; auto.
 Qed.
 
 End TransitiveRecursor.
@@ -1395,24 +1900,6 @@ End W_Univ.
 
 End W_theory.
 
-Instance Wsup_morph_gen : Proper ((eq_set==>eq_set)==>eq_set==>eq_set==>eq_set) Wsup.
-do 4 red; intros.
-unfold Wsup.
-apply union2_morph.
- rewrite H0; reflexivity.
-
- apply sup_morph.
- apply H; rewrite H0; reflexivity.
- red; intros.
- apply replf_morph_raw.
-  apply subset_morph.
-  rewrite H1,H3; reflexivity.
-  red; intros.
-  reflexivity.
- red; intros.
- rewrite H3,H4; reflexivity.
-Qed.
-
 Instance Wf_morph_gen :
   Proper (eq_set==>(eq_set==>eq_set)==>eq_set==>eq_set) Wf.
 do 4 red; intros.
@@ -1424,7 +1911,7 @@ apply replf_morph_raw.
  red; intros; trivial.
 
  red; intros.
- apply Wsup_morph_gen; trivial.
+ apply Wsup_morph; trivial.
 Qed.
 
 Instance Wdom_morph : Proper (eq_set==>(eq_set==>eq_set)==>eq_set) Wdom.
@@ -1437,7 +1924,20 @@ red; intros.
 auto.
 Qed.
 
-Lemma W_morph : Proper (eq_set==>(eq_set==>eq_set)==>eq_set) W.
+Instance Wcase_morph_gen :
+  Proper ((eq_set==>eq_set)==>(eq_set==>eq_set==>eq_set)==>eq_set==>eq_set) Wcase.
+do 4 red; intros.
+unfold Wcase.
+apply H0.
+ rewrite H1; reflexivity.
+
+ apply cc_lam_ext.
+  apply H; rewrite H1; reflexivity.
+ red; intros.
+ rewrite H1,H3; reflexivity.
+Qed.
+
+Instance W_morph : Proper (eq_set==>(eq_set==>eq_set)==>eq_set) W.
 do 3 red; intros.
 unfold W.
  unfold FIX.
@@ -1456,8 +1956,7 @@ apply incl_set_morph; auto with *.
 apply Wf_morph_gen; auto with *.
 Qed.
 
-
-Lemma WREC_morph_gen :
+Instance WREC_morph_gen :
   Proper (eq_set==>(eq_set==>eq_set)==>(eq_set==>eq_set)==>(eq_set==>eq_set==>eq_set==>eq_set)==>eq_set==>eq_set) WREC.
 do 6 red; intros.
 unfold WREC.
@@ -1490,14 +1989,13 @@ apply impl_morph; intros.
   apply impl_morph; intros.
    apply in_set_morph; auto with *.
   reflexivity.
- rewrite H0.
  apply Qm; auto with *.
  apply H2; auto with *.
 
  apply Qm; auto with *.
 Qed.
 
-Lemma WSREC_morph_gen :
+Instance WSREC_morph_gen :
   Proper (eq_set==>(eq_set==>eq_set)==>(eq_set==>eq_set)==>(eq_set==>eq_set==>eq_set)==>eq_set==>eq_set) WSREC.
 do 6 red; intros.
 unfold WSREC.
@@ -1528,8 +2026,9 @@ apply impl_morph; intros.
  apply Qm; auto with *.
 Qed.
 
-Lemma WSREC'_morph_gen :
-  Proper (eq_set==>(eq_set==>eq_set)==>(eq_set==>eq_set)==>(eq_set==>eq_set==>eq_set)==>eq_set==>eq_set) WSREC'.
+Instance WSREC'_morph_gen :
+  Proper (eq_set==>(eq_set==>eq_set)==>(eq_set==>eq_set)==>(eq_set==>eq_set==>eq_set==>eq_set)==>eq_set==>eq_set)
+  WSREC'.
 do 6 red; intros.
 unfold WSREC'.
 apply union_morph.
@@ -1560,5 +2059,104 @@ apply impl_morph; intros.
  apply Qm; auto with *.
  apply H2; auto with *.
 
+ apply Qm; auto with *.
+Qed.
+
+Instance sub_morph : Proper (eq_set==>(eq_set==>eq_set)==>eq_set==>eq_set) sub.
+do 4 red; intros.
+unfold sub.
+apply inter_morph.
+apply subset_morph.
+ apply power_morph.
+ apply W_morph; trivial.
+
+ red; intros.
+ rewrite (W_morph _ _ H _ _ H0).
+ rewrite (Wf_morph_gen _ _ H _ _ H0 _ _ (reflexivity _)).
+ rewrite H1; reflexivity.
+Qed.
+
+Lemma Wf_ext A A' B B' X X' :
+  A == A' ->
+  eq_fun A B B' ->
+  X == X' ->
+  Wf A B X == Wf A' B' X'.
+intros; unfold Wf.
+apply sup_morph; auto with *.
+red; intros.
+apply replf_morph_raw.
+ apply cc_prod_ext; auto with *.
+
+ red; trivial.
+
+ red; intros.
+ apply Wsup_morph; trivial.
+Qed.
+
+Lemma Wdom_ext A A' B B' :
+  A == A' ->
+  eq_fun A B B' ->
+  Wdom A B == Wdom A' B'.
+intros; unfold Wdom.
+apply rel_morph; trivial.
+apply ZFlist.List_morph.
+apply sup_morph; auto with *.
+Qed.
+ 
+Lemma W_ext A A' B B' :
+  A == A' ->
+  eq_fun A B B' ->
+  W A B == W A' B'.
+unfold W; intros.
+apply FIX_morph_gen.
+ apply incl_set_morph.
+
+ apply inter_morph.
+
+ apply Wdom_ext; trivial.
+
+ apply power_morph.
+ apply Wdom_ext; trivial.
+
+ red; intros.
+ apply Wf_ext; trivial.
+Qed.
+
+
+Lemma WSREC'_ext A A' B B' U U' F F' :
+  A == A' ->
+  eq_fun A B B' ->
+  eq_fun (W A B) U U' ->
+  (forall X recf x, X ⊆ W A B -> X ⊆ Wf A B X -> recf ∈ (Π w ∈ X, U w) -> x ∈ Wf A B X ->
+   F X recf x == F' X recf x) ->
+  eq_fun (W A B) (WSREC' A B U F) (WSREC' A' B' U' F').
+red; intros.
+unfold WSREC'.
+apply union_morph.
+apply subset_morph; auto.
+red; intros.
+unfold Wsrec_rel'.
+apply fa_morph; intros Q.
+apply fa_morph; intros Qm.
+apply impl_morph; intros.
+ apply fa_morph; intros X.
+ apply fa_morph; intros w.
+ apply fa_morph; intros recf.
+ apply impl_morph; intros.
+  apply incl_set_morph; auto with *.
+  apply W_ext; trivial.
+ apply impl_morph; intros.
+  apply incl_set_morph; auto with *.
+  apply Wf_ext; auto with *.
+ apply impl_morph; intros.
+  apply in_set_morph; auto with *.
+  apply Wf_ext; auto with *.
+ apply impl_morph; intros.
+  apply in_set_morph; auto with *.
+  apply cc_prod_ext; auto with *.
+  red; intros; auto with *.
+ apply impl_morph; intros.
+  reflexivity.
+ apply Qm; auto with *.
  apply Qm; auto with *.
 Qed.
