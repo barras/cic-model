@@ -2,7 +2,7 @@
     ZF + infinitely many Grothendieck universes.
 *)
 
-Require Import List Bool Models.
+Require Import List Bool Models TypModels.
 Require Import ZF ZFsum ZFnats ZFrelations ZFord ZFfix ZFgrothendieck ZFcoc ZFecc.
 Require Import ModelZF.
 
@@ -31,7 +31,9 @@ Qed.
     of ECC.
  *)
 
-Module WithFinitistUniverse.
+Module Type ECC := ECC_Rules BuildModel.
+
+Module WithFinitistUniverse <: ECC.
 
 Definition type (n:nat) := cst (ecc n).
 
@@ -79,6 +81,8 @@ apply G_cc_prod.
  apply vcons_add_var; auto.
 Qed.
 
+Definition sub_typ_covariant := sub_typ_covariant.
+
 End WithFinitistUniverse.
 
 
@@ -86,7 +90,7 @@ End WithFinitistUniverse.
     hence nat can be in type 0.
  *)
 
-Module WithoutFinitistUniverse.
+Module WithoutFinitistUniverse <: ECC.
 
 Definition type (n:nat) := cst (ecc (S n)).
 
@@ -146,6 +150,8 @@ apply G_cc_prod.
  apply ty_U.
  apply vcons_add_var; auto.
 Qed.
+
+Definition sub_typ_covariant := sub_typ_covariant.
 
 End WithoutFinitistUniverse.
 

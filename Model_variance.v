@@ -7,15 +7,7 @@ Import T J R.
 
 (********************************************************************************)
 (** Occurrences *)
-
-Module Beq.
-Definition t := bool.
-Definition eq := @eq bool.
-Definition eq_equiv : Equivalence eq := eq_equivalence.
-Existing Instance eq_equiv.
-End Beq.
-Module B := VarMap.Make(Beq).
-
+Module B := VarMap.Bool.
 
   (* Non-occurrence : interp do not depend on variables in set [f] *)
   Definition noccur (f:B.map) (T:term) : Prop :=

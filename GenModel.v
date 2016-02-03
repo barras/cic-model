@@ -1,11 +1,11 @@
 
 Require Import basic.
-Require Import Models List.
+Require Import Models TypModels List.
 
 (** A general model construction of a model of CC given an
     abstract model. *)
 
-Module MakeModel(M : CC_Model).
+Module MakeModel(M : CC_Model) <: Judge.
 Import M.
 
 Lemma eq_fun_sym : forall x f1 f2, eq_fun x f1 f2 -> eq_fun x f2 f1.
@@ -635,6 +635,7 @@ Qed.
 
 End T.
 Import T.
+Definition sub:=T.sub.
 
 (** * Environments *)
 Definition env := list term.

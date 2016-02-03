@@ -140,6 +140,9 @@ do 2 red; intros.
 rewrite H0; reflexivity.
 Qed.
 
+(*********************************)
+(* Iterated operator *)
+
 Definition rWi o := tiSAT WF rW o.
 
 Instance rWi_morph :

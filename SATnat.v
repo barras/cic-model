@@ -1,7 +1,7 @@
 (** Saturated sets constructions related to natural numbers: interpreting constructors,
     dependent pattern-matching and fixpoint. Does not support size annotations.
 
-    It uses the representation of natural numbers of ZFnats, which cimplifies things since N contains
+    It uses the representation of natural numbers of ZFnats, which simplifies things since N contains
     the empty set.
  *)
 

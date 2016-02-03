@@ -7,9 +7,11 @@ Import SN_CC_Real.SN_CC_Model SN_CC_Real.SN SN_ECC_Real.
 (********************************************************************************)
 (** Occurrences *)
 
+Module B := VarMap.Bool.
+
 
   (* Non-occurrence : interp do not depend on variables in set [f] *)
-  Definition noccur (f:nat->bool) (T:trm) : Prop :=
+  Definition noccur (f:B.map) (T:trm) : Prop :=
     forall i i',
     (forall n, if f n then True else i n == i' n) ->
     int T i == int T i'.
@@ -39,14 +41,6 @@ Qed.
 
 (********************************************************************************)
 (** Judgements with variance *)
-
-Module Beq.
-Definition t := bool.
-Definition eq := @eq bool.
-Definition eq_equiv : Equivalence eq := eq_equivalence.
-Existing Instance eq_equiv.
-End Beq.
-Module B := VarMap.Make(Beq).
 
 Module OTeq.
 Definition t := option trm.

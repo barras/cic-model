@@ -192,69 +192,6 @@ apply Real_sum_case with (1:=xty) (2:=xsat); auto.
  trivial.
 Qed.
 
-(*
-Definition guard_sum m :=
-  Abs (App2 (App2 (Ref 0) (Abs (lift 2 m)) (Abs (lift 2 m))) (lift 1 m) (Ref 0)).
-
-(** (G m n) reduces to (m m n) when n is a constructor. Note that
-    n need not be closed. *)
-Lemma G_sim : forall m n,
-  (exists t c, (c=0\/c=1) /\ n = Abs (Abs (App (Ref c) t))) ->
-  redp (App (guard_sum m) n) (App2 m m n).
-intros m n (t,(c,(eqc,eqn))).
-unfold guard_sum.
-eapply t_trans.
- apply t_step.
- apply beta.
-unfold subst; simpl.
-repeat rewrite simpl_subst; auto.
-repeat rewrite lift0.
-apply redp_app_l.
-apply redp_app_l.
-rewrite eqn.
-eapply t_trans.
- apply t_step.
- apply app_red_l.
- apply beta.
-destruct eqc; subst c.
- unfold subst; simpl.
- eapply t_trans.
-  apply t_step.
-  apply beta.
- unfold subst; simpl.
- rewrite lift0.
- apply t_step.
- apply red1_beta.
- unfold subst; rewrite simpl_subst; auto.
- rewrite lift0; trivial.
-
- unfold subst; simpl.
- eapply t_trans.
-  apply t_step.
-  apply beta.
- unfold subst; simpl; rewrite simpl_subst_rec; auto.
- rewrite lift_rec0.
- apply t_step.
- apply red1_beta.
- unfold subst; rewrite simpl_subst; auto.
- rewrite lift0; trivial.
-Qed.
-
-Lemma G_INL m a :
-  redp (App (guard_sum m) (INL a)) (App2 m m (INL a)).
-apply G_sim.
-econstructor; exists 1; split; auto.
-reflexivity.
-Qed.
-Lemma G_INR m a :
-  redp (App (guard_sum m) (INR a)) (App2 m m (INR a)).
-apply G_sim.
-econstructor; exists 0; split; auto.
-reflexivity.
-Qed.
-*)
-
-
 
 (** * Sigma-types *)
 

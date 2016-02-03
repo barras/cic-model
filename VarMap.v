@@ -160,3 +160,13 @@ Qed.
 
 End Make.
 
+(*** Instances *)
+
+(** Bool *)
+Module Beq.
+Definition t := bool.
+Definition eq := @eq bool.
+Definition eq_equiv : Equivalence eq := eq_equivalence.
+Existing Instance eq_equiv.
+End Beq.
+Module Bool := VarMap.Make(Beq).
