@@ -95,6 +95,7 @@ Record fenv := {
   ords : B.map; (* variables denoting ordinals *)
   fixs : OT.map (* variables denoting recursive functions with their domain *)
 }.
+Definition fenv_ := fenv.
 
 Definition tinj e :=
   Build_fenv e (B.nil false) (OT.nil None).

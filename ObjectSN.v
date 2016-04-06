@@ -281,6 +281,88 @@ split; red; intros.
  rewrite H; reflexivity.
 Qed.
 
+Definition subst_rec (arg:trm) (m:nat) (t:trm) : trm.
+(*begin show*)
+destruct t as [body|]; [left|right].
+exists (fun i => iint body (V.lams m (V.cons (int arg (V.shift m i))) i))
+       (fun j => itm body (I.lams m (I.cons (tm arg (I.shift m j))) j)).
+(*end show*)
+ do 2 red; intros.
+ rewrite H; reflexivity.
+(**)
+ do 2 red; intros.
+ rewrite H; reflexivity.
+(**)
+ red; intros.
+ rewrite <- itm_lift.
+ apply itm_morph; do 2 red; intros.
+ unfold I.lams.
+ destruct (le_gt_dec m a); trivial.
+ destruct (a-m); simpl; auto.
+ rewrite <- tm_liftable.
+ reflexivity.
+(**)
+ red; intros.
+ rewrite <- itm_subst.
+ apply itm_morph; do 2 red; intros.
+ unfold I.lams.
+ destruct (le_gt_dec m a); trivial.
+ destruct (a-m); simpl; auto.
+ rewrite <- tm_substitutive.
+ reflexivity.
+Defined.
+
+Instance subst_rec_morph :
+  Proper (eq_trm ==> eq ==> eq_trm ==> eq_trm) subst_rec.
+do 4 red; intros.
+subst y0; rename x0 into k.
+destruct x1; destruct y1; try contradiction; try exact I.
+red; simpl.
+destruct H1.
+split; red; intros.
+ apply H0.
+ rewrite H; rewrite H2; reflexivity.
+
+ apply H1.
+ rewrite H; rewrite H2; reflexivity.
+Qed.
+
+Lemma int_subst_rec_eq : forall arg k T i,
+  int (subst_rec arg k T) i == int T (V.lams k (V.cons (int arg (V.shift k i))) i).
+intros; destruct T as [T|]; simpl; reflexivity.
+Qed.
+
+Definition subst arg := subst_rec arg 0.
+
+Lemma int_subst_eq : forall N M i,
+ int M (V.cons (int N i) i) == int (subst N M) i.
+destruct M as [M|]; simpl; intros.
+2:reflexivity.
+rewrite V.lams0.
+rewrite V.shift0.
+reflexivity.
+Qed.
+
+Lemma tm_subst_rec_eq : forall arg k T j,
+  tm (subst_rec arg k T) j = tm T (I.lams k (I.cons (tm arg (I.shift k j))) j).
+intros; destruct T; simpl; reflexivity.
+Qed.
+
+Lemma tm_subst_eq : forall u v j,
+  tm (subst u v) j = Lc.subst (tm u j) (tm v (Lc.ilift j)).
+intros.
+unfold Lc.subst; rewrite <- tm_substitutive.
+destruct v as [v|]; simpl; trivial.
+rewrite I.lams0.
+rewrite I.shift0.
+apply itm_morph.
+apply I.cons_ext; simpl.
+ rewrite Lc.lift0; trivial.
+
+ do 2 red; unfold I.shift; simpl; intros.
+ rewrite Lc.simpl_subst; trivial; rewrite Lc.lift0; trivial.
+Qed.
+
 (** Pseudo-term constructors *)
 
 Definition cst (x:X) (t:Lc.term)
@@ -293,6 +375,10 @@ left; exists (fun _ => x) (fun _ => t); trivial.
 Defined.
 
 Definition kind : trm := None.
+
+Lemma kind_dec (T:trm) : {T=kind}+{T<>kind}.
+destruct T;[right;discriminate|left;reflexivity].
+Qed.
 
 Definition prop : trm :=
   @cst props (Lc.K) (fun _ _ => eq_refl _) (fun _ _ _ => eq_refl _).
@@ -384,88 +470,6 @@ Defined.
 Lemma intProd_eq i A B :
   int (Prod A B) i = prod (int A i) (fun x => int B (V.cons x i)).
 reflexivity.
-Qed.
-
-Definition subst_rec (arg:trm) (m:nat) (t:trm) : trm.
-(*begin show*)
-destruct t as [body|]; [left|right].
-exists (fun i => iint body (V.lams m (V.cons (int arg (V.shift m i))) i))
-       (fun j => itm body (I.lams m (I.cons (tm arg (I.shift m j))) j)).
-(*end show*)
- do 2 red; intros.
- rewrite H; reflexivity.
-(**)
- do 2 red; intros.
- rewrite H; reflexivity.
-(**)
- red; intros.
- rewrite <- itm_lift.
- apply itm_morph; do 2 red; intros.
- unfold I.lams.
- destruct (le_gt_dec m a); trivial.
- destruct (a-m); simpl; auto.
- rewrite <- tm_liftable.
- reflexivity.
-(**)
- red; intros.
- rewrite <- itm_subst.
- apply itm_morph; do 2 red; intros.
- unfold I.lams.
- destruct (le_gt_dec m a); trivial.
- destruct (a-m); simpl; auto.
- rewrite <- tm_substitutive.
- reflexivity.
-Defined.
-
-Instance subst_rec_morph :
-  Proper (eq_trm ==> eq ==> eq_trm ==> eq_trm) subst_rec.
-do 4 red; intros.
-subst y0; rename x0 into k.
-destruct x1; destruct y1; try contradiction; try exact I.
-red; simpl.
-destruct H1.
-split; red; intros.
- apply H0.
- rewrite H; rewrite H2; reflexivity.
-
- apply H1.
- rewrite H; rewrite H2; reflexivity.
-Qed.
-
-Lemma int_subst_rec_eq : forall arg k T i,
-  int (subst_rec arg k T) i == int T (V.lams k (V.cons (int arg (V.shift k i))) i).
-intros; destruct T as [T|]; simpl; reflexivity.
-Qed.
-
-Definition subst arg := subst_rec arg 0.
-
-Lemma int_subst_eq : forall N M i,
- int M (V.cons (int N i) i) == int (subst N M) i.
-destruct M as [M|]; simpl; intros.
-2:reflexivity.
-rewrite V.lams0.
-rewrite V.shift0.
-reflexivity.
-Qed.
-
-Lemma tm_subst_rec_eq : forall arg k T j,
-  tm (subst_rec arg k T) j = tm T (I.lams k (I.cons (tm arg (I.shift k j))) j).
-intros; destruct T; simpl; reflexivity.
-Qed.
-
-Lemma tm_subst_eq : forall u v j,
-  tm (subst u v) j = Lc.subst (tm u j) (tm v (Lc.ilift j)).
-intros.
-unfold Lc.subst; rewrite <- tm_substitutive.
-destruct v as [v|]; simpl; trivial.
-rewrite I.lams0.
-rewrite I.shift0.
-apply itm_morph.
-apply I.cons_ext; simpl.
- rewrite Lc.lift0; trivial.
-
- do 2 red; unfold I.shift; simpl; intros.
- rewrite Lc.simpl_subst; trivial; rewrite Lc.lift0; trivial.
 Qed.
 
 Instance App_morph : Proper (eq_trm ==> eq_trm ==> eq_trm) App.

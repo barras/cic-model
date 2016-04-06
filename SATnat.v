@@ -1,8 +1,7 @@
 (** Saturated sets constructions related to natural numbers: interpreting constructors,
     dependent pattern-matching and fixpoint. Does not support size annotations.
 
-    It uses the representation of natural numbers of ZFnats, which simplifies things since N contains
-    the empty set.
+    It uses the representation of natural numbers of ZFind_nat.
  *)
 
 Set Implicit Arguments.
@@ -174,6 +173,14 @@ split.
     apply cNAT_post; trivial.
 
   intros t'; rewrite condSAT_ok; auto.
+Qed.
+
+Lemma cNAT'_pre : forall k, k ∈ cc_bot NAT' -> inclSAT (cNAT k) (fNAT cNAT k).
+intros.
+apply cc_bot_ax in H.
+destruct H;[|apply cNAT_pre; trivial].
+rewrite H.
+apply cNAT_mt.
 Qed.
 
 (** Fixpoint equation *)
@@ -363,6 +370,52 @@ apply t_step; apply red1_beta.
 unfold subst; simpl.
 rewrite lift0; reflexivity.
 Qed.
+Lemma WHEN_NAT_sat x n t S :
+  x ∈ cc_bot NAT' ->
+  inSAT n (cNAT x) ->
+  inSAT t S ->
+  inSAT (Lc.App2 WHEN_NAT n t) S.
+intros tyx satn satt.
+unfold WHEN_NAT.
+apply prodSAT_elim with S; trivial.
+apply prodSAT_elim with (cNAT x); trivial.
+clear n satn.
+apply prodSAT_intro; intros n satn.
+unfold Lc.subst; simpl.
+rewrite Lc.lift0.
+apply cNAT'_pre in satn; trivial.
+eapply (proj1 (fNAT_def _ _ _) satn) with (P:=fun _ => prodSAT S S).
+ do 2 red; reflexivity.
+
+ apply prodSAT_intro; intros.
+ unfold Lc.subst; simpl; rewrite Lc.lift0; trivial.
+
+ apply depSAT_intro'.
+  exists empty; auto.
+ intros ? _.
+ apply prodSAT_intro; intros.
+ unfold Lc.subst; simpl.
+ apply prodSAT_intro; intros.
+ unfold Lc.subst; simpl.
+ apply prodSAT_intro; intros.
+ unfold Lc.subst; simpl; rewrite Lc.lift0; trivial.
+Qed.
+Lemma WHEN_NAT_neutral t :
+  (forall S, inSAT t S) ->
+  forall S, inSAT (Lc.App WHEN_NAT t) S.
+intros.
+apply inSAT_exp; auto.
+unfold Lc.subst; simpl.
+rewrite Lc.lift0.
+apply prodSAT_elim with snSAT.
+ apply prodSAT_elim with snSAT; trivial.
+ apply snSAT_intro.
+ apply sn_abs; apply sn_var.
+
+ apply snSAT_intro.
+ repeat apply sn_abs; apply sn_var.
+Qed.
+
 
 
 (* More complicated def in fNAT, but simpler proofs:

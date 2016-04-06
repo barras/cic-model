@@ -508,33 +508,6 @@ apply redp_app_l.
 apply H.
 Qed.
   
-Lemma GUARD_neutral G m t S :
-  sn m ->
-  inSAT (App G t) (interSAT(fun S=>S)) ->
-  inSAT (App2 (GUARD G) m t) S.
-unfold GUARD; intros.
-apply snSAT_intro in H.
-eapply inSAT_context.
- intros.
- apply inSAT_exp; [simpl;auto|].
- unfold subst; simpl.
- rewrite simpl_subst; auto.
- exact H1.
-apply inSAT_exp.
- left; simpl.
- rewrite Bool.orb_true_r; trivial.
-unfold subst; simpl.
-rewrite !simpl_subst; trivial.
-rewrite !lift0.
-apply prodSAT_elim with snSAT.
-apply prodSAT_elim with (2:=H).
-apply prodSAT_elim with (2:=H).
-apply interSAT_elim with (1:=H0).
-apply snSAT_intro.
-apply sat_sn in H0.
-apply subterm_sn with (1:=H0); auto.
-Qed.
-
 Lemma GUARD_sat G m t S :
   inSAT (App2 (App2 G t m) m t) S ->
   inSAT (App2 (GUARD G) m t) S.
@@ -552,6 +525,21 @@ repeat rewrite lift0.
 trivial.
 Qed.
 
+Lemma GUARD_neutral G m t S :
+  sn m ->
+  inSAT (App G t) (interSAT(fun S=>S)) ->
+  inSAT (App2 (GUARD G) m t) S.
+intros.
+apply GUARD_sat.
+apply snSAT_intro in H.
+apply prodSAT_elim with snSAT.
+ apply prodSAT_elim with (2:=H).
+ apply prodSAT_elim with (2:=H).
+ apply interSAT_elim with (1:=H0).
+apply snSAT_intro.
+apply sat_sn in H0.
+apply subterm_sn with (1:=H0); auto.
+Qed.
 
 
 Definition guard_sum := GUARD WHEN_SUM.
@@ -640,6 +628,67 @@ exact satm.
 Qed.
 
 Require Import ZFord.
+(*
+Lemma FIXP_neutral G m t S A B C:
+  (exists w, w ∈ A) ->
+  (forall t, inSAT t (piSAT0 (fun x => x ∈ A) B C) -> sn (App m t)) ->
+  (forall S, inSAT G (piSAT0 (fun x => x ∈ A) B (fun _ => prodSAT S S))) ->
+  inSAT (App G t) (interSAT (fun S => S)) ->
+  inSAT (App (FIXP G m) t) S.
+intros Awit msat Gsat Gneutr.
+apply GUARD_neutral; trivial.
+eapply sat_sn with (prodSAT (interSAT(fun S=>S)) _).
+apply prodSAT_intro; intros.
+unfold subst, subst_rec; fold subst_rec.
+rewrite !simpl_subst, !lift0; auto.
+simpl.
+apply snSAT_intro.
+apply msat.
+apply piSAT0_intro'; intros; trivial.
+apply GUARD_sat.
+apply prodSAT_elim with (2:=H1).
+apply prodSAT_elim with (2:=H).
+unfold piSAT0 in Gsat.
+unfold depSAT in Gsat.
+eapply piSAT0_elim' in Gsat.
+red in Gsat; specialize Gsat with (1:=H0) (2:=H1).
+apply prodSAT_elim with (2:=H).
+exact Gsat.
+eapply Gsat.
+
+apply Gsat with (2:=H1); trivial.
+apply interSAT_elim with (1:=H).
+Qed.
+*)
+
+Lemma FIXP_neutral G m t S A B C:
+  (exists w, w ∈ A) ->
+  (forall t, inSAT t (piSAT0 (fun x => x ∈ A) B C) -> sn (App m t)) ->
+  (forall x n t S,
+   x ∈ A ->
+   inSAT n (B x) -> inSAT t S -> inSAT (App2 G n t) S) ->
+  inSAT (App G t) (interSAT (fun S => S)) ->
+  inSAT (App (FIXP G m) t) S.
+intros Awit msat Gsat Gneutr.
+apply GUARD_neutral; trivial.
+eapply sat_sn with (prodSAT (interSAT(fun S=>S)) _).
+apply prodSAT_intro; intros.
+unfold subst, subst_rec; fold subst_rec.
+rewrite !simpl_subst, !lift0; auto.
+simpl.
+apply snSAT_intro.
+apply msat.
+apply piSAT0_intro'; intros; trivial.
+apply GUARD_sat.
+apply prodSAT_elim with (2:=H1).
+apply prodSAT_elim with (2:=H).
+apply Gsat with (2:=H1); trivial.
+apply interSAT_elim with (1:=H).
+Qed.
+
+Require Import ZFcoc.
+
+Section FIXP_Reducibility.
 
 Lemma FIXP_sat0 G o T U RT m X :
   let FIX_bot o := piSAT0 (fun n => n ∈ U o) (RT o) (X o) in
@@ -766,6 +815,37 @@ destruct xty0 as [?|(y',?,?)].
  apply msat; trivial.
 Qed.
 
+(* Case when RT is independent from ordinals *)
+Lemma FIXP_sat' G o T U RT m X :
+  let FIX_bot o := piSAT0 (fun n => n ∈ U o) RT (X o) in
+  let FIX_strict o := piSAT0 (fun n => n ∈ T o) RT (X o) in
+  isOrd o ->
+  (* strict domain values form a continuous sequence *)
+  (forall y n, isOrd y -> y ⊆ o -> n ∈ U y ->
+   (forall S, inclSAT (RT n) S) \/ exists2 y', y' ∈ y & n ∈ T (osucc y')) ->
+  (* U is not empty *)
+  (forall o, isOrd o -> exists w, w ∈ U o) ->
+  (* monotonicity of RT and X *)
+  (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ T y ->
+   inclSAT (X y n) (X y' n)) ->
+  (* Reducibility property of guard G *)
+  (forall t (X:SAT),
+   inSAT t (interSAT(fun S=>S)) ->
+   inSAT (App G t) X) ->
+  (forall o x t m (X:SAT),
+   isOrd o -> x ∈ T o ->
+   inSAT t (RT x) ->
+   inSAT m X ->
+   inSAT (App2 G t m) X) ->
+  (* Reducibility property of body m *)
+  inSAT m (piSAT0 (fun o' => o' ∈ osucc o)
+    (fun o' => FIX_bot o') (fun o' => FIX_strict (osucc o'))) ->
+  inSAT (FIXP G m) (FIX_bot o).
+Proof.
+intros FIX_bot FIX_strict oo Tcont Uwit Xmono Gneutr Gsat msat.
+apply FIXP_sat0 with (T:=T) (U:=U) (RT:=fun _ => RT); trivial.
+reflexivity.
+Qed.
 
 (* OLD: 
 Definition FIXP G m :=
@@ -969,6 +1049,7 @@ specialize msat with (1:=H5) (2:=H1).
 apply piSAT0_elim' in msat; red in msat; auto.
 Qed.
 
+End FIXP_Reducibility.
 
 (** Transfinite iteration *)
 

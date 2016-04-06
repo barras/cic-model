@@ -132,7 +132,7 @@ Parameter props_typ : props ∈ kinds.
 
 Parameter prod_typ : forall dom F s1 s2,
   s1 == props \/ s1 == kinds ->
-  s2 == props \/ s1 == kinds ->
+  s2 == props \/ s2 == kinds ->
   eq_fun dom F F ->
   dom ∈ s1 ->
   (forall x, x ∈ dom -> F x ∈ s2) ->

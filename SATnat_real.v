@@ -371,7 +371,51 @@ Lemma NATFIX_sat : forall o m X,
              (fun o1 => let o2 := osucc o1 in
                         piSAT0 (fun n => n ∈ NATi o2) (fNATi o2) (X o2))) ->
   inSAT (NATFIX m) (piSAT0 (fun n => n ∈ NATi o) (fNATi o) (X o)).
+Require Import ZFcoc.
 intros.
+cut (inSAT (NATFIX m) (piSAT0 (fun n => n ∈ cc_bot(NATi o)) (fNATi o) (X o))).
+ apply piSAT0_mono with (f:=fun x =>x); auto with *.
+apply FIXP_sat0 with (T:=NATi) (U:=fun o => cc_bot (NATi o)) (RT:=fNATi); trivial.
+ intros.
+ apply cc_bot_ax in H4; destruct H4; [left|right].
+  intros.
+  apply tiSAT_outside_domain; auto with *.
+   intros.
+   eapply fNAT_irrel with (o:=o'); trivial.
+
+   rewrite H4; intros mt_in.
+   apply TI_elim in mt_in; auto.
+   destruct mt_in as (o',?,mt_in).
+   apply sum_ind with (3:=mt_in); intros.
+    symmetry in H7; apply couple_mt_discr in H7; trivial.
+    symmetry in H7; apply couple_mt_discr in H7; trivial.
+
+  apply TI_elim in H4; auto.
+  destruct H4 as (o',?,?); exists o'; trivial.
+  rewrite <- TI_mono_succ in H5; eauto using isOrd_inv.
+
+ exists empty; auto.
+
+ intros.
+ apply fNATi_mono; trivial.
+
+ intros.
+ apply WHEN_SUM_neutral; trivial.
+
+ intros.
+ unfold fNATi in H4; rewrite tiSAT_eq in H4; auto with *.
+  apply TI_elim in H3; auto with *.
+  destruct H3 as (o',?,?).
+  eapply WHEN_SUM_sat with (1:=H6) (2:=H4); trivial.
+
+  intros.
+  apply fNAT_irrel with (o:=o'); auto.
+
+ revert H1; apply piSAT0_mono with (f:=fun x=>x); intros; auto with *.
+  apply piSAT0_mono with (f:=fun x=>x); intros; auto with *.
+  reflexivity.
+(*
+
 apply FIXP_sat; trivial.
  intros.
  cut (sn (App2 (GUARD WHEN_SUM) m0 (Ref 0))).
@@ -391,5 +435,5 @@ apply FIXP_sat; trivial.
  rewrite <- TI_mono_succ in H5; eauto using isOrd_inv.
 
  intros.
- apply fNATi_mono; trivial.
+ apply fNATi_mono; trivial.*)
 Qed.

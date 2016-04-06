@@ -24,6 +24,9 @@ Module Type SAT.
       - they are closed by head expansion
    *)
   Parameter sat_sn : forall t S, inSAT t S -> sn t.
+  Parameter inSAT_red : forall S u m,
+    inSAT (App (Abs m) u) S ->
+    inSAT (subst u m) S.
   Parameter inSAT_exp : forall S u m,
     boccur 0 m = true \/ sn u ->
     inSAT (subst u m) S ->
@@ -111,6 +114,13 @@ Qed.
   Lemma varSAT : forall S, inSAT daimon S.
 destruct S; simpl; intros.
 apply var_in_cand with (1:=i).
+Qed.
+
+  Lemma inSAT_red : forall S u m,
+    inSAT (App (Abs m) u) S ->
+    inSAT (subst u m) S.
+destruct S; simpl; intros.
+apply clos_red with (X:=x) (t:=App(Abs m) u); auto with *.
 Qed.
 
   Lemma inSAT_exp : forall S u m,
@@ -240,6 +250,8 @@ End SatSet.
 
 Export SatSet.
 
+Global Opaque inSAT.
+
 (** Derived facts *)
 
 Instance eqSAT_equiv : Equivalence eqSAT.
@@ -301,11 +313,34 @@ unfold subst; rewrite simpl_subst; trivial.
 rewrite lift0; trivial.
 Qed.
 
+
+Lemma KSAT_def : forall A t m,
+    (inSAT m A /\ sn t) <->
+    inSAT (App2 K m t) A.
+split; intros.
+ destruct H; apply KSAT_intro; trivial.
+
+ split.
+  unfold K in H.
+  eapply inSAT_context in H.
+  2:intros S; apply inSAT_red.
+  unfold subst in H; simpl in H.
+  apply inSAT_red in H.
+  unfold subst in H; rewrite simpl_subst in H; auto with *.
+  rewrite lift0 in H; trivial.
+
+  apply sat_sn in H.
+  apply subterm_sn with (1:=H).
+  constructor.
+Qed.
+
+
   Lemma SAT_daimon1 : forall S u,
     sn u ->
     inSAT (App daimon u) S.
-destruct S; simpl; intros.
-apply (sat1_in_cand 0 x); trivial.
+intros.
+apply prodSAT_elim with snSAT; auto.
+apply varSAT.
 Qed.
 
 (** Dealing with type dependencies *)
@@ -335,6 +370,18 @@ Lemma depSAT_intro A (P:A->Prop) F t :
 split; trivial.
 intros (x,?); simpl.
 apply (H0 x); trivial.
+Qed.
+
+Lemma depSAT_intro' A (P:A->Prop) F t :
+  (exists x, P x) ->
+  (forall x, P x -> inSAT t (F x)) ->
+  inSAT t (depSAT P F).
+split; trivial.
+ destruct H as (x,px).
+ apply H0 in px; apply sat_sn in px; trivial.
+
+ intros (x,?); simpl.
+ apply (H0 x); trivial.
 Qed.
 
 (** Conditional saturated set *)
@@ -470,4 +517,17 @@ red; intros.
 apply piSAT0_elim with (1:=H)(2:=H0)(3:=H1).
 Qed.
 
-Global Opaque inSAT.
+Lemma piSAT0_mono X X' (A:X->Prop) (A':X'->Prop) B B' C C' (f:X'->X):
+  (forall x, A' x -> A (f x)) ->
+  (forall x, A' x -> inclSAT (B' x) (B (f x))) ->
+  (forall x, A' x -> inclSAT (C (f x)) (C' x)) ->
+  inclSAT (piSAT0 A B C) (piSAT0 A' B' C').
+red; intros.
+apply piSAT0_intro.
+ apply sat_sn in H2; trivial.
+intros.
+apply H1; trivial.
+ apply piSAT0_elim' in H2; red in H2.
+apply H2; auto.
+apply H0; trivial.
+Qed.

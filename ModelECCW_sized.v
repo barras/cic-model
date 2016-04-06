@@ -1,15 +1,19 @@
 (** Model of ECC+W in the type-based termination presentation.
 *)
 
-Require Import List Bool Models.
+Require Import List Bool Models TypModels.
 Require Import ZF ZFsum ZFnats ZFrelations ZFord ZFfix ZFgrothendieck.
 Require Import ZFfunext ZFind_w.
 Require Import ModelZF ModelECC.
+
+
+(** Importing the common model constructions + variance judgments *)
 
 Import BuildModel.
 Import T J R.
 
 Require Import Model_variance.
+Module V <: Variance BuildModel := Model_variance.
 
 (** Ordinals *)
 

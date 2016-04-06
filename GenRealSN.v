@@ -154,6 +154,24 @@ Include ObjectSN.MakeObject(M).
 (** Handles the case of kind: a type that contains all "non-empty" types
     and that is included in no type.
  *)
+Definition gen_real x t (T : trm) (i : val) := 
+  match T with
+  (** T is a type or a kind *)
+  | Some _ => [x,t] \real int T i
+  (** T is kind *)
+  | None => Lc.sn t
+  end.
+Lemma gen_real_nk x t T i :
+  T <> kind ->
+  (gen_real x t T i <-> [x,t] \real int T i).
+intros Tnk.
+destruct T;[reflexivity|elim Tnk; trivial].
+Qed.
+Definition kind_int (M T:trm) :=
+  M <> kind /\ match T with None => kind_ok M | _ => True end.
+Definition in_int' (M T:trm) (i:val) (j:Lc.intt) :=
+  gen_real (int M i) (tm M j) T i /\
+  kind_int M T.
 
 Definition in_int (M T:trm) (i:val) (j:Lc.intt) :=
   M <> None /\
@@ -164,6 +182,17 @@ Definition in_int (M T:trm) (i:val) (j:Lc.intt) :=
   | _ => [int M i, tm M j] \real int T i
   end.
 
+Lemma in_int_in_int' M T i j :
+  in_int M T i j <-> in_int' M T i j.
+unfold in_int, in_int', kind_int.
+destruct T as [T|]; simpl.
+ split; destruct 1; split; auto.
+ destruct H0; trivial.
+
+ split; destruct 1 as (?&?&?); auto.
+Qed.
+
+
 Instance in_int_morph : Proper
   (eq_trm ==> eq_trm ==> eq_val ==> pointwise_relation nat eq ==> iff)
   in_int.
@@ -172,6 +201,13 @@ repeat rewrite eq_kind.
 destruct x0; destruct y0; try contradiction.
  rewrite H; rewrite H0; rewrite H1; rewrite H2; reflexivity.
  rewrite H; rewrite H2; reflexivity.
+Qed.
+Instance in_int'_morph : Proper
+  (eq_trm ==> eq_trm ==> eq_val ==> pointwise_relation nat eq ==> iff)
+  in_int'.
+do 5 red; intros.
+do 2 rewrite <- in_int_in_int'.
+apply in_int_morph; trivial.
 Qed.
 
 Lemma in_int_not_kind : forall i j M T,
