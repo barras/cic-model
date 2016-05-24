@@ -47,6 +47,18 @@ rewrite TI_eq; auto.
  apply lt_osucc; trivial.
 Qed.
 
+Lemma TI_inv o x :
+  isOrd o ->
+  x ∈ TI F o ->
+  exists2 o', o' ∈ o & x ∈ TI F (osucc o').
+intros.
+apply TI_elim in H0; trivial.
+destruct H0 as (o',?,?).
+exists o'; trivial.
+rewrite TI_mono_succ; auto with *.
+apply isOrd_inv with o; trivial.
+Qed.
+
   Lemma TI_mono_eq : forall o,
     isOrd o ->
     TI F o == sup o (fun o' => TI F (osucc o')).

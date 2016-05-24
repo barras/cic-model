@@ -728,6 +728,9 @@ Qed.
 
   Let Q o f := forall x, x ∈ TI W_F o -> cc_app f x ∈ U o x.
 
+Definition fcompat2 domf domg f g :=
+  forall x : set, x ∈ domf -> x ∈ domg -> cc_app f x == cc_app g x.
+
   Definition Wi_ord_irrel :=
     forall o o' f g,
     isOrd o' -> o' ⊆ ord -> isOrd o -> o ⊆ o' ->

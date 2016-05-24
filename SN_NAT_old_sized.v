@@ -8,7 +8,7 @@ Require Import List Bool Models.
 Require SN_CC_Real_old.
 Import ZFgrothendieck.
 Import ZF ZFsum ZFnats ZFrelations ZFord ZFfix.
-Require Import ZFfunext ZFfixrec ZFecc ZFuniv_real ZFind_nat SATtypes SATnat_real.
+Require Import ZFfunext ZFfixrec ZFecc (*ZFuniv_real*) ZFind_nat SATtypes SATnat_old_real.
 
 Import SN_CC_Real_old.
 Import SN_CC_Real_old.SN.

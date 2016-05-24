@@ -59,11 +59,11 @@ PIntp.vo PIntp.glob PIntp.v.beautified: PIntp.v PSyn.vo PSem.vo AbsTheoryIntp.vo
 PSem.vo PSem.glob PSem.v.beautified: PSem.v AbsTheorySem.vo SN_NAT_old.vo
 PSyn.vo PSyn.glob PSyn.v.beautified: PSyn.v AbsTheorySyn.vo
 SATnat.vo SATnat.glob SATnat.v.beautified: SATnat.v basic.vo Can.vo Sat.vo ZF.vo ZFcoc.vo ZFind_nat.vo ZFind_natbot.vo
-SATnat2.vo SATnat2.glob SATnat2.v.beautified: SATnat2.v basic.vo Can.vo Sat.vo ZF.vo ZFcoc.vo ZFind_nat.vo ZFind_natbot.vo
 SATnat_nat.vo SATnat_nat.glob SATnat_nat.v.beautified: SATnat_nat.v basic.vo Can.vo Sat.vo ZF.vo ZFnats.vo
 SATnat_old.vo SATnat_old.glob SATnat_old.v.beautified: SATnat_old.v basic.vo Can.vo Sat.vo ZF.vo ZFind_nat.vo
-SATnat_real.vo SATnat_real.glob SATnat_real.v.beautified: SATnat_real.v ZF.vo ZFpairs.vo ZFsum.vo ZFord.vo ZFfix.vo ZFind_nat.vo Sat.vo SATtypes.vo ZFlambda.vo Lambda.vo ZFcoc.vo
-SATtypes.vo SATtypes.glob SATtypes.v.beautified: SATtypes.v ZF.vo ZFpairs.vo ZFsum.vo Sat.vo ZFlambda.vo Lambda.vo ZFord.vo ZFcoc.vo ZFfixrec.vo ZFrelations.vo ZFfix.vo
+SATnat_old_real.vo SATnat_old_real.glob SATnat_old_real.v.beautified: SATnat_old_real.v ZF.vo ZFpairs.vo ZFsum.vo ZFord.vo ZFfix.vo ZFind_nat.vo Sat.vo SATtypes.vo ZFlambda.vo Lambda.vo ZFcoc.vo
+SATnat_real.vo SATnat_real.glob SATnat_real.v.beautified: SATnat_real.v ZF.vo ZFpairs.vo ZFsum.vo ZFord.vo ZFfix.vo ZFcoc.vo ZFind_natbot.vo Sat.vo SATtypes.vo ZFlambda.vo Lambda.vo
+SATtypes.vo SATtypes.glob SATtypes.v.beautified: SATtypes.v ZF.vo ZFpairs.vo ZFsum.vo Sat.vo ZFlambda.vo Lambda.vo ZFord.vo ZFfixrec.vo ZFrelations.vo ZFfix.vo
 SATw.vo SATw.glob SATw.v.beautified: SATw.v ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFind_wbot.vo Sat.vo SATtypes.vo ZFlambda.vo Lambda.vo ZFcoc.vo
 SATw2.vo SATw2.glob SATw2.v.beautified: SATw2.v ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFind_wbot2.vo Sat.vo SATtypes.vo ZFlambda.vo Lambda.vo ZFcoc.vo ZFtarski.vo
 SN_CC.vo SN_CC.glob SN_CC.v.beautified: SN_CC.v Sat.vo ZF.vo ZFcoc.vo ZFlambda.vo Models.vo GenModelSN.vo TypeJudge.vo
@@ -77,8 +77,9 @@ SN_ECC_Real_syntax.vo SN_ECC_Real_syntax.glob SN_ECC_Real_syntax.v.beautified: S
 SN_NAT.vo SN_NAT.glob SN_NAT.v.beautified: SN_NAT.v basic.vo Can.vo Sat.vo SATnat.vo SN_CC_Real.vo ZF.vo ZFcoc.vo ZFuniv_real.vo ZFind_natbot.vo
 SN_NAT_guard.vo SN_NAT_guard.glob SN_NAT_guard.v.beautified: SN_NAT_guard.v basic.vo Can.vo Sat.vo SATnat.vo SN_CC_Real.vo ZF.vo ZFcoc.vo ZFuniv_real.vo ZFind_natbot.vo ZFord.vo SATtypes.vo ZFfunext.vo ZFfix.vo ZFfixrec.vo
 SN_NAT_old.vo SN_NAT_old.glob SN_NAT_old.v.beautified: SN_NAT_old.v basic.vo Can.vo Sat.vo SATnat_old.vo SN_CC_Real_old.vo ZF.vo ZFcoc.vo ZFuniv_real.vo ZFind_nat.vo ZFord.vo ZFrepl.vo
-SN_NAT_old_guard.vo SN_NAT_old_guard.glob SN_NAT_old_guard.v.beautified: SN_NAT_old_guard.v Models.vo SN_CC_Real_old.vo ZFfunext.vo ZFfixrec.vo ZFecc.vo ZFuniv_real.vo ZFind_nat.vo SATtypes.vo SATnat_real.vo
-SN_NAT_old_sized.vo SN_NAT_old_sized.glob SN_NAT_old_sized.v.beautified: SN_NAT_old_sized.v Models.vo SN_CC_Real_old.vo ZFfunext.vo ZFfixrec.vo ZFecc.vo ZFuniv_real.vo ZFind_nat.vo SATtypes.vo SATnat_real.vo
+SN_NAT_old_guard.vo SN_NAT_old_guard.glob SN_NAT_old_guard.v.beautified: SN_NAT_old_guard.v Models.vo SN_CC_Real_old.vo ZFfunext.vo ZFfixrec.vo ZFecc.vo ZFuniv_real.vo ZFind_nat.vo ZFind_natbot.vo SATtypes.vo SATnat_real.vo
+SN_NAT_old_sized.vo SN_NAT_old_sized.glob SN_NAT_old_sized.v.beautified: SN_NAT_old_sized.v Models.vo SN_CC_Real_old.vo ZFfunext.vo ZFfixrec.vo ZFecc.vo ZFind_nat.vo SATtypes.vo SATnat_old_real.vo
+SN_NAT_sized.vo SN_NAT_sized.glob SN_NAT_sized.v.beautified: SN_NAT_sized.v basic.vo Models.vo SN_ECC_Real.vo ZFfunext.vo ZFfixrec.vo ZFcoc.vo ZFecc.vo ZFuniv_real.vo ZFind_natbot.vo SATtypes.vo SATnat_real.vo SN_ord.vo SN_variance.vo
 SN_P.vo SN_P.glob SN_P.v.beautified: SN_P.v PIntp.vo AbsSNT.vo
 SN_Theory.vo SN_Theory.glob SN_Theory.v.beautified: SN_Theory.v InstInterp.vo Esub.vo
 SN_W.vo SN_W.glob SN_W.v.beautified: SN_W.v basic.vo Models.vo SN_ECC_Real.vo ZFfunext.vo ZFfixrec.vo ZFcoc.vo ZFecc.vo ZFuniv_real.vo ZFind_wbot.vo SATtypes.vo SATw.vo SN_ord.vo SN_variance.vo
@@ -90,6 +91,7 @@ SN_variance2.vo SN_variance2.glob SN_variance2.v.beautified: SN_variance2.v SN_E
 Sat.vo Sat.glob Sat.v.beautified: Sat.v Lambda.vo Can.vo
 StrengthenECC.vo StrengthenECC.glob StrengthenECC.v.beautified: StrengthenECC.v TypeECC.vo
 Sublogic.vo Sublogic.glob Sublogic.v.beautified: Sublogic.v basic.vo Logics.vo
+Tarski.vo Tarski.glob Tarski.v.beautified: Tarski.v basic.vo ZF.vo
 Term.vo Term.glob Term.v.beautified: Term.v
 TermECC.vo TermECC.glob TermECC.v.beautified: TermECC.v
 TheoryInTerm.vo TheoryInTerm.glob TheoryInTerm.v.beautified: TheoryInTerm.v ZFtheory.vo GenModel.vo ZFcoc.vo ModelZF.vo

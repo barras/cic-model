@@ -431,19 +431,6 @@ Qed.
 
   Hint Resolve morph_fix_body ext_fun_ty.
 
-(* sort *)
-Lemma TI_inv o x :
-  isOrd o ->
-  x ∈ TI W_F' o ->
-  exists2 o', o' ∈ o & x ∈ TI W_F' (osucc o').
-intros.
-apply TI_elim in H0; auto with *.
-destruct H0.
-exists x0; trivial.
-rewrite TI_mono_succ; auto with *.
-apply isOrd_inv with o; trivial.
-Qed.
-
   Lemma WREC'_recursor o :
     isOrd o -> o ⊆ O -> recursor o (TI W_F') Q F.
 split; intros; trivial.
@@ -463,7 +450,7 @@ split; intros; trivial.
 
  (* Q cont *)
  red; intros.
- apply TI_inv in H5; trivial.
+ apply TI_inv in H5; auto with *.
  destruct H5 as (o',?,?).
  red in H4; specialize H4 with (1:=H5) (2:=H6).
  revert H4; apply fx_sub_U; eauto using isOrd_inv with *.
@@ -624,7 +611,7 @@ Lemma WREC'_eqn : forall o n,
   cc_app (WREC' M o) n ==
   cc_app (M o (WREC' M o)) n.
 intros.
-apply TI_inv in H1; trivial.
+apply TI_inv in H1; auto with *.
 destruct H1 as (o',?,?).
 assert (o'o: isOrd o') by eauto using isOrd_inv.
 rewrite <- WREC'_irr with (o:=osucc o'); auto.

@@ -686,9 +686,131 @@ apply Gsat with (2:=H1); trivial.
 apply interSAT_elim with (1:=H).
 Qed.
 
-Require Import ZFcoc.
+(*Require Import ZFcoc.*)
 
 Section FIXP_Reducibility.
+
+(*Lemma FIXP_sat0 G o T U RT m X :
+  let FIX_bot o := piSAT0 (fun n => n ∈ U o) (RT o) (X o) in
+  let FIX_strict o := piSAT0 (fun n => n ∈ T o) (RT o) (X o) in
+  isOrd o ->
+  (* strict domain values form a continuous sequence *)
+  (forall y n, isOrd y -> y ⊆ o -> n ∈ U y ->
+   ~ n ∈ T y  \/ exists2 y', y' ∈ y & n ∈ T (osucc y')) ->
+  (* U is not empty *)
+  (forall o, isOrd o -> exists w, w ∈ U o) ->
+  (* monotonicity of RT and X *)
+  (forall y y' n, isOrd y -> isOrd y' -> n ∈ T y -> y ⊆ y' -> y' ⊆ o ->
+   eqSAT (RT y n) (RT y' n)) ->
+  (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ T y ->
+   inclSAT (X y n) (X y' n)) ->
+  (* Saturation property of guard G *)
+  (forall o (X:SAT),
+   isOrd o ->
+   inSAT G (piSAT0 (fun x => x ∈ U o) (RT o) (fun x => condSAT (x ∈ T o) (prodSAT X X)))) ->
+  inSAT m (piSAT0 (fun o' => o' ∈ osucc o)
+    (fun o' => FIX_bot o') (fun o' => FIX_strict (osucc o'))) ->
+  inSAT (FIXP G m) (FIX_bot o).
+intros FIX_bot FIX_strict oo Tcont Ubot Rirrel Xmono Gsat msat.
+assert (Gneutr:  forall o x t (X:SAT),
+   isOrd o ->
+   x ∈ U o ->
+   ~ x ∈ T o ->
+   inSAT t (RT o x) ->
+   inSAT (App G t) X).
+ intros.
+ specialize Gsat with (1:=H) (X:=X0).
+ specialize piSAT0_elim with (1:=Gsat)(2:=H0)(3:=H2).
+ clear Gsat; intros Gsat.
+ apply condSAT_neutral with (S:=X0) in Gsat; trivial.
+assert (sn (Abs (App (lift 1 m) (App (lift 1 (GUARD G)) (Ref 0))))).
+ (* neutral case *)
+ eapply sat_sn.
+ apply prodSAT_intro with (A:=interSAT(fun S=>S)).
+ intros v vsat.
+ match goal with |- inSAT _ ?T =>
+   change (inSAT (App (subst v (lift 1 m)) (App (subst v (lift 1 (GUARD G))) (lift 0 v))) T)
+ end.
+ unfold subst; rewrite !simpl_subst; trivial.
+ rewrite !lift0.
+ apply piSAT0_elim' in msat; red in msat.
+ apply msat with (x:=o); auto with *.
+  apply lt_osucc; auto.
+
+  apply piSAT0_intro'; intros; [|apply Ubot; trivial].
+  apply GUARD_sat.
+  eapply prodSAT_elim;[|apply H0].
+  eapply prodSAT_elim;[|apply vsat].
+  specialize Gsat with (1:=oo)(X:=interSAT(fun S=>S)).
+ specialize piSAT0_elim with (1:=Gsat)(2:=H)(3:=H0).
+ clear Gsat; intros Gsat.
+  apply condSAT_smaller in Gsat.
+  specialize prodSAT_elim with (1:=Gsat)(2:=vsat).
+  intros.
+  apply interSAT_elim with (1:=H1).
+elim oo using isOrd_ind; intros.
+(*apply piSAT0_intro.
+ unfold FIXP.
+ eapply sat_sn.  
+ eapply prodSAT_intro'.
+ intros.
+ apply GUARD_sat.
+
+ apply FIXP_sn.
+  intros.
+  eapply sat_sn.  
+  eapply prodSAT_intro'.
+  intros.
+  apply GUARD_neutral; trivial.
+*)
+apply piSAT0_intro'; [|apply  Ubot;trivial].
+intros x u xty0 ureal.
+unfold FIXP.
+apply GUARD_sat.
+assert (xty:=xty0).
+apply Tcont in xty0; trivial.
+destruct xty0 as [?|(y',?,?)].
+ apply prodSAT_elim with (2:=ureal).
+ apply prodSAT_elim with (2:=snSAT_intro H).
+ eapply prodSAT_elim;[|apply (snSAT_intro H)].
+ apply Gneutr with (1:=H0)(2:=xty)(3:=H3); trivial.
+
+ specialize H2 with (1:=H3).
+ assert (isOrd y') by eauto using isOrd_inv.
+ assert (zlt : osucc y' ⊆ y).
+  red; intros; apply le_lt_trans with y'; auto.
+ assert (ureal' : inSAT u (RT (osucc y') x)).
+  rewrite <- Rirrel with (3:=H4) in ureal; auto.
+ eapply inSAT_context.
+  apply inSAT_context.
+  intros.
+apply prodSAT_elim with S.
+eapply condSAT_smaller.
+eapply piSAT0_elim with (1:=Gsat _ _ H0) (2:=xty) (3:=ureal).
+  exact H6.
+ eapply inSAT_context.
+  intros.
+  apply inSAT_exp.
+   left; simpl; rewrite !Bool.orb_true_r; trivial.
+  unfold subst; simpl.
+  rewrite simpl_subst; auto.
+  rewrite simpl_subst_rec; auto.
+  rewrite !lift0.
+  rewrite !lift_rec0.
+  change (inSAT (App m (FIXP G m)) S).
+  exact H6.
+ apply Xmono with (osucc y'); auto.
+ assert (y' ∈ osucc o).
+  apply isOrd_trans with o; auto.
+  apply H1; trivial.
+ apply piSAT0_elim' in msat; red in msat.
+ specialize msat with (1:=H6) (2:=H2).
+ apply piSAT0_elim' in msat; red in msat.
+ apply msat; trivial.
+Qed.
+*)
+
+
 
 Lemma FIXP_sat0 G o T U RT m X :
   let FIX_bot o := piSAT0 (fun n => n ∈ U o) (RT o) (X o) in
@@ -1050,6 +1172,126 @@ apply piSAT0_elim' in msat; red in msat; auto.
 Qed.
 
 End FIXP_Reducibility.
+
+(** Fixpoint *)
+
+Definition inclFam A (F G:set->SAT) :=
+  forall x, x ∈ A -> inclSAT (F x) (G x).
+
+Definition fixSAT (FX:set) (A:(set->SAT)->set->SAT) (x:set) : SAT :=
+  interSAT (fun X:{X|Proper(eq_set==>eqSAT)X /\ inclFam FX (A X) X} =>
+            proj1_sig X x).
+
+Lemma fixSAT_lower_bound FX A X :
+  Proper (eq_set==>eqSAT) X ->
+  inclFam FX (A X) X ->
+  inclFam FX (fixSAT FX A) X.
+red; intros.
+red; intros.
+apply interSAT_elim with
+  (x:=existT (fun X=>Proper (eq_set==>eqSAT) X /\inclFam FX (A X) X)
+         X (conj H H0)) in H2; simpl in H2.
+trivial.
+Qed.
+
+Instance fixSAT_morph0 FX A :
+  Proper (eq_set ==> eqSAT) (fixSAT FX A).
+do 2 red; intros.
+apply interSAT_morph_subset.
+ reflexivity.
+simpl.
+intros X _ (Xm, Xpost).
+auto.
+Qed.
+
+Instance fixSAT_morph : Proper (eq_set==>
+  ((eq_set==>eqSAT)==>eq_set==>eqSAT)==>eq_set==>eqSAT) fixSAT.
+do 4 red; intros.
+apply interSAT_morph_subset; simpl.
+ intros X.
+ split; destruct 1; apply and_split; trivial.
+  red; red; intros.
+  apply H3.
+   rewrite H; trivial.
+  revert H6; apply H0; auto with *.
+
+  red; red; intros.
+  apply H3.
+   rewrite <- H; trivial.
+  revert H6; apply H0; auto with *.
+ intros X (Xm,_) _; auto.
+Qed.
+
+Lemma post_fix_lfp FX A :
+  (forall X X', inclFam FX X X' -> inclFam FX (A X) (A X')) ->
+  inclFam FX (A (fixSAT FX A)) (fixSAT FX A).
+intros Amono x tyx.
+red; intros.
+unfold fixSAT.
+eapply interSAT_intro.
+ exists (fun _ => snSAT).
+ split.
+  do 2 red; reflexivity.
+ red; red; intros.
+ apply snSAT_intro.
+ apply sat_sn in H1; trivial.
+intros (X,(Xm,Xpost)); simpl. 
+apply Xpost; trivial.
+apply Amono with (X:=fixSAT FX A); trivial.
+apply fixSAT_lower_bound; trivial.
+Qed.
+
+Lemma pre_fix_lfp FX A :
+  Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A ->
+  (forall X X', inclFam FX X X' -> inclFam FX (A X) (A X')) ->
+  inclFam FX (fixSAT FX A) (A (fixSAT FX A)).
+intros Am Amono.
+apply fixSAT_lower_bound; trivial.
+ do 2 red; intros.
+ apply Am; trivial.
+ apply fixSAT_morph0.
+apply Amono; trivial.
+apply post_fix_lfp; trivial.
+Qed.
+
+Lemma fixSAT_eq FX A :
+  Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A ->
+  (forall X X', inclFam FX X X' -> inclFam FX (A X) (A X')) ->
+  forall x, x ∈ FX ->
+  eqSAT (fixSAT FX A x) (A (fixSAT FX A) x).
+split.
+ apply pre_fix_lfp; trivial.
+ apply post_fix_lfp; trivial.
+Qed.
+
+Lemma fixSAT_outside_domain FX A x S :
+  Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A ->
+  (forall X X', inclFam FX X X' -> inclFam FX (A X) (A X')) ->
+  ~ x ∈ FX ->
+  inclSAT (fixSAT FX A x) S.
+intros Am Amono.
+red; intros.
+pose (X:=fun x => condSAT (x ∈ FX) (fixSAT FX A x)).
+assert (Xm : Proper (eq_set==>eqSAT) X).
+ do 2 red; intros.
+ apply condSAT_morph.
+  rewrite H1; auto with *.
+ apply fixSAT_morph0; trivial.
+assert (Xpost : inclFam FX (A X) X).
+ clear x H H0.
+ red; intros.
+ unfold X at 2.
+ rewrite condSAT_ok; trivial.
+ rewrite fixSAT_eq; auto with *.
+ apply Amono; trivial.
+ red; intros.
+ apply condSAT_smaller.
+apply interSAT_elim with
+  (x:=existT (fun X=>Proper (eq_set==>eqSAT) X /\inclFam FX (A X) X)
+         X (conj Xm Xpost)) in H0; simpl in H0.
+revert H0; apply condSAT_neutral; trivial.
+Qed.
+
 
 (** Transfinite iteration *)
 

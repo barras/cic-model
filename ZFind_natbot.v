@@ -153,6 +153,17 @@ apply cc_bot_ax in H6; destruct H6.
    apply H5 with o'; trivial. 
 Qed.
 
+Lemma NAT_NAT' : NAT ⊆ NAT'.
+intros z tyz.
+apply NAT_ind with (4:=tyz); intros.
+ rewrite <- H0; trivial.
+
+ apply ZERO_typ'.
+
+ apply SUCC_typ'; auto.
+Qed.
+
+
 (** The usual recursor on NAT, extended to NAT' *)
 
 Definition NREC f g n y :=
@@ -391,37 +402,60 @@ Qed.
 
 Require Import ZFfunext ZFfixrec.
 
+Definition NATREC' M :=
+  NATREC (fun o' f => squash (M o' f)).
+
 Section Recursor.
 
   Variable ord : set.
   Hypothesis oord : isOrd ord.
 
-  Variable F : set -> set -> set.
-  Hypothesis Fm : morph2 F.
+  Variable M : set -> set -> set.
+  Hypothesis Mm : morph2 M.
 
-  Variable U' : set -> set -> set.
-  Hypothesis U'mono : forall o o' x x',
+  Variable U : set -> set -> set.
+  Hypothesis Um : morph2 U.
+(*  Hypothesis Umono : forall o o' x x',
     isOrd o' -> o' ⊆ ord -> isOrd o -> o ⊆ o' ->
-    x ∈ TI NATf' o -> x == x' ->
-    U' o x ⊆ U' o' x'.
+    x ∈ cc_bot (TI NATf' o) -> x == x' ->
+    U o x ⊆ U o' x'.*)
+  Hypothesis Ubot : forall o x, empty ∈ U o x.
 
-  Let Ty' o := cc_prod (TI NATf' o) (U' o).
-  Let Q' o f := forall x, x ∈ TI NATf' o -> cc_app f x ∈ U' o x.
+  Let Nati o := cc_bot (TI NATf' o).
+  Let Ty' o := cc_prod (Nati o) (U o).
+  Let F := fun o' f => squash (M o' f).
+  Let Q' o f := forall x, x ∈ TI NATf' o -> cc_app f x ∈ U o x.
 
-  Hypothesis Ftyp' : forall o f, isOrd o -> o ⊆ ord ->
-    f ∈ Ty' o -> F o f ∈ Ty' (osucc o).
+  Hypothesis Mtyp : forall o f, isOrd o -> o ⊆ ord ->
+    f ∈ Ty' o -> M o f ∈ Ty' (osucc o).
 
   Definition NAT_ord_irrel' :=
     forall o o' f g,
     isOrd o' -> o' ⊆ ord -> isOrd o -> o ⊆ o' ->
     f ∈ Ty' o -> g ∈ Ty' o' ->
-    fcompat (TI NATf' o) f g ->
-    fcompat (TI NATf' (osucc o)) (F o f) (F o' g).
+    fcompat (Nati o) f g ->
+    fcompat (Nati (osucc o)) (M o f) (M o' g).
 
-  Hypothesis Firrel' : NAT_ord_irrel'.
+  Hypothesis Mirrel : NAT_ord_irrel'.
 
-Lemma U'morph : forall o o', isOrd o' -> o' ⊆ ord -> o == o' ->
-    forall x x', x ∈ TI NATf' o -> x == x' -> U' o x == U' o' x'. 
+  Instance morph_fix_body : morph2 F.
+unfold F; do 3 red; intros.
+apply squash_morph.
+apply Mm; trivial.
+Qed.
+  Lemma ext_fun_ty : forall o,
+    ext_fun (Nati o) (U o).
+do 2 red; intros.
+apply Um; auto with *.
+Qed.
+
+  Hypothesis fx_sub_U : forall o' o'' x,
+    isOrd o' -> o' ⊆ o'' -> o'' ∈ osucc ord ->
+    x ∈ Nati o' ->
+    U o' x ⊆ U o'' x.
+(*
+Lemma Umorph : forall o o', isOrd o' -> o' ⊆ ord -> o == o' ->
+    forall x x', x ∈ Nati o -> x == x' -> U o x == U o' x'. 
 intros.
 apply incl_eq.
  apply U'mono; auto.
@@ -440,7 +474,316 @@ Lemma U'ext : forall o, isOrd o -> o ⊆ ord -> ext_fun (TI NATf' o) (U' o).
 red; red; intros.
 apply U'morph; auto with *.
 Qed.
+*)
 
+Lemma natprod_ext_mt o f :
+  isOrd o ->
+  f ∈ cc_prod (TI NATf' o) (U o) ->
+  f ∈ cc_prod (Nati o) (U o).
+intros oo fty.
+apply cc_prod_ext_mt in fty; trivial.
+ apply ext_fun_ty.
+
+ intros h; apply mt_not_in_NATf' in h; trivial.
+ apply h; reflexivity.
+Qed.
+
+
+  Lemma ty_fix_body : forall o f,
+   o < osucc ord ->
+   f ∈ cc_prod (TI NATf' o) (U o) ->
+   F o f ∈ cc_prod (TI NATf' (osucc o)) (U (osucc o)).
+unfold F; intros.
+apply squash_typ.
+ apply ext_fun_ty.
+
+ intros h; apply mt_not_in_NATf' in h; auto with *.
+ eauto using isOrd_inv.
+
+ apply Mtyp.
+  apply isOrd_inv with (osucc ord); auto.
+  apply olts_le in H; trivial.
+ apply natprod_ext_mt in H0; trivial.
+ simpl; eauto using isOrd_inv. 
+Qed.
+
+  Lemma fix_body_irrel : forall o o' f g,
+    isOrd o' -> o' ⊆ ord -> isOrd o -> o ⊆ o' ->
+    f ∈ cc_prod (TI NATf' o) (U o) ->
+    g ∈ cc_prod (TI NATf' o') (U o') ->
+    fcompat (TI NATf' o) f g ->
+    fcompat (TI NATf' (osucc o)) (F o f) (F o' g).
+red; intros.
+assert (o'typ : o' ∈ osucc ord).
+ apply ole_lts; trivial.
+assert (o0typ : o ∈ osucc ord).
+ apply le_lt_trans with o'; auto.
+ apply ole_lts; trivial.
+unfold F.
+assert (tyf : f ∈ Ty' o).
+ unfold Ty'; apply natprod_ext_mt; trivial.
+assert (tyg : g ∈ Ty' o').
+ unfold Ty'; apply natprod_ext_mt; trivial.
+assert (appm : forall X h, ext_fun X (cc_app h)).
+ do 2 red; intros; apply cc_app_morph; auto with *.
+rewrite squash_eq with (A:=TI NATf' (osucc o)) (B:= U (osucc o)).
+rewrite cc_beta_eq; trivial.
+2:intros h; apply mt_not_in_NATf' in h; auto with *.
+2:apply Mtyp; trivial.
+2:transitivity o'; trivial.
+rewrite squash_eq with (A:=TI NATf' (osucc o')) (B:= U (osucc o')).
+rewrite cc_beta_eq; trivial.
+3:intros h; apply mt_not_in_NATf' in h; auto with *.
+3:apply Mtyp; trivial.
+apply Mirrel; trivial.
+ red; intros.
+ unfold Nati in H7; rewrite cc_bot_ax in H7.
+ destruct H7; auto.
+ rewrite H7.
+ rewrite cc_app_outside_domain.
+  rewrite cc_app_outside_domain; auto with *.
+   rewrite cc_eta_eq with (1:=H4).
+   apply is_cc_fun_lam; trivial.
+
+   intros h; apply mt_not_in_NATf' in h; auto with *.
+
+  rewrite cc_eta_eq with (1:=H3).
+  apply is_cc_fun_lam; trivial.
+
+  intros h; apply mt_not_in_NATf' in h; auto with *.
+
+  apply cc_bot_intro; trivial.
+
+revert H6; apply TI_mono; auto with *.
+apply osucc_mono; trivial.
+Qed.
+
+  Let Qty o f :
+    isOrd o ->
+    (is_cc_fun (TI NATf' o) f /\ Q' o f <-> f ∈ cc_prod (TI NATf' o) (U o)).
+split; intros.
+ destruct H0.
+ rewrite cc_eta_eq' with (1:=H0).
+ apply cc_prod_intro; auto.
+  do 2 red; intros; apply cc_app_morph; auto with *.
+
+  do 2 red; intros; apply Um; auto with *.
+
+ split.
+  rewrite cc_eta_eq with (1:=H0).
+  apply is_cc_fun_lam.
+  do 2 red; intros; apply cc_app_morph; auto with *.
+
+  red; intros.
+  apply cc_prod_elim with (1:=H0); trivial.
+Qed.
+
+  Hint Resolve morph_fix_body ext_fun_ty.
+
+  Lemma NATREC'_recursor o :
+    isOrd o -> o ⊆ ord -> recursor o (TI NATf') Q' F.
+split; intros; trivial.
+ apply TI_morph; auto.
+
+ rewrite TI_eq; auto with *.
+ apply sup_morph;[reflexivity|red; intros].
+ symmetry; rewrite <- H3; apply TI_mono_succ; auto with *.
+ eauto using isOrd_inv.
+
+ (* Q ext *)
+ red; intros.
+ rewrite <- H3.
+ rewrite <- H3 in H6.
+ red in H4.
+ rewrite <- H4; auto.
+
+ (* Q cont *)
+ red; intros.
+ apply TI_inv in H5; auto with *.
+ destruct H5 as (o',?,?).
+ red in H4; specialize H4 with (1:=H5) (2:=H6).
+ revert H4; apply fx_sub_U; eauto using isOrd_inv with *.
+  red; intros; apply le_lt_trans with o'; auto.
+
+  apply ole_lts; trivial.
+  transitivity o; trivial.
+
+  unfold Nati; auto.
+
+ (* F typing *)
+ apply Qty; auto.
+ apply ty_fix_body.
+  apply ole_lts; auto.
+  transitivity o; trivial.
+
+  apply Qty; auto.
+
+ (* F irr *)
+ red; intros.
+ destruct H3 as (?,fty).
+ destruct H4 as (?,gty).
+ apply Qty in fty; trivial.
+ apply Qty in gty; trivial.
+ apply fix_body_irrel; auto with *.
+ transitivity o; trivial.
+Qed.
+
+
+Let fix_typ0 o :
+  isOrd o ->
+  o ⊆ ord ->
+  NATREC' M o ∈ cc_prod (TI NATf' o) (U o).
+intros.
+destruct REC_wt with (1:=H) (2:=NATREC'_recursor H H0).
+apply Qty; auto.
+Qed.
+
+  Lemma NATREC'_typ o:
+    isOrd o ->
+    o ⊆ ord ->
+    NATREC' M o ∈ cc_prod (Nati o) (U o).
+intros.
+apply natprod_ext_mt; trivial.
+apply fix_typ0 with (1:=H); trivial.
+Qed.
+Hint Resolve NATREC'_typ.
+
+
+  Lemma NATREC'_strict o :
+    isOrd o ->
+    o ⊆ ord ->
+    cc_app (NATREC' M o) empty == empty.
+intros.
+eapply cc_app_outside_domain.
+ rewrite cc_eta_eq with (f:=NATREC' M o).
+  eapply is_cc_fun_lam.
+  do 2 red; intros; apply cc_app_morph; auto with *.
+
+  apply fix_typ0; trivial.
+
+ intros h; apply mt_not_in_NATf' in h; auto with *.
+Qed.
+
+  Lemma NATREC'_irr o o' x :
+    isOrd o ->
+    isOrd o' ->
+    o ⊆ o' ->
+    o' ⊆ ord ->
+    x ∈ Nati o ->
+    cc_app (NATREC' M o) x == cc_app (NATREC' M o') x.
+intros.
+apply cc_bot_ax in H3; destruct H3.
+ rewrite H3.
+ rewrite NATREC'_strict; trivial.
+ 2:transitivity o'; trivial.
+ rewrite NATREC'_strict; auto with *.
+
+ apply REC_ord_irrel with (1:=H0) (2:=NATREC'_recursor H0 H2); auto with *.
+Qed.
+
+Lemma fix_eqn0 : forall o,
+  isOrd o ->
+  o ⊆ ord ->
+  NATREC' M (osucc o) == F o (NATREC' M o).
+intros.
+unfold NATREC', NATREC at 1; fold F.
+rewrite REC_eq; auto with *.
+rewrite eq_set_ax; intros z.
+rewrite sup_ax; auto with *.
+split; intros.
+ destruct H1 as (o',o'lt,zty).
+ change (z ∈ F o (NATREC' M o)).
+ change (z ∈ F o' (NATREC' M o')) in zty.
+ assert (o'o : isOrd o') by eauto using isOrd_inv.
+ assert (o'le : o' ⊆ o) by (apply olts_le; auto).
+ assert (o'le' : o' ⊆ ord) by (transitivity o; trivial).
+ assert (F o' (NATREC' M o') ∈ cc_prod (TI NATf' (osucc o')) (U (osucc o'))).
+  apply ty_fix_body; auto.
+  apply ole_lts; auto.
+ assert (F o (NATREC' M o) ∈ cc_prod (TI NATf' (osucc o)) (U (osucc o))).
+  apply ty_fix_body; auto.
+  apply ole_lts; auto.
+ rewrite cc_eta_eq with (1:=H1) in zty.
+ rewrite cc_eta_eq with (1:=H2).
+ rewrite cc_lam_def in zty|-*.
+ 2:intros ? ? _ eqn; rewrite eqn; reflexivity.
+ 2:intros ? ? _ eqn; rewrite eqn; reflexivity.
+ destruct zty as (n', n'ty, (y, yty, eqz)).
+ exists n'.
+  revert n'ty; apply TI_mono; auto with *.
+  apply osucc_mono; auto.
+ exists y; trivial.
+ revert yty; apply eq_elim.
+ apply fix_body_irrel; auto with *.
+ red; intros.
+ apply NATREC'_irr; auto.
+ apply cc_bot_intro; trivial.
+
+ exists o;[apply lt_osucc;trivial|trivial].
+Qed.
+
+
+Lemma NATREC'_unfold : forall o n,
+  isOrd o ->
+  o ⊆ ord ->
+  n ∈ TI NATf' (osucc o) ->
+  cc_app (NATREC' M (osucc o)) n ==
+  cc_app (M o (NATREC' M o)) n.
+intros.
+rewrite fix_eqn0 with (1:=H); trivial.
+unfold F.
+rewrite squash_beta with (3:=H1) (B:=U (osucc o)).
+ reflexivity.
+
+ intros h; apply mt_not_in_NATf' in h; auto with *.
+
+ apply Mtyp; auto.
+ unfold Ty'; auto.
+Qed.
+
+
+
+Lemma NATREC'_typ_app o n:
+  isOrd o ->
+  o ⊆ ord ->
+  n ∈ Nati o ->
+  cc_app (NATREC' M o) n ∈ U o n.
+intros.
+apply cc_prod_elim with (dom:=Nati o); trivial.
+apply NATREC'_typ; trivial.
+Qed.
+
+Lemma NATREC'_eqn : forall o n,
+  isOrd o ->
+  o ⊆ ord ->
+  n ∈ TI NATf' o ->
+  cc_app (NATREC' M o) n ==
+  cc_app (M o (NATREC' M o)) n.
+intros.
+apply TI_inv in H1; auto with *.
+destruct H1 as (o',?,?).
+assert (o'o: isOrd o') by eauto using isOrd_inv.
+rewrite <- NATREC'_irr with (o:=osucc o'); auto.
+ rewrite NATREC'_unfold; auto.
+ eapply Mirrel; auto.
+  unfold Ty'; auto.
+  unfold Ty'; auto.
+
+  red; intros.
+  apply NATREC'_irr; auto.
+
+  apply cc_bot_intro; trivial.
+
+ red; intros.
+ apply le_lt_trans with o'; trivial.
+
+ apply cc_bot_intro; trivial.
+Qed.
+
+
+(*......*)
+
+(*
 
   Lemma NATREC_typing' : forall o f, isOrd o -> o ⊆ ord -> 
     is_cc_fun (TI NATf' o) f -> Q' o f -> f ∈ Ty' o.
@@ -520,7 +863,7 @@ split; auto.
   apply NATREC_typing'; trivial. 
 Qed.
 
-  Lemma NATREC_wt' : NATREC F ord ∈ Ty' ord.
+  Lemma NATREC_wt' : NATREC' F ord ∈ Ty' ord.
 intros.
 destruct REC_wt with (1:=oord) (2:=NATREC_recursor').
 apply NATREC_typing'; auto with *.
@@ -562,7 +905,7 @@ rewrite <- H4.
 apply REC_ord_irrel with (2:=NATREC_recursor'); auto with *.
 Qed.
 
-
+*)
 End Recursor.
 
 (** * Universe facts: NAT' belongs to any Grothendieck universes that

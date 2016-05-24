@@ -20,6 +20,8 @@ Qed.
 
 Notation WF := (W_F' A B).
 
+Existing Instance W_F'_mono.
+
 (*Local Instance Wf_mono : Proper (incl_set ==> incl_set) Wf.
 apply W_F'_mono; trivial.
 Qed.
@@ -56,6 +58,90 @@ apply piSAT0_morph; intros; auto with *.
 Qed.
 Hint Resolve rW_morph.
 
+Lemma rW_mono_gen' Y X X':
+  (forall x x', x ∈ Y -> x==x' -> inclSAT (X x) (X' x')) ->
+  forall x x', x ∈ WF Y -> x==x' -> inclSAT (rW X x) (rW X' x').
+intros Xmono x x' xty eqx'.
+apply interSAT_mono.
+intros C.
+apply prodSAT_mono; auto with *.
+red.
+eapply piSAT0_mono with (f:=fun x => x); auto with *.
+ intros; rewrite <- eqx'; trivial.
+intros y eqx.
+apply prodSAT_mono; auto with *.
+red.
+eapply piSAT0_mono with (f:=fun x => x); auto with *.
+intros i ity.
+apply condSAT_ext; auto with *.
+ rewrite <- eqx'; trivial.
+intros nmt _.
+apply Xmono.
+2:rewrite eqx'; reflexivity.
+apply W_F_elim in xty; trivial.
+destruct xty as (_,(fty,_)); auto.
+apply fst_morph in eqx; rewrite fst_def in eqx.
+rewrite <- eqx in ity.
+specialize fty with (1:=ity).
+rewrite cc_bot_ax in fty; destruct fty; trivial.
+contradiction.
+Qed.
+
+Lemma rW_mono_gen Y X X':
+  (forall x, x ∈ Y -> inclSAT (X x) (X' x)) ->
+  forall x, x ∈ WF Y -> inclSAT (rW X x) (rW X' x).
+intros Xmono x xty.
+apply interSAT_mono.
+intros C.
+apply prodSAT_mono; auto with *.
+red.
+eapply piSAT0_mono with (f:=fun x => x); auto with *.
+intros y eqx.
+apply prodSAT_mono; auto with *.
+red.
+eapply piSAT0_mono with (f:=fun x => x); auto with *.
+intros i ity.
+apply condSAT_ext; auto with *.
+intros nmt _.
+apply Xmono.
+apply W_F_elim in xty; trivial.
+destruct xty as (_,(fty,_)); auto.
+apply fst_morph in eqx; rewrite fst_def in eqx.
+rewrite <- eqx in ity.
+specialize fty with (1:=ity).
+rewrite cc_bot_ax in fty; destruct fty; trivial.
+contradiction.
+Qed.
+
+Lemma rW_mono FX X X':
+  FX ⊆ WF FX ->
+  inclFam FX X X' ->
+  inclFam FX (rW X) (rW X').
+red; intros.
+apply H in H1.
+revert H1; apply rW_mono_gen; trivial.
+Qed.
+
+Lemma rW_irrel (R R' : set -> SAT) (o : set) :
+ isOrd o ->
+ (forall x x' : set, x ∈ TI WF o -> x == x' -> eqSAT (R x) (R' x')) ->
+ forall x x' : set,
+ x ∈ TI WF (osucc o) -> x == x' -> eqSAT (rW R x) (rW R' x').
+intros.
+rewrite TI_mono_succ in H1; auto with *.
+split.
+ apply rW_mono_gen' with (Y:=TI WF o); auto.
+ intros.
+ rewrite H0 with (2:=H4); auto with *.
+
+ apply rW_mono_gen' with (Y:=TI WF o); auto with *.
+  intros.
+  rewrite H0 with (2:=symmetry H4); auto with *.
+  rewrite <- H4; trivial.
+
+  rewrite <- H2; trivial.
+Qed.
+(*
 Lemma rW_irrel (R R' : set -> SAT) (o : set) :
  isOrd o ->
  (forall x x' : set, x ∈ TI WF o -> x == x' -> eqSAT (R x) (R' x')) ->
@@ -91,7 +177,7 @@ apply piSAT0_morph; intros; auto with *.
 
    rewrite H2; reflexivity.
 Qed.
-
+*)
 Definition WC x f := COUPLE x f.
 
 Lemma Real_WC_gen X RX a b x f :
@@ -139,6 +225,92 @@ apply Real_sigma_elim with (3:=nty) (4:=xreal); trivial.
 do 2 red; intros.
 rewrite H0; reflexivity.
 Qed.
+
+(*********************************)
+(* Fixpoint *)
+
+Definition W' := TI WF (W_ord' A B).
+
+Lemma W'_eq : W' == WF W'.
+unfold W' at 2.
+rewrite <- W_fix'; auto with *.
+unfold W'.
+reflexivity.
+Qed.
+
+Lemma nmt_W' : ~ empty ∈ W'.
+intro.
+apply mt_not_in_W_F' in H; auto with *.
+unfold W_ord'.
+apply Ffix_o_o; auto with *.
+ apply Wf_mono'; trivial.
+apply Wf_typ'; trivial.
+Qed.
+Hint Resolve nmt_W'.
+
+(*Definition rWi := fixSAT W' rW.
+
+Lemma rWi_neutral S :
+  inclSAT (rWi empty) S.
+intros.
+apply fixSAT_outside_domain; auto with *.
+intros.
+apply rW_mono; trivial.
+rewrite <- W'_eq; reflexivity.
+Qed.
+
+Lemma rWi_eq x :
+  x ∈ W' ->
+  eqSAT (rWi x) (rW rWi x).
+intros xty.
+apply fixSAT_eq; auto with *.
+intros.
+apply rW_mono; trivial.
+rewrite <- W'_eq; reflexivity.
+Qed.
+
+Lemma Real_WC o n x f :
+  isOrd o ->
+  n ∈ TI WF (osucc o) ->
+  inSAT x (RA (fst n)) ->
+  inSAT f (piSAT0 (fun i => i ∈ B (fst n)) (RB (fst n)) (fun i => rWi (cc_app (snd n) i))) ->
+  inSAT (WC x f) (rWi n).
+intros.
+rewrite rWi_eq.
+2:revert H0; apply W_stages'; auto with *.
+assert (eqn : n == couple (fst n) (snd n)).
+ rewrite TI_mono_succ in H0; auto with *.
+ apply sigma_elim in H0; auto with *.
+ apply H0.
+setoid_replace (rW rWi n) with (rW rWi (couple (fst n) (snd n))).
+2:apply rW_morph; auto with *.
+2:apply fixSAT_morph; auto with *.
+2:apply rW_morph.
+eapply Real_WC_gen with (X:=W'); auto with *.
+ do 2 red; intros.
+ apply fixSAT_morph; auto with *.
+ apply rW_morph.
+
+ rewrite <- eqn.
+ rewrite <- W'_eq.
+ revert H0; apply W_stages'; auto with *.
+
+ apply piSAT0_intro; intros.
+  apply sat_sn in H2; trivial.
+ apply piSAT0_elim' in H2; red in H2.
+ specialize H2 with (1:=H3) (2:=H4).
+ assert (tysub : cc_app (snd n) x0 ∈ cc_bot (TI WF o)).
+  rewrite TI_mono_succ in H0; auto with *.
+  apply W_F_elim in H0; trivial.
+  apply H0; trivial.
+ rewrite cc_bot_ax in tysub; destruct tysub.
+  rewrite H5 in H2.
+  revert H2; apply rWi_neutral; trivial.
+
+  rewrite condSAT_ok; trivial.
+  apply mt_not_in_W_F' in H5; trivial.
+Qed.
+*)
 
 (*********************************)
 (* Iterated operator *)
@@ -192,8 +364,6 @@ Lemma rWi_neutral o S :
   inclSAT (rWi o empty) S.
 intros.
 apply tiSAT_outside_domain; auto with *.
- apply W_F'_mono; trivial.
-
  intros; apply rW_irrel with (o:=o'); trivial.
 
  intro.
@@ -248,7 +418,6 @@ Lemma Real_WCASE o C n nt bt:
 intros oo Cm nty nreal breal.
 rewrite rWi_succ_eq in nreal; trivial.
 rewrite TI_mono_succ in nty; auto with *.
-2:apply W_F'_mono; trivial.
 apply Real_WCASE_gen with (2:=nty) (3:=nreal); trivial.
 revert bt breal.
 apply interSAT_mono.
@@ -273,14 +442,12 @@ Lemma G_sat o x t m (X:SAT):
   inSAT (Lc.App2 WHEN_COUPLE t m) X.
 intros oo xty xsat msat.
 apply TI_elim in xty; auto with *.
-2:apply Fmono_morph; apply W_F'_mono; trivial.
 destruct xty as (o',o'lt,xty).
 assert (isOrd o') by eauto using isOrd_inv.
 assert (osucc o' ⊆ o).
  red; intros; apply le_lt_trans with o'; trivial.
 assert (xty' : x ∈ TI WF (osucc o')).
  rewrite TI_mono_succ; auto with *.
- apply W_F'_mono; trivial.
 rewrite <- rWi_mono with (o1:=osucc o') in xsat; auto.
 rewrite rWi_succ_eq in xsat; trivial.
 apply WHEN_COUPLE_sat with (2:=xty) (3:=xsat); trivial.
@@ -322,11 +489,9 @@ apply FIXP_sat0 with (6:=WHEN_COUPLE_neutral) (7:=G_sat) (8:=msat); trivial; int
 
   right.
   apply TI_elim in H1; auto with *.
-  2:apply Fmono_morph; apply W_F'_mono; trivial.
   destruct H1 as (z,zty,xty).
   exists z; trivial.
   rewrite TI_mono_succ; auto with *.
-   apply W_F'_mono; trivial.
    apply isOrd_inv with y; trivial.
 
  exists empty; trivial.
