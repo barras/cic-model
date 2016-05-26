@@ -1,13 +1,9 @@
 (** Saturated sets constructions related to natural numbers: interpreting constructors,
-    dependent pattern-matching and fixpoint. Does not support size annotations.
-
-    It uses the representation of natural numbers of ZFind_nat.
- *)
+    dependent pattern-matching and fixpoint. Does not support size annotations. *)
 
 Set Implicit Arguments.
-Require Import basic Can Sat.
-Require Import ZF ZFcoc ZFind_nat ZFind_natbot.
-Module Lc:=Lambda.
+Require Import basic Lambda Can Sat.
+Require Import ZF.
 
 
 (** Quantification over families *)
@@ -31,13 +27,30 @@ apply interSAT_morph.
 apply indexed_relation_id; intros (P,Pm); simpl; auto.
 Qed.
 
+
+Module Type SimpleNats.
+  Parameter N Nbot : set.
+  Parameter N_Nbot : N ⊆ Nbot.
+  Parameter Ndec : forall n, n ∈ Nbot -> n∈N \/ ~n∈N.
+
+  Parameter zero : set.
+  Parameter succ : set -> set.
+  Parameter succ_morph : morph1 succ.
+  Existing Instance succ_morph.
+
+  Parameter zero_typ : zero ∈ N.
+  Parameter succ_typ : forall n, n ∈ Nbot -> succ n ∈ N.
+End SimpleNats.
+  
+Module Make (N:SimpleNats).
+  Import N.
+  
 (** * Functional applying constructors of Nat to A *)
 
 Definition fNAT (A:set->SAT) (k:set) :=
   piFAM(fun P =>
-        prodSAT (P ZERO)
-       (prodSAT (depSAT (fun n => n ∈ cc_bot NAT')
-                  (fun n => prodSAT (A n) (prodSAT (P n) (P (SUCC n)))))
+        prodSAT (P zero)
+       (prodSAT (depSAT (fun n => n ∈ Nbot) (fun n => prodSAT (A n) (prodSAT (P n) (P (succ n)))))
                 (P k))).
 
 Instance fNAT_morph : Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) fNAT.
@@ -54,27 +67,13 @@ apply prodSAT_morph.
  apply prodSAT_morph; auto with *.
 Qed.
 
-
-Lemma fNAT_mono : forall A B,
-  (forall k, k ∈ cc_bot NAT' -> inclSAT (A k) (B k)) -> forall k, inclSAT (fNAT A k) (fNAT B k).
-unfold fNAT; intros.
-apply interSAT_mono; intro P.
-apply prodSAT_mono; auto with *.
-apply prodSAT_mono; auto with *.
-apply interSAT_mono; intro n.
-apply prodSAT_mono; auto with *.
-red; destruct n; simpl; auto.
-Qed.
-
-
-Lemma fNAT_def : forall t A k,
+Lemma fNAT_def t A k :
   inSAT t (fNAT A k) <->
   forall P f g,
   Proper (eq_set==>eqSAT) P ->
-  inSAT f (P ZERO) ->
-  inSAT g (depSAT(fun n=>n ∈ cc_bot NAT')
-             (fun n => prodSAT (A n) (prodSAT (P n) (P (SUCC n))))) ->
-  inSAT (Lc.App2 t f g) (P k).
+  inSAT f (P zero) ->
+  inSAT g (depSAT(fun n=>n ∈ Nbot)(fun n => prodSAT (A n) (prodSAT (P n) (P (succ n))))) ->
+  inSAT (App2 t f g) (P k).
 intros.
 unfold fNAT.
 rewrite piFAM_ax.
@@ -88,13 +87,25 @@ split; intros.
  apply H; trivial.
 Qed.
 
+Lemma fNAT_mono A B :
+  (forall k, k ∈ Nbot -> inclSAT (A k) (B k)) ->
+  forall k, inclSAT (fNAT A k) (fNAT B k).
+unfold fNAT; intros.
+apply interSAT_mono; intro P.
+apply prodSAT_mono; auto with *.
+apply prodSAT_mono; auto with *.
+apply interSAT_mono; intros (n,tyn); simpl.
+apply prodSAT_mono; auto with *.
+apply H; trivial.
+Qed.
+
 (** * Realizability relation of Nat: fixpoint of fNAT *)
 
 (** cNAT is intersection of all families that are post-fixpoint (that is,
     P s.t. fNAT P included in P) *)
 Definition cNAT n :=
   depSAT (fun P => Proper (eq_set==>eqSAT) P /\
-            forall k, k ∈ NAT' -> inclSAT (fNAT P k) (P k)) (fun P => P n).
+                   forall k, k ∈ N -> inclSAT (fNAT P k) (P k)) (fun P => P n).
 
 Instance cNAT_morph : Proper (eq_set==>eqSAT) cNAT.
 do 2 red; intros.
@@ -102,8 +113,10 @@ apply interSAT_morph.
 apply indexed_relation_id; intros (P,(Pm,Pind)); simpl; auto.
 Qed.
 
-Lemma cNAT_post : forall k, k ∈ NAT' -> inclSAT (fNAT cNAT k) (cNAT k).
-red; intros k tyk t tsat.
+Lemma cNAT_post k :
+  k ∈ N ->
+  inclSAT (fNAT cNAT k) (cNAT k).
+intros tyk t tsat.
 unfold cNAT.
 apply depSAT_intro; intros.
  apply sat_sn in tsat; trivial.
@@ -111,507 +124,100 @@ apply depSAT_intro; intros.
  apply H; trivial.
  revert t tsat.
  apply fNAT_mono.
- red; intros.
- eapply depSAT_elim with (F:=fun P => P k0); [apply H1|].
+ clear k tyk; intros k tyk t tsat.
+ eapply depSAT_elim with (F:=fun P => P k); [apply tsat|].
  exact H.
 Qed.
 
-
-Lemma cNAT_mt S :
-  inclSAT (cNAT empty) S.
-red; intros.
-unfold cNAT, depSAT in H.
-pose (P:= fun k => condSAT (~k==empty) (cNAT k)).
-assert (Pm : Proper (eq_set==>eqSAT) P).
- do 2 red; intros.
- apply condSAT_morph.
-  rewrite H0; reflexivity.
-  apply cNAT_morph; trivial.
-assert (Ppost:forall k, k ∈ NAT' -> inclSAT (fNAT P k) (P k)).
- intros.
- transitivity (fNAT cNAT k).
-  apply fNAT_mono; intros.
-  unfold P.
-  apply cc_bot_ax in H1; destruct H1.
-   apply condSAT_neutral; red; auto.
-
-   red; intros.
-   rewrite condSAT_ok in H2; trivial.
-   apply mt_not_in_NATf' in H1; auto.
-
-  red; intros; unfold P.
-  rewrite condSAT_ok.
-   apply cNAT_post; trivial.
-
-   apply mt_not_in_NATf' in H0; auto.
-
-specialize interSAT_elim with (1:=H)
-    (x:=exist (fun P=>Proper(eq_set==>eqSAT)P/\
-                forall k,k∈NAT'->inclSAT(fNAT P k)(P k)) P (conj Pm Ppost)).
-simpl.
-apply condSAT_neutral; red; auto with *.
-Qed.
-
-
-Lemma cNAT_pre : forall k, k ∈ NAT' -> inclSAT (cNAT k) (fNAT cNAT k).
-red; intros k tyk t tsat.
-rewrite <- condSAT_ok with (P:=k ∈ NAT'); trivial.
-eapply depSAT_elim with (F:=fun P => P k) (1:=tsat) (x:=fun k=>condSAT(k∈NAT')(fNAT cNAT k)).
+Definition fNAT' A k := condSAT (k∈N) (fNAT A k).
+                                 
+Lemma cNAT_pre_strict k :
+  k ∈ N ->
+  inclSAT (cNAT k) (fNAT cNAT k).
+intros tyk t tsat.
+apply condSAT_smaller with (P:=k ∈ N).
+eapply depSAT_elim
+ with (F:=fun P => P k) (1:=tsat) (x:=fNAT' cNAT).
 split.
  do 2 red; intros; apply condSAT_morph.
   rewrite H; reflexivity.
  apply fNAT_morph; trivial; apply cNAT_morph.
 
- intros.
- transitivity (fNAT cNAT k0).
-  apply fNAT_mono; intros.
-   apply cc_bot_ax in H0; destruct H0.
-    apply condSAT_neutral.
-    intro h; apply mt_not_in_NATf' in h; auto with *.
+ clear; intros k tyk.
+ transitivity (fNAT cNAT k).
+  apply fNAT_mono; clear; intros k tyk.
+  destruct Ndec with (1:=tyk) as [tyk'|tyk'].
+   unfold fNAT'; rewrite condSAT_ok; auto.
+   apply cNAT_post; trivial.
 
-    intros t'; rewrite condSAT_ok; auto.
-    apply cNAT_post; trivial.
+   apply condSAT_neutral; trivial.
 
-  intros t'; rewrite condSAT_ok; auto.
+   unfold fNAT'; rewrite condSAT_ok; auto with *.
 Qed.
-
-Lemma cNAT'_pre : forall k, k ∈ cc_bot NAT' -> inclSAT (cNAT k) (fNAT cNAT k).
-intros.
-apply cc_bot_ax in H.
-destruct H;[|apply cNAT_pre; trivial].
-rewrite H.
-apply cNAT_mt.
-Qed.
-
-(** Fixpoint equation *)
-Lemma cNAT_eq : forall k, k ∈ NAT' -> eqSAT (cNAT k) (fNAT cNAT k).
-split.
- apply cNAT_pre; trivial.
- apply cNAT_post; trivial.
-Qed.
-
-Lemma cNAT'_eq : forall k, k ∈ cc_bot NAT' ->
-  eqSAT (cNAT k) (condSAT (k∈NAT') (fNAT cNAT k)).
-intros.
-apply cc_bot_ax in H; destruct H.
- assert (rmk : ~ k ∈ NAT').
-  intro h; apply mt_not_in_NATf' in h; auto with *.
- split.
-  rewrite H.
-  apply cNAT_mt; trivial.
-
-  apply condSAT_neutral; trivial.
-
- rewrite condSAT_ok; auto.
- apply cNAT_eq; trivial.
-Qed.
-
-(** * Constructors *)
-
-(** Interp of 0 *)
-Definition ZE := Lc.Abs (Lc.Abs (Lc.Ref 1)).
-
-Lemma ZE_iota t1 t2 :
-  Lc.redp (Lc.App2 ZE t1 t2) t1.
-unfold ZE.
-eapply t_trans;[apply Lc.redp_app_l;apply t_step;apply Lc.red1_beta; reflexivity|].
-unfold Lc.subst; simpl.
-apply t_step.
-apply Lc.red1_beta.
-unfold Lc.subst; rewrite Lc.simpl_subst; trivial.
-rewrite Lc.lift0; trivial.
-Qed.
-
-Lemma fNAT_ZE : forall A, inSAT ZE (fNAT A ZERO).
-intros.
-rewrite fNAT_def; intros.
-unfold ZE.
-eapply inSAT_context.
- intros.
- apply inSAT_exp; auto.
- exact H2.
-unfold Lc.subst; simpl Lc.subst_rec.
-apply inSAT_exp.
- apply sat_sn in H1; auto.
-unfold Lc.subst; rewrite Lc.simpl_subst; auto.
-rewrite Lc.lift0; auto.
-Qed.
-
-(** ZE realizes 0 *)
-Lemma cNAT_ZE : inSAT ZE (cNAT ZERO).
-rewrite cNAT_eq.
- apply fNAT_ZE.
-
- apply ZERO_typ'.
-Qed.
-
-(** Interp of successor. Unlike in system F the function corresponding to the successor
-    expects two arguments: the predecessor and the usual result of recursive call.
-    S(n) is (fun f g => g n (n f g)) instead of the usual (fun f g => g (n f g)).
-    However, we need a guarded version, because in the SN proof in SN_NAT, (S ⊥) is not
-    a value, the successor of empty needs to be empty.
- *)
-
-Definition SU := Abs (Abs (Abs
-    (App2 (Ref 0) (Ref 2) (App2 (Ref 2) (Ref 1) (Ref 0))))).
-
-Lemma SU_iota n t1 t2 :
-  redp (App2 (App SU n) t1 t2) (App2 t2 n (App2 n t1 t2)).
-unfold SU.
-eapply t_trans.
- do 2 apply redp_app_l.
- apply t_step; apply red1_beta; reflexivity.
-unfold subst; simpl.
-eapply  t_trans.
- apply redp_app_l.
- apply t_step; apply red1_beta; reflexivity.
-unfold subst; simpl.
-rewrite simpl_subst; auto.
-apply t_step; apply red1_beta.
-unfold subst; simpl.
-rewrite simpl_subst; auto.
-rewrite simpl_subst; auto.
-do 3 rewrite lift0.
-reflexivity.
-Qed.
-Lemma fNAT_SU : forall A n t,
-  n ∈ cc_bot NAT' ->
-  inSAT t (A n) ->
-  inSAT t (fNAT A n) ->
-  inSAT (App SU t) (fNAT A (SUCC n)).
-intros A n t nty H H0.
-unfold SU.
-apply inSAT_exp;[auto|].
-unfold subst; simpl subst_rec.
-rewrite fNAT_def; intros.
-eapply inSAT_context.
- intros.
- apply inSAT_exp; [right|].
-  apply sat_sn in H2; trivial.
-  eexact H4.
-unfold subst; simpl subst_rec.
-apply inSAT_exp; auto.
-unfold subst; simpl subst_rec.
-repeat rewrite simpl_subst; auto.
-repeat rewrite lift0.
-apply prodSAT_elim with (P n).
- apply prodSAT_elim with (2:=H).
- eapply (depSAT_elim _ H3); auto.
-
- rewrite fNAT_def in H0.
- apply H0; trivial.
-Qed.
-
-(** SU realizes the successor *)
-Lemma cNAT_SU : forall n t, n ∈ cc_bot NAT' -> inSAT t (cNAT n) ->
-  inSAT (App SU t) (cNAT (SUCC n)). 
-intros.
-rewrite cNAT'_eq.
- rewrite condSAT_ok.
-  apply fNAT_SU; trivial.
-  apply cc_bot_ax in H; destruct H.
-   rewrite H in H0.
-   revert H0; apply cNAT_mt.
-
-   apply cNAT_pre; trivial.
-
-  apply SUCC_typ'; trivial.
-
- apply cc_bot_intro; apply SUCC_typ'; trivial.
-Qed.
-
-Definition WHEN_NAT :=
-  Abs (App2 (Ref 0) (Abs (Ref 0)) (Abs (Abs (Abs (Ref 0))))).
-
-Definition WHEN_NAT_ZE u :
-  redp (App2 WHEN_NAT ZE u) u.
-unfold WHEN_NAT.
-eapply t_trans.
- apply redp_app_l.
- apply t_step; apply beta.
-unfold subst; simpl.
-rewrite lift0.
-eapply t_trans.
- apply redp_app_l.
- apply redp_app_l.
- apply t_step; apply beta.
-unfold subst; simpl.
-unfold lift; simpl.
-eapply t_trans.
- apply redp_app_l.
- apply t_step; apply beta.
-unfold subst; simpl.
-apply t_step; apply red1_beta.
-unfold subst; simpl.
-rewrite lift0; reflexivity.
-Qed.
-
-Definition WHEN_NAT_SU a u :
-  redp (App2 WHEN_NAT (App SU a) u) u.
-unfold WHEN_NAT.
-eapply t_trans.
- apply redp_app_l.
- apply t_step; apply beta.
-unfold subst; simpl.
-rewrite lift0.
-eapply t_trans.
- apply redp_app_l.
- apply SU_iota.
-eapply t_trans.
- apply redp_app_l.
- apply redp_app_l.
- apply t_step; apply beta.
-unfold subst; simpl.
-eapply t_trans.
- apply redp_app_l.
- apply t_step; apply beta.
-unfold subst; simpl.
-apply t_step; apply red1_beta.
-unfold subst; simpl.
-rewrite lift0; reflexivity.
-Qed.
-Lemma WHEN_NAT_sat x n t S :
-  x ∈ cc_bot NAT' ->
-  inSAT n (cNAT x) ->
-  inSAT t S ->
-  inSAT (Lc.App2 WHEN_NAT n t) S.
-intros tyx satn satt.
-unfold WHEN_NAT.
-apply prodSAT_elim with S; trivial.
-apply prodSAT_elim with (cNAT x); trivial.
-clear n satn.
-apply prodSAT_intro; intros n satn.
-unfold Lc.subst; simpl.
-rewrite Lc.lift0.
-apply cNAT'_pre in satn; trivial.
-eapply (proj1 (fNAT_def _ _ _) satn) with (P:=fun _ => prodSAT S S).
- do 2 red; reflexivity.
-
- apply prodSAT_intro; intros.
- unfold Lc.subst; simpl; rewrite Lc.lift0; trivial.
-
- apply depSAT_intro'.
-  exists empty; auto.
- intros ? _.
- apply prodSAT_intro; intros.
- unfold Lc.subst; simpl.
- apply prodSAT_intro; intros.
- unfold Lc.subst; simpl.
- apply prodSAT_intro; intros.
- unfold Lc.subst; simpl; rewrite Lc.lift0; trivial.
-Qed.
-Lemma WHEN_NAT_neutral t :
-  (forall S, inSAT t S) ->
-  forall S, inSAT (Lc.App WHEN_NAT t) S.
-intros.
-apply inSAT_exp; auto.
-unfold Lc.subst; simpl.
-rewrite Lc.lift0.
-apply prodSAT_elim with snSAT.
- apply prodSAT_elim with snSAT; trivial.
- apply snSAT_intro.
- apply sn_abs; apply sn_var.
-
- apply snSAT_intro.
- repeat apply sn_abs; apply sn_var.
-Qed.
-
-
-
-(* More complicated def in fNAT, but simpler proofs:
-
-(** * Functional applying constructors of Nat to A *)
-
-Definition fNAT (A:set->SAT) (k:set) :=
-  piFAM(fun P =>
-        prodSAT (P ZERO)
-       (prodSAT (depSAT (fun n => n ∈ cc_bot NAT')
-                  (fun n => prodSAT (condSAT (n∈NAT')(A n)) (prodSAT (P n) (P (SUCC n)))))
-                (P k))).
-
-Instance fNAT_morph : Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) fNAT.
-do 3 red; intros.
-apply piFAM_morph.
-red; intros.
-apply prodSAT_morph.
- apply H1; reflexivity.
-
- apply prodSAT_morph; auto.
- apply interSAT_morph.
- apply indexed_relation_id; intros.
- apply prodSAT_morph; auto with *.
- apply condSAT_morph; auto with *.
- apply prodSAT_morph; auto with *.
-Qed.
-
-Instance condSAT_mono :
-  Proper (impl ==> inclSAT ==> inclSAT) condSAT.
-unfold condSAT, depSAT; do 4 red; intros.
-apply interSAT_intro.
- econstructor; reflexivity.
-intros (C,?); simpl.
-assert (rmk : x -> inclSAT x0 C).
- intros.
- transitivity y0; auto.
-apply interSAT_elim with (1:=H1)(x:=exist (fun _=>_) C rmk). 
-Qed.
-
-Lemma condSAT_ext (P Q:Prop) S S':
-  (P -> Q) ->
-  (P -> Q -> inclSAT S S') ->
-  inclSAT (condSAT P S) (condSAT Q S').
-unfold condSAT, depSAT; red; intros.
-apply interSAT_intro.
- econstructor; reflexivity.
-intros (C,?); simpl.
-assert (rmk : P -> inclSAT S C).
- intros.
- transitivity S'; auto.
-apply interSAT_elim with (1:=H1)(x:=exist (fun _=>_) C rmk). 
-Qed.
-
-
-Lemma fNAT_mono : forall A B,
-  (forall k, k ∈ NAT' -> inclSAT (A k) (B k)) -> forall k, inclSAT (fNAT A k) (fNAT B k).
-unfold fNAT; intros.
-apply interSAT_mono; intro P.
-apply prodSAT_mono; auto with *.
-apply prodSAT_mono; auto with *.
-apply interSAT_mono; intro n.
-apply prodSAT_mono; auto with *.
-apply condSAT_ext; auto.
-Qed.
-
-
-Lemma fNAT_def : forall t A k,
-  inSAT t (fNAT A k) <->
-  forall P f g,
-  Proper (eq_set==>eqSAT) P ->
-  inSAT f (P ZERO) ->
-  inSAT g (depSAT(fun n=>n ∈ cc_bot NAT')
-             (fun n => prodSAT (condSAT (n∈NAT')(A n)) (prodSAT (P n) (P (SUCC n))))) ->
-  inSAT (Lc.App2 t f g) (P k).
-intros.
-unfold fNAT.
-rewrite piFAM_ax.
-apply fa_morph; intros P.
-split; intros.
- apply prodSAT_elim with (2:=H1) in H; trivial.
- apply prodSAT_elim with (1:=H); trivial.
-
- apply prodSAT_intro'; intros f satf.
- apply prodSAT_intro'; intros g satg.
- apply H; trivial.
-Qed.
-
-(** * Realizability relation of Nat: fixpoint of fNAT *)
-
-(** cNAT is intersection of all families that are post-fixpoint (that is,
-    P s.t. fNAT P included in P) *)
-Definition cNAT n :=
-  depSAT (fun P => Proper (eq_set==>eqSAT) P /\
-            forall k, k ∈ NAT' -> inclSAT (fNAT P k) (P k)) (fun P => P n).
-
-Instance cNAT_morph : Proper (eq_set==>eqSAT) cNAT.
-do 2 red; intros.
-apply interSAT_morph.
-apply indexed_relation_id; intros (P,(Pm,Pind)); simpl; auto.
-Qed.
-
-Lemma cNAT_post : forall k, k ∈ NAT' -> inclSAT (fNAT cNAT k) (cNAT k).
-red; intros k tyk t tsat.
-unfold cNAT.
-apply depSAT_intro; intros.
- apply sat_sn in tsat; trivial.
-
- apply H; trivial.
- revert t tsat.
- apply fNAT_mono.
- red; intros.
- eapply depSAT_elim with (F:=fun P => P k0); [apply H1|].
- exact H.
-Qed.
-
-Lemma cNAT_pre : forall k, k ∈ NAT' -> inclSAT (cNAT k) (fNAT cNAT k).
-red; intros k tyk t tsat.
-eapply depSAT_elim with (F:=fun P => P k) (1:=tsat).
-split.
- apply fNAT_morph; apply cNAT_morph.
-
- intros.
- apply fNAT_mono.
- apply cNAT_post.
-Qed.
-
-(** Fixpoint equation *)
-Lemma cNAT_eq : forall k, k ∈ NAT' -> eqSAT (cNAT k) (fNAT cNAT k).
-split.
- apply cNAT_pre; trivial.
- apply cNAT_post; trivial.
-Qed.
-
-
-Lemma cNAT_mt k S :
-  ~ k ∈ NAT' ->
+  
+Lemma cNAT_out k S :
+  ~ k ∈ N ->
   inclSAT (cNAT k) S.
-red; intros.
-unfold cNAT, depSAT in H0.
-pose (P:= fun k => condSAT (k ∈ NAT') (cNAT k)).
+intros notn t tsat.
+unfold cNAT, depSAT in tsat.
+pose (P:= fun k => condSAT (k∈N) (cNAT k)).
 assert (Pm : Proper (eq_set==>eqSAT) P).
  do 2 red; intros.
  apply condSAT_morph.
-  rewrite H1; reflexivity.
+  rewrite H; reflexivity.
   apply cNAT_morph; trivial.
-assert (forall k, k ∈ NAT' -> inclSAT (fNAT P k) (P k)).
- intros.
- transitivity (fNAT cNAT k0).
-  apply fNAT_mono; intros.
+assert (Ppost:forall k, k ∈ N -> inclSAT (fNAT P k) (P k)).
+ clear.
+intros.
+ transitivity (fNAT cNAT k).
+  apply fNAT_mono; clear; intros k tyk.
   unfold P.
-  red; intros.
-  rewrite condSAT_ok in H3; trivial.
+  apply condSAT_smaller.
 
   red; intros; unfold P.
   rewrite condSAT_ok; trivial.
   apply cNAT_post; trivial.
-specialize interSAT_elim with (1:=H0)
+specialize interSAT_elim with (1:=tsat)
     (x:=exist (fun P=>Proper(eq_set==>eqSAT)P/\
-                forall k,k∈NAT'->inclSAT(fNAT P k)(P k)) P (conj Pm H1)).
+                forall k,k∈N->inclSAT(fNAT P k)(P k)) P (conj Pm Ppost)).
 simpl.
-apply condSAT_neutral; trivial.
+apply condSAT_neutral; red; auto with *.
 Qed.
 
-Lemma cNAT'_eq : forall k, k ∈ cc_bot NAT' ->
-  eqSAT (cNAT k) (condSAT (k∈NAT') (fNAT cNAT k)).
-intros.
-apply cc_bot_ax in H; destruct H.
- assert (rmk : ~ k ∈ NAT').
-  intro h; apply mt_not_in_NATf' in h; auto with *.
- split.
-  apply cNAT_mt; trivial.
+Lemma cNAT_pre k :
+  k ∈ Nbot ->
+  inclSAT (cNAT k) (fNAT cNAT k).
+intros tyk t tsat.
+destruct Ndec with (1:=tyk).
+ apply cNAT_pre_strict; trivial.
 
-  apply condSAT_neutral; trivial.
+ revert tsat; apply cNAT_out; trivial.
+Qed.
 
- rewrite condSAT_ok; auto.
- apply cNAT_eq; trivial.
+(** Fixpoint equation *)
+Lemma cNAT_eq : forall k, k ∈ N -> eqSAT (cNAT k) (fNAT cNAT k).
+split.
+ apply cNAT_pre; apply N_Nbot; trivial.
+ apply cNAT_post; trivial.
 Qed.
 
 (** * Constructors *)
 
 (** Interp of 0 *)
-Definition ZE := Lc.Abs (Lc.Abs (Lc.Ref 1)).
+Definition ZE := Abs (Abs (Ref 1)).
 
 Lemma ZE_iota t1 t2 :
-  Lc.redp (Lc.App2 ZE t1 t2) t1.
+  redp (App2 ZE t1 t2) t1.
 unfold ZE.
-eapply t_trans;[apply Lc.redp_app_l;apply t_step;apply Lc.red1_beta; reflexivity|].
-unfold Lc.subst; simpl.
+eapply t_trans;[apply redp_app_l;apply t_step;apply red1_beta; reflexivity|].
+unfold subst; simpl.
 apply t_step.
-apply Lc.red1_beta.
-unfold Lc.subst; rewrite Lc.simpl_subst; trivial.
-rewrite Lc.lift0; trivial.
+apply red1_beta.
+unfold subst; rewrite simpl_subst; trivial.
+rewrite lift0; trivial.
 Qed.
 
-Lemma fNAT_ZE : forall A, inSAT ZE (fNAT A ZERO).
+Lemma fNAT_ZE : forall A, inSAT ZE (fNAT A zero).
 intros.
 rewrite fNAT_def; intros.
 unfold ZE.
@@ -619,26 +225,24 @@ eapply inSAT_context.
  intros.
  apply inSAT_exp; auto.
  exact H2.
-unfold Lc.subst; simpl Lc.subst_rec.
+unfold subst; simpl subst_rec.
 apply inSAT_exp.
  apply sat_sn in H1; auto.
-unfold Lc.subst; rewrite Lc.simpl_subst; auto.
-rewrite Lc.lift0; auto.
+unfold subst; rewrite simpl_subst; auto.
+rewrite lift0; auto.
 Qed.
 
 (** ZE realizes 0 *)
-Lemma cNAT_ZE : inSAT ZE (cNAT ZERO).
+Lemma cNAT_ZE : inSAT ZE (cNAT zero).
 rewrite cNAT_eq.
  apply fNAT_ZE.
 
- apply ZERO_typ'.
+ apply zero_typ.
 Qed.
 
 (** Interp of successor. Unlike in system F the function corresponding to the successor
     expects two arguments: the predecessor and the usual result of recursive call.
     S(n) is (fun f g => g n (n f g)) instead of the usual (fun f g => g (n f g)).
-    However, we need a guarded version, because in the SN proof in SN_NAT, (S ⊥) is not
-    a value, the successor of empty needs to be empty.
  *)
 
 Definition SU := Abs (Abs (Abs
@@ -663,11 +267,12 @@ rewrite simpl_subst; auto.
 do 3 rewrite lift0.
 reflexivity.
 Qed.
+
 Lemma fNAT_SU : forall A n t,
-  n ∈ cc_bot NAT' ->
-  inSAT t (condSAT (n∈NAT') (A n)) ->
+  n ∈ Nbot ->
+  inSAT t (A n) ->
   inSAT t (fNAT A n) ->
-  inSAT (App SU t) (fNAT A (SUCC n)).
+  inSAT (App SU t) (fNAT A (succ n)).
 intros A n t nty H H0.
 unfold SU.
 apply inSAT_exp;[auto|].
@@ -685,80 +290,23 @@ repeat rewrite simpl_subst; auto.
 repeat rewrite lift0.
 apply prodSAT_elim with (P n).
  apply prodSAT_elim with (2:=H).
- eapply (depSAT_elim _ H3); auto.
-
+ eapply (depSAT_elim _ H3); trivial.
+ 
  rewrite fNAT_def in H0.
  apply H0; trivial.
 Qed.
 
 (** SU realizes the successor *)
-Lemma cNAT_SU : forall n t, n ∈ cc_bot NAT' -> inSAT t (cNAT n) ->
-  inSAT (App SU t) (cNAT (SUCC n)). 
+Lemma cNAT_SU n t :
+  n ∈ Nbot ->
+  inSAT t (cNAT n) ->
+  inSAT (App SU t) (cNAT (succ n)). 
 intros.
-rewrite cNAT'_eq.
- rewrite condSAT_ok.
-  apply fNAT_SU; trivial.
-admit. (* condSAT in fNAT useless *)
-   apply cc_bot_ax in H; destruct H.
-    revert H0; apply cNAT_mt.
-    intro h; apply mt_not_in_NATf' in h; auto with *.
+rewrite cNAT_eq.
+ apply fNAT_SU; trivial.
+ apply cNAT_pre; trivial.
 
-    apply cNAT_pre; trivial.
-
-  apply SUCC_typ'; trivial.
-
- apply cc_bot_intro; apply SUCC_typ'; trivial.
+ apply succ_typ; trivial.
 Qed.
 
-Definition WHEN_NAT :=
-  Abs (App2 (Ref 0) (Abs (Ref 0)) (Abs (Abs (Abs (Ref 0))))).
-
-Definition WHEN_NAT_ZE u :
-  redp (App2 WHEN_NAT ZE u) u.
-unfold WHEN_NAT.
-eapply t_trans.
- apply redp_app_l.
- apply t_step; apply beta.
-unfold subst; simpl.
-rewrite lift0.
-eapply t_trans.
- apply redp_app_l.
- apply redp_app_l.
- apply t_step; apply beta.
-unfold subst; simpl.
-unfold lift; simpl.
-eapply t_trans.
- apply redp_app_l.
- apply t_step; apply beta.
-unfold subst; simpl.
-apply t_step; apply red1_beta.
-unfold subst; simpl.
-rewrite lift0; reflexivity.
-Qed.
-
-Definition WHEN_NAT_SU a u :
-  redp (App2 WHEN_NAT (App SU a) u) u.
-unfold WHEN_NAT.
-eapply t_trans.
- apply redp_app_l.
- apply t_step; apply beta.
-unfold subst; simpl.
-rewrite lift0.
-eapply t_trans.
- apply redp_app_l.
- apply SU_iota.
-eapply t_trans.
- apply redp_app_l.
- apply redp_app_l.
- apply t_step; apply beta.
-unfold subst; simpl.
-eapply t_trans.
- apply redp_app_l.
- apply t_step; apply beta.
-unfold subst; simpl.
-apply t_step; apply red1_beta.
-unfold subst; simpl.
-rewrite lift0; reflexivity.
-Qed.
-
-*)
+End Make.

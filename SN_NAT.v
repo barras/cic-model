@@ -11,6 +11,25 @@ Require Import ZF ZFcoc ZFuniv_real ZFind_natbot.
 Module Lc:=Lambda.
 Import SN_CC_Model SN.
 
+(* Building the realizability on the nats of ZFind_natbot *)
+Module natARG <: SimpleNats.
+  Definition N := NAT'.
+  Definition Nbot := cc_bot NAT'.
+  Definition N_Nbot : N ⊆ Nbot := cc_bot_intro NAT'.
+  Lemma Ndec n (h:n ∈ Nbot) : n ∈ N \/ ~ n ∈ N.
+    apply cc_bot_ax in h; destruct h; [right|left;trivial].
+    rewrite H; intros h; apply mt_not_in_NATf' in h; auto with *.
+  Qed.    
+
+  Definition zero := ZERO.
+  Definition succ := SUCC.
+  Definition succ_morph := ZFsum.inr_morph.
+
+  Definition zero_typ := ZERO_typ'.
+  Definition succ_typ := SUCC_typ'.
+End natARG.
+Module SAT_nat := SATnat.Make(natARG).
+Import SAT_nat.
 
 (** * Nat and its constructors *)
 
@@ -191,8 +210,7 @@ apply and_split; intros.
 
  red in H.
  simpl tm.
- rewrite cNAT'_eq in satn; trivial.
- apply condSAT_smaller in satn; trivial.
+ apply cNAT_pre in satn; trivial.
  assert (satn' := proj1 (fNAT_def _ _ _) satn); clear satn.
  apply satn' with (P:=fun k => Real (app (int P i) k) (NAT_RECT (int f i) gg k)).
   do 2 red; intros.
