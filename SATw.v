@@ -1,13 +1,229 @@
 
-Require Import ZF ZFpairs ZFsum ZFrelations ZFord ZFfix ZFind_wbot Sat SATtypes.
-Require Import ZFlambda.
+Require Import ZF ZFpairs ZFsum ZFrelations ZFord ZFfix ZFgrothendieck ZFfunext.
+Require Import ZFlambda Sat SATtypes.
 Require Import Lambda.
 Module Lc:=Lambda.
 Require Import ZFcoc.
 
+(** The abstract set-theoretical model of W-types, upon which the realizability
+    interpretation is built.
+ *)
+Module Type W_PartialModel.
+
+  Parameter W_F : set -> (set -> set) -> set -> set.
+  Parameter W_F_def : forall A B X,
+    W_F A B X == Σ x ∈ A, Π i ∈ B x, cc_bot X.
+  Parameter W_F_mono : forall A B, morph1 B ->
+    Proper (incl_set==>incl_set) (W_F A B).
+  Existing Instance W_F_mono.
+  Parameter W_F_ext : forall A A' B B' X X',
+    A == A' ->
+    eq_fun A B B' -> X == X' -> W_F A B X == W_F A' B' X'.
+  Parameter W_F_intro : forall A B, morph1 B ->
+    forall X x f,
+    x ∈ A ->
+    f ∈ (Π i ∈ B x, cc_bot X) ->
+    couple x f ∈ W_F A B X.
+  Parameter W_F_elim : forall A B, morph1 B ->
+    forall X x,
+    x ∈ W_F A B X ->
+    fst x ∈ A /\
+    (forall i, i ∈ B (fst x) -> cc_app (snd x) i ∈ cc_bot X) /\
+    x ==couple (fst x) (cc_lam (B (fst x)) (cc_app (snd x))). 
+  Parameter W_ord : set -> (set -> set) -> set.
+  Parameter W_fix : forall A B, morph1 B ->
+    TI (W_F A B) (W_ord A B) ==
+    W_F A B (TI (W_F A B) (W_ord A B)).
+  Parameter W_stages : forall A B, morph1 B ->
+    forall o, isOrd o ->
+    TI (W_F A B) o ⊆ TI (W_F A B) (W_ord A B).
+  Parameter mt_not_in_W_F : forall A B, morph1 B ->
+    forall o x,
+    isOrd o -> x ∈ TI (W_F A B) o -> ~ x == empty.
+
+  Parameter W_ord_ord : forall A B, morph1 B ->
+    isOrd (W_ord A B).
+
+  Parameter G_W_ord : forall A B, morph1 B ->
+    forall U, grot_univ U -> omega ∈ U ->
+    A ∈ U -> (forall a : set, a ∈ A -> B a ∈ U) -> W_ord A B ∈ U.
+  Parameter G_W_F : forall A B,
+       morph1 B ->
+       forall U,
+       grot_univ U ->
+       A ∈ U ->
+       (forall a, a ∈ A -> B a ∈ U) ->
+       forall X, X ∈ U -> W_F A B X ∈ U.
+
+  Parameter WREC : (set -> set -> set) -> set -> set.
+  Parameter WREC_morph : Proper ((eq_set==>eq_set==>eq_set)==>eq_set==>eq_set) WREC.
+  Parameter WREC_typ :
+    forall A B, morph1 B ->
+    forall O, isOrd O ->
+    forall M, morph2 M ->
+    forall U, morph2 U ->
+    (forall o x, empty ∈ U o x) ->
+    (forall o',
+        o' ∈ osucc O ->
+        forall f,
+        f ∈ (Π x ∈ cc_bot (TI (W_F A B) o'), U o' x) ->
+        M o' f
+        ∈ (Π x ∈ cc_bot (TI (W_F A B) (osucc o')), U (osucc o') x)) ->
+    (forall o' o'' f g,
+        isOrd o' ->
+        o' ⊆ o'' ->
+        o'' ∈ osucc O ->
+        f ∈ (Π x ∈ cc_bot (TI (W_F A B) o'), U o' x) ->
+        g ∈ (Π x ∈ cc_bot (TI (W_F A B) o''), U o'' x) ->
+        fcompat (cc_bot (TI (W_F A B) o')) f g ->
+        fcompat (cc_bot (TI (W_F A B) (osucc o'))) (M o' f) (M o'' g)) ->
+    (forall o' o'' x,
+        isOrd o' ->
+        o' ⊆ o'' ->
+        o'' ∈ osucc O ->
+        x ∈ cc_bot (TI (W_F A B) o') ->
+        U o' x ⊆ U o'' x) ->
+
+    forall o,
+       isOrd o ->
+       o ⊆ O ->
+       WREC M o
+       ∈ (Π x ∈ cc_bot (TI (W_F A B) o), U o x).
+  Parameter WREC_irr :
+    forall A B, morph1 B ->
+    forall O, isOrd O ->
+    forall M, morph2 M ->
+    forall U, morph2 U ->
+    (forall o x, empty ∈ U o x) ->
+    (forall o',
+        o' ∈ osucc O ->
+        forall f,
+        f ∈ (Π x ∈ cc_bot (TI (W_F A B) o'), U o' x) ->
+        M o' f
+        ∈ (Π x ∈ cc_bot (TI (W_F A B) (osucc o')), U (osucc o') x)) ->
+    (forall o' o'' f g,
+        isOrd o' ->
+        o' ⊆ o'' ->
+        o'' ∈ osucc O ->
+        f ∈ (Π x ∈ cc_bot (TI (W_F A B) o'), U o' x) ->
+        g ∈ (Π x ∈ cc_bot (TI (W_F A B) o''), U o'' x) ->
+        fcompat (cc_bot (TI (W_F A B) o')) f g ->
+        fcompat (cc_bot (TI (W_F A B) (osucc o'))) (M o' f) (M o'' g)) ->
+    (forall o' o'' x,
+        isOrd o' ->
+        o' ⊆ o'' ->
+        o'' ∈ osucc O ->
+        x ∈ cc_bot (TI (W_F A B) o') ->
+        U o' x ⊆ U o'' x) ->
+
+    forall o o' x,
+       isOrd o ->
+       isOrd o' ->
+       o ⊆ o' ->
+       o' ⊆ O ->
+       x ∈ cc_bot (TI (W_F A B) o) ->
+       cc_app (WREC M o) x == cc_app (WREC M o') x.
+  Parameter WREC_unfold :
+    forall A B, morph1 B ->
+    forall O, isOrd O ->
+    forall M, morph2 M ->
+    forall U, morph2 U ->
+    (forall o x, empty ∈ U o x) ->
+    (forall o',
+        o' ∈ osucc O ->
+        forall f,
+        f ∈ (Π x ∈ cc_bot (TI (W_F A B) o'), U o' x) ->
+        M o' f
+        ∈ (Π x ∈ cc_bot (TI (W_F A B) (osucc o')), U (osucc o') x)) ->
+    (forall o' o'' f g,
+        isOrd o' ->
+        o' ⊆ o'' ->
+        o'' ∈ osucc O ->
+        f ∈ (Π x ∈ cc_bot (TI (W_F A B) o'), U o' x) ->
+        g ∈ (Π x ∈ cc_bot (TI (W_F A B) o''), U o'' x) ->
+        fcompat (cc_bot (TI (W_F A B) o')) f g ->
+        fcompat (cc_bot (TI (W_F A B) (osucc o'))) (M o' f) (M o'' g)) ->
+    (forall o' o'' x,
+        isOrd o' ->
+        o' ⊆ o'' ->
+        o'' ∈ osucc O ->
+        x ∈ cc_bot (TI (W_F A B) o') ->
+        U o' x ⊆ U o'' x) ->
+
+    forall o n,
+       isOrd o ->
+       o ⊆ O ->
+       n ∈ TI (W_F A B) (osucc o) ->
+       cc_app (WREC M (osucc o)) n == cc_app (M o (WREC M o)) n.
+  Parameter WREC_eqn :
+    forall A B, morph1 B ->
+    forall O, isOrd O ->
+    forall M, morph2 M ->
+    forall U, morph2 U ->
+    (forall o x, empty ∈ U o x) ->
+    (forall o',
+        o' ∈ osucc O ->
+        forall f,
+        f ∈ (Π x ∈ cc_bot (TI (W_F A B) o'), U o' x) ->
+        M o' f
+        ∈ (Π x ∈ cc_bot (TI (W_F A B) (osucc o')), U (osucc o') x)) ->
+    (forall o' o'' f g,
+        isOrd o' ->
+        o' ⊆ o'' ->
+        o'' ∈ osucc O ->
+        f ∈ (Π x ∈ cc_bot (TI (W_F A B) o'), U o' x) ->
+        g ∈ (Π x ∈ cc_bot (TI (W_F A B) o''), U o'' x) ->
+        fcompat (cc_bot (TI (W_F A B) o')) f g ->
+        fcompat (cc_bot (TI (W_F A B) (osucc o'))) (M o' f) (M o'' g)) ->
+    (forall o' o'' x,
+        isOrd o' ->
+        o' ⊆ o'' ->
+        o'' ∈ osucc O ->
+        x ∈ cc_bot (TI (W_F A B) o') ->
+        U o' x ⊆ U o'' x) ->
+
+    forall o n,
+       isOrd o ->
+       o ⊆ O ->
+       n ∈ TI (W_F A B) o ->
+       cc_app (WREC M o) n == cc_app (M o (WREC M o)) n.
+  Parameter WREC_strict :
+    forall A B, morph1 B ->
+    forall O, isOrd O ->
+    forall M, morph2 M ->
+    forall U, morph2 U ->
+    (forall o x, empty ∈ U o x) ->
+    (forall o',
+        o' ∈ osucc O ->
+        forall f,
+        f ∈ (Π x ∈ cc_bot (TI (W_F A B) o'), U o' x) ->
+        M o' f
+        ∈ (Π x ∈ cc_bot (TI (W_F A B) (osucc o')), U (osucc o') x)) ->
+    (forall o' o'' f g,
+        isOrd o' ->
+        o' ⊆ o'' ->
+        o'' ∈ osucc O ->
+        f ∈ (Π x ∈ cc_bot (TI (W_F A B) o'), U o' x) ->
+        g ∈ (Π x ∈ cc_bot (TI (W_F A B) o''), U o'' x) ->
+        fcompat (cc_bot (TI (W_F A B) o')) f g ->
+        fcompat (cc_bot (TI (W_F A B) (osucc o'))) (M o' f) (M o'' g)) ->
+    (forall o' o'' x,
+        isOrd o' ->
+        o' ⊆ o'' ->
+        o'' ∈ osucc O ->
+        x ∈ cc_bot (TI (W_F A B) o') ->
+        U o' x ⊆ U o'' x) ->
+    forall o,
+       isOrd o -> o ⊆ O -> cc_app (WREC M o) empty == empty.
+
+End W_PartialModel.
+
 Set Implicit Arguments.
 
 (** W-types *)
+
+Module Make (W:W_PartialModel).
+Import W.
 
 Section Wtypes.
 
@@ -18,14 +234,12 @@ Let Bext : ext_fun A B.
 auto with *.
 Qed.
 
-Notation WF := (W_F' A B).
 
-Existing Instance W_F'_mono.
 
-(*Local Instance Wf_mono : Proper (incl_set ==> incl_set) Wf.
-apply W_F'_mono; trivial.
-Qed.
-*)
+Notation WF := (W_F A B).
+
+Existing Instance W_F_mono.
+
 
 Variable RA : set -> SAT.
 Variable RB : set -> set -> SAT.
@@ -165,8 +379,8 @@ apply piSAT0_morph; intros; auto with *.
   intros.
   apply H0.
    rewrite TI_mono_succ in H1; auto with *.
-   2:apply W_F'_mono; trivial.
-   unfold W_F' in H1.
+   2:apply W_F_mono; trivial.
+   unfold W_F in H1.
    apply W_F_elim in H1; trivial.
    destruct H1 as (_,(?,_)); auto.
    apply fst_morph in H3; rewrite fst_def in H3.
@@ -220,31 +434,34 @@ Lemma Real_WCASE_gen X RX C n nt bt:
                    (fun f => C (couple x f)))) ->
   inSAT (WCASE bt nt) (C n).
 intros Cm nty xreal breal.
-unfold W_F' in nty.
+rewrite W_F_def in nty.
+(*unfold W_F in nty.*)
 apply Real_sigma_elim with (3:=nty) (4:=xreal); trivial.
 do 2 red; intros.
-rewrite H0; reflexivity.
+apply cc_arr_morph; auto with *.
+
 Qed.
 
 (*********************************)
 (* Fixpoint *)
 
-Definition W' := TI WF (W_ord' A B).
+Definition W' := TI WF (W_ord A B).
 
 Lemma W'_eq : W' == WF W'.
 unfold W' at 2.
-rewrite <- W_fix'; auto with *.
+rewrite <- W_fix; auto with *.
 unfold W'.
 reflexivity.
 Qed.
 
 Lemma nmt_W' : ~ empty ∈ W'.
 intro.
-apply mt_not_in_W_F' in H; auto with *.
-unfold W_ord'.
+apply mt_not_in_W_F in H; auto with *.
+apply W_ord_ord; trivial.
+(*unfold W_ord.
 apply Ffix_o_o; auto with *.
  apply Wf_mono'; trivial.
-apply Wf_typ'; trivial.
+apply Wf_typ'; trivial.*)
 Qed.
 Hint Resolve nmt_W'.
 
@@ -308,7 +525,7 @@ eapply Real_WC_gen with (X:=W'); auto with *.
   revert H2; apply rWi_neutral; trivial.
 
   rewrite condSAT_ok; trivial.
-  apply mt_not_in_W_F' in H5; trivial.
+  apply mt_not_in_W_F in H5; trivial.
 Qed.
 *)
 
@@ -331,7 +548,7 @@ Lemma rWi_mono o1 o2:
   eqSAT (rWi o1 x) (rWi o2 x).
 intros.
 apply tiSAT_mono; trivial.
- apply W_F'_mono; trivial.
+ apply W_F_mono; trivial.
 
  intros; apply rW_irrel with (o:=o'); trivial.
 Qed.
@@ -342,7 +559,7 @@ Lemma rWi_succ_eq o x :
   eqSAT (rWi (osucc o) x) (rW (rWi o) x).
 intros.
 apply tiSAT_succ_eq; auto.
- apply W_F'_mono; trivial.
+ apply W_F_mono; trivial.
 
  intros; apply rW_irrel with (o:=o'); trivial.
 Qed.
@@ -367,7 +584,7 @@ apply tiSAT_outside_domain; auto with *.
  intros; apply rW_irrel with (o:=o'); trivial.
 
  intro.
- apply mt_not_in_W_F' in H0; auto with *.
+ apply mt_not_in_W_F in H0; auto with *.
 Qed.
 
 
@@ -380,9 +597,9 @@ Lemma Real_WC o n x f :
 intros.
 rewrite rWi_succ_eq; trivial.
 rewrite TI_mono_succ in H0; trivial.
-2:apply W_F'_mono; trivial.
+2:apply W_F_mono; trivial.
 assert (nty := H0).
-unfold W_F' in H0; apply W_F_elim in H0; trivial.
+apply W_F_elim in H0; trivial.
 destruct H0 as (?,(?,?)).
 rewrite (rW_morph (rWi_morph (reflexivity o)) H4).
 apply Real_WC_gen with (TI WF o); auto with *.
@@ -401,7 +618,7 @@ apply Real_WC_gen with (TI WF o); auto with *.
   revert H2; apply rWi_neutral; trivial.
 
   rewrite condSAT_ok; trivial.
-  apply mt_not_in_W_F' in H3; trivial.
+  apply mt_not_in_W_F in H3; trivial.
 Qed.
 
 
@@ -450,6 +667,7 @@ assert (xty' : x ∈ TI WF (osucc o')).
  rewrite TI_mono_succ; auto with *.
 rewrite <- rWi_mono with (o1:=osucc o') in xsat; auto.
 rewrite rWi_succ_eq in xsat; trivial.
+rewrite W_F_def in xty.
 apply WHEN_COUPLE_sat with (2:=xty) (3:=xsat); trivial.
 do 2 red; intros; apply cc_arr_morph; auto.
 apply cc_bot_morph; apply TI_morph; reflexivity.
@@ -525,7 +743,7 @@ apply cc_lam_ext.
  apply TI_morph_gen.
   red; intros.
   apply W_F_ext; trivial.
-  apply cc_bot_morph; trivial.
+(*  apply cc_bot_morph; trivial.*)
 
   apply osucc_morph; trivial.
 
@@ -553,9 +771,9 @@ apply cc_lam_ext.
     rewrite H13 in H16.
     rewrite fst_def in H16; trivial.
 
-    do 2 red; intros.
+(*    do 2 red; intros.
     apply W_F_morph; trivial.
-    rewrite H16; reflexivity.
+    rewrite H16; reflexivity.*)
   apply prodSAT_morph; auto with *.
   apply piSAT0_morph; intros.
    red; intros.
@@ -591,7 +809,7 @@ apply cc_lam_ext.
   apply W_F_ext; trivial.
    red; intros; auto with *.
 
-   apply cc_bot_morph; trivial.
+(*   apply cc_bot_morph; trivial.*)
 
   apply osucc_morph; trivial.
 
@@ -625,3 +843,5 @@ apply cc_lam_ext.
 
      rewrite H10; reflexivity.
 Qed.
+
+End Make.
