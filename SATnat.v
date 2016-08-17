@@ -28,7 +28,11 @@ apply indexed_relation_id; intros (P,Pm); simpl; auto.
 Qed.
 
 
+(** An abstract strong normalization model of natural numbers, set-
+    theoretical interpretation. *)
 Module Type SimpleNats.
+  (** N is the type of natural numbers including neutral values.
+      Nbot is a decidable subet of N. *)
   Parameter N Nbot : set.
   Parameter N_Nbot : N ⊆ Nbot.
   Parameter Ndec : forall n, n ∈ Nbot -> n∈N \/ ~n∈N.
@@ -38,10 +42,13 @@ Module Type SimpleNats.
   Parameter succ_morph : morph1 succ.
   Existing Instance succ_morph.
 
+  (** Constructors produce non-neutral values *)
   Parameter zero_typ : zero ∈ N.
   Parameter succ_typ : forall n, n ∈ Nbot -> succ n ∈ N.
 End SimpleNats.
   
+(** A functor producing the realizability familes associated to natural
+    numbers, given the set-theoretical intrepretation. *)
 Module Make (N:SimpleNats).
   Import N.
   
