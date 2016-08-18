@@ -22,19 +22,7 @@ Require Import SN_ord.
 
 Require Import SN_variance.
 
-(** W *)
-
-Lemma val_ok_cons_default e T i j :
-  val_ok e i j ->
-  T <> kind ->
-  val_ok (T::e) (V.cons empty i) (I.cons daimon j).
-intros.
-apply vcons_add_var; trivial.
-split.
- red; auto.
- apply varSAT.
-Qed.
-
+(** NAT *)
 
 Section NAT_typing.
 
@@ -43,47 +31,6 @@ Hypothesis oo : isOrd o.
 Hypothesis oz : zero ∈ o.
 
 Variable e:env.
-(*
-Definition WF' i X := NATf'W_F (Aw i) (Bw i) (cc_bot X).
-Definition RW i o w := rWi (Aw i) (Bw i) (RAw i) (RBw i) o w.
-*)
-Instance NATf'_morph : morph1 NATf'.
-do 2 red; intros.
-apply NATf_morph.
-apply cc_bot_morph; trivial.
-Qed.
-(*
-  Lemma WF'mono i : Proper (incl_set==>incl_set) (WF' i).
-do 2 red; intros.
-unfold WF'.
-apply W_F_mono.
- do 2 red; intros; apply Bw_morph; auto with *.
- apply cc_bot_mono; trivial.
-Qed.
-  Hint Resolve WF'mono.
-
-Instance RW_morph : Proper (eq_val ==> eq_set ==> eq_set ==> eqSAT) RW.
-do 4 red; intros.
-unfold RW.
-apply rWi_morph_gen; auto with *.
- apply Aw_morph; trivial.
- apply Bw_morph; trivial.
- apply RAw_morph; trivial.
- apply RBw_morph; trivial.
-Qed.
-
-Lemma TI_inv i x :
-  isOrd o ->
-  x ∈ TI NATf' o ->
-  exists2 o', o' ∈ o & x ∈ TI (WF' i) (osucc o').
-intros.
-apply TI_elim in H0; auto.
-destruct H0.
-exists x0; trivial.
-rewrite TI_mono_succ; trivial.
-apply isOrd_inv with o; trivial.
-Qed.
-*)
 
 Definition NatI (O:trm) : trm.
 (*begin show*)
@@ -127,13 +74,12 @@ intros.
 rewrite H1; reflexivity.
 Qed.
 
-Lemma typ_WI : forall eps O,
-  isOrd eps ->
-  typ e O (Ordt eps) ->
+Lemma typ_NatI O :
+  typ e O (Ordt o) ->
   typ e (NatI O) kind.
-red; intros; simpl.
-red in H0; specialize H0 with (1:=H1).
-apply in_int_not_kind in H0.
+intros tyO i j valok; simpl.
+red in tyO; specialize tyO with (1:=valok).
+apply in_int_not_kind in tyO.
 2:discriminate.
 split;[|split].
  discriminate.
@@ -143,8 +89,34 @@ split;[|split].
  red; auto.
 
  simpl.
- apply real_sn in H0.
+ apply real_sn in tyO.
  trivial.
+Qed.
+
+Lemma typ_NatI_type n O :
+  typ e O (Ordt o) ->
+  typ e (NatI O) (type n).
+intros tyO i j is_val; simpl.
+destruct tyord_inv with (3:=tyO)(4:=is_val) as (o_o,(_,osn)); trivial.
+clear tyO.
+apply in_int_intro;[discriminate|discriminate|].
+apply and_split; intros.
+ red; change (int (type n) i) with (sn_sort (ecc (S n))).
+ simpl int.
+ apply sn_sort_intro.
+  intros.
+  apply cNAT_morph; auto with *.
+
+  apply G_incl with NAT'; trivial.
+   apply G_TI; auto with *.
+    intros.
+    apply G_NATf'; auto.
+
+    apply NATf'_stages; auto.
+
+ red in H.
+ change (int (type n) i) with (sn_sort (ecc (S n))).
+ rewrite Real_sort_sn; trivial.
 Qed.
 
 (** Constructors *)
@@ -305,7 +277,6 @@ apply union2_morph; apply cond_set_morph.
  rewrite H; reflexivity.
 (**)
 do 2 red; intros.
-unfold NCASE.
 rewrite H; reflexivity.
 (**)
 unfold NCASE; red; intros; simpl.
@@ -344,7 +315,11 @@ split; red; simpl; intros.
   setoid_rewrite H1; setoid_rewrite H2; reflexivity.
   rewrite H0, H1, H2; reflexivity.
 
- unfold NCASE; rewrite H,H0,H1,H2; reflexivity.
+ rewrite H.
+ rewrite H0.
+ rewrite H1.
+ rewrite H2.
+ reflexivity.
 Qed.
 
 Lemma NatCase_iota_0 B0 BS :
@@ -563,37 +538,6 @@ apply typ_NatCase with O; trivial.
 Qed.
 
 End NAT_typing.
-(*Hint Resolve WF'mono.*)
-
-Lemma typ_NAT_type n eps e O :
-  isOrd eps ->
-  zero ∈ eps ->
-  typ e O (Ordt eps) ->
-  typ e (NatI O) (type n).
-red; intros epso eps_nz tyO i j is_val; simpl.
-destruct tyord_inv with (3:=tyO)(4:=is_val) as (oo,(_,osn)); trivial.
-clear tyO.
-(*change (int (type n) i) with (sn_sort (ecc (S n))) in Aty.*)
-apply in_int_intro;[discriminate|discriminate|].
-apply and_split; intros.
- red; change (int (type n) i) with (sn_sort (ecc (S n))).
- simpl int.
- apply sn_sort_intro.
-  intros.
-  apply cNAT_morph; auto with *.
-
-  apply G_incl with NAT'; trivial.
-   apply G_TI; auto with *.
-    intros.
-    apply G_NATf'; auto.
-
-    apply NATf'_stages; auto.
-
- red in H.
- change (int (type n) i) with (sn_sort (ecc (S n))).
- rewrite Real_sort_sn; trivial.
-Qed.
-
 
 (*****************************************************************************)
 (** Recursor (without case analysis) *)
@@ -1106,29 +1050,7 @@ rewrite beta_eq in H2; auto with *.
  destruct tyX as (tyX,satX).
  trivial.
 Qed.
-(*
-Lemma TIeq: forall i i' j j' o',
-  val_mono E i j i' j' ->
-  isOrd o' ->
-  TI (WF' A B i) o' == TI (WF' A B i') o'.
-intros; apply TI_morph_gen; auto with *.
-red; intros.
-apply W_F_ext.
- apply El_morph.
- apply (Aeq _ _ _ _ H).
 
- red; intros.
- apply El_morph.
- eapply Beq.
- apply val_push_var with (1:=H); trivial.
-  split;[trivial|apply varSAT].
-  rewrite (Aeq _ _ _ _ H) in H2.
-  rewrite H3 in H2.
-  split;[trivial|apply varSAT].
-
- apply cc_bot_morph; trivial.
-Qed.
-*)
 Lemma natfix_extend :
   fx_subval E O ->
   fx_extends E (NatI O) (NatFix O M).
@@ -1157,8 +1079,6 @@ rewrite cc_bot_ax in H3; destruct H3.
  assert (o_o' : isOrd o') by eauto using isOrd_inv.
  assert (o'_y : osucc o' ⊆ y).
   red; intros; apply le_lt_trans with o'; auto.
-(* assert (xty' : x ∈ TI (WF' A B i') (osucc o')).
-  rewrite <- TIeq with (1:=H); auto.*)
  rewrite <- NATREC'_irr with (ord:=int O i)(U:=U' i) (o:=osucc o')(o':=y); eauto with *.
  rewrite NATREC'_unfold with (ord:=int O i)(U:=U' i); eauto with *.
  rewrite NATREC'_eqn with (ord:=int O i') (U:=U' i'); eauto with *.

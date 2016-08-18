@@ -144,6 +144,17 @@ Import SN.
 
 (** Derived properties *)
 
+Lemma val_ok_cons_default e T i j :
+  val_ok e i j ->
+  T <> kind ->
+  val_ok (T::e) (V.cons empty i) (I.cons daimon j).
+intros.
+apply vcons_add_var; trivial.
+split.
+ red; auto.
+ apply varSAT.
+Qed.
+
 Lemma El_int_prod U V i :
   El (int (Prod U V) i) == cc_prod (El (int U i)) (fun x => El (int V (V.cons x i))).
 simpl.

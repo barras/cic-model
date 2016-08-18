@@ -17,7 +17,13 @@ Require Export ZFind_nat.
 
 Definition NATf' X := NATf (cc_bot X).
 
- Instance NATf'_mono : Proper (incl_set==>incl_set) NATf'.
+Instance NATf'_morph : morph1 NATf'.
+do 2 red; intros.
+apply NATf_morph.
+apply cc_bot_morph; trivial.
+Qed.
+
+Instance NATf'_mono : Proper (incl_set==>incl_set) NATf'.
 do 2 red; intros.
 unfold NATf'; apply NATf_mono; trivial.
 apply cc_bot_mono; auto with *.
