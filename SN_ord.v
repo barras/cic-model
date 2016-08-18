@@ -97,3 +97,10 @@ split;[apply isOrd_inv with o'; trivial|].
 split; trivial.
 apply sat_sn in H3; trivial.
 Qed.
+
+(** * Ordinal judgment *)
+
+Definition typ_ord (e:env) (O:trm) : Prop :=
+  forall i j, val_ok e i j -> isOrd (int O i) /\ Lc.sn (tm O j).
+
+(* typ_ord OSucc *)

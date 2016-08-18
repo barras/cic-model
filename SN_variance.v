@@ -522,6 +522,12 @@ Qed.
 (** Variance and ordinals *)
 Require Import SN_ord.
 
+Definition typ_ord_mono (e:fenv) O :=
+  fx_subval e O /\ typ_ord (tenv e) O.
+
+Definition typ_ord_impl (e:fenv) O :=
+  fx_equals e O /\ typ_ord (tenv e) O.
+
   Lemma OSucc_sub : forall e O,
     fx_subval e O ->
     fx_subval e (OSucc O).
