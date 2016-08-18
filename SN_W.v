@@ -212,10 +212,10 @@ Qed.
 
 Definition Wc (x:trm) (f:trm) : trm.
 (* begin show *)
-left; exists (fun i => couple (int x i) (int f i))
+left; exists (fun i => mkw (int x i) (int f i))
              (fun j => WC (tm x j) (tm f j)).
 (* end show *)
- do 2 red; intros; apply couple_morph; apply int_morph; auto with *.
+ do 2 red; intros; apply mkw_morph; apply int_morph; auto with *.
  (**)
  do 2 red; intros.
  rewrite H; reflexivity.
@@ -246,7 +246,7 @@ apply in_int_not_kind in H1.
 2:discriminate.
 destruct tyord_inv with (3:=H)(4:=H2) as (?,(?,_)); trivial.
 apply in_int_intro; try discriminate.
-assert (couple (int X0 i) (int F i) ∈ TI (WF' i) (osucc (int O i))).
+assert (mkw (int X0 i) (int F i) ∈ TI (WF' i) (osucc (int O i))).
  apply TI_intro with (int O i); auto.
  apply W_F_intro.
   apply Bw_morph; auto with *.
@@ -268,7 +268,7 @@ split.
   apply RAw_morph; reflexivity.
   apply RBw_morph; reflexivity.
 
-  rewrite fst_def.
+  rewrite w1_eq.
   apply H0.
 
   destruct H1.
@@ -276,10 +276,10 @@ split.
   rewrite Real_int_prod in H6; trivial.
   revert H6; apply piSAT0_morph; intros.
    red; intros.
-   rewrite fst_def.
+   rewrite w1_eq.
    rewrite <- int_subst_eq; reflexivity.
 
-   rewrite fst_def.
+   rewrite w1_eq.
    rewrite <- int_subst_eq; reflexivity.
 
    rewrite int_cons_lift_eq.
@@ -287,7 +287,7 @@ split.
     unfold RW; apply rWi_morph; auto with *.
      apply RAw_morph; reflexivity.
 
-     rewrite snd_def; reflexivity.
+     rewrite w2_eq; reflexivity.
 
     apply cc_prod_elim with (2:=H7) in H1.
     rewrite int_cons_lift_eq in H1.
@@ -296,8 +296,11 @@ Qed.
 
 (* Case analysis *)
 
+Definition mkw_case (b : set -> set -> set) c :=
+  cond_set (c == mkw (w1 c) (w2 c)) (b (w1 c) (w2 c)).
+
 Definition W_CASE b w :=
-  sigma_case (fun x f => app (app b x) f) w.
+  mkw_case (fun x f => app (app b x) f) w.
 
 Definition Wcase (b n : trm) : trm.
 (*begin show*)
@@ -339,15 +342,10 @@ Lemma Wcase_iota : forall X F G,
 red; red; intros.
 simpl.
 unfold W_CASE.
-rewrite sigma_case_couple with (a:=int X0 i) (b:=int F i).
- reflexivity.
-
- do 3 red; intros.
- rewrite H0; rewrite H1; reflexivity.
-
- reflexivity.
+unfold mkw_case; rewrite cond_set_ok.
+ rewrite w1_eq, w2_eq; reflexivity.
+ rewrite w1_eq, w2_eq; reflexivity.
 Qed.
-
 
 Lemma typ_Wcase P O G n :
   typ e O (Ordt o) ->
@@ -370,31 +368,36 @@ rewrite Real_int_W in H6; trivial.
 apply and_split; intros.
  red; simpl.
  rewrite cc_bot_ax in H1; destruct H1.
-  unfold W_CASE, sigma_case.
+  unfold W_CASE, mkw_case.
   rewrite H1.
   rewrite cond_set_mt; auto.
-  apply discr_mt_pair.   
+  apply discr_mt_mkw.
 
   simpl in H1; rewrite TI_mono_succ in H1; auto with *.
-  assert (fst (int n i) ∈ Aw i).
-   unfold WF' in H1; rewrite W_F_def in H1.
-   apply fst_typ_sigma in H1; trivial.
-  assert (snd (int n i) ∈ cc_arr (Bw i (fst (int n i))) (cc_bot (TI (WF' i) (int O i)))).
-   unfold WF' in H1; rewrite W_F_def in H1.
-   apply snd_typ_sigma with (y:=fst(int n i)) in H1; auto with *.
-   do 2 red; intros.
-   apply cc_arr_morph; auto with *.
-   rewrite H9; reflexivity.
+  apply W_F_elim in H1.
+  2:apply Bw_morph; auto with *.
+  destruct H1 as (ty1,(ty2,eqn)).
+(*  assert (w1 (int n i) ∈ Aw i).
+   apply W_F_elim in H1.
+   2:apply Bw_morph; auto with *.
+   apply H1.
+  assert (w2 (int n i) ∈ cc_arr (Bw i (w1 (int n i))) (cc_bot (TI (WF' i) (int O i)))).
+   apply W_F_elim in H1.
+   2:apply Bw_morph; auto with *.
+   apply H1.
   assert (int n i == couple (fst (int n i)) (snd (int n i))).
+   apply W_F_elim in H1.
+   2:apply Bw_morph; auto with *.
+
    unfold WF' in H1; rewrite W_F_def in H1.
-   apply (surj_pair _ _ _ (subset_elim1 _ _ _ H1)).
-  unfold W_CASE, sigma_case.
+   apply (surj_pair _ _ _ (subset_elim1 _ _ _ H1)).*)
+  unfold W_CASE, mkw_case.
   rewrite cond_set_ok; trivial.
-  specialize cc_prod_elim with (1:=H0) (2:=H7); clear H0; intro H0.
+  specialize cc_prod_elim with (1:=H0) (2:=ty1); clear H0; intro H0.
   rewrite El_int_prod in H0.
   apply eq_elim with (El
-     (app (int (lift 2 P) (V.cons (snd (int n i)) (V.cons (fst (int n i)) i)))
-        (couple (fst (int n i)) (snd (int n i))))).
+     (app (int (lift 2 P) (V.cons (w2 (int n i)) (V.cons (w1 (int n i)) i)))
+        (mkw (w1 (int n i)) (w2 (int n i))))).
    apply El_morph.
    apply app_ext; auto with *.
    rewrite split_lift; do 2 rewrite int_cons_lift_eq; reflexivity.
@@ -402,7 +405,7 @@ apply and_split; intros.
    apply cc_prod_elim with (1:=H0).
    rewrite split_lift.
    rewrite El_int_arr.
-   revert H8; apply eq_elim.
+   revert ty2; apply eq_elim.
    apply cc_arr_morph.
     reflexivity.
 
@@ -421,13 +424,13 @@ apply and_split; intros.
 
   (* regular case *)
   eapply Real_WCASE with (5:=H1) (6:=H6)
-    (C:=fun x => Real (app (int P i) x) (sigma_case (fun x f => app (app (int G i) x) f) x));
+    (C:=fun x => Real (app (int P i) x) (mkw_case (fun x f => app (app (int G i) x) f) x));
      auto with *.
    apply Bw_morph; reflexivity.
    apply RAw_morph; reflexivity.
 
    do 2 red; intros.
-   unfold sigma_case.
+   unfold mkw_case.
    rewrite H8.
    reflexivity.
 
@@ -472,11 +475,9 @@ apply and_split; intros.
       rewrite split_lift; do 2 rewrite int_cons_lift_eq.
       reflexivity.
 
-      rewrite sigma_case_couple; [| |reflexivity].
-       reflexivity.
-
-       do 3 red; intros.
-       rewrite H11; rewrite H12; reflexivity.
+      unfold mkw_case; rewrite cond_set_ok.
+       rewrite w1_eq, w2_eq; reflexivity.
+       rewrite w1_eq, w2_eq; reflexivity.
 Qed.
 (*Print Assumptions typ_Wcase.*)
 
@@ -1139,7 +1140,7 @@ destruct tyN.
 red in H0; rewrite El_int_W in H0.
 rewrite cc_bot_ax in H0; destruct H0.
  simpl in H0.
- symmetry in H0; apply discr_mt_pair in H0; contradiction.
+ symmetry in H0; apply discr_mt_mkw in H0; contradiction.
 destruct tyord_inv with (3:=ty_O)(4:=H); trivial.
 apply WREC_eqn with (O:=int O i) (6:=Mty H) (7:=Mirr H) (8:=Usub H); auto with *.
  apply Bw_morph; reflexivity.
@@ -1468,12 +1469,30 @@ Require ZFind_wbot.
 Module W_Model : W_PartialModel.
   Import ZFind_wbot.
 
+  Definition mkw := couple.
+  Definition mkw_morph := couple_morph.
+  Definition w1 := fst.
+  Definition w1_morph := fst_morph.
+  Definition w2 := snd.
+  Definition w2_morph := snd_morph.
+  Definition w1_eq := fst_def.
+  Definition w2_eq := snd_def.
+  Definition discr_mt_mkw := fun x f => discr_mt_pair (singl x) (pair x f).
+
   Definition W_F := W_F'.
   Definition W_F_mono := W_F'_mono.
   Definition W_F_ext :=
     fun A A' B B' X X' eqA eqB eqX =>
     W_F_ext A A' B B' (cc_bot X) (cc_bot X') eqA eqB (cc_bot_morph _ _ eqX).
-  Definition W_F_elim A B Bm X := W_F_elim A B Bm (cc_bot X).
+(*  Definition W_F_elim A B Bm X := W_F_elim A B Bm (cc_bot X).*)
+  Lemma W_F_elim A B :
+    morph1 B ->
+    forall X x,
+    x ∈ W_F A B X ->
+    w1 x ∈ A /\ w2 x ∈ (Π _ ∈ B (w1 x), cc_bot X) /\ x == mkw (w1 x) (w2 x).
+intros Bm X x tyx.
+destruct sigma_elim with (2:=tyx) as (eqx,(ty1,ty2)); auto.
+Qed.
   Lemma W_F_intro A B :
     morph1 B ->
     forall X x f,
@@ -1522,6 +1541,7 @@ Qed.
   Definition WREC_irr := WREC'_irr.
   Definition WREC_unfold := WREC'_unfold.
   Definition WREC_strict := WREC'_strict.
+
 
 End W_Model.
 
