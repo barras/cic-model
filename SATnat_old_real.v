@@ -27,16 +27,12 @@ apply interSAT_morph.
 apply indexed_relation_id.
 intros.
 apply prodSAT_morph.
- unfold depSAT.
- apply interSAT_morph_subset; intros; auto with *.
- rewrite H0; reflexivity.
+ apply piSAT0_morph; intros; auto with *.
+ red; intros; rewrite H0; reflexivity.
 
  apply prodSAT_morph; auto with *.
- unfold depSAT.
- apply interSAT_morph_subset; simpl; intros; auto with *.
-  rewrite H0; reflexivity.
-
-  apply prodSAT_morph; auto with *.
+ apply piSAT0_morph; intros; auto with *.
+ red; intros; rewrite H0; reflexivity.
 Qed.
 Hint Resolve fNAT_morph.
 
@@ -50,17 +46,16 @@ unfold fNAT.
 apply interSAT_morph.
 apply indexed_relation_id; intro C.
 apply prodSAT_morph.
- apply interSAT_morph_subset; simpl; intros; auto with *.
- rewrite H2; reflexivity.
+ apply piSAT0_morph; intros; auto with *.
+ red; intros; rewrite H2; reflexivity.
 
  apply prodSAT_morph; auto with *.
- apply interSAT_morph_subset; simpl; intros; auto with *.
-  rewrite H2; reflexivity.
+ apply piSAT0_morph; intros; auto with *.
+  red; intros; rewrite H2; reflexivity.
 
-  apply prodSAT_morph; auto with *.
   apply H0; auto with *.
   rewrite TI_mono_succ in H1; auto.
-  rewrite Px in H1; apply sum_inv_r in H1; trivial.
+  rewrite H3 in H1; apply sum_inv_r in H1; trivial.
 Qed.
 
 Definition ZE := INL ID.

@@ -883,19 +883,15 @@ rewrite Real_prod in H4; trivial.
  split; trivial.
  rewrite Real_prod; trivial.
   unfold piSAT.
-  apply interSAT_intro' with
-   (F:=fun v => prodSAT(Real(int T i') v)(Real(int U (V.cons v i'))(cc_app x v))).
-   apply sat_sn in H4; trivial.
-   intros.
-   rewrite <- H0 in H6.
-   specialize interSAT_elim with (1:=H4) (x:=exist (fun x=> x ∈ El(int T i)) x0 H6); simpl proj1_sig; intros.
-   revert H7; apply prodSAT_mono.
-    do 2 red; intros.
-    rewrite <- H0 in H7; trivial.
+  revert H4; apply piSAT0_mono with (fun x=>x); intros; auto with *.
+   rewrite H0; trivial.
 
-    red; intros.
-    apply H1 with (i:=V.cons x0 i) (j:=I.cons daimon j) (j':=I.cons daimon j').
-     apply val_push_var; auto with *.
+   rewrite H0; reflexivity.
+
+   red; intros.
+   rewrite <- H0 in H4.
+   apply H1 with (i:=V.cons x0 i) (j:=I.cons daimon j) (j':=I.cons daimon j').
+    apply val_push_var; auto with *.
      split; trivial; apply varSAT.
      split.
       rewrite <- H0; trivial.
@@ -1535,21 +1531,19 @@ cut (inSAT (NATFIX (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j)))))
        (piSAT0 (fun n => n ∈ NATi (int O i)) (fNATi (int O i))
           (fun n =>Real (int U (V.cons n (V.cons (int O i) i)))
                     (cc_app (NATREC (F i) (int O i)) n)))).
- apply interSAT_morph_subset.
-  intros; simpl; rewrite El_def; reflexivity.
+ apply piSAT0_morph; intros; auto with *.
+  red; intros; simpl; rewrite El_def; reflexivity.
 
-  simpl; intros.  
-  apply prodSAT_morph.
-   rewrite Real_def; trivial.
-    reflexivity.
+  simpl; rewrite Real_def; trivial.
+   reflexivity.
 
-    intros.
-    rewrite H4; reflexivity.
+   intros.
+   rewrite H6; reflexivity.
 
-   apply Real_morph; [|reflexivity].
-   rewrite int_subst_rec_eq.
-   apply int_morph; auto with *.
-   intros [|[|k]]; reflexivity.
+  apply Real_morph; [|reflexivity].
+  rewrite int_subst_rec_eq.
+  apply int_morph; auto with *.
+  intros [|[|k]]; reflexivity.
 
 apply NATFIX_sat with (X:=fun o n => Real (int U (V.cons n (V.cons o i)))
    (cc_app (NATREC (F i) o) n)); trivial.
@@ -1566,64 +1560,59 @@ apply NATFIX_sat with (X:=fun o n => Real (int U (V.cons n (V.cons o i)))
   transitivity y'; trivial.
 
  (* sat body *)
- apply interSAT_intro.
-  exists (int O i); auto.
-  apply lt_osucc; auto.
-
-  intros.
-  destruct x as (o',?); simpl proj1_sig.
-  cbv zeta.
-  apply prodSAT_intro; intros.
-  assert (val_ok (Prod (NatI(Ref 0)) U::OSucct O::e)
+ apply piSAT0_intro'.
+ 2:exists (int O i); auto.
+ 2:apply lt_osucc; auto.
+ intros o' v tyo' ?.
+ apply inSAT_exp;[right;apply sat_sn in H3;trivial|].
+ cbv zeta.
+ assert (val_ok (Prod (NatI(Ref 0)) U::OSucct O::e)
     (V.cons (NATREC (F i) o') (V.cons o' i)) (I.cons v (I.cons (tm O j) j))).
-   apply vcons_add_var.
-    3:discriminate.
-    apply vcons_add_var; trivial.
-    2:discriminate.
-    split.
-     unfold inX; simpl; rewrite El_def; trivial.
+  apply vcons_add_var.
+   3:discriminate.
+   apply vcons_add_var; trivial.
+   2:discriminate.
+   split.
+    unfold inX; simpl; rewrite El_def; trivial.
 
-     simpl int; rewrite Real_def; auto with *.
-     apply ty_O in H.
-     apply in_int_sn in H; trivial.
+    simpl int; rewrite Real_def; auto with *.
+    apply ty_O in H.
+    apply in_int_sn in H; trivial.
 
-    rewrite intProd_eq.
-    assert (NATREC (F i) o' ∈ cc_prod (NATi o')
-              (fun x => El(int U(V.cons x(V.cons o' i))))).
-     apply fix_typ with (1:=H); trivial.
-      eauto using isOrd_inv.
-      apply olts_le in i0; trivial.
-    split.
-     unfold inX, prod; rewrite El_def.
-     revert H4; apply eq_elim; apply cc_prod_ext.
-      simpl; rewrite El_def; reflexivity.
+   rewrite intProd_eq.
+   assert (NATREC (F i) o' ∈ cc_prod (NATi o')
+             (fun x => El(int U(V.cons x(V.cons o' i))))).
+    apply fix_typ with (1:=H); trivial.
+     eauto using isOrd_inv.
+     apply olts_le in tyo'; trivial.
+   split.
+    unfold inX, prod; rewrite El_def.
+    revert H4; apply eq_elim; apply cc_prod_ext.
+     simpl; rewrite El_def; reflexivity.
 
-      red; intros.
-      rewrite H5; reflexivity.
+     red; intros.
+     rewrite H5; reflexivity.
 
-     rewrite Real_prod.
-      revert H3; apply interSAT_morph_subset.
-       simpl; intros; rewrite El_def; auto.
+    rewrite Real_prod.
+     revert H3; apply piSAT0_morph; intros; auto with *.
+      red; simpl; intros; rewrite El_def; auto.
 
-       simpl; intros.
-       apply prodSAT_morph.
-        rewrite Real_def; auto with *.
-        intros ? ? ? eqn; rewrite eqn; reflexivity.
+      simpl.
+      rewrite Real_def; auto with *.
+      intros ? ? ? eqn; rewrite eqn; reflexivity.
 
-        reflexivity.
+     red; intros.
+     rewrite H6; reflexivity.
+
+     eapply eq_elim.
+     2:apply fix_typ with (1:=H); auto with *.
+     2:   eauto using isOrd_inv.
+     2:   apply olts_le; trivial.
+     unfold prod; rewrite El_def; apply cc_prod_ext.
+      simpl; rewrite El_def; auto with *.
 
       red; intros.
       rewrite H6; reflexivity.
-
-      eapply eq_elim.
-      2:apply fix_typ with (1:=H); auto with *.
-      2:   eauto using isOrd_inv.
-      2:   apply olts_le; trivial.
-      unfold prod; rewrite El_def; apply cc_prod_ext.
-       simpl; rewrite El_def; auto with *.
-
-       red; intros.
-       rewrite H6; reflexivity.
 
   red in ty_M; specialize ty_M with (1:=H4).
   apply in_int_not_kind in ty_M.
@@ -1633,29 +1622,28 @@ apply NATFIX_sat with (X:=fun o n => Real (int U (V.cons n (V.cons o i)))
      with (tm M (I.cons v (I.cons (tm O j) j))).
    rewrite intProd_eq in H6.
    rewrite Real_prod in H6; trivial.
-    revert H6; apply interSAT_morph_subset.
-     simpl; intros.
+    revert H6; apply piSAT0_morph; intros; auto with *.
+     red; simpl; intros.
      rewrite El_def; reflexivity.
 
-     simpl; intros.
-     apply prodSAT_morph.
-      rewrite Real_def; trivial.
-       reflexivity.
+     simpl.
+     rewrite Real_def; trivial.
+      reflexivity.
 
-       intros ? ? ? eqn; rewrite eqn; reflexivity.
+      intros ? ? ? eqn; rewrite eqn; reflexivity.
 
-      apply Real_morph.
-       rewrite int_lift_rec_eq.
-       rewrite int_subst_rec_eq.
-       rewrite int_lift_rec_eq.
-       apply int_morph; auto with *.
-       intros [|[|k]]; try reflexivity.
-       compute; fold minus.
-       replace (k-0) with k; auto with *.
+     apply Real_morph.
+      rewrite int_lift_rec_eq.
+      rewrite int_subst_rec_eq.
+      rewrite int_lift_rec_eq.
+      apply int_morph; auto with *.
+      intros [|[|k]]; try reflexivity.
+      compute; fold minus.
+      replace (k-0) with k; auto with *.
 
-       apply fix_eqn with (1:=H); auto.
-        eauto using isOrd_inv.
-        apply olts_le; trivial.
+      apply fix_eqn with (1:=H); auto.
+       eauto using isOrd_inv.
+       apply olts_le; trivial.
 
     red; intros.
     rewrite H8; reflexivity.

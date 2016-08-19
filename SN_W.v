@@ -949,16 +949,15 @@ apply and_split; intros.
          (fun x =>
             Real (int U (V.cons x (V.cons (int O i) i))) 
               (cc_app (WREC (F' i) (int O i)) x)))).
-  apply interSAT_morph_subset; simpl proj1_sig; intros.
-   rewrite El_int_W; reflexivity.
+  apply piSAT0_morph; intros; auto with *.
+   red; intros; rewrite El_int_W; reflexivity.
 
-   apply prodSAT_morph.
-    rewrite Real_int_W; auto with *.
+   rewrite Real_int_W; auto with *.
 
-    apply Real_morph; simpl;[|reflexivity].
-    rewrite int_subst_rec_eq.
-    apply int_morph; auto with *.
-    intros [|[|k]]; reflexivity.
+   apply Real_morph; simpl;[|reflexivity].
+   rewrite int_subst_rec_eq.
+   apply int_morph; auto with *.
+   intros [|[|k]]; reflexivity.
 
  unfold RW.
  apply WFIX_sat with
@@ -1031,10 +1030,11 @@ apply and_split; intros.
        apply ext_fun_ty.
 
       rewrite Real_int_prod.
-       revert H4; apply interSAT_morph_subset; simpl proj1_sig; intros.
+       revert u H4; apply piSAT0_morph; auto with *.
+        red; intros.
         rewrite El_int_W_lift; reflexivity.
 
-        apply prodSAT_morph; auto with *.
+        intros.
         rewrite Real_int_W_lift; trivial.
         reflexivity.
 

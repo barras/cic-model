@@ -237,9 +237,10 @@ apply and_split; intros.
 
   rewrite natrec_0; trivial.
 
-  apply piSAT0_intro.
+  apply depSAT_intro.
    apply sat_sn in satg; trivial.
-  intros m mt tym satm.
+  intros m tym.
+  apply prodSAT_intro'; intros mt satm.
   apply prodSAT_intro'; intros v satv.
   rewrite natrec_S; trivial.
   apply piSAT0_elim' in satg; red in satg.

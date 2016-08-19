@@ -680,15 +680,12 @@ rewrite rWi_succ_eq in nreal; trivial.
 rewrite TI_mono_succ in nty; auto with *.
 apply Real_WCASE_gen with (2:=nty) (3:=nreal); trivial.
 revert bt breal.
-apply interSAT_mono.
-intros (x,xty); simpl proj1_sig.
-apply prodSAT_mono; auto with *.
-apply interSAT_mono.
-intros (f,fty); simpl proj1_sig.
-apply prodSAT_mono; auto with *.
-apply interSAT_mono.
-intros (i,ity); simpl proj1_sig.
-apply prodSAT_mono; auto with *.
+apply piSAT0_mono with (f:=fun x=>x); auto with *.
+intros x xty.
+apply piSAT0_mono with (f:=fun x=>x); auto with *.
+intros f fty.
+apply piSAT0_mono with (f:=fun x=>x); auto with *.
+intros i ity.
 apply condSAT_smaller.
 Qed.
 

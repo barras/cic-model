@@ -218,36 +218,47 @@ apply and_split; intros.
 
   rewrite NAT_RECT_ZERO; trivial.
 
-  revert satg; apply interSAT_mono_subset; simpl proj1_sig; intros.
-   rewrite ElNat_eq; trivial.
-  apply prodSAT_mono.
-   do 2 red; intros.
-   rewrite RealNat_eq; auto with *.
-  apply cc_prod_elim with (2:=Px) in tyg.
-  rewrite El_int_prod in tyg.
-  rewrite Real_int_prod; trivial.
+ apply depSAT_intro'.
+  exists (int n i); trivial.
+ intros k tyk.
+ apply prodSAT_intro'.
+ intros tk satk.
+ apply prodSAT_intro'.
+ intros v satv.
+ apply piSAT0_elim' in satg.
+ red in satg.
+ rewrite <- (RealNat_eq i) in satk; trivial.
+ rewrite <- (ElNat_eq i) in tyk.
+ specialize satg with (1:=tyk) (2:=satk).
+ apply cc_prod_elim with (2:=tyk) in tyg.
+ rewrite El_int_prod in tyg.
+ rewrite Real_int_prod in satg; trivial.
+ apply piSAT0_elim' in satg.
+ red in satg.
+ refine (_ (satg _ _ _ _)).
+  apply Real_morph.
+   simpl.
+   rewrite int_lift_eq.
+   unfold V.shift; simpl.
+   rewrite beta_eq; auto with *.
+    reflexivity.
 
-  red; intros.
-  apply depSAT_elim' in H0; red in H0.
-  specialize H0 with (x0:=NAT_RECT (int f i) gg x).
-  change (int (App (lift 1 P) (Ref 0)) (V.cons x i)) with
-    (app (int (lift 1 P) (V.cons x i)) x) in H0.
-  rewrite int_lift_eq in H0.
-  generalize (H0 (NRtyp x Qx)).
-  apply prodSAT_morph.
+    red; intros.
+    apply ZFsum.inr_morph; trivial.
+
+   rewrite NAT_RECT_SUCC; auto.
+   2:rewrite (ElNat_eq i) in tyk; trivial.
+   unfold gg.
    reflexivity.
 
-   simpl; rewrite int_lift_eq.
-   apply Real_morph.
-    rewrite beta_eq.
-     reflexivity.
+  simpl.
+  rewrite int_lift_eq.
+  apply NRtyp.
+  rewrite (ElNat_eq i) in tyk; trivial.
 
-     red; intros; apply couple_morph; auto with *.
-
-     red; rewrite El_def; trivial.
-
-    rewrite NAT_RECT_SUCC; auto with *.
-    reflexivity.
+  simpl.
+  rewrite int_lift_eq.
+  exact satv.
 Qed.
 
 (** beta-reduction on the realizers simulates the reduction of

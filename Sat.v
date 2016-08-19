@@ -531,3 +531,4 @@ apply H1; trivial.
 apply H2; auto.
 apply H0; trivial.
 Qed.
+Global Opaque piSAT0.

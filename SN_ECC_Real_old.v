@@ -68,14 +68,13 @@ apply couple_morph.
   red; intros.
   apply iSAT_morph.
   unfold piSAT.
-  apply interSAT_morph_subset; simpl; intros.
-   rewrite H; reflexivity.
+  apply piSAT0_morph; intros; auto with *.
+   red; intros; rewrite H; reflexivity.
 
-   apply prodSAT_morph.
-    apply Real_morph; auto with *.
+   apply Real_morph; auto with *.
 
-    apply Real_morph; auto with *.
-    rewrite H2; reflexivity.
+   apply Real_morph; auto with *.
+   rewrite H2; reflexivity.
 Qed.
 
 Definition prod_intro := prod_intro.

@@ -313,16 +313,12 @@ apply and_split; intros.
 
  red in H5; rewrite El_int_prod in H5.
  rewrite Real_int_prod; trivial.
- apply interSAT_intro' with
-   (F:=fun v => prodSAT(Real(int T i') v)(Real(int U (V.cons v i'))(cc_app x v))).
-  apply sat_sn in H4; trivial.
- intros.
- rewrite <- H0 in H6.
- specialize interSAT_elim with (1:=H4) (x:=exist (fun x=> x ∈ El(int T i)) x0 H6); simpl proj1_sig; intros.
- revert H7; apply prodSAT_mono.
-  do 2 red; intros.
-  rewrite <- H0 in H7; trivial.
+ revert t H4; apply piSAT0_mono with (f:=fun x=>x); intros; auto with *.
+  rewrite H0; trivial.
 
+  rewrite H0; reflexivity.
+
+  rewrite <- H0 in H4.
   red; intros.
   apply H1 with (i:=V.cons x0 i) (j:=I.cons daimon j) (j':=I.cons daimon j').
    apply val_push_var; auto with *.

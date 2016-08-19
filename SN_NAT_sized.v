@@ -861,17 +861,16 @@ apply and_split; intros.
          (fun x =>
             Real (int U (V.cons x (V.cons (int O i) i))) 
               (cc_app (NATREC (F i) (int O i)) x)))).
-  apply interSAT_morph_subset; simpl proj1_sig; intros.
-   simpl; rewrite El_def; reflexivity.
+  apply piSAT0_morph; intros; auto with *.
+   red; simpl; intros; rewrite El_def; reflexivity.
 
-   apply prodSAT_morph.
-    rewrite Real_int_NatI; auto with *.
-    symmetry; apply fNATi_stages; auto.
+   rewrite Real_int_NatI; auto with *.
+   symmetry; apply fNATi_stages; auto.
 
-    apply Real_morph; simpl;[|reflexivity].
-    rewrite int_subst_rec_eq.
-    apply int_morph; auto with *.
-    intros [|[|k]]; reflexivity.
+   apply Real_morph; simpl;[|reflexivity].
+   rewrite int_subst_rec_eq.
+   apply int_morph; auto with *.
+   intros [|[|k]]; reflexivity.
 
  apply NATFIX_sat with
    (X:=fun o n => Real (int U (V.cons n (V.cons o i)))
@@ -924,13 +923,12 @@ apply and_split; intros.
 
       red in H4; rewrite El_int_prod in H4; trivial.
       rewrite Real_int_prod; trivial.
-       revert satu; apply interSAT_morph_subset; simpl proj1_sig; intros.
-        simpl; rewrite El_def; reflexivity.
+      revert satu; apply piSAT0_morph; intros; auto with *.
+       red; simpl; intros; rewrite El_def; reflexivity.
 
-        apply prodSAT_morph; auto with *.
-        rewrite Real_int_NatI; trivial.
-        rewrite fNATi_stages; auto with *.
-        apply isOrd_inv with (2:=lto); auto.
+       rewrite Real_int_NatI; trivial.
+       rewrite fNATi_stages; auto with *.
+       apply isOrd_inv with (2:=lto); auto.
  assert (ty_M' := ty_M _ _ ok').
  apply in_int_not_kind in ty_M'.
  2:discriminate.

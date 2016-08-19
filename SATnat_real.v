@@ -24,16 +24,13 @@ apply interSAT_morph.
 apply indexed_relation_id.
 intros.
 apply prodSAT_morph.
- unfold depSAT.
- apply interSAT_morph_subset; intros; auto with *.
- rewrite H0; reflexivity.
+ apply piSAT0_morph; intros; auto with *.
+ red; intros; rewrite H0; reflexivity.
 
  apply prodSAT_morph; auto with *.
- unfold depSAT.
- apply interSAT_morph_subset; simpl; intros; auto with *.
-  rewrite H0; reflexivity.
+ apply piSAT0_morph; intros; auto with *.
+  red; intros; rewrite H0; reflexivity.
 
-  apply prodSAT_morph; auto with *.
   apply condSAT_morph; auto with *.
 Qed.
 Hint Resolve fNAT_morph.
@@ -248,10 +245,8 @@ rewrite fNATi_succ_eq in nreal; trivial.
 unfold NATi in nty; rewrite TI_mono_succ in nty; auto.
 apply Real_NATCASE_gen with (2:=nty) (3:=nreal); auto.
 revert gt greal.
-apply interSAT_mono.
-intros (x,xty); simpl proj1_sig.
-apply prodSAT_mono; auto with *.
-red.
+apply piSAT0_mono with (fun x => x); auto with *.
+intros x xty.
 apply condSAT_smaller.
 Qed.
 

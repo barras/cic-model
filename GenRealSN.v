@@ -138,8 +138,7 @@ split.
  apply prod_elim with (2:=H0); trivial.
 
  rewrite Real_prod in H1; trivial.
- apply interSAT_elim with (x:=exist (fun x => x ∈ dom) x H2) in H1; simpl proj1_sig in H1.
- apply prodSAT_elim with (1:=H1); trivial.
+ apply piSAT0_elim with (1:=H1); trivial.
 Qed.
 
 
