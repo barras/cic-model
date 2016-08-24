@@ -452,7 +452,8 @@ apply and_split; intros.
   rewrite H0 in satN.
   eapply prodSAT_elim.
    eapply prodSAT_elim.
-    eapply fNATi_neutral with (o:=omega); trivial.
+    apply neuSAT_def.
+    rewrite fNATi_neutral with (o:=omega) in satN; trivial.
 
     apply prodSAT_intro with (A:=snSAT).
     intros.

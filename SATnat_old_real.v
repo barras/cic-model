@@ -105,7 +105,7 @@ Lemma Real_NATCASE_gen X A C n nt ft gt:
   inSAT gt (piSAT0 (fun x => x ∈ X) A (fun x => C (SUCC x))) ->
   inSAT (NCASE ft gt nt) (C n).
 intros Cm nty nreal freal greal.
-apply Real_sum_case with ZFind_basic.UNIT X n (fun _ => unitSAT) A; trivial.
+apply Real_sum_case with n (fun _ => unitSAT) A; trivial.
  apply piSAT0_intro.
   apply Lc.sn_abs.
   apply Lc.sn_lift.
@@ -294,7 +294,7 @@ revert H1; apply inSAT_context.
 apply inSAT_context.
 intros.
 rewrite NAT_eq in H.
-apply WHEN_SUM_sat with (1:=H) (2:=H0); trivial.
+apply WHEN_SUM_sat with (1:=H0); trivial.
 Qed.
 
 
@@ -390,13 +390,15 @@ apply FIXP_sat0 with (T:=NATi) (U:=fun o => cc_bot (NATi o)) (RT:=fNATi); trivia
  apply fNATi_mono; trivial.
 
  intros.
+ apply neuSAT_def.
  apply WHEN_SUM_neutral; trivial.
+ apply neuSAT_def; trivial.
 
  intros.
  unfold fNATi in H4; rewrite tiSAT_eq in H4; auto with *.
   apply TI_elim in H3; auto with *.
   destruct H3 as (o',?,?).
-  eapply WHEN_SUM_sat with (1:=H6) (2:=H4); trivial.
+  eapply WHEN_SUM_sat with (1:=H4); trivial.
 
   intros.
   apply fNAT_irrel with (o:=o'); auto.

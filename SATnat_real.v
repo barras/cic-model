@@ -118,7 +118,7 @@ Lemma Real_NATCASE_gen X A C n nt ft gt:
                 (fun x => C (SUCC x))) ->
   inSAT (NCASE ft gt nt) (C n).
 intros Cm nty nreal freal greal.
-apply Real_sum_case with ZFind_basic.UNIT X n
+apply Real_sum_case with n
     (fun _ => unitSAT) (fun a => condSAT (~a==empty) (A a)); trivial.
  apply piSAT0_intro.
   apply Lc.sn_abs.
@@ -174,25 +174,15 @@ apply tiSAT_succ_eq; auto.
 intros; apply fNAT_irrel with (o:=o'); trivial.
 Qed.
 
-Lemma fNATi_neutral o S :
+Lemma fNATi_neutral o :
   isOrd o ->
-  inclSAT (fNATi o empty) S.
+  eqSAT (fNATi o empty) neuSAT.
 intros.
 apply tiSAT_outside_domain; auto with *.
  intros; apply fNAT_irrel with (o:=o'); trivial.
 
  intro.
  apply mt_not_in_NATf' in H0; auto with *.
-Qed.
-
-Lemma fNATi_mt : forall o,
-  isOrd o ->
-  eqSAT (fNATi o empty) (interSAT(fun S=>S)).
-intros.
-red; split.
- apply fNATi_neutral; trivial.
-
- intros h; apply interSAT_elim with (1:=h).
 Qed.
 
 Lemma Real_ZERO o :
@@ -275,22 +265,19 @@ intros.
 apply cc_bot_ax in H0.
 destruct H0.
  rewrite H0.
- transitivity (interSAT(fun S=>S)).
-  apply fNATi_mt; trivial.
-  symmetry; apply fNATi_mt; trivial.
+ transitivity neuSAT;[|symmetry]; apply fNATi_neutral; trivial.
 
- transitivity (fNATi (osup2 o omega) x).
-  apply fNATi_mono; auto with *.
-   apply isOrd_osup2; auto.
+ transitivity (fNATi (osup2 o omega) x);[|symmetry]; apply fNATi_mono;
+   auto with *.
+  apply isOrd_osup2; auto.
 
-   apply osup2_incl1; auto.
+  apply osup2_incl1; auto.
 
-  symmetry; apply fNATi_mono; auto with *.
-   apply isOrd_osup2; auto.
+  apply isOrd_osup2; auto.
 
-   apply osup2_incl2; auto.
+  apply osup2_incl2; auto.
 
-   revert H0; apply NATf'_stages; trivial.
+  revert H0; apply NATf'_stages; trivial.
 Qed.
 
 Lemma Real_SUCC_cNAT n t :
@@ -305,7 +292,8 @@ rewrite cNAT_eq.
   rewrite H1; reflexivity.
   apply cNAT_morph; trivial.
 
-  apply cc_bot_ax in H; destruct H.  
+  apply cc_bot_ax in H; destruct H.
+   apply neuSAT_def.
    rewrite H in H0.
    revert H0; apply fNATi_neutral; auto.
 
@@ -487,9 +475,7 @@ apply FIXP_sat0
    with (T:=TI NATf') (U:=fun o => cc_bot (TI NATf' o)) (RT:=fNATi); trivial.
  intros.
  rewrite cc_bot_ax in H1; destruct H1.
-  left; red; intros.
-  rewrite H1 in H2.
-  revert H2; apply fNATi_neutral; trivial.
+  left; rewrite H1; apply fNATi_neutral; trivial.
 
   right.
   apply TI_elim in H1; auto with *.
@@ -504,7 +490,9 @@ apply FIXP_sat0
  apply fNATi_mono; trivial.
 
  intros.
+ apply neuSAT_def.
  apply WHEN_SUM_neutral; trivial.
+ apply neuSAT_def; trivial.
 
  intros.
  apply TI_elim in H0; auto with *.
@@ -515,7 +503,7 @@ apply FIXP_sat0
  rewrite <-TI_mono_succ in xty'; auto.
  rewrite <- fNATi_mono with (o1:=osucc z) in H1; auto.
   rewrite fNATi_succ_eq in H1; auto.
-  apply WHEN_SUM_sat with (1:=xty) (2:=H1); trivial.
+  apply WHEN_SUM_sat with (1:=H1) (2:=H2); trivial.
 
   red; intros.
   apply le_lt_trans with z; trivial.

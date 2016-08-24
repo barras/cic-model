@@ -381,13 +381,14 @@ apply and_split; intros.
   rewrite H1 in H6.
   unfold WCASE.
   eapply prodSAT_elim;[|apply H5].
-  revert H6; unfold RW; apply rWi_neutral; auto with *.
+  unfold RW in H6; rewrite rWi_neutral in H6; auto with *.
+  apply neuSAT_def; trivial.
 
   (* regular case *)
-  eapply Real_WCASE with (5:=H1) (6:=H6)
+  eapply Real_WCASE with (6:=H1) (7:=H6)
     (C:=fun x => Real (app (int P i) x) (mkw_case (fun x f => app (app (int G i) x) f) x));
      auto with *.
-   do 2 red; intros.
+  do 2 red; intros.
    unfold mkw_case.
    rewrite H8.
    reflexivity.
@@ -965,6 +966,8 @@ apply and_split; intros.
      (cc_app (WREC (F' i) o) n)); trivial.
   apply Bw_morph; reflexivity.
   apply RAw_morph; reflexivity.
+  do 3 red; intros; apply Real_morph; auto with *.
+  rewrite H3; reflexivity.
 
   red; intros.
   apply cc_bot_intro in H7.
@@ -1260,6 +1263,10 @@ Qed.
     fx_sub e (WI A B O).
 unfold fx_sub, fx_subval.
 intros e o A B O oo oz Ank tyO eqA eqB subO i i' j j' val_m x t (xreal,xsat).
+assert (RBm : Proper (eq_set ==> eq_set ==> eqSAT)
+          (fun a b => Real (int B (V.cons a i)) b)).
+ do 3 red; intros.
+ rewrite H,H0; reflexivity.
 destruct tyord_inv with (3:=tyO) (4:=proj1 val_m); trivial.
 destruct tyord_inv with (3:=tyO) (4:=proj1 (proj2 val_m)); trivial.
 red in eqA; specialize eqA with (1:=val_m).
@@ -1295,13 +1302,15 @@ split.
  rewrite cc_bot_ax in xreal; destruct xreal as [H4|xreal].
   assert (eqSAT (RW A B i (int O i) x) (RW A B i (int O i) empty)).
    unfold RW; apply rWi_morph; auto with *.
-   do 2 red; intros.
-   rewrite H5; reflexivity.
- rewrite H5 in xsat.
- revert xsat; unfold RW; apply rWi_neutral; trivial.
-  apply Bw_morph; reflexivity.
-  apply RAw_morph; reflexivity.
-
+    do 2 red; intros.
+    rewrite H5; reflexivity.
+    do 2 red; intros.
+    rewrite H5; reflexivity.
+  rewrite H5 in xsat.
+  apply neuSAT_def.
+  unfold RW in xsat; rewrite rWi_neutral in xsat; auto with *.
+   apply Bw_morph; reflexivity.
+   apply RAw_morph; reflexivity.
  setoid_replace (RW A B i' (int O i') x) with (RW A B i (int O i) x); trivial.
  symmetry; transitivity (RW A B i (int O i') x).
   unfold RW; apply rWi_mono; trivial.

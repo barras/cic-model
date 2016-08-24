@@ -298,6 +298,27 @@ apply interSAT_morph; red; split; intros.
  exists (exist P x (proj2 (H x) q)); auto.
 Qed.
 
+  Definition neuSAT := interSAT(fun S=>S).
+
+  Lemma neuSAT_def u :
+    inSAT u neuSAT <-> forall S, inSAT u S.
+split; intros; trivial.
+apply interSAT_elim with (1:=H).
+Qed.
+
+  Lemma neuSAT_ext S :
+    inclSAT S neuSAT -> 
+    eqSAT S neuSAT.
+split; intros; auto.
+apply neuSAT_def; trivial.
+Qed.
+
+  Lemma neuSAT_inf S :
+    inclSAT neuSAT S.
+red; intros.
+rewrite neuSAT_def in H; trivial.
+Qed.
+ 
   Lemma KSAT_intro : forall A t m,
     sn t ->
     inSAT m A ->

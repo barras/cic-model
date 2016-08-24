@@ -12,13 +12,16 @@ Definition unitSAT :=
 
 Definition ID := Abs (Ref 0).
 
-Lemma ID_intro : inSAT ID unitSAT.
-apply interSAT_intro with (1:=snSAT).
-intros.
+Lemma ID_intro0 S : inSAT ID (prodSAT S S).
 apply prodSAT_intro; intros.
 unfold subst; simpl subst_rec.
 rewrite lift0.
 trivial.
+Qed.
+
+Lemma ID_intro : inSAT ID unitSAT.
+apply interSAT_intro with (1:=snSAT).
+apply ID_intro0.
 Qed.
 
 (** Disjoint sum *)
@@ -53,7 +56,7 @@ repeat rewrite lift0; trivial.
 Qed.
 
 Definition WHEN_SUM :=
-  Abs (App (App (Ref 0) (Abs (Abs (Ref 0)))) (Abs (Abs (Ref 0)))).
+  Abs (App2 (Ref 0) (Abs ID) (Abs ID)).
 
 Definition WHEN_SUM_INL a u :
   redp (App2 WHEN_SUM (INL a) u) u.
@@ -95,25 +98,90 @@ unfold subst; simpl.
 rewrite lift0; reflexivity.
 Qed.
 
-Lemma WHEN_SUM_neutral t S :
-  inSAT t (interSAT(fun S => S)) ->
-  inSAT (App WHEN_SUM t) S.
+Lemma WHEN_SUM_neutral t :
+  inSAT t (prodSAT snSAT (prodSAT snSAT neuSAT)) ->
+  inSAT (App WHEN_SUM t) neuSAT.
 intros.
 unfold WHEN_SUM.
 apply inSAT_exp;[simpl;auto|].
 unfold subst; simpl; rewrite lift0.
 apply prodSAT_elim with snSAT.
 2:apply snSAT_intro; auto.
-apply prodSAT_elim with snSAT.
-2:apply snSAT_intro; auto.
-apply interSAT_elim with (1:=H).
+apply prodSAT_elim with snSAT; trivial.
+apply snSAT_intro; auto.
+Qed.
+(*
+Definition sumSAT X Y : SAT :=
+  interSAT (fun C => prodSAT (prodSAT X C) (prodSAT (prodSAT Y C) C)).
+
+Lemma sumSAT_intro1 X Y t :
+  inSAT t X ->
+  inSAT (INL t) (sumSAT X Y).
+intros tsat.
+apply interSAT_intro;[exact snSAT|].
+intros C.
+apply prodSAT_intro; intros b1 b1sat.
+unfold subst; simpl.
+rewrite simpl_subst; auto with *.
+apply prodSAT_intro; intros b2 b2sat.
+unfold subst; simpl.
+rewrite !simpl_subst, !lift0; auto with *.
+apply prodSAT_elim with X; trivial.
 Qed.
 
+Lemma sumSAT_intro2 X Y t :
+  inSAT t Y ->
+  inSAT (INR t) (sumSAT X Y).
+intros tsat.
+apply interSAT_intro;[exact snSAT|].
+intros C.
+apply prodSAT_intro; intros b1 b1sat.
+unfold subst; simpl.
+rewrite simpl_subst; auto with *.
+apply prodSAT_intro; intros b2 b2sat.
+unfold subst; simpl.
+rewrite !simpl_subst, !lift0; auto with *.
+apply prodSAT_elim with Y; trivial.
+Qed.
+
+Lemma sumSAT_case X Y C t b1 b2 :
+  inSAT t (sumSAT X Y) ->
+  inSAT b1 (prodSAT X C) ->
+  inSAT b2 (prodSAT Y C) ->
+  inSAT (App2 t b1 b2) C.
+intros tsat b1sat b2sat.
+apply prodSAT_elim with (2:=b2sat).
+apply prodSAT_elim with (2:=b1sat).
+apply interSAT_elim with (1:=tsat).
+Qed.
+
+
 Definition sumReal (X Y:set->SAT) (a:set) : SAT :=
-  interSAT (fun C =>
-     prodSAT (piSAT0 (fun x => a==inl x) X (fun _ => C))
-    (prodSAT (piSAT0 (fun x => a==inr x) Y (fun _ => C))
-     C)).
+  sumSAT
+    (depSAT (fun x => a==inl x) X)
+    (depSAT (fun y => a==inr y) Y).
+ 
+Lemma Real_inl RX RY x t :
+  Proper (eq_set ==> eqSAT) RX ->
+  inSAT t (RX x) ->
+  inSAT (INL t) (sumReal RX RY (inl x)).
+intros Xm tsat.
+apply sumSAT_intro1.
+apply depSAT_intro; eauto using sat_sn.
+intros x' eqs; apply couple_injection in eqs; destruct eqs as (_,eqx).
+rewrite <- eqx; trivial.
+Qed.
+
+Lemma Real_inr RX RY x t :
+  Proper (eq_set ==> eqSAT) RY ->
+  inSAT t (RY x) ->
+  inSAT (INR t) (sumReal RX RY (inr x)).
+intros Ym tsat.
+apply sumSAT_intro2.
+apply depSAT_intro; eauto using sat_sn.
+intros x' eqs; apply couple_injection in eqs; destruct eqs as (_,eqx).
+rewrite <- eqx; trivial.
+Qed.
 
 Lemma Real_sum_case X Y a RX RY C t b1 b2 :
   a ∈ sum X Y ->
@@ -122,10 +190,78 @@ Lemma Real_sum_case X Y a RX RY C t b1 b2 :
   inSAT b2 (piSAT0 (fun x => a==inr x) RY (fun _ => C)) ->
   inSAT (App2 t b1 b2) C.
 intros.
+apply sum_ind with (3:=H); intros.
+ apply sumSAT_case with (1:=H0).
+  apply prodSAT_intro'; intros.
+  apply piSAT0_elim with (1:=H1) (2:=H4); auto.
+  apply depSAT_elim' in H5; red in H5; auto.
+
+  apply prodSAT_intro'; intros.
+
+  apply sum_ind with (3:=H); intros.
+
+
+apply sumSAT_case with (1:=H0).
+ apply prodSAT_intro'; intros.
+ apply depSAT_elim' in H3; red in H3.
+ apply sum_ind with (3:=H); intros.
+ apply piSAT0_elim with (1:=H1) (2:=H5); auto.
+
+
+Definition sumReal (X Y:set->SAT) (a:set) : SAT :=
+  sumSAT
+    (condSAT (a==inl (dest_sum a)) (X (dest_sum a)))
+    (condSAT (a==inr (dest_sum a)) (Y (dest_sum a))).
+ 
+Lemma Real_inl RX RY x t :
+  Proper (eq_set ==> eqSAT) RX ->
+  inSAT t (RX x) ->
+  inSAT (INL t) (sumReal RX RY (inl x)).
+intros Xm tsat.
+apply sumSAT_intro1.
+rewrite condSAT_ok.
+ rewrite dest_sum_inl; trivial.
+ rewrite dest_sum_inl; reflexivity.
+Qed.
+
+Lemma Real_inr RX RY x t :
+  Proper (eq_set ==> eqSAT) RY ->
+  inSAT t (RY x) ->
+  inSAT (INR t) (sumReal RX RY (inr x)).
+intros Ym tsat.
+apply sumSAT_intro2.
+rewrite condSAT_ok.
+ rewrite dest_sum_inr; trivial.
+ rewrite dest_sum_inr; reflexivity.
+Qed.
+
+Lemma Real_sum_case X Y a RX RY C t b1 b2 :
+  a ∈ sum X Y ->
+  inSAT t (sumReal RX RY a) ->
+  inSAT b1 (piSAT0 (fun x => a==inl x) RX (fun _ => C)) ->
+  inSAT b2 (piSAT0 (fun x => a==inr x) RY (fun _ => C)) ->
+  inSAT (App2 t b1 b2) C.
+intros.
+apply sumSAT_case with (1:=H0).
+ apply prodSAT_intro'; intros.
+ apply sum_ind with (3:=H); intros.
+  rewrite condSAT_ok in H3.
+  apply piSAT0_elim' in H1.
+  rewrite H5 in H3.
+
+ apply depSAT_elim' in H3.
+
+ rewrite condSAT_def in H3.
+
 apply interSAT_elim with (x:=C) in H0.
 eapply prodSAT_elim;[apply prodSAT_elim with (1:=H0)|]; trivial.
 Qed.
-
+*)
+Definition sumReal (X Y:set->SAT) (a:set) : SAT :=
+  interSAT (fun C =>
+     prodSAT (piSAT0 (fun x => a==inl x) X (fun _ => C))
+    (prodSAT (piSAT0 (fun x => a==inr x) Y (fun _ => C))
+     C)).
 
 Lemma Real_inl RX RY x t :
   Proper (eq_set ==> eqSAT) RX ->
@@ -161,13 +297,38 @@ repeat rewrite lift0.
 apply piSAT0_elim with (x:=x) (u:=t) in H2; auto with *.
 Qed.
 
+Lemma Real_sum_case a RX RY C t b1 b2 :
+  inSAT t (sumReal RX RY a) ->
+  inSAT b1 (piSAT0 (fun x => a==inl x) RX (fun _ => C)) ->
+  inSAT b2 (piSAT0 (fun x => a==inr x) RY (fun _ => C)) ->
+  inSAT (App2 t b1 b2) C.
+intros.
+apply interSAT_elim with (x:=C) in H.
+eapply prodSAT_elim;[apply prodSAT_elim with (1:=H)|]; trivial.
+Qed.
 
-Lemma WHEN_SUM_sat A B RA RB S x t m :
-  x ∈ sum A B ->
+Lemma sumReal_mt RX RY :
+  inclSAT (sumReal RX RY empty) (prodSAT snSAT (prodSAT snSAT neuSAT)).
+red; intros.
+apply prodSAT_intro'; intros.
+apply sat_sn in H0.
+apply prodSAT_intro'; intros.
+apply sat_sn in H1.
+apply Real_sum_case with (1:=H).
+ apply piSAT0_intro; trivial.
+ intros.
+ apply discr_mt_pair in H2; contradiction.
+
+ apply piSAT0_intro; trivial.
+ intros.
+ apply discr_mt_pair in H2; contradiction.
+Qed.
+
+Lemma WHEN_SUM_sat RA RB S x t m :
   inSAT t (sumReal RA RB x) ->
   inSAT m S ->
   inSAT (App2 WHEN_SUM t m) S.
-intros xty xsat msat.
+intros tsat msat.
 unfold WHEN_SUM.
 eapply inSAT_context.
  intros.
@@ -176,20 +337,16 @@ eapply inSAT_context.
  rewrite lift0.
  exact H.
 apply prodSAT_elim with S; trivial.
-apply Real_sum_case with (1:=xty) (2:=xsat); auto.
+apply Real_sum_case with (1:=tsat); auto.
  apply piSAT0_intro; intros; auto.
  apply inSAT_exp;[right; apply sat_sn in H0;trivial|].
  unfold subst; simpl.
- apply prodSAT_intro; intros.
- unfold subst; simpl; rewrite lift0.
- trivial.
+ apply ID_intro0.
 
  apply piSAT0_intro; intros; auto.
  apply inSAT_exp;[right; apply sat_sn in H0;trivial|].
  unfold subst; simpl.
- apply prodSAT_intro; intros.
- unfold subst; simpl; rewrite lift0.
- trivial.
+ apply ID_intro0.
 Qed.
 
 
@@ -213,7 +370,7 @@ Definition is_couple t := exists a b, t = Abs (App2 (Ref 0) a b).
 (** (WHEN_COUPLE t) reduces to the identity when t is a couple, or is
     neutral when t is. *)
 Definition WHEN_COUPLE :=
-  Abs (App (Ref 0) (Abs (Abs (Abs (Ref 0))))).
+  Abs (App (Ref 0) (Abs (Abs ID))).
 
 Lemma WHEN_COUPLE_iota t u :
   is_couple t ->
@@ -249,151 +406,105 @@ unfold subst; simpl.
 rewrite lift0; reflexivity.
 Qed.
 
-Lemma WHEN_COUPLE_neutral t S :
-  inSAT t (interSAT(fun S => S)) ->
-  inSAT (App WHEN_COUPLE t) S.
+Lemma WHEN_COUPLE_neutral t :
+  inSAT t (prodSAT snSAT neuSAT) ->
+  inSAT (App WHEN_COUPLE t) neuSAT.
 intros.
 unfold WHEN_COUPLE.
 apply inSAT_exp;[simpl;auto|].
 unfold subst; simpl; rewrite lift0.
-apply prodSAT_elim with snSAT.
-2:apply snSAT_intro; auto.
+apply prodSAT_elim with snSAT; trivial.
+apply snSAT_intro; auto.
+Qed.
+
+Definition cartSAT (X Y:SAT) : SAT :=
+  interSAT (fun C => prodSAT (prodSAT X (prodSAT Y C)) C).
+
+Instance cartSAT_mono : Proper (inclSAT ==> inclSAT ==> inclSAT) cartSAT.
+unfold cartSAT.
+do 3 red; intros.
+apply interSAT_mono; intros C.
+apply prodSAT_mono; auto with *.
+apply prodSAT_mono; auto with *.
+apply prodSAT_mono; auto with *.
+Qed.
+
+Instance cartSAT_morph : Proper (eqSAT ==> eqSAT ==> eqSAT) cartSAT.
+do 3 red; intros.
+apply interSAT_morph.
+apply indexed_relation_id.
+intros C.
+rewrite H,H0; reflexivity.
+Qed.
+
+
+Lemma cartSAT_intro X Y t1 t2 :
+  inSAT t1 X ->
+  inSAT t2 Y ->
+  inSAT (COUPLE t1 t2) (cartSAT X Y).
+intros.
+apply interSAT_intro.
+ exact snSAT.
+intros C.
+apply prodSAT_intro; intros.
+unfold subst; simpl subst_rec.
+repeat rewrite simpl_subst; auto.
+repeat rewrite lift0.
+apply prodSAT_elim with (2:=H0).
+apply prodSAT_elim with (2:=H).
+trivial.
+Qed.
+
+Lemma cartSAT_case X Y C t b :
+  inSAT t (cartSAT X Y) ->
+  inSAT b (prodSAT X (prodSAT Y C)) ->
+  inSAT (App t b) C.
+intros.
+apply prodSAT_elim with (2:=H0).
 apply interSAT_elim with (1:=H).
 Qed.
 
-(*
-(** Self-application guarded by a couple *)
-Definition guard_couple :=
-  Abs (Abs (App2 (App2 WHEN_COUPLE (Ref 0) (Ref 1)) (Ref 1) (Ref 0))).
-
-Lemma guard_couple_sim : forall m n,
-  is_couple n ->
-  redp (App2 guard_couple m n) (App2 m m n).
-unfold guard_couple, App2.
-intros m n is_c.
-eapply t_trans.
- apply redp_app_l.
- apply t_step; apply beta.
+Lemma WHEN_COUPLE_sat A B S t m :
+  inSAT t (cartSAT A B) ->
+  inSAT m S ->
+  inSAT (App2 WHEN_COUPLE t m) S.
+intros tsat msat.
+unfold WHEN_COUPLE.
+eapply inSAT_context.
+ intros.
+ apply inSAT_exp;[simpl;auto|].
+ unfold subst; simpl.
+ rewrite lift0.
+ exact H.
+apply prodSAT_elim with S; trivial.
+apply cartSAT_case with (1:=tsat).
+apply prodSAT_intro; intros a asat.
 unfold subst; simpl.
-fold WHEN_COUPLE.
-eapply t_trans.
- apply t_step; apply beta.
+apply prodSAT_intro; intros b bsat.
 unfold subst; simpl.
-fold WHEN_COUPLE.
-rewrite simpl_subst; auto.
-rewrite !lift0.
-apply redp_app_l.
-apply redp_app_l.
-apply WHEN_COUPLE_iota; trivial.
-Qed.
-
-(** (guard_couple m n) reduces to (m m n) when n is a constructor. Note that
-    n need not be closed. *)
-Lemma guard_couple_sim : forall m n,
-  is_couple n ->
-  redp (App2 guard_couple m n) (App2 m m n).
-intros m n (t1,(t2,eqn)).
-unfold guard_couple.
-eapply t_trans.
- apply redp_app_l.
- apply t_step.
- apply beta.
+apply prodSAT_intro; intros c csat.
 unfold subst; simpl.
-eapply t_trans.
- apply t_step.
- apply beta.
-unfold subst; simpl.
-repeat rewrite simpl_subst; auto.
-repeat rewrite lift0.
-rewrite eqn.
-eapply t_trans.
- apply redp_app_l.
- apply redp_app_l.
- apply t_step.
- apply beta.
-apply redp_app_l.
-apply redp_app_l.
-unfold subst; simpl.
-rewrite lift0.
-eapply t_trans.
- apply redp_app_l.
- apply t_step.
- apply beta.
-unfold subst; simpl.
-repeat rewrite simpl_subst; auto.
-apply t_step.
-apply red1_beta.
-unfold subst; simpl.
-repeat rewrite simpl_subst; auto.
 rewrite lift0; trivial.
 Qed.
 
-*)
-(*
-(** Self-application guarded by a couple *)
-Definition guard_couple :=
-  Abs (Abs (App2 (App (Ref 0) (Abs (Abs (Ref 3)))) (Ref 1) (Ref 0))).
 
-(** (guard_couple m n) reduces to (m m n) when n is a constructor. Note that
-    n need not be closed. *)
-Lemma guard_couple_sim : forall m n,
-  (exists t1 t2, n = Abs (App2 (Ref 0) t1 t2)) ->
-  redp (App2 guard_couple m n) (App2 m m n).
-intros m n (t1,(t2,eqn)).
-unfold guard_couple.
-eapply t_trans.
- apply redp_app_l.
- apply t_step.
- apply beta.
-unfold subst; simpl.
-eapply t_trans.
- apply t_step.
- apply beta.
-unfold subst; simpl.
-repeat rewrite simpl_subst; auto.
-repeat rewrite lift0.
-rewrite eqn.
-eapply t_trans.
- apply redp_app_l.
- apply redp_app_l.
- apply t_step.
- apply beta.
-apply redp_app_l.
-apply redp_app_l.
-unfold subst; simpl.
-rewrite lift0.
-eapply t_trans.
- apply redp_app_l.
- apply t_step.
- apply beta.
-unfold subst; simpl.
-repeat rewrite simpl_subst; auto.
-apply t_step.
-apply red1_beta.
-unfold subst; simpl.
-repeat rewrite simpl_subst; auto.
-rewrite lift0; trivial.
-Qed.
-*)
 Definition sigmaReal (X:set->SAT) (Y:set->set->SAT) (a:set) : SAT :=
-  interSAT (fun C => prodSAT
-     (piSAT0 (fun x => a==couple x (snd a)) X (fun x => prodSAT (Y x (snd a)) C))
-     C).
+  cartSAT (X (fst a)) (Y (fst a) (snd a)).
+
+Instance sigmaReal_morph_gen :
+  Proper ((eq_set ==> eqSAT) ==> (eq_set ==> eq_set ==> eqSAT) ==>
+          eq_set ==> eqSAT) sigmaReal.
+do 4 red; intros.
+apply cartSAT_morph.
+ apply H; rewrite H1; reflexivity.
+ apply H0; rewrite H1; reflexivity.
+Qed.
 
 Instance sigmaReal_morph X Y :
   Proper (eq_set ==> eqSAT) X ->
   Proper (eq_set ==> eq_set ==> eqSAT) Y ->
   Proper (eq_set ==> eqSAT) (sigmaReal X Y).
-do 2 red; intros.
-apply interSAT_morph.
-apply indexed_relation_id; intros C.
-apply prodSAT_morph; auto with *.
-apply piSAT0_morph; intros; auto with *.
- red; intros.
- rewrite H1; reflexivity.
-
- apply prodSAT_morph; auto with *.
- rewrite H1; reflexivity.
+intros; apply sigmaReal_morph_gen; auto with *.
 Qed.
 
 Lemma Real_couple x y X Y t1 t2 :
@@ -403,19 +514,11 @@ Lemma Real_couple x y X Y t1 t2 :
   inSAT t2 (Y x y) ->
   inSAT (COUPLE t1 t2) (sigmaReal X Y (couple x y)).
 intros.
-apply interSAT_intro.
- exact snSAT.
-intros C.
-apply prodSAT_intro; intros.
-unfold subst; simpl subst_rec.
-repeat rewrite simpl_subst; auto.
-repeat rewrite lift0.
-apply piSAT0_elim' in H3; red in H3.
-apply prodSAT_elim with (2:=H2).
-rewrite <- (snd_def x y).
-apply H3; trivial.
-rewrite snd_def; reflexivity.
+unfold sigmaReal.
+rewrite fst_def,snd_def.
+apply cartSAT_intro; trivial.
 Qed.
+
 (*
 Lemma Real_sigma_elim X Y a C t b :
   inSAT t (sigmaReal X Y a) ->
@@ -426,6 +529,7 @@ apply interSAT_elim with (x:=C) in H.
 apply prodSAT_elim with (1:=H) (2:=H0).
 Qed.
 *)
+
 Lemma Real_sigma_elim X Y RX RY a C t b :
   ext_fun X Y ->
   Proper (eq_set ==> eqSAT) C ->
@@ -435,48 +539,17 @@ Lemma Real_sigma_elim X Y RX RY a C t b :
            (fun x => piSAT0 (fun y => y ∈ Y x) (RY x) (fun y => C(couple x y)))) ->
   inSAT (App t b) (C a).
 intros.
-assert (eqa := surj_pair _ _ _ (subset_elim1 _ _ _ H1)).
-rewrite eqa.
-unfold sigmaReal in H2.
-refine (prodSAT_elim _ (interSAT_elim H2 _) _).
-apply piSAT0_intro; intros.
- apply sat_sn in H3; trivial.
-apply prodSAT_intro'; intros.
-rewrite eqa in H4; apply couple_injection in H4; destruct H4 as (?,_).
-rewrite H4.
-refine (piSAT0_elim' (piSAT0_elim' H3 x _ _ H5) (snd a) _ _ H6).
- apply fst_typ_sigma in H1; rewrite H4 in H1; trivial.
-
- apply snd_typ_sigma with (A:=X); auto with *.
-Qed.
-
-Lemma WHEN_COUPLE_sat A' B' RA' RB' S x t m :
-  morph1 B' ->
-  x ∈ sigma A' B' ->
-  inSAT t (sigmaReal RA' RB' x) ->
-  inSAT m S ->
-  inSAT (App2 WHEN_COUPLE t m) S.
-intros Bm xty xsat msat.
-unfold WHEN_COUPLE.
-eapply inSAT_context.
- intros.
- apply inSAT_exp;[simpl;auto|].
- unfold subst; simpl.
- rewrite lift0.
- exact H.
-apply prodSAT_elim with S; trivial.
-apply Real_sigma_elim with (3:=xty) (4:=xsat)(C:=fun _ => prodSAT S S); auto.
- do 2 red; reflexivity.
-
- apply piSAT0_intro; intros; auto.
- apply inSAT_exp;[right; apply sat_sn in H0;trivial|].
- unfold subst; simpl.
- apply piSAT0_intro; intros; auto.
- apply inSAT_exp;[right; apply sat_sn in H2;trivial|].
- unfold subst; simpl.
- apply prodSAT_intro; intros.
- unfold subst; simpl; rewrite lift0.
- trivial.
+apply sigma_elim in H1; auto with *.
+destruct H1 as (eqa,(ty1,ty2)).
+apply cartSAT_case with (1:=H2).
+apply prodSAT_intro'.
+intros ta asat.
+apply piSAT0_elim with (2:=ty1)(3:=asat) in H3.
+apply prodSAT_intro'.
+intros tb bsat.
+apply piSAT0_elim with (2:=ty2)(3:=bsat) in H3.
+rewrite <- eqa in H3.
+trivial.
 Qed.
 
 (** * Structural fixpoint. *)
@@ -525,17 +598,17 @@ repeat rewrite lift0.
 trivial.
 Qed.
 
-Lemma GUARD_neutral G m t S :
+Lemma GUARD_neutral G m t :
   sn m ->
-  inSAT (App G t) (interSAT(fun S=>S)) ->
-  inSAT (App2 (GUARD G) m t) S.
+  inSAT (App G t) (prodSAT snSAT (prodSAT snSAT (prodSAT snSAT neuSAT))) ->
+  inSAT (App2 (GUARD G) m t) neuSAT.
 intros.
 apply GUARD_sat.
 apply snSAT_intro in H.
 apply prodSAT_elim with snSAT.
  apply prodSAT_elim with (2:=H).
  apply prodSAT_elim with (2:=H).
- apply interSAT_elim with (1:=H0).
+ trivial.
 apply snSAT_intro.
 apply sat_sn in H0.
 apply subterm_sn with (1:=H0); auto.
@@ -557,12 +630,13 @@ apply GUARD_sim.
 intro; apply WHEN_SUM_INR.
 Qed.
 
-Lemma guard_sum_neutral m t S :
+Lemma guard_sum_neutral m t :
   sn m ->
-  inSAT t (interSAT(fun S => S)) ->
-  inSAT (App2 guard_sum m t) S.
+  inSAT t (prodSAT snSAT (prodSAT snSAT neuSAT)) ->
+  inSAT (App2 guard_sum m t) neuSAT.
 unfold guard_sum; intros.
 apply GUARD_neutral; trivial.
+apply neuSAT_def.
 apply WHEN_SUM_neutral; trivial.
 Qed.
 
@@ -576,12 +650,13 @@ intro; apply WHEN_COUPLE_iota.
 unfold is_couple, COUPLE; eauto.
 Qed.
 
-Lemma guard_couple_neutral m t S :
+Lemma guard_couple_neutral m t :
   sn m ->
-  inSAT t (interSAT(fun S => S)) ->
-  inSAT (App2 guard_couple m t) S.
+  inSAT t (prodSAT snSAT neuSAT) ->
+  inSAT (App2 guard_couple m t) neuSAT.
 unfold guard_couple; intros.
 apply GUARD_neutral; trivial.
+apply neuSAT_def.
 apply WHEN_COUPLE_neutral; trivial.
 Qed.
 
@@ -661,17 +736,17 @@ apply interSAT_elim with (1:=H).
 Qed.
 *)
 
-Lemma FIXP_neutral G m t S A B C:
+Lemma FIXP_neutral G m t A B C:
   (exists w, w ∈ A) ->
   (forall t, inSAT t (piSAT0 (fun x => x ∈ A) B C) -> sn (App m t)) ->
   (forall x n t S,
    x ∈ A ->
    inSAT n (B x) -> inSAT t S -> inSAT (App2 G n t) S) ->
-  inSAT (App G t) (interSAT (fun S => S)) ->
-  inSAT (App (FIXP G m) t) S.
+  inSAT (App G t) (prodSAT snSAT (prodSAT snSAT (prodSAT snSAT neuSAT))) ->
+  inSAT (App (FIXP G m) t) neuSAT.
 intros Awit msat Gsat Gneutr.
 apply GUARD_neutral; trivial.
-eapply sat_sn with (prodSAT (interSAT(fun S=>S)) _).
+eapply sat_sn with (prodSAT neuSAT _).
 apply prodSAT_intro; intros.
 unfold subst, subst_rec; fold subst_rec.
 rewrite !simpl_subst, !lift0; auto.
@@ -683,7 +758,7 @@ apply GUARD_sat.
 apply prodSAT_elim with (2:=H1).
 apply prodSAT_elim with (2:=H).
 apply Gsat with (2:=H1); trivial.
-apply interSAT_elim with (1:=H).
+apply neuSAT_def; trivial.
 Qed.
 
 (*Require Import ZFcoc.*)
@@ -811,14 +886,14 @@ Qed.
 *)
 
 
-
+(* no osucc...
 Lemma FIXP_sat0 G o T U RT m X :
   let FIX_bot o := piSAT0 (fun n => n ∈ U o) (RT o) (X o) in
   let FIX_strict o := piSAT0 (fun n => n ∈ T o) (RT o) (X o) in
   isOrd o ->
   (* strict domain values form a continuous sequence *)
   (forall y n, isOrd y -> y ⊆ o -> n ∈ U y ->
-   (forall S, inclSAT (RT y n) S) \/ exists2 y', y' ∈ y & n ∈ T (osucc y')) ->
+   eqSAT (RT y n) neuSAT \/ exists2 y', y' ∈ y & n ∈ T (osucc y')) ->
   (* U is not empty *)
   (forall o, isOrd o -> exists w, w ∈ U o) ->
   (* monotonicity of RT and X *)
@@ -827,9 +902,135 @@ Lemma FIXP_sat0 G o T U RT m X :
   (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ T y ->
    inclSAT (X y n) (X y' n)) ->
   (* Saturation property of guard G *)
-  (forall t (X:SAT),
-   inSAT t (interSAT(fun S=>S)) ->
-   inSAT (App G t) X) ->
+  (forall t,
+   inSAT t neuSAT ->
+   inSAT (App G t) (prodSAT snSAT (prodSAT snSAT (prodSAT snSAT neuSAT)))) ->
+  (forall o x t m (X:SAT),
+   isOrd o -> x ∈ T o ->
+   inSAT t (RT o x) ->
+   inSAT m X ->
+   inSAT (App2 G t m) X) ->
+  inSAT m (piSAT0 (fun o' => o' ∈ o)
+    (fun o' => FIX_bot o') (fun o' => FIX_strict (osucc o'))) ->
+  inSAT (FIXP G m) (FIX_bot o).
+intros FIX_bot FIX_strict oo Tcont Ubot Rirrel Xmono Gneutr Gsat msat.
+elim oo using isOrd_ind; intros.
+apply piSAT0_intro'; [|apply  Ubot;trivial].
+intros x u xty0 ureal.
+unfold FIXP.
+
+assert (sn (Abs (App (lift 1 m) (App (lift 1 (GUARD G)) (Ref 0))))).
+ (* neutral case *)
+ eapply sat_sn.
+ apply prodSAT_intro with (A:=neuSAT).
+ intros v vsat.
+ match goal with |- inSAT _ ?T =>
+   change (inSAT (App (subst v (lift 1 m)) (App (subst v (lift 1 (GUARD G))) (lift 0 v))) T)
+ end.
+ unfold subst; rewrite !simpl_subst; trivial.
+ rewrite !lift0.
+assert (aux : inSAT m (prodSAT (prodSAT neuSAT neuSAT) snSAT)).
+admit.
+apply prodSAT_elim with (1:=aux).
+apply prodSAT_intro'; intros.
+apply GUARD_neutral.
+ apply sat_sn in vsat; trivial.
+ apply Gneutr; trivial.
+(* apply piSAT0_elim' in msat; red in msat.
+ apply msat with (x:=y); auto with *.
+  apply ole_lts; auto.
+
+  apply piSAT0_intro'; intros; [|apply Ubot; trivial].
+  apply GUARD_sat.
+  eapply prodSAT_elim;[|apply H3].
+  eapply prodSAT_elim;[|apply vsat].
+  apply Tcont in H2; trivial.
+  destruct H2 as [?|(y',?,?)].
+   eapply prodSAT_elim;[|apply vsat].
+   rewrite H2 in H3.
+   specialize Gneutr with (1:=H3).
+   revert Gneutr; apply prodSAT_mono; auto with *.
+    apply neuSAT_inf.
+   apply prodSAT_mono; auto with *.
+    apply neuSAT_inf.
+   apply prodSAT_mono; auto with *.
+    red; red; intros.
+    apply sat_sn in H4; trivial.
+   apply neuSAT_inf.
+
+   assert (isOrd y') by eauto using isOrd_inv.
+   apply Gsat with (2:=H4); auto.
+    rewrite Rirrel with (y':=y); auto.
+    red; intros; apply le_lt_trans with y'; trivial.
+
+    apply neuSAT_def; trivial.*)
+apply GUARD_sat.
+apply Tcont in xty0; trivial.
+destruct xty0 as [?|(y',?,?)].
+ apply prodSAT_elim with (2:=ureal).
+ apply prodSAT_elim with (2:=snSAT_intro H2).
+ eapply prodSAT_elim;[|apply (snSAT_intro H2)].
+ rewrite H3 in ureal.
+ specialize Gneutr with (1:=ureal); revert Gneutr.
+ apply prodSAT_mono; auto with *.
+ apply prodSAT_mono; auto with *.
+ apply prodSAT_mono; auto with *.
+  red; red; intros.
+  apply sat_sn in H4; trivial.
+ apply neuSAT_inf.
+
+ specialize H1 with (1:=H3).
+ assert (isOrd y') by eauto using isOrd_inv.
+ assert (zlt : osucc y' ⊆ y).
+  red; intros; apply le_lt_trans with y'; auto.
+ assert (ureal' : inSAT u (RT (osucc y') x)).
+  rewrite <- Rirrel with (3:=H4) in ureal; auto.
+ eapply inSAT_context.
+  apply inSAT_context.
+  intros.
+  apply Gsat with (2:=H4); auto.
+  exact H6.
+ eapply inSAT_context.
+  intros.
+  apply inSAT_exp.
+   left; simpl; rewrite !Bool.orb_true_r; trivial.
+  unfold subst; simpl.
+  rewrite simpl_subst; auto.
+  rewrite simpl_subst_rec; auto.
+  rewrite !lift0.
+  rewrite !lift_rec0.
+  change (inSAT (App m (FIXP G m)) S).
+  exact H6.
+ apply Xmono with (osucc y'); auto.
+ assert (y' ∈ o).
+  apply H0; trivial.
+ apply piSAT0_elim' in msat; red in msat.
+ specialize msat with (1:=H6) (2:=H1).
+ apply piSAT0_elim' in msat; red in msat.
+ apply msat; trivial.
+Qed.
+*)
+
+
+
+Lemma FIXP_sat0 G o T U RT m X :
+  let FIX_bot o := piSAT0 (fun n => n ∈ U o) (RT o) (X o) in
+  let FIX_strict o := piSAT0 (fun n => n ∈ T o) (RT o) (X o) in
+  isOrd o ->
+  (* strict domain values form a continuous sequence *)
+  (forall y n, isOrd y -> y ⊆ o -> n ∈ U y ->
+   eqSAT (RT y n) neuSAT \/ exists2 y', y' ∈ y & n ∈ T (osucc y')) ->
+  (* U is not empty *)
+  (forall o, isOrd o -> exists w, w ∈ U o) ->
+  (* monotonicity of RT and X *)
+  (forall y y' n, isOrd y -> isOrd y' -> n ∈ T y -> y ⊆ y' -> y' ⊆ o ->
+   eqSAT (RT y n) (RT y' n)) ->
+  (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ T y ->
+   inclSAT (X y n) (X y' n)) ->
+  (* Saturation property of guard G *)
+  (forall t,
+   inSAT t neuSAT ->
+   inSAT (App G t) (prodSAT snSAT (prodSAT snSAT (prodSAT snSAT neuSAT)))) ->
   (forall o x t m (X:SAT),
    isOrd o -> x ∈ T o ->
    inSAT t (RT o x) ->
@@ -869,7 +1070,7 @@ unfold FIXP.
 assert (sn (Abs (App (lift 1 m) (App (lift 1 (GUARD G)) (Ref 0))))).
  (* neutral case *)
  eapply sat_sn.
- apply prodSAT_intro with (A:=interSAT(fun S=>S)).
+ apply prodSAT_intro with (A:=neuSAT).
  intros v vsat.
  match goal with |- inSAT _ ?T =>
    change (inSAT (App (subst v (lift 1 m)) (App (subst v (lift 1 (GUARD G))) (lift 0 v))) T)
@@ -887,23 +1088,37 @@ assert (sn (Abs (App (lift 1 m) (App (lift 1 (GUARD G)) (Ref 0))))).
   apply Tcont in H2; trivial.
   destruct H2 as [?|(y',?,?)].
    eapply prodSAT_elim;[|apply vsat].
-   apply Gneutr.
-   apply H2; trivial.
+   rewrite H2 in H3.
+   specialize Gneutr with (1:=H3).
+   revert Gneutr; apply prodSAT_mono; auto with *.
+    apply neuSAT_inf.
+   apply prodSAT_mono; auto with *.
+    apply neuSAT_inf.
+   apply prodSAT_mono; auto with *.
+    red; red; intros.
+    apply sat_sn in H4; trivial.
+   apply neuSAT_inf.
 
    assert (isOrd y') by eauto using isOrd_inv.
    apply Gsat with (2:=H4); auto.
     rewrite Rirrel with (y':=y); auto.
     red; intros; apply le_lt_trans with y'; trivial.
 
-    apply interSAT_elim with (1:=vsat).
+    apply neuSAT_def; trivial.
 apply GUARD_sat.
 apply Tcont in xty0; trivial.
 destruct xty0 as [?|(y',?,?)].
  apply prodSAT_elim with (2:=ureal).
  apply prodSAT_elim with (2:=snSAT_intro H2).
  eapply prodSAT_elim;[|apply (snSAT_intro H2)].
- apply Gneutr; trivial.
- apply H3; trivial.
+ rewrite H3 in ureal.
+ specialize Gneutr with (1:=ureal); revert Gneutr.
+ apply prodSAT_mono; auto with *.
+ apply prodSAT_mono; auto with *.
+ apply prodSAT_mono; auto with *.
+  red; red; intros.
+  apply sat_sn in H4; trivial.
+ apply neuSAT_inf.
 
  specialize H1 with (1:=H3).
  assert (isOrd y') by eauto using isOrd_inv.
@@ -944,16 +1159,16 @@ Lemma FIXP_sat' G o T U RT m X :
   isOrd o ->
   (* strict domain values form a continuous sequence *)
   (forall y n, isOrd y -> y ⊆ o -> n ∈ U y ->
-   (forall S, inclSAT (RT n) S) \/ exists2 y', y' ∈ y & n ∈ T (osucc y')) ->
+   eqSAT (RT n) neuSAT \/ exists2 y', y' ∈ y & n ∈ T (osucc y')) ->
   (* U is not empty *)
   (forall o, isOrd o -> exists w, w ∈ U o) ->
   (* monotonicity of RT and X *)
   (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ T y ->
    inclSAT (X y n) (X y' n)) ->
   (* Reducibility property of guard G *)
-  (forall t (X:SAT),
-   inSAT t (interSAT(fun S=>S)) ->
-   inSAT (App G t) X) ->
+  (forall t,
+   inSAT t neuSAT ->
+   inSAT (App G t) neuSAT) ->
   (forall o x t m (X:SAT),
    isOrd o -> x ∈ T o ->
    inSAT t (RT x) ->
@@ -967,6 +1182,7 @@ Proof.
 intros FIX_bot FIX_strict oo Tcont Uwit Xmono Gneutr Gsat msat.
 apply FIXP_sat0 with (T:=T) (U:=U) (RT:=fun _ => RT); trivial.
 reflexivity.
+  intros ; apply neuSAT_def; apply Gneutr; trivial.
 Qed.
 
 (* OLD: 
@@ -1425,7 +1641,7 @@ rewrite cc_beta_eq.
 Qed.
 
 
-Lemma tiSAT_outside_domain o A F S :
+Lemma tiSAT_outside_domain o A F :
   Proper (incl_set==>incl_set) F ->
   Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A ->
   (forall R R' o', isOrd o' -> o' ⊆ o -> (forall x x', x ∈ TI F o' -> x==x' -> eqSAT (R x) (R' x')) ->
@@ -1433,18 +1649,21 @@ Lemma tiSAT_outside_domain o A F S :
   isOrd o ->
   forall x,
   ~ x ∈ TI F o ->
-  inclSAT (tiSAT F A o x) S.
+  eqSAT (tiSAT F A o x) neuSAT.
 intros.
 specialize tiSAT_recursor with (1:=H) (2:=H0) (3:=H1) (4:=H2); intro rec.
 unfold tiSAT.
-red; intros.
-rewrite REC_eqn with (2:=rec) in H4; trivial.
-fold (tiSAT F A o) in H4.
-rewrite cc_app_outside_domain with (dom:=TI F o) in H4; trivial.
+rewrite REC_eqn with (2:=rec); trivial.
+fold (tiSAT F A o).
+rewrite cc_app_outside_domain with (dom:=TI F o); trivial.
 2:apply is_cc_fun_lam.
 2:do 2 red; intros; apply cc_app_morph; auto with *.
-unfold sSAT,complSAT in H4.
-assert (H4' := fun h => interSAT_elim H4 (exist _ S h)); clear H4; simpl in H4'.
+unfold sSAT,complSAT.
+apply eqSAT_def.
+split; intros.
+2:apply neuSAT_def; trivial.
+assert (H4' := fun h => interSAT_elim H4 (exist _ neuSAT h));
+  clear H4; simpl in H4'.
 apply H4'; intros.
 apply empty_ax in H5; contradiction.
 Qed.

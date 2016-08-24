@@ -234,6 +234,26 @@ End W_PartialModel.
 
 Set Implicit Arguments.
 
+(*
+Lemma sigmaReal_mono A A' B B' x x' :
+  inclSAT (A (fst x)) (A' (fst x')) ->
+  inclSAT (B (fst x) (snd x)) (B' (fst x') (snd x')) ->
+  inclSAT (sigmaReal A B x) (sigmaReal A' B' x').
+intros; apply cartSAT_mono; trivial.
+
+Lemma sigmaReal_mono_gen A A' B B' x x' :
+  (forall a a', a==a' -> inclSAT (A a) (A' a')) ->
+  (forall a a' b b', a==a' -> b==b' -> inclSAT (B a b) (B' a' b')) ->
+  x == x' ->
+  inclSAT (sigmaReal A B x) (sigmaReal A' B' x').
+unfold sigmaReal.
+intros.
+apply cartSAT_mono.
+ apply H; rewrite H1; reflexivity.
+ apply H0; rewrite H1; reflexivity.
+Qed.
+*)
+
 (** W-types *)
 
 Module Make (W:W_PartialModel).
@@ -269,67 +289,63 @@ Lemma rW_morph :
    Proper ((eq_set ==> eqSAT) ==> eq_set ==> eqSAT) rW.
 do 3 red; intros.
 unfold rW.
-unfold sigmaReal.
-apply interSAT_morph.
-apply indexed_relation_id; intros S.
-apply prodSAT_morph; auto with *.
-apply piSAT0_morph; intros; auto with *.
- red; intros.
- rewrite H0; reflexivity.
-
- apply prodSAT_morph; auto with *.
+apply sigmaReal_morph_gen; auto with *.
+ do 2 red; intros.
  apply piSAT0_morph; intros; auto with *.
- apply condSAT_morph.
-  rewrite H0; reflexivity.
+  red; intros.
+  rewrite H1; reflexivity.
 
-  apply H.
-  rewrite H0; reflexivity.
+  apply RB_morph; auto with *.
+
+  apply condSAT_morph.
+   rewrite H2; reflexivity.
+
+   apply H.
+   rewrite H2; reflexivity.
+
+ rewrite H0; reflexivity.
 Qed.
 Hint Resolve rW_morph.
+
 
 Lemma rW_mono_gen' Y X X':
   (forall x x', x ∈ Y -> x==x' -> inclSAT (X x) (X' x')) ->
   forall x x', x ∈ WF Y -> x==x' -> inclSAT (rW X x) (rW X' x').
 intros Xmono x x' xty eqx'.
-apply interSAT_mono.
-intros C.
-apply prodSAT_mono; auto with *.
-red.
-eapply piSAT0_mono with (f:=fun x => x); auto with *.
- intros; rewrite <- eqx'; trivial.
-intros y eqx.
-apply prodSAT_mono; auto with *.
-red.
-eapply piSAT0_mono with (f:=fun x => x); auto with *.
-intros i ity.
-apply condSAT_ext; auto with *.
- rewrite <- eqx'; trivial.
-intros nmt _.
-rewrite snd_def in nmt.
-apply Xmono.
-2:rewrite eqx'; reflexivity.
-rewrite snd_def.
-apply W_F_elim in xty; trivial.
-destruct xty as (_,(fty,_)); auto.
-apply fst_morph in eqx; rewrite !fst_def in eqx.
-rewrite <- eqx in ity.
-specialize cc_prod_elim with (1:=fty) (2:=ity); intros yty.
-rewrite cc_bot_ax in yty; destruct yty; trivial.
-contradiction.
+unfold rW.
+apply cartSAT_mono.
+ rewrite eqx'; reflexivity.
+
+ eapply piSAT0_mono with (f:=fun x => x); auto with *.
+  intros; rewrite eqx'; trivial.
+
+  intros; rewrite eqx'; reflexivity.
+
+  intros i ity.
+  apply condSAT_ext; auto with *.
+   rewrite <- eqx'; trivial.
+
+   intros nmt _.
+   rewrite snd_def in nmt.
+   apply Xmono.
+   2:rewrite eqx'; reflexivity.
+   rewrite snd_def.
+   apply W_F_elim in xty; trivial.
+   destruct xty as (xty,(fty,_)); auto.
+   assert (ity' : i ∈ B (w1 x)).
+    revert ity; apply eq_elim; apply Bext.
+     rewrite fst_def, <-eqx'; trivial.
+     rewrite fst_def, <-eqx'; reflexivity.
+   specialize cc_prod_elim with (1:=fty) (2:=ity'); intros yty.
+   rewrite cc_bot_ax in yty; destruct yty; trivial.
+   contradiction.
 Qed.
 
 Lemma rW_mono_gen Y X X':
   (forall x, x ∈ Y -> inclSAT (X x) (X' x)) ->
   forall x, x ∈ WF Y -> inclSAT (rW X x) (rW X' x).
 intros Xmono x xty.
-apply interSAT_mono.
-intros C.
-apply prodSAT_mono; auto with *.
-red.
-eapply piSAT0_mono with (f:=fun x => x); auto with *.
-intros y eqx.
-apply prodSAT_mono; auto with *.
-red.
+apply cartSAT_mono; auto with *.
 eapply piSAT0_mono with (f:=fun x => x); auto with *.
 intros i ity.
 apply condSAT_ext; auto with *.
@@ -338,10 +354,12 @@ rewrite snd_def in nmt.
 apply Xmono.
 rewrite snd_def.
 apply W_F_elim in xty; trivial.
-destruct xty as (_,(fty,_)); auto.
-apply fst_morph in eqx; rewrite !fst_def in eqx.
-rewrite <- eqx in ity.
-specialize cc_prod_elim with (1:=fty) (2:=ity); intros yty.
+destruct xty as (xty,(fty,_)); auto.
+assert (ity' : i ∈ B (w1 x)).
+ revert ity; apply eq_elim; apply Bext.
+  rewrite fst_def; trivial.
+  rewrite fst_def; reflexivity.
+specialize cc_prod_elim with (1:=fty) (2:=ity'); intros yty.
 rewrite cc_bot_ax in yty; destruct yty; trivial.
 contradiction.
 Qed.
@@ -622,9 +640,9 @@ intros; apply rW_irrel with (o:=o'); trivial.
 Qed.
 *)
 
-Lemma rWi_neutral o S :
+Lemma rWi_neutral o :
   isOrd o ->
-  inclSAT (rWi o empty) S.
+  eqSAT (rWi o empty) neuSAT.
 intros.
 apply tiSAT_outside_domain; auto with *.
  intros; apply rW_irrel with (o:=o'); trivial.
@@ -659,7 +677,8 @@ apply Real_WC_gen with (TI WF o); auto with *.
  specialize H2 with (1:=H5) (2:=H6).
  rewrite cc_bot_ax in yty; destruct yty.
   rewrite H7 in H2.
-  revert H2; apply rWi_neutral; trivial.
+  apply neuSAT_def.
+  rewrite rWi_neutral in H2; trivial.
 
   rewrite condSAT_ok; trivial.
   apply mt_not_in_W_F in H7; trivial.
@@ -707,15 +726,7 @@ assert (xty' : x ∈ TI WF (osucc o')).
  rewrite TI_mono_succ; auto with *.
 rewrite <- rWi_mono with (o1:=osucc o') in xsat; auto.
 rewrite rWi_succ_eq in xsat; trivial.
-apply W_F_elim in xty; trivial.
-destruct xty as (ty1,(ty2,x_eq)).
-eapply WHEN_COUPLE_sat with (3:=xsat); trivial.
-2:apply couple_intro_sigma with (2:=ty1)(B:=fun a=>Π _ ∈ B a, cc_bot (TI WF o'))(3:=ty2).
- do 2 red; intros.
- apply cc_arr_morph; auto with *.
-
- do 2 red; intros.
- apply cc_arr_morph; auto with *.
+eapply WHEN_COUPLE_sat with (1:=xsat); trivial.
 Qed.
 
 (* specialized fix *)
@@ -743,11 +754,9 @@ Lemma WFIX_sat : forall o m X,
              (fun o1 => FIX_ty o1) (fun o1 => FIX_ty' (osucc o1))) ->
   inSAT (WFIX m) (FIX_ty o).
 intros o m X FIX_ty FIX_ty' oo Xmono msat.
-apply FIXP_sat0 with (6:=WHEN_COUPLE_neutral) (7:=G_sat) (8:=msat); trivial; intros.
+apply FIXP_sat0 with (*(6:=WHEN_COUPLE_neutral)*) (7:=G_sat) (8:=msat); trivial; intros.
  rewrite cc_bot_ax in H1; destruct H1.
-  left; red; intros.
-  rewrite H1 in H2.
-  revert H2; apply rWi_neutral; trivial.
+  left; rewrite H1; apply rWi_neutral; trivial.
 
   right.
   apply TI_elim in H1; auto with *.
@@ -760,6 +769,8 @@ apply FIXP_sat0 with (6:=WHEN_COUPLE_neutral) (7:=G_sat) (8:=msat); trivial; int
 
  intros.
  apply rWi_mono; trivial.
+
+intros; apply neuSAT_def; apply WHEN_COUPLE_neutral; apply neuSAT_def; trivial.
 Qed.
 
 End Wtypes.
@@ -794,34 +805,25 @@ apply cc_lam_ext.
  red; intros.
  assert (x0o: isOrd x0) by eauto using isOrd_inv.
  apply ZFlambda.iSAT_morph.
- unfold rW.
- unfold sigmaReal.
- apply interSAT_morph.
- apply indexed_relation_id; intros C.
- apply prodSAT_morph; auto with *.
- apply piSAT0_morph; intros.
-  red; intros.
-  rewrite H12; reflexivity.
+ apply cartSAT_morph.
+  apply H1; rewrite !fst_def, H12; reflexivity.
 
-  apply H1; reflexivity.
-
-  rewrite snd_def in *.
-  assert (x2 ∈ X).
+  assert (w1 x1 ∈ X).
    assert (ext_fun X Y).
     apply eq_fun_ext in H0; trivial.
    apply TI_elim in H11; auto with *.
     destruct H11 as (ooo,?,?).
-    apply W_F_elim in H16; trivial.
-    destruct H16 as (?,_).
-    apply couple_injection in H13; destruct H13 as (H13,_).
-    rewrite H13 in H16; trivial.
-  apply prodSAT_morph; auto with *.
+    apply W_F_elim in H14; trivial.
+    destruct H14 as (?,_); trivial.
   apply piSAT0_morph; intros.
    red; intros.
-   apply eq_set_ax.
-   apply H0; auto with *.
+   apply eq_set_ax; apply H0.
+    rewrite fst_def; trivial.
+    rewrite H12; reflexivity.
 
    apply H2; auto with *.
+    rewrite fst_def; trivial.
+    rewrite H12; reflexivity.
 
    apply condSAT_morph.
     rewrite H12; reflexivity.
@@ -857,24 +859,16 @@ apply cc_lam_ext.
 
  red; intros.
  apply ZFlambda.iSAT_morph.
- unfold rW.
- unfold sigmaReal.
- apply interSAT_morph.
- apply indexed_relation_id; intros C.
- apply prodSAT_morph; auto with *.
- apply piSAT0_morph; intros.
-  red; intros.
+ apply cartSAT_morph.
+  apply H1.
   rewrite H10; reflexivity.
 
-  apply H1; reflexivity.
-
-  apply prodSAT_morph; auto with *.
   apply piSAT0_morph; intros.
    red; intros.
-   apply eq_set_ax.
-   apply H0; reflexivity.
+   apply eq_set_ax; apply H0.
+   rewrite H10; reflexivity.
 
-   apply H2; reflexivity.
+   apply H2; auto with *; rewrite H10; reflexivity.
 
    apply condSAT_morph.
     rewrite H10; reflexivity.
