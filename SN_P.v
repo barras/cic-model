@@ -12,8 +12,8 @@ Import PSem PSyn.
 Module SNP := Abs_SN_Theory PresburgerTheory PresburgerSem IntpPresburger.
 
 Import SNP.
-Import Esub SN_CC_Real_old.
-Import SN CCSN.
+Import Esub SN_CC_Real.
+Import SN.
 Import PresburgerTheory PresburgerSem IntpPresburger.
 
 Lemma SN_P : forall e x y,

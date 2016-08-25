@@ -290,6 +290,13 @@ destruct H0;[rewrite H0;apply singl_intro|].
 apply power_elim with (1:=H); trivial.
 Qed.
 
+Lemma cc_bot_nop x :
+  empty ∈ x -> cc_bot x == x.
+intros.
+apply eq_set_ax; split; intros; auto.
+apply cc_bot_ax in H0; destruct H0; auto.
+rewrite H0; trivial.
+Qed.
 
 Lemma cc_bot_cl_prop :
     forall P, P ∈ cl_props -> cc_bot P ∈ cl_props.

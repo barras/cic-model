@@ -132,8 +132,8 @@ End TheorySyn.
 
 Require Import GenLemmas.
 
-Import SN_CC_Real_old.
-Import ZF SN CCSN.
+Import SN_CC_Real.
+Import ZF SN SN_CC_Model.
 
 
 (************************************************************************************)
@@ -654,7 +654,7 @@ End TheorySem.
 (*Interpretation form symtax model to sematic model*)
 (************************************************************************************)
 
-Require Import SN_NAT_old.
+Require Import SN_nat.
 
 Module Type InterpTheory (M1 : TheorySyn) (M2 : TheorySem).
 

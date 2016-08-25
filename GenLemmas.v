@@ -1,9 +1,9 @@
 (*This files are the defintions and lemmas about general SN model*)
 
 
-Require Import SN_CC_Real_old.
+Require Import SN_CC_Real.
 
-Import ZF CCSN SN.
+Import ZF SN_CC_Model SN.
 Import List.
 Existing Instance in_ext.
 
@@ -271,13 +271,16 @@ Definition closed_pure_trm t := forall k, ~ Lc.occur k t.
 (*This following lemma should be in SATnat.v.*)
 (*For any natural number, there exists a closed realizer*)
 (***************************************************************************************)
-Require Import SATnat_old.
+Require Import SN_nat.
 
-Import Sat.
-Import ZFind_nat.
+(*Require Import SATnat.*)
 
-Lemma inSAT_n : forall n, n ∈ NAT -> exists t, inSAT t (cNAT n) /\ closed_pure_trm t.
-intros. pattern n; apply NAT_ind; trivial; intros.
+Import ZFnats Sat SAT_nat.
+
+(*Import ZFind_nat.*)
+
+Lemma inSAT_n : forall n, n ∈ N -> exists t, inSAT t (cNAT n) /\ closed_pure_trm t.
+intros. pattern n; apply N_ind; trivial; intros.
  destruct H2 as (t, (HinSAT, Hclsd)). 
  exists t; split;[revert HinSAT; apply cNAT_morph; auto with *|trivial].
 

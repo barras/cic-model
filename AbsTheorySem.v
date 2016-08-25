@@ -8,8 +8,8 @@ Require Import List.
 Require Import Esub.
 
 Import GenLemmas.
-Import SN_CC_Real_old.
-Import ZF SN CCSN.
+Import SN_CC_Real.
+Import ZF SN SN_CC_Model.
 
 (************************************************************************************)
 (*Abstract signature of semantic*)

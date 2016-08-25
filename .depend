@@ -20,7 +20,7 @@ EnvECC.vo EnvECC.glob EnvECC.v.beautified: EnvECC.v MyList.vo TermECC.vo
 Esub.vo Esub.glob Esub.v.beautified: Esub.v GenLemmas.vo
 Explicit_sub.vo Explicit_sub.glob Explicit_sub.v.beautified: Explicit_sub.v TheoryInTerm.vo
 FOTheory.vo FOTheory.glob FOTheory.v.beautified: FOTheory.v
-GenLemmas.vo GenLemmas.glob GenLemmas.v.beautified: GenLemmas.v SN_CC_Real_old.vo SATnat_old.vo
+GenLemmas.vo GenLemmas.glob GenLemmas.v.beautified: GenLemmas.v SN_CC_Real.vo SN_nat.vo
 GenModel.vo GenModel.glob GenModel.v.beautified: GenModel.v basic.vo Models.vo TypModels.vo VarMap.vo
 GenModelSN.vo GenModelSN.glob GenModelSN.v.beautified: GenModelSN.v Sat.vo Models.vo ObjectSN.vo
 GenModelSyntax.vo GenModelSyntax.glob GenModelSyntax.v.beautified: GenModelSyntax.v Models.vo TypeJudge.vo GenModel.vo
@@ -34,8 +34,6 @@ InstSyn.vo InstSyn.glob InstSyn.v.beautified: InstSyn.v ModelTheory.vo
 IntMap.vo IntMap.glob IntMap.v.beautified: IntMap.v
 Lambda.vo Lambda.glob Lambda.v.beautified: Lambda.v basic.vo VarMap.vo
 Logics.vo Logics.glob Logics.v.beautified: Logics.v
-ModelCIC.vo ModelCIC.glob ModelCIC.v.beautified: ModelCIC.v Models.vo ZF.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFgrothendieck.vo ZFfunext.vo ZFind_wnup.vo ZFspos_nup.vo ModelZF.vo ModelECC.vo Model_variance.vo ZFpairs.vo ZFcoc.vo
-ModelCIC2.vo ModelCIC2.glob ModelCIC2.v.beautified: ModelCIC2.v Models.vo ZF.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFgrothendieck.vo ZFfunext.vo ZFind_wnup.vo ZFspos_nup.vo ModelZF.vo ModelECC.vo Model_variance.vo ZFpairs.vo ZFcoc.vo
 ModelECC.vo ModelECC.glob ModelECC.v.beautified: ModelECC.v Models.vo TypModels.vo ZF.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFgrothendieck.vo ZFcoc.vo ZFecc.vo ModelZF.vo
 ModelECCW_sized.vo ModelECCW_sized.glob ModelECCW_sized.v.beautified: ModelECCW_sized.v Models.vo TypModels.vo ZF.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFgrothendieck.vo ZFfunext.vo ZFind_w.vo ModelZF.vo ModelECC.vo Model_variance.vo ZFpairs.vo
 ModelECC_oldstyle.vo ModelECC_oldstyle.glob ModelECC_oldstyle.v.beautified: ModelECC_oldstyle.v IntMap.vo TypeECC.vo Models.vo TypeJudgeECC.vo ZF.vo ZFcoc.vo ModelZF.vo ZFecc.vo
@@ -43,7 +41,7 @@ ModelHF.vo ModelHF.glob ModelHF.v.beautified: ModelHF.v HFcoc.vo Models.vo GenMo
 ModelNat.vo ModelNat.glob ModelNat.v.beautified: ModelNat.v ZF.vo ZFnats.vo ZFrelations.vo basic.vo ModelZF.vo
 ModelNat_ZFind.vo ModelNat_ZFind.glob ModelNat_ZFind.v.beautified: ModelNat_ZFind.v ZF.vo ZFcoc.vo ZFind_nat.vo basic.vo ModelZF.vo ZFrepl.vo
 ModelNat_sized.vo ModelNat_sized.glob ModelNat_sized.v.beautified: ModelNat_sized.v Models.vo ZFfunext.vo ZFecc.vo ZFind_nat.vo ModelZF.vo Model_variance.vo ModelECC.vo
-ModelTheory.vo ModelTheory.glob ModelTheory.v.beautified: ModelTheory.v GenLemmas.vo SN_NAT_old.vo
+ModelTheory.vo ModelTheory.glob ModelTheory.v.beautified: ModelTheory.v GenLemmas.vo SN_nat.vo
 ModelZF.vo ModelZF.glob ModelZF.v.beautified: ModelZF.v basic.vo Sublogic.vo Models.vo GenModelSyntax.vo ZF.vo ZFcoc.vo Term.vo Env.vo TypeJudge.vo ZFrepl.vo
 Model_variance.vo Model_variance.glob Model_variance.v.beautified: Model_variance.v ZF.vo ZFcoc.vo ZFfunext.vo ModelZF.vo
 Models.vo Models.glob Models.v.beautified: Models.v basic.vo
@@ -52,7 +50,7 @@ Nest.vo Nest.glob Nest.v.beautified: Nest.v
 NonUniform.vo NonUniform.glob NonUniform.v.beautified: NonUniform.v
 ObjectSN.vo ObjectSN.glob ObjectSN.v.beautified: ObjectSN.v basic.vo Models.vo VarMap.vo Lambda.vo
 PIntp.vo PIntp.glob PIntp.v.beautified: PIntp.v PSyn.vo PSem.vo AbsTheoryIntp.vo
-PSem.vo PSem.glob PSem.v.beautified: PSem.v AbsTheorySem.vo SN_NAT_old.vo
+PSem.vo PSem.glob PSem.v.beautified: PSem.v ZF.vo ZFcoc.vo ZFuniv_real.vo AbsTheorySem.vo SN_nat.vo
 PSyn.vo PSyn.glob PSyn.v.beautified: PSyn.v AbsTheorySyn.vo
 SATnat.vo SATnat.glob SATnat.v.beautified: SATnat.v basic.vo Lambda.vo Can.vo Sat.vo ZF.vo
 SATnat_old.vo SATnat_old.glob SATnat_old.v.beautified: SATnat_old.v basic.vo Can.vo Sat.vo ZF.vo ZFind_nat.vo
@@ -139,7 +137,6 @@ ZFsposd.vo ZFsposd.glob ZFsposd.v.beautified: ZFsposd.v ZF.vo ZFpairs.vo ZFsum.v
 ZFstable.vo ZFstable.glob ZFstable.v.beautified: ZFstable.v ZF.vo
 ZFstrictpos.vo ZFstrictpos.glob ZFstrictpos.v.beautified: ZFstrictpos.v ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.vo ZFord.vo ZFfix.vo ZFstable.vo ZFind_w.vo ZFiso.vo ZFgrothendieck.vo
 ZFstrictpos1.vo ZFstrictpos1.glob ZFstrictpos1.v.beautified: ZFstrictpos1.v ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.vo ZFord.vo ZFind_basic.vo ZFstrictpos.vo
-ZFstrictpos_prop.vo ZFstrictpos_prop.glob ZFstrictpos_prop.v.beautified: ZFstrictpos_prop.v ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcoc.vo ZFord.vo ZFfix.vo ZFstable.vo
 ZFsum.vo ZFsum.glob ZFsum.v.beautified: ZFsum.v ZFnats.vo ZFpairs.vo ZFstable.vo
 ZFtarski.vo ZFtarski.glob ZFtarski.v.beautified: ZFtarski.v ZF.vo
 ZFtheory.vo ZFtheory.glob ZFtheory.v.beautified: ZFtheory.v ZFrepl.vo ZFnats.vo ZFind_basic.vo
@@ -148,3 +145,4 @@ ZFuniv_real.vo ZFuniv_real.glob ZFuniv_real.v.beautified: ZFuniv_real.v Sat.vo Z
 ZFwf.vo ZFwf.glob ZFwf.v.beautified: ZFwf.v basic.vo ZF.vo ZFrepl.vo ZFpairs.vo ZFrelations.vo
 ZFwpaths.vo ZFwpaths.glob ZFwpaths.v.beautified: ZFwpaths.v ZF.vo ZFpairs.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFtarski.vo ZFstable.vo ZFgrothendieck.vo ZFlist.vo
 basic.vo basic.glob basic.v.beautified: basic.v
+test.vo test.glob test.v.beautified: test.v Lambda.vo

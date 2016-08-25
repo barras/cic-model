@@ -70,6 +70,17 @@ do 2 red; intros; apply cc_bot_morph; auto with *.
 apply fst_morph; trivial.
 Qed.
 
+Lemma Elt_empty : Elt empty == empty.
+apply empty_ext.
+red; intros.
+unfold Elt in H.
+unfold fst in H.
+apply union_elim in H; destruct H.
+apply subset_elim1 in H0.
+apply union_elim in H0; destruct H0.
+apply empty_ax in H1; trivial.
+Qed.
+
 (* Accessing the realizability relation.
    inSAT t (Real T x), means that t is a realizer of x in type T. It
    implicitely requires x ∈ El T. 
@@ -313,6 +324,53 @@ apply union_elim in H0; destruct H0.
 apply subset_elim1 in H1.
 apply union_elim in H1; destruct H1.
 apply empty_ax in H2; contradiction.
+Qed.
+
+(* TODO: sort *)
+Definition mkProp S := mkTY (singl empty) (fun _ => S).
+Lemma Real_mkProp S x : x == empty -> eqSAT (Real (mkProp S) x) S.
+intros.
+unfold mkProp; rewrite Real_def; auto with *.
+rewrite H; auto.
+Qed.
+Lemma El_mkProp : forall S, El (mkProp S) == singl empty.
+intros.
+apply singl_ext;  auto.
+intros.
+unfold mkProp in H; rewrite El_def in H.
+apply cc_bot_ax in H; destruct H; trivial.
+apply singl_elim in H; trivial.
+Qed.
+Lemma mkProp_intro S : mkProp S ∈ El sn_props.
+apply sn_sort_intro.
+ reflexivity.
+
+ apply power_intro.
+ intros.
+ apply singl_elim in H.
+ rewrite  H; apply singl_intro.
+Qed.
+
+Lemma El_props_true P :
+  P ∈ El sn_props -> El P == singl empty.
+intros.
+apply sn_sort_elim in H.
+destruct H.
+ rewrite H.
+ apply eq_set_ax.
+ intros.
+ unfold El; rewrite cc_bot_ax.
+ split; intros.
+  apply singl_intro_eq; destruct H0; trivial.
+  rewrite Elt_empty in H0; apply  empty_ax  in H0; contradiction.
+
+  apply singl_elim in H0; auto.
+
+ unfold El.
+ apply singl_ext; auto.
+ intros.
+ apply cc_bot_ax in H0; destruct H0; auto.
+ apply props_proof_irrelevance with (1:=H); trivial.
 Qed.
 
 

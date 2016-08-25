@@ -19,7 +19,7 @@ Module natARG <: SimpleNats.
  Definition Ndec n (h:n∈N) : n∈N \/ ~n∈N := or_introl _ h.
 End natARG.
 Module SAT_nat := SATnat.Make(natARG).
-Import SAT_nat.
+Export natARG SAT_nat.
 
 (** * Nat and its constructors *)
 
@@ -62,6 +62,7 @@ apply eq_intro; intros.
 
  apply union2_intro2; trivial.
 Qed.
+Definition eqNbot := mt_in_N.
 
 Lemma ElNat_eq i : El (int Nat i) == N.
 simpl; rewrite El_def.

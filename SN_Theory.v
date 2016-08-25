@@ -2,10 +2,10 @@ Require Import InstInterp.
 Require Import Esub.
 
 Import InstSyn InstSem ModelTheory.
-Import SN_CC_Real_old.
+Import SN_CC_Real.
 Import List.
 Import GenLemmas.
-Import ZF SN CCSN.
+Import ZF SN.
 
 (*SN for the theory*)
 Module SN_Theory (M1 : TheorySyn) (M2 : TheorySem) (M3 : InterpTheory M1 M2).

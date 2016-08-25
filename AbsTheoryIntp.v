@@ -10,8 +10,8 @@ Require Import AbsTheorySem.
 Import Compare_dec.
 Import List.
 Import GenLemmas.
-Import SN_CC_Real_old.
-Import SN CCSN.
+Import SN_CC_Real.
+Import SN SN_CC_Model.
 
 (************************************************************************************)
 (*Abstract interpretation of signature*)
