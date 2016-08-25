@@ -4,7 +4,7 @@ Require Import AbsTheoryIntp.
 
 Import SN_nat.
 Import GenLemmas.
-Import SN_CC_Real SN_CC_Model SN_CC_addon.
+Import SN_CC_Real SN_CC_Model.
 Import ZF ZFuniv_real SN.
 Import List.
 

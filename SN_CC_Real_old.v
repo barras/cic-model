@@ -1,5 +1,6 @@
 Require Import Sat.
 Require Import ZF ZFcoc ZFlambda.
+Require Import SnModels.
 Require GenRealSN.
 
 Set Implicit Arguments.
@@ -7,7 +8,7 @@ Set Implicit Arguments.
 (***********************************************************************************************)
 (** * Proving the SN model requirements *)
 
-Module CCSN.
+Module CCSN <: CC_SN_Model.
 
 (** Types are coded by a carrier set X and a realizability relation R
    assigning a reducibility candidate to each element of the
@@ -335,7 +336,7 @@ End ___.
 (***********************************************************************************************)
 
 (** * Building the generic model *)
-Module SN := GenRealSN.MakeModel CCSN CCSN.
+Module SN := GenRealSN.MakeModel CCSN.
 Import SN.
 
 Module Lc := Lambda.

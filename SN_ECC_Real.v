@@ -58,7 +58,7 @@ apply and_split; intros.
  apply ecc_in1.
 
  simpl.
- unfold SN_CC_addon.Real; rewrite Real_sort_sn; trivial.
+ unfold SN_CC_Model.Real; rewrite Real_sort_sn; trivial.
  apply snSAT_intro.
  apply Lambda.sn_K.
 Qed.
@@ -72,7 +72,7 @@ apply and_split; intros.
  apply ecc_in2.
 
  simpl int; simpl tm.
- unfold SN_CC_addon.Real; rewrite Real_sort_sn; trivial.
+ unfold SN_CC_Model.Real; rewrite Real_sort_sn; trivial.
  apply snSAT_intro.
  apply Lambda.sn_K.
 Qed.
@@ -90,7 +90,7 @@ apply and_split; intros.
  transitivity (ecc 0); red; intros; [apply ecc_incl_prop|apply ecc_incl]; trivial.
 
  revert H2; simpl int.
- unfold SN_CC_addon.Real, props, sn_props.
+ unfold SN_CC_Model.Real, props, sn_props.
  rewrite Real_sort_sn; trivial.
  rewrite Real_sort_sn; trivial.
 Qed.
@@ -108,7 +108,7 @@ apply and_split; intros.
  red; intros; apply ecc_incl; trivial.
 
  revert H2; simpl int.
- unfold SN_CC_addon.Real, props, sn_props.
+ unfold SN_CC_Model.Real, props, sn_props.
  rewrite Real_sort_sn; trivial.
  rewrite Real_sort_sn; trivial.
 Qed.
@@ -145,7 +145,7 @@ apply and_split; intros.
     intros in_U.
   apply H0 in in_U.
   destruct in_U  as (_,(in_U,satU)).
-  unfold SN_CC_addon.Real in *; simpl int in *.
+  unfold SN_CC_Model.Real in *; simpl int in *.
   rewrite Real_sort_sn in H3,satU|-*; auto.
   rewrite tm_subst_cons in satU.
   apply sat_sn in satU.

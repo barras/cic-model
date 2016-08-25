@@ -3,7 +3,7 @@ Require Import InstSem.
 
 Import ModelTheory.
 Import GenLemmas.
-Import SN_CC_Real SN_CC_Model SN_CC_addon.
+Import SN_CC_Real SN_CC_Model.
 Import ZF SN.
 Import List.
 

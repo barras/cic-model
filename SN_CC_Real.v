@@ -2,6 +2,7 @@ Require Export Relations Wellfounded.
 Require Import Sat.
 Require Import ZF ZFcoc ZFuniv_real.
 Require Import ZFlambda.
+Require Import Models SnModels.
 
 (** Strong normalization proof of the Calculus of Constructions.
     It is based on GenRealSN, so it does support strong eliminations.
@@ -15,8 +16,7 @@ Set Implicit Arguments.
 (***********************************************************************)
 (** First the model requirements *)
 
-Require Import Models.
-Module SN_CC_Model <: CC_Model.
+Module SN_CC_Model <: CC_SN_Model.
 
 Definition X:=set.
 Definition inX x y := x ∈ El y.
@@ -95,13 +95,8 @@ unfold app, lam, inX, eqX, El; intros.
 apply cc_beta_eq; trivial.
 Qed.
 
-End SN_CC_Model.
-Import SN_CC_Model.
-
 (***********************************************************************)
 (** Building the SN addon *)
-
-Module SN_CC_addon.
 
   Definition Real : X -> X -> SAT := Real.
 
@@ -125,12 +120,8 @@ Proof Real_prod.
 red; auto.
 Qed.
 
-Definition piSAT A (F:set->set) (f:set->set) :=
-  interSAT (fun p:{x|x ∈ El A} =>
-    prodSAT (Real A (proj1_sig p)) (Real (F (proj1_sig p)) (f (proj1_sig p)))).
-
-End SN_CC_addon.
-
+End SN_CC_Model.
+Import SN_CC_Model.
 
 (***********************************************************************)
 (*
@@ -138,15 +129,17 @@ End SN_CC_addon.
 *)
 
 Require GenRealSN.
-Module SN := GenRealSN.MakeModel SN_CC_Model SN_CC_addon.
+Module SN := GenRealSN.MakeModel SN_CC_Model.
 Import SN.
 
 (** Derived properties *)
 
+Notation daimont := Sat.SatSet.daimon.
+
 Lemma val_ok_cons_default e T i j :
   val_ok e i j ->
   T <> kind ->
-  val_ok (T::e) (V.cons empty i) (I.cons daimon j).
+  val_ok (T::e) (V.cons empty i) (I.cons daimont j).
 intros.
 apply vcons_add_var; trivial.
 split.
@@ -238,7 +231,7 @@ apply and_split; intros.
  apply union2_intro2; trivial.
 
  simpl.
- unfold SN_CC_addon.Real; rewrite Real_def.
+ unfold SN_CC_Model.Real; rewrite Real_def.
   apply Lambda.sn_K.
 
   reflexivity.

@@ -12,9 +12,8 @@ Reserved Notation "[ x , t ] \real A" (at level 60).
 (******************************************************************************)
 (* The generic model construction: *)
 
-Module MakeModel (M : CC_Model) (MM : RealSN_addon(M)) <: Syntax (*Judge*).
+Module MakeModel (M : CC_SN_Model) <: Syntax (*Judge*).
 Import M.
-Import MM.
 
 (* Derived properties of the abstract SN model *)
 

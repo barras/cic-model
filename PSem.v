@@ -3,7 +3,7 @@ Require Import AbsTheorySem.
 Require Import SN_nat.
 
 Import GenLemmas.
-Import SN_CC_Real SN_CC_Model SN_CC_addon.
+Import SN_CC_Real SN_CC_Model.
 Import Sat SN SN_nat.
 
 (*Instantiate the semantic of First Order Theory with Presburger*)

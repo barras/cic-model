@@ -3,7 +3,7 @@ Require Import ModelTheory.
 Import GenLemmas.
 Import SN_CC_Real.
 Import SN_nat Sat ZFuniv_real ZFcoc.
-Import ZF SN SN_CC_Model SN_CC_addon.
+Import ZF SN SN_CC_Model.
 
 
 (*Instantiate the semantic of First Order Theory with Presburger*)

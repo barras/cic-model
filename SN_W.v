@@ -1041,6 +1041,9 @@ apply and_split; intros.
         rewrite Real_int_W_lift; trivial.
         reflexivity.
 
+        intros.
+        reflexivity.
+
        revert H5; apply eq_elim; apply cc_prod_ext.
         rewrite El_int_W_lift; reflexivity.
 

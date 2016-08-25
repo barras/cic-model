@@ -174,7 +174,7 @@ Lemma El_sub e T i j i' j':
 intros.
 apply H in H0.
 red; intros.
-apply H0 with daimon.
+apply H0 with daimont.
 split;[trivial|apply varSAT].
 Qed.
 Lemma El_eq e T i j i' j':
@@ -222,7 +222,7 @@ unfold fx_equals; intros.
 simpl.
 apply lam_ext; eauto.
 red; intros.
-apply H1 with (I.cons daimon j) (I.cons daimon j').
+apply H1 with (I.cons daimont j) (I.cons daimont j').
 specialize H0 with (1:=H2).
 apply val_push_var; auto.
  split; trivial.
@@ -305,7 +305,7 @@ apply and_split; intros.
 
   rewrite H0; reflexivity.
 
-  apply El_sub with (1:=H1) (j:=I.cons daimon j) (j':=I.cons daimon j').
+  apply El_sub with (1:=H1) (j:=I.cons daimont j) (j':=I.cons daimont j').
   apply val_push_var; auto with *.
    split;[trivial|apply varSAT].
    split;[|apply varSAT].
@@ -320,7 +320,7 @@ apply and_split; intros.
 
   rewrite <- H0 in H4.
   red; intros.
-  apply H1 with (i:=V.cons x0 i) (j:=I.cons daimon j) (j':=I.cons daimon j').
+  apply H1 with (i:=V.cons x0 i) (j:=I.cons daimont j) (j':=I.cons daimont j').
    apply val_push_var; auto with *.
    split; trivial; apply varSAT.
    split.
@@ -347,7 +347,7 @@ red; intros.
 rewrite beta_eq; try assumption.
  assert (H5' := H0 _ H5).
  rewrite beta_eq; trivial.
-  apply H1 with (I.cons daimon j) (I.cons daimon j').
+  apply H1 with (I.cons daimont j) (I.cons daimont j').
   apply val_push_var; auto with *.
    split; [trivial|apply varSAT].
 
