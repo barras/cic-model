@@ -3,41 +3,16 @@ Require Import List Compare_dec.
 Require Import basic.
 Require Import Sat.
 Require Import Models.
-
+Require Import SnModels TypModels.
 Module Lc := Lambda.
 
-(** * Abstract strong mormalization model (supporting strong eliminations) *)
 
 Reserved Notation "[ x , t ] \real A" (at level 60).
-
-Module Type RealSN_addon (M : CC_Model).
-  Import M.
-
-  (** Types are equipped with a saturated set *)
-  Parameter Real : X -> X -> SAT.
-  Parameter Real_morph: Proper (eqX ==> eqX ==> eqSAT) Real.
-
-  Parameter Real_sort : forall P, P ∈ props -> eqSAT (Real props P) snSAT.
-
-  Parameter Real_prod : forall dom f F,
-    eq_fun dom F F ->
-    f ∈ prod dom F ->
-    eqSAT (Real (prod dom F) f)
-      (piSAT0 (fun x => x ∈ dom) (Real dom)
-          (fun x => Real (F x) (app f x))).
-
-  Existing Instance Real_morph.
-
-  (** Every proposition is inhabited *)
-  Parameter daimon : X.
-  Parameter daimon_false : daimon ∈ prod props (fun P => P).
-
-End RealSN_addon.
 
 (******************************************************************************)
 (* The generic model construction: *)
 
-Module MakeModel (M : CC_Model) (MM : RealSN_addon(M)).
+Module MakeModel (M : CC_Model) (MM : RealSN_addon(M)) <: Syntax (*Judge*).
 Import M.
 Import MM.
 
@@ -153,7 +128,7 @@ Include ObjectSN.MakeObject(M).
 (** Handles the case of kind: a type that contains all "non-empty" types
     and that is included in no type.
  *)
-Definition gen_real x t (T : trm) (i : val) := 
+Definition gen_real x t (T : term) (i : val) := 
   match T with
   (** T is a type or a kind *)
   | Some _ => [x,t] \real int T i
@@ -166,13 +141,13 @@ Lemma gen_real_nk x t T i :
 intros Tnk.
 destruct T;[reflexivity|elim Tnk; trivial].
 Qed.
-Definition kind_int (M T:trm) :=
+Definition kind_int (M T:term) :=
   M <> kind /\ match T with None => kind_ok M | _ => True end.
-Definition in_int' (M T:trm) (i:val) (j:Lc.intt) :=
+Definition in_int' (M T:term) (i:val) (j:Lc.intt) :=
   gen_real (int M i) (tm M j) T i /\
   kind_int M T.
 
-Definition in_int (M T:trm) (i:val) (j:Lc.intt) :=
+Definition in_int (M T:term) (i:val) (j:Lc.intt) :=
   M <> None /\
   match T with
   (** M has type kind *)
@@ -193,7 +168,7 @@ Qed.
 
 
 Instance in_int_morph : Proper
-  (eq_trm ==> eq_trm ==> eq_val ==> pointwise_relation nat eq ==> iff)
+  (eq_term ==> eq_term ==> eq_val ==> pointwise_relation nat eq ==> iff)
   in_int.
 unfold in_int; do 5 red; intros.
 repeat rewrite eq_kind.
@@ -202,7 +177,7 @@ destruct x0; destruct y0; try contradiction.
  rewrite H; rewrite H2; reflexivity.
 Qed.
 Instance in_int'_morph : Proper
-  (eq_trm ==> eq_trm ==> eq_val ==> pointwise_relation nat eq ==> iff)
+  (eq_term ==> eq_term ==> eq_val ==> pointwise_relation nat eq ==> iff)
   in_int'.
 do 5 red; intros.
 do 2 rewrite <- in_int_in_int'.
@@ -257,7 +232,7 @@ split; try discriminate.
 
   destruct mem; split; trivial.
   rewrite kind_ok_lift with (k:=0) in H.
-  rewrite eq_trm_lift_ref_fv in H; auto with arith.
+  rewrite eq_term_lift_ref_fv in H; auto with arith.
 Qed.
 
 Lemma in_int_sn : forall i j M T,
@@ -270,7 +245,7 @@ destruct T; simpl in mem.
 Qed.
 
 (** Environments *)
-Definition env := list trm.
+Definition env := list term.
 
 Definition val_ok (e:env) (i:val) (j:Lc.intt) :=
   forall n T, nth_error e n = value T ->
@@ -315,32 +290,37 @@ Qed.
 
 (** * Judgements *)
 
+Module J.
+
 (** #<a name="MakeModel.wf"></a># *)
 Definition wf (e:env) :=
   exists i, exists j, val_ok e i j.
-Definition typ (e:env) (M T:trm) :=
+Definition typ (e:env) (M T:term) :=
   forall i j, val_ok e i j -> in_int M T i j.
-Definition eq_typ (e:env) (M M':trm) :=
+Definition eq_typ (e:env) (M M':term) :=
   forall i j, val_ok e i j -> int M i == int M' i.
-Definition sub_typ (e:env) (M M':trm) :=
+Definition sub_typ (e:env) (M M':term) :=
   forall i j, val_ok e i j ->
   forall x t, [x,t] \real int M i -> [x,t] \real int M' i.
 
 Definition eq_typ' e M N := eq_typ e M N /\ conv_term M N.
 
-Instance typ_morph : forall e, Proper (eq_trm ==> eq_trm ==> iff) (typ e).
+Definition typ_sub (e:env) (s:sub) (f:env) :=
+  forall i j, val_ok e i j -> val_ok f (sint s i) (stm s j).
+
+Instance typ_morph : forall e, Proper (eq_term ==> eq_term ==> iff) (typ e).
 unfold typ; split; simpl; intros.
  rewrite <- H; rewrite <- H0; auto.
  rewrite H; rewrite H0; auto.
 Qed.
 
-Instance eq_typ_morph : forall e, Proper (eq_trm ==> eq_trm ==> iff) (eq_typ e).
+Instance eq_typ_morph : forall e, Proper (eq_term ==> eq_term ==> iff) (eq_typ e).
 intro; apply morph_impl_iff2; auto with *.
 do 4 red; unfold eq_typ; intros.
 rewrite <- H; rewrite <- H0; eauto.
 Qed.
 
-Instance eq_typ'_morph : forall e, Proper (eq_trm ==> eq_trm ==> iff) (eq_typ' e).
+Instance eq_typ'_morph : forall e, Proper (eq_term ==> eq_term ==> iff) (eq_typ' e).
 do 3 red; intros.
 apply and_iff_morphism.
  apply eq_typ_morph; trivial.
@@ -348,7 +328,7 @@ apply and_iff_morphism.
  rewrite H; rewrite H0; reflexivity.
 Qed.
 
-Instance sub_typ_morph : forall e, Proper (eq_trm ==> eq_trm ==> iff) (sub_typ e).
+Instance sub_typ_morph : forall e, Proper (eq_term ==> eq_term ==> iff) (sub_typ e).
 unfold sub_typ; split; simpl; intros.
  rewrite <- H in H3.
  rewrite <- H0; eauto.
@@ -357,6 +337,8 @@ unfold sub_typ; split; simpl; intros.
  rewrite H0; eauto.
 Qed.
 
+End J.
+Export J.
 
 (* Auxiliary lemmas: *)
 Lemma typ_common e M T :
@@ -469,6 +451,7 @@ Qed.
 
 
 (** * Inference rules *)
+Module R.
 
 (** ** Context formation rules *)
 
@@ -874,7 +857,7 @@ assert (val_ok e (V.lams 0 (V.shift 1) i) (I.lams 0 (I.shift 1) j)).
   intros (_,(ne,sat)); split;[discriminate|split; trivial].
 
   rewrite kind_ok_lift with (k:=0).
-  rewrite eq_trm_lift_ref_fv; auto with *.
+  rewrite eq_term_lift_ref_fv; auto with *.
 destruct H with (1:=H1) as (M_nk, inT).
 split.
  destruct M; try discriminate.
@@ -1012,5 +995,7 @@ case_eq (nth_error e n); intros.
  rewrite H0 in H; contradiction.
 Qed.
 
+End R.
+Export R.
 
 End MakeModel.

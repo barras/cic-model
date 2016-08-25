@@ -11,7 +11,7 @@ Module B := VarMap.Bool.
 
 
   (* Non-occurrence : interp do not depend on variables in set [f] *)
-  Definition noccur (f:B.map) (T:trm) : Prop :=
+  Definition noccur (f:B.map) (T:term) : Prop :=
     forall i i',
     (forall n, if f n then True else i n == i' n) ->
     int T i == int T i'.
@@ -43,8 +43,8 @@ Qed.
 (** Judgements with variance *)
 
 Module OTeq.
-Definition t := option trm.
-Definition eq := @eq (option trm).
+Definition t := option term.
+Definition eq := @eq (option term).
 Definition eq_equiv : Equivalence eq := eq_equivalence.
 Existing Instance eq_equiv.
 End OTeq.
@@ -375,7 +375,7 @@ Definition typ_monoval e M T :=
 Definition typ_impl e M T :=
   fx_equals e M /\ typ (tenv e) M T.
 
-Instance typ_impl_morph e : Proper (eq_trm ==> eq_trm ==> iff) (typ_impl e).
+Instance typ_impl_morph e : Proper (eq_term ==> eq_term ==> iff) (typ_impl e).
 apply morph_impl_iff2; auto with *.
 do 4 red; intros.
 destruct H1; split.

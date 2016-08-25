@@ -18,10 +18,10 @@ Import PresburgerTheory PresburgerSem IntpPresburger.
 
 Lemma SN_P : forall e x y,
   (exists hyp a b i j, 
-    x = app_esub i j (intp_fotrm a) /\
-    y = app_esub i j (intp_fotrm b) /\
+    x = app_esub i j (intp_foterm a) /\
+    y = app_esub i j (intp_foterm b) /\
     wf_clsd_env (intp_hyp hyp) /\
     typ_esub e i j (intp_hyp hyp) /\
-    deriv hyp (eq_fotrm a b)) ->
+    deriv hyp (eq_foterm a b)) ->
   eq_typ e x y.
 Proof. apply SN_T. Qed.

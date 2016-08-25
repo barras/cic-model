@@ -430,16 +430,16 @@ Require TypeJudge.
 Module Ty := TypeJudge.
 Module Tm := Term.
 
-Fixpoint int_trm t :=
+Fixpoint int_term t :=
   match t with
-  | Tm.Srt Tm.prop => SN.prop
-  | Tm.Srt Tm.kind => SN.kind
-  | Tm.Ref n => SN.Ref n
-  | Tm.App u v => SN.App (int_trm u) (int_trm v)
-  | Tm.Abs T M => SN.Abs (int_trm T) (int_trm M)
-  | Tm.Prod T U => SN.Prod (int_trm T) (int_trm U)
+  | Tm.Srt Tm.prop => SN.T.prop
+  | Tm.Srt Tm.kind => SN.T.kind
+  | Tm.Ref n => SN.T.Ref n
+  | Tm.App u v => SN.T.App (int_term u) (int_term v)
+  | Tm.Abs T M => SN.T.Abs (int_term T) (int_term M)
+  | Tm.Prod T U => SN.T.Prod (int_term T) (int_term U)
   end.
-Definition interp t := int_trm (Ty.unmark_app t).
+Definition interp t := int_term (Ty.unmark_app t).
 Definition int_env := List.map interp.
 
 Section LiftAndSubstEquiv.
@@ -449,8 +449,8 @@ Section LiftAndSubstEquiv.
 Import SN.
 
 Lemma int_lift_rec : forall n t k,
-  eq_trm (lift_rec n k (int_trm t)) (int_trm (Tm.lift_rec n t k)).
-induction t; simpl int_trm; intros.
+  eq_term (lift_rec n k (int_term t)) (int_term (Tm.lift_rec n t k)).
+induction t; simpl int_term; intros.
  destruct s; simpl; trivial.
  split; red; intros; reflexivity.
 
@@ -467,7 +467,7 @@ induction t; simpl int_trm; intros.
 Qed.
 
 Lemma int_lift : forall n t,
-  eq_trm (int_trm (Tm.lift n t)) (lift n (int_trm t)).
+  eq_term (int_term (Tm.lift n t)) (lift n (int_term t)).
 intros.
 symmetry.
 unfold Tm.lift, lift.
@@ -476,41 +476,41 @@ Qed.
 
 
 Lemma int_subst_rec : forall arg,
-  int_trm arg <> kind ->
+  int_term arg <> kind ->
   forall t k,
-  eq_trm (subst_rec (int_trm arg) k (int_trm t)) (int_trm (Tm.subst_rec arg t k)).
+  eq_term (subst_rec (int_term arg) k (int_term t)) (int_term (Tm.subst_rec arg t k)).
 intros arg not_knd.
-induction t; simpl int_trm; intros.
+induction t; simpl int_term; intros.
  destruct s; simpl; trivial.
  split; red; intros; reflexivity.
 
  simpl Tm.subst_rec.
- destruct (lt_eq_lt_dec k n) as [[fv|eqv]|bv]; simpl int_trm.
-  simpl int_trm.
+ destruct (lt_eq_lt_dec k n) as [[fv|eqv]|bv]; simpl int_term.
+  simpl int_term.
   destruct n; [inversion fv|].
-  rewrite SN.red_sigma_var_gt; auto with arith.
+  rewrite SN.T.red_sigma_var_gt; auto with arith.
   reflexivity.
 
-  subst k; rewrite SN.red_sigma_var_eq; trivial.
+  subst k; rewrite SN.T.red_sigma_var_eq; trivial.
   symmetry; apply int_lift.
 
-  rewrite SN.red_sigma_var_lt; trivial.
+  rewrite SN.T.red_sigma_var_lt; trivial.
   reflexivity.
 
- rewrite SN.red_sigma_abs.
+ rewrite SN.T.red_sigma_abs.
  rewrite IHt1; rewrite IHt2; reflexivity.
 
- rewrite SN.red_sigma_app.
+ rewrite SN.T.red_sigma_app.
  rewrite IHt1; rewrite IHt2; reflexivity.
 
- rewrite SN.red_sigma_prod.
+ rewrite SN.T.red_sigma_prod.
  rewrite IHt1; rewrite IHt2; reflexivity.
 Qed.
 
 
 Lemma int_subst : forall u t,
-  int_trm u <> kind ->
-  eq_trm (int_trm (Tm.subst u t)) (subst (int_trm u) (int_trm t)).
+  int_term u <> kind ->
+  eq_term (int_term (Tm.subst u t)) (subst (int_term u) (int_term t)).
 unfold Tm.subst; symmetry; apply int_subst_rec; trivial.
 Qed.
 
@@ -533,21 +533,21 @@ Hint Resolve int_not_kind Ty.eq_typ_not_kind.
  *)
 Lemma red1_sound : forall x y,
   Tm.red1 x y -> ~ Tm.mem_sort Tm.kind x ->
-  SN.red_term (int_trm x) (int_trm y).
+  SN.T.red_term (int_term x) (int_term y).
 induction 1; simpl; intros.
  rewrite int_subst.
-  apply SN.red_term_beta.
+  apply SN.T.red_term_beta.
 
   destruct N; try discriminate.
   destruct s; try discriminate.
   elim H; auto.
 
- apply SN.red_term_abs_l; auto 10.
- apply SN.red_term_abs_r; auto 10.
- apply SN.red_term_app_l; auto 10.
- apply SN.red_term_app_r; auto 10.
- apply SN.red_term_prod_l; auto 10.
- apply SN.red_term_prod_r; auto 10.
+ apply SN.T.red_term_abs_l; auto 10.
+ apply SN.T.red_term_abs_r; auto 10.
+ apply SN.T.red_term_app_l; auto 10.
+ apply SN.T.red_term_app_r; auto 10.
+ apply SN.T.red_term_prod_l; auto 10.
+ apply SN.T.red_term_prod_r; auto 10.
 Qed.
 
 Import Wellfounded.
@@ -557,7 +557,7 @@ Lemma sn_sound : forall M,
   ~ Tm.mem_sort Tm.kind (Ty.unmark_app M) ->
   Tm.sn (Ty.unmark_app M).
 intros M accM.
-apply Acc_inverse_image with (f:=int_trm) in accM.
+apply Acc_inverse_image with (f:=int_term) in accM.
 induction accM; intros.
 constructor; intros.
 apply H0; trivial.
@@ -570,13 +570,13 @@ Qed.
 
 Lemma int_sound : forall e M M' T,
   Ty.eq_typ e M M' T ->
-  SN.typ (int_env e) (interp M) (interp T) /\
-  SN.eq_typ (int_env e) (interp M) (interp M').
+  SN.J.typ (int_env e) (interp M) (interp T) /\
+  SN.J.eq_typ (int_env e) (interp M) (interp M').
 induction 1; simpl; intros.
  (* Srt *)
  split.
-  apply SN.typ_prop.
-  apply SN.refl.
+  apply SN.R.typ_prop.
+  apply SN.R.refl.
  (* Ref *)
  split.
   destruct H0.
@@ -584,20 +584,20 @@ induction 1; simpl; intros.
   unfold Tm.lift, interp; rewrite Ty.unmark_lift.
   fold (Tm.lift (S v) (Ty.unmark_app x)); rewrite int_lift.
   simpl.
-  apply SN.typ_var.
+  apply SN.R.typ_var.
   elim H1; simpl; auto.
 
-  apply SN.refl.
+  apply SN.R.refl.
  (* Abs *)
  destruct IHeq_typ1.
  clear IHeq_typ2.
  destruct IHeq_typ3.
  unfold interp; simpl; fold (interp T) (interp M) (interp U).
  split.
-  apply SN.typ_abs; eauto.
+  apply SN.R.typ_abs; eauto.
   destruct s1; red; auto.
 
-  apply SN.eq_typ_abs; eauto.
+  apply SN.R.eq_typ_abs; eauto.
  (* App *)
  destruct IHeq_typ1.
  destruct IHeq_typ3.
@@ -607,20 +607,20 @@ induction 1; simpl; intros.
   rewrite Ty.unmark_subst0 with (1:=H2).
   rewrite int_subst; fold (interp v); eauto.
   fold (interp Ur).
-  apply SN.typ_app with (interp V); eauto.
+  apply SN.R.typ_app with (interp V); eauto.
 
-  apply SN.eq_typ_app; trivial.
+  apply SN.R.eq_typ_app; trivial.
  (* Prod *)
  destruct IHeq_typ1.
  destruct IHeq_typ2.
  unfold interp; simpl; fold (interp T) (interp U) (interp T') (interp U').
  split.
-  apply SN.typ_prod; trivial.
+  apply SN.R.typ_prod; trivial.
    destruct s2; auto.
 
    destruct s1; red; auto.
 
-  apply SN.eq_typ_prod; eauto.
+  apply SN.R.eq_typ_prod; eauto.
  (* Beta *)
  destruct IHeq_typ1.
  destruct IHeq_typ2.
@@ -631,46 +631,46 @@ induction 1; simpl; intros.
   rewrite Ty.unmark_subst0 with (1:=H2).
   rewrite int_subst; fold (interp N); eauto.
   fold (interp U).
-  apply SN.typ_app with (V:=interp T); eauto.
-  apply SN.typ_abs; eauto.
+  apply SN.R.typ_app with (V:=interp T); eauto.
+  apply SN.R.typ_abs; eauto.
   destruct s1; red; auto.
 
   rewrite Ty.unmark_subst0 with (1:=Ty.typ_refl2 _ _ _ _ H1).
   rewrite int_subst; fold (interp N').
   2:assert (h := Ty.typ_refl2 _ _ _ _ H); eauto.
-  apply SN.eq_typ_beta; eauto.
+  apply SN.R.eq_typ_beta; eauto.
  (* Red *)
  destruct IHeq_typ1.
  destruct IHeq_typ2.
  split; trivial.
- apply SN.typ_conv with (interp T); eauto.
+ apply SN.R.typ_conv with (interp T); eauto.
  apply Ty.typ_refl2 in H0; eauto.
  (* Exp *)
  destruct IHeq_typ1.
  destruct IHeq_typ2.
  split; trivial.
- apply SN.typ_conv with (int_trm (Ty.unmark_app T')); eauto.
-  apply SN.sym; trivial.
+ apply SN.R.typ_conv with (int_term (Ty.unmark_app T')); eauto.
+  apply SN.R.sym; trivial.
 
   fold (interp T').
   apply Ty.typ_refl2 in H0; eauto.
 Qed.
 
-  Lemma interp_wf : forall e, Ty.wf e -> SN.wf (int_env e).
+  Lemma interp_wf : forall e, Ty.wf e -> SN.J.wf (int_env e).
 induction e; simpl; intros.
- apply SN.wf_nil.
+ apply SN.R.wf_nil.
 
  inversion_clear H.
  assert (wfe := Ty.typ_wf _ _ _ _ H0).
  apply int_sound in H0.
  destruct H0 as (H0,_).
- apply SN.wf_cons; auto.
+ apply SN.R.wf_cons; auto.
  destruct s; [left|right]; assumption.
 Qed.
 
 Lemma interp_sound : forall e M M' T,
   Ty.eq_typ e M M' T ->
-  SN.wf (int_env e) /\ SN.typ (int_env e) (interp M) (interp T).
+  SN.J.wf (int_env e) /\ SN.J.typ (int_env e) (interp M) (interp T).
 intros.
 assert (wfe := Ty.typ_wf _ _ _ _ H).
 apply interp_wf in wfe.

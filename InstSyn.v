@@ -16,7 +16,7 @@ Definition Cst_0 := Cst_0'.
 Definition Cst_1 := Cst_1'.
 Definition Df_Add := Df_Add'.
 
-Fixpoint lift_trm_rec t n k:=
+Fixpoint lift_term_rec t n k:=
   match t with
     | Var i => 
       match le_gt_dec k i with
@@ -25,27 +25,27 @@ Fixpoint lift_trm_rec t n k:=
       end
     | Cst_0 => Cst_0
     | Cst_1 => Cst_1
-    | Df_Add u v => Df_Add (lift_trm_rec u n k) (lift_trm_rec v n k)
+    | Df_Add u v => Df_Add (lift_term_rec u n k) (lift_term_rec v n k)
   end.
 
-Definition lift_trm t n := lift_trm_rec t n 0.
+Definition lift_term t n := lift_term_rec t n 0.
 
-Fixpoint subst_trm_rec M N n:= 
+Fixpoint subst_term_rec M N n:= 
   match M with
     | Var i =>
       match lt_eq_lt_dec n i with
         | inleft (left _) => Var (pred i)
-        | inleft (right _) => lift_trm N n
+        | inleft (right _) => lift_term N n
         | inright _ => Var i
       end
     | Cst_0 => Cst_0
     | Cst_1 => Cst_1
-    | Df_Add M1 M2 => Df_Add (subst_trm_rec M1 N n) (subst_trm_rec M2 N n)
+    | Df_Add M1 M2 => Df_Add (subst_term_rec M1 N n) (subst_term_rec M2 N n)
   end.
 
-Definition subst_trm M N := subst_trm_rec M N 0.
+Definition subst_term M N := subst_term_rec M N 0.
 
-Fixpoint fv_trm_rec t k : list nat :=
+Fixpoint fv_term_rec t k : list nat :=
   match t with
     | Var n => 
       match le_gt_dec k n with
@@ -54,13 +54,13 @@ Fixpoint fv_trm_rec t k : list nat :=
       end
     | Cst_0 => nil
     | Cst_1 => nil
-    | Df_Add M N => (fv_trm_rec M k) ++ (fv_trm_rec N k)
+    | Df_Add M N => (fv_term_rec M k) ++ (fv_term_rec N k)
   end.
 
-Definition fv_trm t := fv_trm_rec t 0.
+Definition fv_term t := fv_term_rec t 0.
 
 Inductive foformula' :=
-| eq_fotrm' : foterm -> foterm -> foformula'
+| eq_foterm' : foterm -> foterm -> foformula'
 | TF'   : foformula'
 | BF'   : foformula'
 | neg' : foformula' -> foformula'
@@ -71,7 +71,7 @@ Inductive foformula' :=
 | exst' : foformula' -> foformula'.
 
 Definition foformula := foformula'.
-Definition eq_fotrm := eq_fotrm'.
+Definition eq_foterm := eq_foterm'.
 Definition TF := TF'.
 Definition BF := BF'.
 Definition neg := neg'.
@@ -83,7 +83,7 @@ Definition exst := exst'.
 
 Fixpoint lift_fml_rec f n k:=
   match f with
-    | eq_fotrm x y => eq_fotrm (lift_trm_rec x n k) (lift_trm_rec y n k)
+    | eq_foterm x y => eq_foterm (lift_term_rec x n k) (lift_term_rec y n k)
     | TF => TF
     | BF => BF
     | neg f' => neg (lift_fml_rec f' n k)
@@ -98,7 +98,7 @@ Definition lift_fml t n := lift_fml_rec t n 0.
 
 Fixpoint subst_fml_rec f N n :=
   match f with
-    | eq_fotrm x y => eq_fotrm (subst_trm_rec x N n) (subst_trm_rec y N n)
+    | eq_foterm x y => eq_foterm (subst_term_rec x N n) (subst_term_rec y N n)
     | TF => TF
     | BF => BF
     | neg f => neg (subst_fml_rec f N n)
@@ -113,7 +113,7 @@ Definition subst_fml f N := subst_fml_rec f N 0.
 
 Fixpoint fv_fml_rec f k : list nat :=
   match f with
-    | eq_fotrm t1 t2 => (fv_trm_rec t1 k) ++ (fv_trm_rec t2 k)
+    | eq_foterm t1 t2 => (fv_term_rec t1 k) ++ (fv_term_rec t2 k)
     | TF => nil
     | BF => nil
     | neg f0 => fv_fml_rec f0 k
@@ -126,9 +126,9 @@ Fixpoint fv_fml_rec f k : list nat :=
 
 Definition fv_fml f := fv_fml_rec f 0.
 
-Lemma fv_fml_eq_trm : forall x y,
-  fv_fml (eq_fotrm x y) = (fv_trm x) ++ (fv_trm y).
-unfold fv_fml, fv_trm; simpl; trivial.
+Lemma fv_fml_eq_term : forall x y,
+  fv_fml (eq_foterm x y) = (fv_term x) ++ (fv_term y).
+unfold fv_fml, fv_term; simpl; trivial.
 Qed.
 
 Lemma fv_fml_neg : forall f,
@@ -161,18 +161,18 @@ Lemma fv_fml_exst : forall f,
 unfold fv_fml; simpl; trivial.
 Qed.
 
-Definition hyp_ok_trm (hyp:list (option foformula)) t := 
-  forall n, In n (fv_trm t) -> nth_error hyp n = Some None.
+Definition hyp_ok_term (hyp:list (option foformula)) t := 
+  forall n, In n (fv_term t) -> nth_error hyp n = Some None.
 
 Definition hyp_ok_fml (hyp:list (option foformula)) f := 
   forall n, In n (fv_fml f) -> nth_error hyp n = Some None.
 
 Definition ax hyp f :=
-  f = (fall (neg (eq_fotrm Cst_0 (Df_Add (Var 0) Cst_1))))      \/
-  f = (fall (fall (implf (eq_fotrm (Df_Add (Var 0) Cst_1) 
-    (Df_Add (Var 1) Cst_1)) (eq_fotrm (Var 0) (Var 1)))))       \/
-  f = (fall (eq_fotrm (Var 0) (Df_Add (Var 0) Cst_0)))          \/
-  f = (fall(fall (eq_fotrm (Df_Add (Df_Add (Var 0) (Var 1)) Cst_1) 
+  f = (fall (neg (eq_foterm Cst_0 (Df_Add (Var 0) Cst_1))))      \/
+  f = (fall (fall (implf (eq_foterm (Df_Add (Var 0) Cst_1) 
+    (Df_Add (Var 1) Cst_1)) (eq_foterm (Var 0) (Var 1)))))       \/
+  f = (fall (eq_foterm (Var 0) (Df_Add (Var 0) Cst_0)))          \/
+  f = (fall(fall (eq_foterm (Df_Add (Df_Add (Var 0) (Var 1)) Cst_1) 
                    (Df_Add (Var 0) (Df_Add (Var 1) (Cst_1)))))) \/
   exists g, (hyp_ok_fml (None::hyp) g) /\ f = (implf (subst_fml g Cst_0) 
     (implf (fall (implf g 
@@ -211,28 +211,28 @@ Inductive deriv : list (option foformula) -> foformula -> Prop :=
 | fall_intro : forall hyp f,
   deriv (None::hyp) f -> deriv hyp (fall f)
 | fall_elim : forall hyp f u, 
-  hyp_ok_trm hyp u -> deriv hyp (fall f) -> deriv hyp (subst_fml f u)
-| exst_intro : forall hyp f N, hyp_ok_trm hyp N -> 
+  hyp_ok_term hyp u -> deriv hyp (fall f) -> deriv hyp (subst_fml f u)
+| exst_intro : forall hyp f N, hyp_ok_term hyp N -> 
   deriv hyp (subst_fml f N) -> deriv hyp (exst f)
 | exst_elim : forall hyp f f1, 
   deriv hyp (exst f) -> 
   deriv (Some f::None::hyp) (lift_fml f1 2) -> deriv hyp f1.
 
-Lemma in_S_fv_trm : forall t n k,
-  In (S n) (fv_trm_rec t k) <->
-  In n (fv_trm_rec t (S k)).
+Lemma in_S_fv_term : forall t n k,
+  In (S n) (fv_term_rec t k) <->
+  In n (fv_term_rec t (S k)).
 induction t; split; [| |contradiction|contradiction|contradiction|contradiction| |]; intros.
  simpl in H. destruct (le_gt_dec k n); [|contradiction].
   simpl in H. destruct H; [|contradiction].
    assert (n = (S k + n0)) by omega.
-   subst n. unfold fv_trm_rec.
+   subst n. unfold fv_term_rec.
    case_eq (le_gt_dec (S k) (S k + n0)); intros; [simpl; left|]; omega.
 
- unfold fv_trm_rec in H.
+ unfold fv_term_rec in H.
  case_eq (le_gt_dec (S k) n); intros; rewrite H0 in H; [|contradiction].
   simpl in H. destruct H; [|contradiction].
    assert (n = k + S n0) by omega.
-   subst n; unfold fv_trm_rec.
+   subst n; unfold fv_term_rec.
    destruct (le_gt_dec k (k + S n0)); [simpl; left|]; omega.
 
  simpl in H |- *. rewrite in_app_iff in H |- *. 
@@ -245,7 +245,7 @@ Qed.
 Lemma in_S_fv_fml : forall f n k, 
   In (S n) (fv_fml_rec f k) <-> In n (fv_fml_rec f (S k)).
 induction f; simpl; try reflexivity; trivial; intros; do 2 rewrite in_app_iff.
- do 2 rewrite in_S_fv_trm; reflexivity.
+ do 2 rewrite in_S_fv_term; reflexivity.
 
  rewrite IHf1, IHf2; reflexivity.
 
@@ -254,16 +254,16 @@ induction f; simpl; try reflexivity; trivial; intros; do 2 rewrite in_app_iff.
  rewrite IHf1, IHf2; reflexivity.
 Qed.
 
-Lemma lift_trm0 : forall t, lift_trm t 0 = t.
-induction t; intros; unfold lift_trm; simpl; trivial.
+Lemma lift_term0 : forall t, lift_term t 0 = t.
+induction t; intros; unfold lift_term; simpl; trivial.
  apply f_equal; omega.
 
- unfold lift_trm in IHt1, IHt2; rewrite IHt1, IHt2; trivial.
+ unfold lift_term in IHt1, IHt2; rewrite IHt1, IHt2; trivial.
 Qed.
 
-Lemma in_fv_trm_lift : forall t n k k' k'',
-  In n (fv_trm_rec (lift_trm_rec t k' k'') (k+k'+k'')) <->
-  In n (fv_trm_rec t (k+k'')).
+Lemma in_fv_term_lift : forall t n k k' k'',
+  In n (fv_term_rec (lift_term_rec t k' k'') (k+k'+k'')) <->
+  In n (fv_term_rec t (k+k'')).
 induction t; simpl; intros; try reflexivity.
  destruct (le_gt_dec k'' n) as [le|gt]; simpl.
   destruct (le_gt_dec (k+k'+k'') (n+k')) as [le'|gt]; [simpl|].
@@ -282,7 +282,7 @@ Lemma in_fv_fml_lift : forall f n k k' k'',
   In n (fv_fml_rec (lift_fml_rec f k' k'') (k+k'+k'')) <->
   In n (fv_fml_rec f (k+k'')).
 induction f; simpl; intros; try reflexivity; trivial.
- do 2 rewrite in_app_iff. do 2 rewrite in_fv_trm_lift; reflexivity.
+ do 2 rewrite in_app_iff. do 2 rewrite in_fv_term_lift; reflexivity.
 
  do 2 rewrite in_app_iff. rewrite IHf1, IHf2; reflexivity.
 
@@ -297,20 +297,20 @@ induction f; simpl; intros; try reflexivity; trivial.
  replace (S (k + k'')) with (k + S k'') by omega. apply IHf; trivial.
 Qed.
 
-Lemma in_fv_trm_subst_split : forall t n N k k',
-  In n (fv_trm_rec (subst_trm_rec t N k') (k+k')) ->
-  In n (fv_trm_rec N k) \/ In (S n) (fv_trm_rec t (k+k')).
+Lemma in_fv_term_subst_split : forall t n N k k',
+  In n (fv_term_rec (subst_term_rec t N k') (k+k')) ->
+  In n (fv_term_rec N k) \/ In (S n) (fv_term_rec t (k+k')).
 induction t; intros.
- unfold subst_trm_rec in H |- *. simpl fv_trm_rec at 2.
+ unfold subst_term_rec in H |- *. simpl fv_term_rec at 2.
  destruct (lt_eq_lt_dec k' n) as [[lt|eq]|gt].
-  unfold fv_trm_rec in H; simpl in H.
+  unfold fv_term_rec in H; simpl in H.
   destruct (le_gt_dec (k+k') (pred n)) as [le|gt]; [|contradiction].
    simpl in H. destruct H; [right|contradiction].
    destruct (le_gt_dec (k+k') n) as [le'|gt]; [simpl; left|]; omega.
 
-  subst n; left. unfold lift_trm in H. 
+  subst n; left. unfold lift_term in H. 
   replace (k+k') with (k+k'+0) in H by omega.
-  apply (in_fv_trm_lift _ _ k k' 0) in H.
+  apply (in_fv_term_lift _ _ k k' 0) in H.
   replace (k+0) with k in H by omega; trivial.
   
   simpl in H. destruct (le_gt_dec (k+k') n) as [le|gt']; [omega|contradiction].
@@ -327,10 +327,10 @@ Qed.
 
 Lemma in_fv_fml_subst_split : forall g n N k k',
   In n (fv_fml_rec (subst_fml_rec g N k') (k+k')) -> 
-  In n (fv_trm_rec N k) \/ In (S n) (fv_fml_rec g (k+k')).
+  In n (fv_term_rec N k) \/ In (S n) (fv_fml_rec g (k+k')).
 induction g; simpl; intros; try contradiction; trivial.
  rewrite in_app_iff in H |- *.
- destruct H as [H|H]; apply in_fv_trm_subst_split in H.
+ destruct H as [H|H]; apply in_fv_term_subst_split in H.
   destruct H; [left|right; left]; trivial.
   
   destruct H; [left|right; right]; trivial.
@@ -357,9 +357,9 @@ induction g; simpl; intros; try contradiction; trivial.
  replace (S (k + k')) with (k + S k') in H |- * by omega. apply IHg in H; trivial.
 Qed.
 
-Lemma in_fv_trm_subst : forall t n N k k',
-  In (S n) (fv_trm_rec t (k+k')) ->
-  In n (fv_trm_rec (subst_trm_rec t N k') (k+k')).
+Lemma in_fv_term_subst : forall t n N k k',
+  In (S n) (fv_term_rec t (k+k')) ->
+  In n (fv_term_rec (subst_term_rec t N k') (k+k')).
 induction t; simpl; intros; trivial.
  destruct (le_gt_dec (k + k') n) as [le|gt]; [|contradiction].
   simpl in H. destruct H; [|contradiction].
@@ -375,7 +375,7 @@ Lemma in_fv_fml_subst : forall f n N k k',
   In n (fv_fml_rec (subst_fml_rec f N k') (k+k')).
 induction f; simpl; intros; trivial.
  rewrite in_app_iff in H |- *.
- destruct H; [left|right]; apply in_fv_trm_subst; trivial.
+ destruct H; [left|right]; apply in_fv_term_subst; trivial.
 
  apply IHf; trivial.
 
@@ -393,9 +393,9 @@ induction f; simpl; intros; trivial.
  replace (S (k + k')) with (k + S k') in H |- * by omega. apply IHf; trivial.
 Qed.
 
-Lemma lift_trm_split : forall t n k, 
-  lift_trm_rec t (S n) k = lift_trm_rec (lift_trm_rec t n k) 1 k.
-induction t; trivial; unfold lift_trm in *; simpl; intros.
+Lemma lift_term_split : forall t n k, 
+  lift_term_rec t (S n) k = lift_term_rec (lift_term_rec t n k) 1 k.
+induction t; trivial; unfold lift_term in *; simpl; intros.
  destruct (le_gt_dec k n) as [le|gt]; simpl.
   destruct (le_gt_dec k (n+n0)) as [le'|gt]; simpl; [apply f_equal|]; omega.
 
@@ -407,8 +407,8 @@ Qed.
 Lemma lift_fml_split : forall f n k, 
   lift_fml_rec f (S n) k = lift_fml_rec (lift_fml_rec f n k) 1 k.
 induction f; trivial; unfold lift_fml in *; simpl; intros.
- rewrite lift_trm_split with (t:=f).
- rewrite lift_trm_split with (t:=f0); trivial.
+ rewrite lift_term_split with (t:=f).
+ rewrite lift_term_split with (t:=f0); trivial.
 
  rewrite IHf; trivial.
 

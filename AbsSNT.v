@@ -4,7 +4,7 @@
 (*There are two main steps to prove SN :*)
 (*1. Soundness of the first order theory*)
 (*2. New proof of the conversion rule*)
-(*To prove 2, just need to prove eq_fotrm can be embedded in eq_typ*)
+(*To prove 2, just need to prove eq_foterm can be embedded in eq_typ*)
 (*****************************************************************************************)
 (*****************************************************************************************)
 
@@ -104,9 +104,9 @@ induction 1; simpl.
   apply intp_fofml_prop. apply deriv_well_typed; trivial.
 
 (*fall_elim*)
- destruct IHderiv. exists (App x (intp_fotrm u)).
+ destruct IHderiv. exists (App x (intp_foterm u)).
  rewrite <- subst_intp_subst_fml.
- apply Fall_elim; [| |apply intp_fotrm_sort]; trivial.
+ apply Fall_elim; [| |apply intp_foterm_sort]; trivial.
   replace (sort :: intp_hyp hyp) with (intp_hyp (None :: hyp)); trivial.
   apply intp_fofml_prop. apply deriv_well_typed in H0. 
   unfold wf_fml, fv_fml in H0 |- *; intros.
@@ -114,9 +114,9 @@ induction 1; simpl.
    apply H0. apply in_S_fv_fml; trivial.
    
 (*exst_intro*)
- destruct IHderiv. apply intp_fotrm_sort in H.
+ destruct IHderiv. apply intp_foterm_sort in H.
  rewrite <- subst_intp_subst_fml in H1.
- apply Exst_intro with (a:=(intp_fotrm N)) (p:=x); trivial.
+ apply Exst_intro with (a:=(intp_foterm N)) (p:=x); trivial.
   replace (sort :: intp_hyp hyp) with (intp_hyp (None :: hyp)); trivial.
   apply intp_fofml_prop. apply deriv_well_typed in H0. 
   unfold wf_fml, fv_fml in H0 |- *; intros.
@@ -141,36 +141,36 @@ Qed.
 
 Lemma SN_T : forall e x y,
   (exists hyp a b i j, 
-    x = app_esub i j (intp_fotrm a) /\
-    y = app_esub i j (intp_fotrm b) /\
+    x = app_esub i j (intp_foterm a) /\
+    y = app_esub i j (intp_foterm b) /\
     wf_clsd_env (intp_hyp hyp) /\
     typ_esub e i j (intp_hyp hyp) /\
-    deriv hyp (eq_fotrm a b)) ->
+    deriv hyp (eq_foterm a b)) ->
   eq_typ e x y.
 intros e x y Hyp.
 destruct Hyp as (hyp, (a, (b, (i, (j, (Hx, (Hy, (Hclsd, (He, Hderiv))))))))).
 (*a and b are well typed in theory syntax*)
 specialize deriv_well_typed with (1:=Hderiv); intro Hwf.
-assert (wf_trm hyp a /\ wf_trm hyp b) as Hwfab.
+assert (wf_term hyp a /\ wf_term hyp b) as Hwfab.
  unfold wf_fml, fv_fml in Hwf; simpl in Hwf.
- unfold wf_trm; split; intros; apply Hwf; rewrite in_app_iff; [left|right]; trivial.
+ unfold wf_term; split; intros; apply Hwf; rewrite in_app_iff; [left|right]; trivial.
 
 destruct Hwfab as (Hwfa, Hwfb); clear Hwf.
 (*Therefore they have type sort in semantic*)
-apply intp_fotrm_sort in Hwfa.
-apply intp_fotrm_sort in Hwfb.
+apply intp_foterm_sort in Hwfa.
+apply intp_foterm_sort in Hwfb.
 
-(*EQ_trm (intp_trm a) (intp_trm b) can be proved*)
+(*EQ_term (intp_term a) (intp_term b) can be proved*)
 specialize intp_sound with (1:=Hderiv); clear Hderiv; intro HEQ.
 destruct HEQ as (p, HEQ); simpl in HEQ.
 
-(*EQ_trm can be embedded in eq_typ*)
-apply EQ_trm_elim in HEQ; [|exact Hclsd|exact Hwfa|exact Hwfb].
+(*EQ_term can be embedded in eq_typ*)
+apply EQ_term_elim in HEQ; [|exact Hclsd|exact Hwfa|exact Hwfb].
 
 (*eq_typ relation maintains after variable recocation*)
 subst x y. 
 apply explicit_sub_eq_typ with (3:=He); 
-  [apply intp_fotrm_not_kind|apply intp_fotrm_not_kind|exact HEQ].
+  [apply intp_foterm_not_kind|apply intp_foterm_not_kind|exact HEQ].
 Qed.
 
 End Abs_SN_Theory.

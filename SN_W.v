@@ -36,7 +36,7 @@ Hypothesis oz : zero ∈ o.
 
 Variable e:env.
 
-Variable A B:trm.
+Variable A B:term.
 Hypothesis Atyp : typ e A kind.
 Hypothesis Btyp : typ (A::e) B kind.
 
@@ -107,7 +107,7 @@ apply rWi_morph_gen; auto with *.
  apply RBw_morph; trivial.
 Qed.
 
-Definition WI (O:trm) : trm.
+Definition WI (O:term) : term.
 (*begin show*)
 left; exists (fun i => mkTY (TI (WF i) (int O i)) (RW i (int O i)))
              (fun j => Lc.App2 Lc.K (tm A j) (Lc.App2 Lc.K (Lc.Abs(tm B (Lc.ilift j))) (tm O j))).
@@ -193,7 +193,7 @@ split;[|split].
 Qed.
 (** Constructor *)
 
-Definition Wc (x:trm) (f:trm) : trm.
+Definition Wc (x:term) (f:term) : term.
 (* begin show *)
 left; exists (fun i => mkw (int x i) (int f i))
              (fun j => WC (tm x j) (tm f j)).
@@ -279,7 +279,7 @@ Definition mkw_case (b : set -> set -> set) c :=
 Definition W_CASE b w :=
   mkw_case (fun x f => app (app b x) f) w.
 
-Definition Wcase (b n : trm) : trm.
+Definition Wcase (b n : term) : term.
 (*begin show*)
 left; exists (fun i => W_CASE (int b i) (int n i))
              (fun j => WCASE (tm b j) (tm n j)).
@@ -303,7 +303,7 @@ do 2 rewrite tm_substitutive; reflexivity.
 Defined.
 
 Instance Wcase_morph :
-  Proper (eq_trm ==> eq_trm ==> eq_trm) Wcase.
+  Proper (eq_term ==> eq_term ==> eq_term) Wcase.
 do 3 red; intros.
 split; red; simpl; intros.
  unfold sigma_case.
@@ -533,7 +533,7 @@ Qed.
 
 
 (* WFix O M is a fixpoint of domain WI O with body M *)
-Definition WFix (O M:trm) : trm.
+Definition WFix (O M:term) : term.
 (*begin show*)
 left.
 exists (fun i => WREC (fun o' f => int M (V.cons f (V.cons o' i))) (int O i))
@@ -602,7 +602,7 @@ Section WFixRules.
   Hypothesis infty_nz : zero ∈ infty.
   Variable E : fenv.
   Let e := tenv E.
-  Variable A B O U M : trm.
+  Variable A B O U M : term.
   Hypothesis A_nk : A <> kind.
   Hypothesis Aeq : fx_equals E A.
   Hypothesis Beq : fx_equals (push_var E A) B.

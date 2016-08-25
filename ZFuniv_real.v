@@ -326,7 +326,6 @@ apply union_elim in H1; destruct H1.
 apply empty_ax in H2; contradiction.
 Qed.
 
-(* TODO: sort *)
 Definition mkProp S := mkTY (singl empty) (fun _ => S).
 Lemma Real_mkProp S x : x == empty -> eqSAT (Real (mkProp S) x) S.
 intros.

@@ -10,7 +10,7 @@ Import SN_CC_Real.SN.          (* The generic model construction *)
 
 (** * Ordinals *)
 
-Definition Ordt (o:set) : trm :=
+Definition Ordt (o:set) : term :=
   cst (mkTY o (fun _ => snSAT)) Lc.K (fun _ _ => eq_refl) (fun _ _ _ => eq_refl).
 
 Definition typ_ord_kind : forall e o, typ e (Ordt o) kind.
@@ -35,7 +35,7 @@ rewrite cc_bot_ax in H0; destruct H0; trivial.
 rewrite H0; trivial.
 Qed.
 
-Definition OSucc : trm -> trm.
+Definition OSucc : term -> term.
 (*begin show*)
 intros o; left; exists (fun i => osucc (int o i)) (fun j => tm o j).
 (*end show*)
@@ -52,7 +52,7 @@ intros o; left; exists (fun i => osucc (int o i)) (fun j => tm o j).
  apply tm_substitutive.
 Defined.
 
-Definition OSucct : trm -> trm.
+Definition OSucct : term -> term.
 (*begin show*)
 intros o; left; exists (fun i => mkTY (osucc (int o i)) (fun _ => snSAT)) (fun j => tm o j).
 (*end show*)
@@ -100,7 +100,7 @@ Qed.
 
 (** * Ordinal judgment *)
 
-Definition typ_ord (e:env) (O:trm) : Prop :=
+Definition typ_ord (e:env) (O:term) : Prop :=
   forall i j, val_ok e i j -> isOrd (int O i) /\ Lc.sn (tm O j).
 
 (* typ_ord OSucc *)

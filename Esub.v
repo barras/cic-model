@@ -35,7 +35,7 @@ do 5 red; simpl; intros. subst y.
 destruct x as (f, (H, (Hl, Hs))); simpl. apply H; trivial.
 Qed.
 
-Definition app_esub : esub_i -> esub_j -> trm -> trm.
+Definition app_esub : esub_i -> esub_j -> term -> term.
 intros es_i es_j t; left.
 exists (fun i => int t (esub_conv_i es_i i)) (fun j => tm t (esub_conv_j es_j j)).
 do 4 red; intros. apply int_morph; try reflexivity.
@@ -62,14 +62,14 @@ exists (fun f => (fun _ => Lc.K)).
 split; [do 4 red|split; do 2 red; intros]; trivial.
 Defined.
 
-Definition sub_cons_i : trm -> esub_i -> esub_i.
+Definition sub_cons_i : term -> esub_i -> esub_i.
 intros t es.
 exists (fun i => V.cons (int t i) (esub_conv_i es i)).
 do 2 red; intros. apply V.cons_morph; 
   [rewrite H; reflexivity| apply esub_conv_i_morph; trivial].
 Defined.
 
-Definition sub_cons_j : trm -> esub_j -> esub_j.
+Definition sub_cons_j : term -> esub_j -> esub_j.
 intros t es.
 exists (fun j => I.cons (tm t j) (esub_conv_j es j)).
 split; [|split]; intros.

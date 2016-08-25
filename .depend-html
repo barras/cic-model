@@ -22,9 +22,9 @@ Explicit_sub.html Explicit_sub.glob Explicit_sub.v.beautified: Explicit_sub.v Th
 FOTheory.html FOTheory.glob FOTheory.v.beautified: FOTheory.v
 GenLemmas.html GenLemmas.glob GenLemmas.v.beautified: GenLemmas.v SN_CC_Real.html SN_nat.html
 GenModel.html GenModel.glob GenModel.v.beautified: GenModel.v basic.html Models.html TypModels.html VarMap.html
-GenModelSN.html GenModelSN.glob GenModelSN.v.beautified: GenModelSN.v Sat.html Models.html ObjectSN.html
+GenModelSN.html GenModelSN.glob GenModelSN.v.beautified: GenModelSN.v Sat.html Models.html SnModels.html TypModels.html ObjectSN.html
 GenModelSyntax.html GenModelSyntax.glob GenModelSyntax.v.beautified: GenModelSyntax.v Models.html TypeJudge.html GenModel.html
-GenRealSN.html GenRealSN.glob GenRealSN.v.beautified: GenRealSN.v basic.html Sat.html Models.html ObjectSN.html
+GenRealSN.html GenRealSN.glob GenRealSN.v.beautified: GenRealSN.v basic.html Sat.html Models.html SnModels.html TypModels.html ObjectSN.html
 HF.html HF.glob HF.v.beautified: HF.v
 HFcoc.html HFcoc.glob HFcoc.v.beautified: HFcoc.v HFrelation.html
 HFrelation.html HFrelation.glob HFrelation.v.beautified: HFrelation.v HF.html
@@ -67,8 +67,8 @@ SN_ECC_Real.html SN_ECC_Real.glob SN_ECC_Real.v.beautified: SN_ECC_Real.v basic.
 SN_ECC_Real_old.html SN_ECC_Real_old.glob SN_ECC_Real_old.v.beautified: SN_ECC_Real_old.v basic.html Sat.html ZF.html ZFcoc.html ZFuniv_real.html ZFecc.html ZFlambda.html Models.html GenRealSN.html TypeJudgeECC.html
 SN_ECC_Real_syntax.html SN_ECC_Real_syntax.glob SN_ECC_Real_syntax.v.beautified: SN_ECC_Real_syntax.v Lambda.html ZF.html ZFuniv_real.html Sat.html SN_ECC_Real.html TypeJudgeECC.html
 SN_MU.html SN_MU.glob SN_MU.v.beautified: SN_MU.v basic.html Models.html SN_ECC_Real.html ZFfunext.html ZFfixrec.html ZFcoc.html ZFecc.html ZFuniv_real.html SATtypes.html ZFind_wbot.html SATw.html SN_ord.html SN_variance.html
-SN_NAT.html SN_NAT.glob SN_NAT.v.beautified: SN_NAT.v basic.html Can.html Sat.html SATnat.html SN_CC_Real.html ZF.html ZFcoc.html ZFuniv_real.html ZFind_natbot.html
-SN_NAT_old.html SN_NAT_old.glob SN_NAT_old.v.beautified: SN_NAT_old.v basic.html Can.html Sat.html SATnat_old.html SN_CC_Real_old.html ZF.html ZFcoc.html ZFuniv_real.html ZFind_nat.html ZFord.html ZFrepl.html
+SN_NAT.html SN_NAT.glob SN_NAT.v.beautified: SN_NAT.v basic.html Can.html Sat.html SATnat.html SN_CC_Real.html TypModels.html ZF.html ZFcoc.html ZFuniv_real.html ZFind_natbot.html
+SN_NAT_old.html SN_NAT_old.glob SN_NAT_old.v.beautified: SN_NAT_old.v basic.html Can.html Sat.html SATnat_old.html SN_CC_Real_old.html ZF.html ZFcoc.html ZFuniv_real.html ZFind_nat.html TypModels.html ZFord.html ZFrepl.html
 SN_NAT_old_sized.html SN_NAT_old_sized.glob SN_NAT_old_sized.v.beautified: SN_NAT_old_sized.v Models.html SN_CC_Real_old.html ZFfunext.html ZFfixrec.html ZFecc.html ZFind_nat.html SATtypes.html SATnat_old_real.html
 SN_NAT_sized.html SN_NAT_sized.glob SN_NAT_sized.v.beautified: SN_NAT_sized.v basic.html Models.html SN_ECC_Real.html ZFfunext.html ZFfixrec.html ZFcoc.html ZFecc.html ZFuniv_real.html ZFind_natbot.html SATtypes.html SATnat_real.html SN_ord.html SN_variance.html
 SN_P.html SN_P.glob SN_P.v.beautified: SN_P.v PIntp.html AbsSNT.html
@@ -78,6 +78,7 @@ SN_nat.html SN_nat.glob SN_nat.v.beautified: SN_nat.v basic.html Can.html Sat.ht
 SN_ord.html SN_ord.glob SN_ord.v.beautified: SN_ord.v ZF.html ZFnats.html ZFord.html ZFcoc.html ZFuniv_real.html Sat.html SN_ECC_Real.html
 SN_variance.html SN_variance.glob SN_variance.v.beautified: SN_variance.v SN_ECC_Real.html ZFfunext.html ZFcoc.html ZFuniv_real.html SN_ord.html
 Sat.html Sat.glob Sat.v.beautified: Sat.v Lambda.html Can.html
+SnModels.html SnModels.glob SnModels.v.beautified: SnModels.v basic.html Models.html Sat.html
 StrengthenECC.html StrengthenECC.glob StrengthenECC.v.beautified: StrengthenECC.v TypeECC.html
 Sublogic.html Sublogic.glob Sublogic.v.beautified: Sublogic.v basic.html Logics.html
 Term.html Term.glob Term.v.beautified: Term.v

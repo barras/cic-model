@@ -15,8 +15,8 @@ Reserved Notation "[ x , t ] \real A" (at level 60).
 
 Lemma lift_rec_acc : forall t m n p q,
   q <= p <= n + q  ->
-  eq_trm (lift_rec m p (lift_rec n q t)) (lift_rec (m+n) q t).
-intros; apply eq_trm_intro; intros; [| |destruct t; simpl; trivial].
+  eq_term (lift_rec m p (lift_rec n q t)) (lift_rec (m+n) q t).
+intros; apply eq_term_intro; intros; [| |destruct t; simpl; trivial].
  do 3 rewrite int_lift_rec_eq. unfold V.lams, V.shift. apply int_morph; [reflexivity|].
   do 2 red; intros. destruct (le_gt_dec q a) as [le|gt].
    replace (q+(n+(a-q))) with (n+a) by omega.
@@ -38,8 +38,8 @@ Qed.
 
 Lemma lift_rec_comm : forall t m n p q,
   p <= q ->
-  eq_trm (lift_rec m p (lift_rec n q t)) (lift_rec n (m+q) (lift_rec m p t)).
-intros; apply eq_trm_intro; intros; [| |destruct t; simpl; trivial].
+  eq_term (lift_rec m p (lift_rec n q t)) (lift_rec n (m+q) (lift_rec m p t)).
+intros; apply eq_term_intro; intros; [| |destruct t; simpl; trivial].
  do 4 rewrite int_lift_rec_eq. unfold V.lams, V.shift. apply int_morph; [reflexivity|].
   do 2 red; intros. destruct (le_gt_dec q a) as [le|gt].
    replace (q+(n+(a-q))) with (n+a) by omega.
@@ -75,9 +75,9 @@ Qed.
 
 Lemma subst_lift_ge : forall m n t u k,
   m >= n + k ->
-  eq_trm (subst_rec t (S m) (lift_rec (S n) k u)) 
+  eq_term (subst_rec t (S m) (lift_rec (S n) k u)) 
          (lift_rec 1 k (subst_rec t m (lift_rec n k u))).
-intros; apply eq_trm_intro; simpl; intros; [| |destruct u; simpl; trivial].
+intros; apply eq_term_intro; simpl; intros; [| |destruct u; simpl; trivial].
  rewrite int_lift_rec_eq. 
  do 2 rewrite int_subst_rec_eq. do 2 rewrite int_lift_rec_eq.
  apply int_morph; [reflexivity | do 2 red; intros].
@@ -121,8 +121,8 @@ Qed.
  
 Lemma subst_lift_lt : forall m n t u,
   m <= n ->
-  eq_trm (subst_rec t m (lift (S n) u)) (lift n u).
-intros; apply eq_trm_intro; simpl; intros; [| |destruct u; simpl; trivial].
+  eq_term (subst_rec t m (lift (S n) u)) (lift n u).
+intros; apply eq_term_intro; simpl; intros; [| |destruct u; simpl; trivial].
  unfold lift. rewrite int_subst_rec_eq. do 2 rewrite int_lift_rec_eq.
  do 2 rewrite V.lams0. unfold V.lams, V.shift; simpl.
  apply int_morph; [reflexivity|do 2 red; intros].
@@ -141,8 +141,8 @@ intros; apply eq_trm_intro; simpl; intros; [| |destruct u; simpl; trivial].
 Qed.
 
 Lemma subst0_lift : forall A n,
-  eq_trm (subst (Ref 0) (lift_rec (S n) 1 A)) (lift_rec n 1 A).
- intros A n; apply eq_trm_intro.
+  eq_term (subst (Ref 0) (lift_rec (S n) 1 A)) (lift_rec n 1 A).
+ intros A n; apply eq_term_intro.
   red; intros i0. rewrite <- int_subst_eq. do 2 rewrite int_lift_rec_eq; simpl.
   assert (eq_val (V.cons (i0 0) (V.shift 1 i0)) i0).
    apply V.cons_ext; reflexivity. rewrite <- H at 3. 
@@ -161,16 +161,16 @@ Lemma subst0_lift : forall A n,
   destruct A; simpl; trivial.
 Qed.
 
-Lemma eq_trm_lift_ref_bd : forall n i k,
+Lemma eq_term_lift_ref_bd : forall n i k,
   k > i ->
-  eq_trm (lift_rec n k (Ref i)) (Ref i).
+  eq_term (lift_rec n k (Ref i)) (Ref i).
 intros; simpl; split; red; intros.
  unfold V.lams, V.shift. destruct (le_gt_dec k i); [omega|apply H0].
 
  unfold I.lams, I.shift. destruct (le_gt_dec k i); [omega|apply H0].
 Qed.
 
-Definition closed_trm t := forall i1 i2, int i1 t == int i2 t.
+Definition closed_term t := forall i1 i2, int i1 t == int i2 t.
 
 (***************************************************************************************)
 (*This following lemmas should be put in GenRealSN*)
@@ -249,7 +249,7 @@ assert (val_ok (C :: e) (V.lams 1 (V.shift 1) i) (I.lams 1 (I.shift 1) j)).
     replace (n-0) with n; [reflexivity|omega].
 
    rewrite kind_ok_lift with (k:=0).
-   rewrite eq_trm_lift_ref_fv; [|omega]. 
+   rewrite eq_term_lift_ref_fv; [|omega]. 
    unfold I.lams, I.shift; simpl in Hok |- *.
    replace (n-0) with n; [trivial|omega].
 
@@ -264,7 +264,7 @@ Qed.
 (***************************************************************************************)
 (*This following definition should be in Lambda.v*)
 (***************************************************************************************)
-Definition closed_pure_trm t := forall k, ~ Lc.occur k t.
+Definition closed_pure_term t := forall k, ~ Lc.occur k t.
 
 
 (***************************************************************************************)
@@ -279,16 +279,16 @@ Import ZFnats Sat SAT_nat.
 
 (*Import ZFind_nat.*)
 
-Lemma inSAT_n : forall n, n ∈ N -> exists t, inSAT t (cNAT n) /\ closed_pure_trm t.
+Lemma inSAT_n : forall n, n ∈ N -> exists t, inSAT t (cNAT n) /\ closed_pure_term t.
 intros. pattern n; apply N_ind; trivial; intros.
  destruct H2 as (t, (HinSAT, Hclsd)). 
  exists t; split;[revert HinSAT; apply cNAT_morph; auto with *|trivial].
 
- exists ZE. split; [apply cNAT_ZE|unfold closed_pure_trm].
+ exists ZE. split; [apply cNAT_ZE|unfold closed_pure_term].
   intros k HF. inversion_clear HF. inversion_clear H0. inversion_clear H1.
 
  destruct H1 as (t, (HinSAT, Hclsd)); exists (Lc.App SU t). 
- split; [apply cNAT_SU; trivial|unfold closed_pure_trm in Hclsd |- *].
+ split; [apply cNAT_SU; trivial|unfold closed_pure_term in Hclsd |- *].
   intros k HF. inversion_clear HF.
    inversion_clear H1. inversion_clear H2. inversion_clear H1. inversion_clear H2.
     inversion_clear H1; inversion_clear H2.

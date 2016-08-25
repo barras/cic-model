@@ -19,39 +19,39 @@ Module Type TheorySig.
 Parameter foterm : Set.
 
 (*Lift is the recocation of free variables*)
-Parameter lift_trm_rec : foterm -> nat -> nat -> foterm.
-Definition lift_trm t n := lift_trm_rec t n 0.
+Parameter lift_term_rec : foterm -> nat -> nat -> foterm.
+Definition lift_term t n := lift_term_rec t n 0.
 
-Axiom lift_trm0 : forall t, lift_trm t 0 = t.
-Axiom lift_trm_split : forall t n k, 
-  lift_trm_rec t (S n) k = lift_trm_rec (lift_trm_rec t n k) 1 k.
+Axiom lift_term0 : forall t, lift_term t 0 = t.
+Axiom lift_term_split : forall t n k, 
+  lift_term_rec t (S n) k = lift_term_rec (lift_term_rec t n k) 1 k.
 
 (*Substitute term*)
-Parameter subst_trm_rec : foterm -> foterm -> nat -> foterm.
-Definition subst_trm M N := subst_trm_rec M N 0.
+Parameter subst_term_rec : foterm -> foterm -> nat -> foterm.
+Definition subst_term M N := subst_term_rec M N 0.
 
 (*Free variables are calculated due to need of definition of well-typed terms*)
-(*fv_trm_rec list all free variables in a term with a binder k*)
+(*fv_term_rec list all free variables in a term with a binder k*)
 (*The free variables are used for indexes in a context in which the term is well typed*)
 (*So, the free variables are subtracted by the binder k*)
-Parameter fv_trm_rec : foterm -> (*k*)nat -> list nat.
-Definition fv_trm t := fv_trm_rec t 0.
+Parameter fv_term_rec : foterm -> (*k*)nat -> list nat.
+Definition fv_term t := fv_term_rec t 0.
 
-Axiom in_S_fv_trm : forall t n k,
-  In (S n) (fv_trm_rec t k) <->
-  In n (fv_trm_rec t (S k)).
+Axiom in_S_fv_term : forall t n k,
+  In (S n) (fv_term_rec t k) <->
+  In n (fv_term_rec t (S k)).
 
-Axiom in_fv_trm_lift : forall t n k k' k'',
-  In n (fv_trm_rec (lift_trm_rec t k' k'') (k+k'+k'')) <->
-  In n (fv_trm_rec t (k+k'')).
+Axiom in_fv_term_lift : forall t n k k' k'',
+  In n (fv_term_rec (lift_term_rec t k' k'') (k+k'+k'')) <->
+  In n (fv_term_rec t (k+k'')).
 
-Axiom in_fv_trm_subst_split : forall t n N k k',
-  In n (fv_trm_rec (subst_trm_rec t N k') (k+k')) ->
-  In n (fv_trm_rec N k) \/ In (S n) (fv_trm_rec t (k+k')).
+Axiom in_fv_term_subst_split : forall t n N k k',
+  In n (fv_term_rec (subst_term_rec t N k') (k+k')) ->
+  In n (fv_term_rec N k) \/ In (S n) (fv_term_rec t (k+k')).
 
-Axiom in_fv_trm_subst : forall t n N k k',
-  In (S n) (fv_trm_rec t (k+k')) ->
-  In n (fv_trm_rec (subst_trm_rec t N k') (k+k')).
+Axiom in_fv_term_subst : forall t n N k k',
+  In (S n) (fv_term_rec t (k+k')) ->
+  In n (fv_term_rec (subst_term_rec t N k') (k+k')).
 
 End TheorySig.
 
@@ -66,7 +66,7 @@ Export M.
 
 (*Fist order foformula*)
 Inductive foformula :=
-| eq_fotrm : foterm -> foterm -> foformula
+| eq_foterm : foterm -> foterm -> foformula
 | TF   : foformula
 | BF   : foformula
 | neg : foformula -> foformula
@@ -79,7 +79,7 @@ Inductive foformula :=
 (*Relication of the free variables of formula*)
 Fixpoint lift_fml_rec f n k:=
   match f with
-    | eq_fotrm x y => eq_fotrm (lift_trm_rec x n k) (lift_trm_rec y n k)
+    | eq_foterm x y => eq_foterm (lift_term_rec x n k) (lift_term_rec y n k)
     | TF => TF
     | BF => BF
     | neg f' => neg (lift_fml_rec f' n k)
@@ -95,8 +95,8 @@ Definition lift_fml t n := lift_fml_rec t n 0.
 Lemma lift_fml_split : forall f n k, 
   lift_fml_rec f (S n) k = lift_fml_rec (lift_fml_rec f n k) 1 k.
 induction f; trivial; unfold lift_fml in *; simpl; intros.
- rewrite lift_trm_split with (t:=f).
- rewrite lift_trm_split with (t:=f0); trivial.
+ rewrite lift_term_split with (t:=f).
+ rewrite lift_term_split with (t:=f0); trivial.
 
  rewrite IHf; trivial.
 
@@ -114,7 +114,7 @@ Qed.
 (*Substitution of formular*)
 Fixpoint subst_fml_rec f N n :=
   match f with
-    | eq_fotrm x y => eq_fotrm (subst_trm_rec x N n) (subst_trm_rec y N n)
+    | eq_foterm x y => eq_foterm (subst_term_rec x N n) (subst_term_rec y N n)
     | TF => TF
     | BF => BF
     | neg f => neg (subst_fml_rec f N n)
@@ -130,7 +130,7 @@ Definition subst_fml f N := subst_fml_rec f N 0.
 (*Free variables of the formula : enjoy the same idea with the definiton on foterm*)
 Fixpoint fv_fml_rec f k : list nat :=
   match f with
-    | eq_fotrm t1 t2 => (fv_trm_rec t1 k) ++ (fv_trm_rec t2 k)
+    | eq_foterm t1 t2 => (fv_term_rec t1 k) ++ (fv_term_rec t2 k)
     | TF => nil
     | BF => nil
     | neg f0 => fv_fml_rec f0 k
@@ -146,7 +146,7 @@ Definition fv_fml f := fv_fml_rec f 0.
 Lemma in_S_fv_fml : forall f n k, 
   In (S n) (fv_fml_rec f k) <-> In n (fv_fml_rec f (S k)).
 induction f; simpl; try reflexivity; trivial; intros; do 2 rewrite in_app_iff.
- do 2 rewrite in_S_fv_trm; reflexivity.
+ do 2 rewrite in_S_fv_term; reflexivity.
 
  rewrite IHf1, IHf2; reflexivity.
 
@@ -159,7 +159,7 @@ Lemma in_fv_fml_lift : forall f n k k' k'',
   In n (fv_fml_rec (lift_fml_rec f k' k'') (k+k'+k'')) <->
   In n (fv_fml_rec f (k+k'')).
 induction f; simpl; intros; try reflexivity; trivial.
- do 2 rewrite in_app_iff. do 2 rewrite in_fv_trm_lift; reflexivity.
+ do 2 rewrite in_app_iff. do 2 rewrite in_fv_term_lift; reflexivity.
 
  do 2 rewrite in_app_iff. rewrite IHf1, IHf2; reflexivity.
 
@@ -176,10 +176,10 @@ Qed.
 
 Lemma in_fv_fml_subst_split : forall g n N k k',
   In n (fv_fml_rec (subst_fml_rec g N k') (k+k')) -> 
-  In n (fv_trm_rec N k) \/ In (S n) (fv_fml_rec g (k+k')).
+  In n (fv_term_rec N k) \/ In (S n) (fv_fml_rec g (k+k')).
 induction g; simpl; intros; try contradiction; trivial.
  rewrite in_app_iff in H |- *.
- destruct H as [H|H]; apply in_fv_trm_subst_split in H.
+ destruct H as [H|H]; apply in_fv_term_subst_split in H.
   destruct H; [left|right; left]; trivial.
   
   destruct H; [left|right; right]; trivial.
@@ -211,7 +211,7 @@ Lemma in_fv_fml_subst : forall f n N k k',
   In n (fv_fml_rec (subst_fml_rec f N k') (k+k')).
 induction f; simpl; intros; trivial.
  rewrite in_app_iff in H |- *.
- destruct H; [left|right]; apply in_fv_trm_subst; trivial.
+ destruct H; [left|right]; apply in_fv_term_subst; trivial.
 
  apply IHf; trivial.
 
@@ -235,8 +235,8 @@ Qed.
 Definition HYP := list (option foformula).
 
 (*An well-typed term is the term with all free variables typed foterm*)
-Definition wf_trm (hyp : HYP) t := 
-  forall n, In n (fv_trm t) -> nth_error hyp n = Some None.
+Definition wf_term (hyp : HYP) t := 
+  forall n, In n (fv_term t) -> nth_error hyp n = Some None.
 
 (*An well-typed first order formula should contain merely free variables typed foterm*)
 Definition wf_fml (hyp : HYP) f := 
@@ -305,8 +305,8 @@ Inductive deriv : HYP -> foformula -> Prop :=
 | fall_intro : forall hyp f,
   deriv (None::hyp) f -> deriv hyp (fall f)
 | fall_elim : forall hyp f u, 
-  wf_trm hyp u -> deriv hyp (fall f) -> deriv hyp (subst_fml f u)
-| exst_intro : forall hyp f N, wf_trm hyp N -> 
+  wf_term hyp u -> deriv hyp (fall f) -> deriv hyp (subst_fml f u)
+| exst_intro : forall hyp f N, wf_term hyp N -> 
   deriv hyp (subst_fml f N) -> deriv hyp (exst f)
 | exst_elim : forall hyp f f1, 
   deriv hyp (exst f) -> 

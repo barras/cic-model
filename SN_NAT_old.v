@@ -9,10 +9,13 @@ Require Import basic Can Sat SATnat_old SN_CC_Real_old.
 Require Import ZF ZFcoc ZFuniv_real ZFind_nat.
 Module Lc:=Lambda.
 Import SN CCSN.
+Require Import TypModels.
 
 (** * Nat and its constructors *)
 
-Definition Zero : trm.
+Module Make <: Nat_Rules SN.
+
+Definition Zero : term.
 (*begin show*)
 left; exists (fun _ => ZERO) (fun _ => ZE).
 (*end show*)
@@ -22,7 +25,7 @@ left; exists (fun _ => ZERO) (fun _ => ZE).
  red; reflexivity.
 Defined.
 
-Definition Succ : trm.
+Definition Succ : term.
 (*begin show*)
 left; exists (fun _ => lam (mkTY NAT cNAT) SUCC) (fun _ => SU).
 (*end show*)
@@ -32,7 +35,7 @@ left; exists (fun _ => lam (mkTY NAT cNAT) SUCC) (fun _ => SU).
  red; reflexivity.
 Defined.
 
-Definition Nat : trm.
+Definition Nat : term.
 (*begin show*)
 left; exists (fun _ => mkTY NAT cNAT) (fun _ => Lc.K).
 (*end show*)
@@ -339,7 +342,7 @@ elim H1 using NAT_ind; intros.
 Qed.
 
 (** Recursor *)
-Definition NatRec (f g n:trm) : trm.
+Definition NatRec (f g n:term) : term.
 (*begin show*)
 left; exists (fun i => NATREC (int f i) (fun n y => app (app (int g i) n) y) (int n i))
              (fun j => Lc.App2 (tm n j) (tm f j) (tm g j)).
@@ -482,3 +485,55 @@ Lemma red_iota_simulated_S : forall f g n,
 red; simpl; intros.
 apply SU_iota.
 Qed.
+
+
+Lemma eq_typ_NatRec e f f' g g' n n' :
+    eq_typ e f f' ->
+    eq_typ e g g' ->
+    eq_typ e n n' ->
+    eq_typ e (NatRec f g n) (NatRec f' g' n').
+unfold eq_typ; intros.
+specialize H with (1:=H2).
+specialize H0 with (1:=H2).
+specialize H1 with (1:=H2).
+red; simpl.
+apply NATREC_morph; trivial.
+do 2 red; intros.
+rewrite H0,H3,H4; reflexivity.
+Qed.
+
+Lemma NatRec_eq_0 e f g :
+    eq_typ e (NatRec f g Zero) f.
+red; simpl; intros.
+rewrite NATREC_0; reflexivity.
+Qed.
+
+Lemma NatRec_eq_S e f g n :
+    typ e n Nat ->
+    eq_typ e (NatRec f g (App Succ n)) (App (App g n) (NatRec f g n)).
+unfold typ, eq_typ; intros.
+specialize H with (1:=H0).
+apply in_int_not_kind in H.
+2:discriminate.
+simpl.
+transitivity (NATREC (int f i) (fun n y => app (app (int g i) n) y) (SUCC (int n i))).
+ apply NATREC_morph; auto with *.
+  do 2 red; intros.
+  rewrite H1, H2; reflexivity.
+
+  apply beta_eq.
+   red; intros; apply ZFsum.inr_morph; trivial.
+
+   apply H.
+
+ rewrite NATREC_S.
+  reflexivity.
+
+  do 3 red; intros.
+  rewrite H1, H2; reflexivity.
+
+ destruct H.
+ red in H; rewrite ElNat_eq in H; trivial.
+Qed.
+
+End Make.

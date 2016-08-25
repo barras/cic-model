@@ -5,7 +5,7 @@ Require Import ZFind_nat.
 
 Require Import SN_CC.
 
-Import CCSN SN_CC_Model SN_CC_addon SN.
+Import CCSN SN_CC_Model SN_CC_addon SN SN.J.
 
 Parameter Symb : Type.
 Parameter isCstr : Symb -> Prop.
@@ -52,7 +52,7 @@ Definition natSAT :=
      prodSAT S (prodSAT (prodSAT S S) S)).
 
 
-Definition T : trm.
+Definition T : term.
 left.
 exists (fun _ => mkTY (singl empty) natSAT) (fun _ => Lc.K).
  do 2 red; reflexivity.
@@ -98,7 +98,7 @@ apply interSAT_elim with (1:=H).
 Qed.
 
 
-Definition Zero : trm.
+Definition Zero : term.
 left; exists (fun _ => empty) (fun _ => ZE).
  do 2 red; reflexivity.
  do 2 red; reflexivity.
@@ -107,7 +107,7 @@ left; exists (fun _ => empty) (fun _ => ZE).
 Defined.
 
 
-Definition Succ : trm.
+Definition Succ : term.
 left; exists (fun _ => lam (mkTY (singl empty) natSAT) (fun x => x)) (fun _ => SU).
  do 2 red; reflexivity.
  do 2 red; reflexivity.
@@ -115,7 +115,7 @@ left; exists (fun _ => lam (mkTY (singl empty) natSAT) (fun x => x)) (fun _ => S
  red; reflexivity.
 Defined.
 
-Definition NatRec (f g n:trm) : trm.
+Definition NatRec (f g n:term) : term.
 left; exists (fun i => int f i)
              (fun j => Lc.App2 (tm n j) (tm f j) (Lc.App (tm g j) ZE)).
  do 2 red; intros.

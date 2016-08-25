@@ -7,6 +7,7 @@
 
 Set Implicit Arguments.
 Require Import basic Can Sat SATnat SN_CC_Real.
+Require Import TypModels.
 Require Import ZF ZFcoc ZFuniv_real ZFind_natbot.
 Module Lc:=Lambda.
 Import SN_CC_Model SN.
@@ -33,7 +34,9 @@ Import SAT_nat.
 
 (** * Nat and its constructors *)
 
-Definition Zero : trm.
+Module Make <: Nat_Rules SN_CC_Real.SN.
+
+Definition Zero : term.
 (*begin show*)
 left; exists (fun _ => ZERO) (fun _ => ZE).
 (*end show*)
@@ -43,7 +46,7 @@ left; exists (fun _ => ZERO) (fun _ => ZE).
  red; reflexivity.
 Defined.
 
-Definition Succ : trm.
+Definition Succ : term.
 (*begin show*)
 left; exists (fun _ => lam (mkTY NAT' cNAT) SUCC) (fun _ => SU).
 (*end show*)
@@ -53,7 +56,7 @@ left; exists (fun _ => lam (mkTY NAT' cNAT) SUCC) (fun _ => SU).
  red; reflexivity.
 Defined.
 
-Definition Nat : trm.
+Definition Nat : term.
 (*begin show*)
 left; exists (fun _ => mkTY NAT' cNAT) (fun _ => Lc.K).
 (*end show*)
@@ -76,6 +79,19 @@ rewrite Real_def; intros; trivial.
  reflexivity.
 
  apply cNAT_morph; trivial.
+Qed.
+
+Lemma typ_N e : typ e Nat kind.
+red; simpl; intros.
+unfold in_int; simpl.
+split; [discriminate|split; auto with *].
+ red.
+ exists nil.
+ exists Nat; [reflexivity|].
+ exists empty.
+ red; intros; rewrite ElNat_eq; auto.
+
+ apply Lc.sn_K.
 Qed.
 
 (** Typing rules of constructors *)
@@ -130,7 +146,7 @@ apply and_split; intros.
 Qed.
 
 (** Recursor *)
-Definition NatRec (f g n:trm) : trm.
+Definition NatRec (f g n:term) : term.
 (*begin show*)
 left; exists (fun i => NAT_RECT (int f i) (fun n y => app (app (int g i) n) y) (int n i))
              (fun j => Lc.App2 (tm n j) (tm f j) (tm g j)).
@@ -277,3 +293,47 @@ apply SU_iota.
 Qed.
 
 Print Assumptions typ_Nrect.
+
+Lemma eq_typ_NatRec : forall e f f' g g' n n',
+    eq_typ e f f' ->
+    eq_typ e g g' ->
+    eq_typ e n n' ->
+    eq_typ e (NatRec f g n) (NatRec f' g' n').
+unfold eq_typ; simpl; intros.
+specialize H with (1:=H2).
+specialize H0 with (1:=H2).
+specialize H1 with (1:=H2).
+apply NAT_RECT_morph; eauto with *.
+do 2 red; intros.
+red in H0.
+rewrite H0,H3,H4; reflexivity.
+Qed.
+
+Lemma NatRec_eq_0 e f g :
+    eq_typ e (NatRec f g Zero) f.
+red; simpl; intros.
+rewrite NAT_RECT_ZERO; reflexivity.
+Qed.
+
+Lemma NatRec_eq_S : forall e f g n,
+    typ e n Nat ->
+    eq_typ e (NatRec f g (App Succ n)) (App (App g n) (NatRec f g n)).
+red; simpl; intros.
+red in H; specialize H with (1:=H0).
+apply in_int_not_kind in H.
+2:discriminate.
+destruct H.
+red in H; rewrite ElNat_eq in H.
+rewrite beta_eq.
+ rewrite NAT_RECT_SUCC; trivial.
+  reflexivity.
+
+  do 3 red; intros.
+  rewrite H2,H3; reflexivity. 
+
+ red; intros; apply ZFsum.inr_morph; trivial.
+
+ red; rewrite El_def; trivial.
+Qed.
+
+End Make.

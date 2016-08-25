@@ -1,8 +1,8 @@
 Require Import Models.
 
-Module Type Judge.
-    Parameter sub : Type.
+Module Type Syntax.
   Module T.
+    Parameter sub : Type.
     Parameter term : Type.
     Parameter eq_term : term -> term -> Prop.
     Parameter prop kind : term.
@@ -31,6 +31,12 @@ Module Type Judge.
     Parameter typ_sub : env -> sub -> env -> Prop.
   End J.
   Import J.
+
+End Syntax.
+
+Module Type Judge.
+  Include Syntax.
+  Import T J.
 
   Module R.
     (** Equivalence and congruence rules *)
@@ -134,7 +140,7 @@ Module Type Judge.
 
 End Judge.
 
-Module Type ECC_Rules (M:Judge).
+Module Type ECC_Rules (M:Syntax).
   Import M M.T M.J.
 
   Parameter type : nat -> term.
@@ -158,7 +164,7 @@ Module Type ECC_Rules (M:Judge).
 
 End ECC_Rules.
 
-Module Type Nat_Rules (M:Judge).
+Module Type Nat_Rules (M:Syntax).
   Import M M.T M.J.
 
   Parameter Nat Zero Succ : term.
@@ -189,7 +195,7 @@ Module Type Nat_Rules (M:Judge).
 
 End Nat_Rules.
 
-Module Type W_Rules (M:Judge).
+Module Type W_Rules (M:Syntax).
   Import M M.T M.J.
 
   (*Parameter Ordt : set -> term. *)

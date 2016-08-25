@@ -17,21 +17,21 @@ Module IntpPSig <: SigIntp PresburgerTheory.
 Import PresburgerTheory.
 Import PresburgerSem.
 
-Fixpoint intp_fotrm t : trm :=
+Fixpoint intp_foterm t : term :=
   match t with
   | Var i => Ref i
   | Cst_0 => Zero
   | Cst_1 => App Succ Zero
-  | Df_Add u v => App (App Add (intp_fotrm u)) (intp_fotrm v)
+  | Df_Add u v => App (App Add (intp_foterm u)) (intp_foterm v)
   end.
 
-Lemma intp_fotrm_not_kind : forall t, intp_fotrm t <> None.
+Lemma intp_foterm_not_kind : forall t, intp_foterm t <> None.
 destruct t; simpl; red; intros; discriminate.
 Qed.
 
-Lemma lift_intp_lift_trm_rec : forall t n k, 
-  eq_trm (lift_rec n k (intp_fotrm t)) 
-          (intp_fotrm (lift_trm_rec t n k)).
+Lemma lift_intp_lift_term_rec : forall t n k, 
+  eq_term (lift_rec n k (intp_foterm t)) 
+          (intp_foterm (lift_term_rec t n k)).
 induction t; intros.
  simpl; case_eq (le_gt_dec k n); simpl; intros.
   split; red; simpl; intros.
@@ -50,21 +50,21 @@ induction t; intros.
 
  simpl; split; red; reflexivity.
 
- simpl intp_fotrm. do 2 rewrite red_lift_app.
+ simpl intp_foterm. do 2 rewrite red_lift_app.
  apply App_morph; trivial.
   apply App_morph; trivial.
    simpl; split; red; reflexivity.
 Qed.
 
-Lemma lift_intp_lift_trm : forall t n,
-  eq_trm (lift n (intp_fotrm t)) (intp_fotrm (lift_trm t n)).
-unfold lift, lift_trm. intros. apply lift_intp_lift_trm_rec.
+Lemma lift_intp_lift_term : forall t n,
+  eq_term (lift n (intp_foterm t)) (intp_foterm (lift_term t n)).
+unfold lift, lift_term. intros. apply lift_intp_lift_term_rec.
 Qed.
 
-Lemma subst_intp_subst_trm_rec : forall t nn k, 
-  eq_trm (subst_rec (intp_fotrm nn) k (intp_fotrm t)) 
-         (intp_fotrm (subst_trm_rec t nn k)).
-induction t; intros; simpl intp_fotrm.
+Lemma subst_intp_subst_term_rec : forall t nn k, 
+  eq_term (subst_rec (intp_foterm nn) k (intp_foterm t)) 
+         (intp_foterm (subst_term_rec t nn k)).
+induction t; intros; simpl intp_foterm.
  simpl; destruct (lt_eq_lt_dec k n) as [[lt|eq]|bt]; simpl.
   split; red; intros.
    unfold V.lams, V.shift; simpl. 
@@ -77,24 +77,24 @@ induction t; intros; simpl intp_fotrm.
     replace (n-k) with (S (Peano.pred n-k)) by omega; simpl.
     replace (k+(Peano.pred n-k)) with (Peano.pred n) by omega; apply H.
 
-  case_eq (intp_fotrm (lift_trm nn k)); intros; 
-    [|apply intp_fotrm_not_kind in H; trivial].
+  case_eq (intp_foterm (lift_term nn k)); intros; 
+    [|apply intp_foterm_not_kind in H; trivial].
    split; red; intros; subst k.
     unfold V.lams; simpl.
     destruct (le_gt_dec n n) as [le|gt]; [|omega].
      replace (n-n) with 0 by omega; simpl. rewrite H0.
      setoid_replace (V.shift n y) with (V.lams 0 (V.shift n) y); [
        |rewrite V.lams0; reflexivity].
-      rewrite <- int_lift_rec_eq. fold (lift n (intp_fotrm nn)).
-      rewrite lift_intp_lift_trm. rewrite H; simpl; reflexivity.
+      rewrite <- int_lift_rec_eq. fold (lift n (intp_foterm nn)).
+      rewrite lift_intp_lift_term. rewrite H; simpl; reflexivity.
 
     unfold I.lams; simpl.
     destruct (le_gt_dec n n) as [le|gt]; [|omega].
      replace (n-n) with 0 by omega; simpl. rewrite H0.
      setoid_replace (I.shift n y) with (I.lams 0 (I.shift n) y) 
        using relation Lc.eq_intt; [|rewrite I.lams0; reflexivity].
-      rewrite <- tm_lift_rec_eq. fold (lift n (intp_fotrm nn)).
-      rewrite lift_intp_lift_trm. rewrite H; simpl; reflexivity.
+      rewrite <- tm_lift_rec_eq. fold (lift n (intp_foterm nn)).
+      rewrite lift_intp_lift_term. rewrite H; simpl; reflexivity.
 
   simpl; split; red; intros; [rewrite V.lams_bv|rewrite I.lams_bv]; trivial.
 
@@ -106,10 +106,10 @@ induction t; intros; simpl intp_fotrm.
   apply App_morph; [simpl; split; red; reflexivity|trivial].
 Qed.
 
-Lemma subst_intp_subst_trm : forall t N, 
-  eq_trm (subst (intp_fotrm N) (intp_fotrm t)) 
-         (intp_fotrm (subst_trm t N)).
-unfold subst. intros. apply subst_intp_subst_trm_rec with (k:=0).
+Lemma subst_intp_subst_term : forall t N, 
+  eq_term (subst (intp_foterm N) (intp_foterm t)) 
+         (intp_foterm (subst_term t N)).
+unfold subst. intros. apply subst_intp_subst_term_rec with (k:=0).
 Qed.
 
 End IntpPSig.
@@ -123,11 +123,11 @@ Module IntpAx : AxIntp PresburgerTheory PresburgerSem IntpPSig.
 Include LangHypIntp PresburgerTheory PresburgerSem IntpPSig.
 Import PresburgerTheory PresburgerSem IntpPSig.
 
-Lemma intp_fotrm_sort : forall hyp t,
-  wf_trm hyp t ->
-  typ (intp_hyp hyp) (intp_fotrm t) Nat.
-induction t; simpl intp_fotrm; intros.
- unfold wf_trm in H. simpl in H.
+Lemma intp_foterm_sort : forall hyp t,
+  wf_term hyp t ->
+  typ (intp_hyp hyp) (intp_foterm t) Nat.
+induction t; simpl intp_foterm; intros.
+ unfold wf_term in H. simpl in H.
  apply typ_common; [exact I|intros].
  replace (n-0) with n in H by omega.
  assert (n=n \/ False) by auto.
@@ -149,7 +149,7 @@ induction t; simpl intp_fotrm; intros.
  apply typ_S1; apply typ_0.
 
  apply typ_Add2; [apply IHt1|apply IHt2];
-   unfold wf_trm, fv_trm in H |- *; simpl in H |- *; 
+   unfold wf_term, fv_term in H |- *; simpl in H |- *; 
      intros; apply H; rewrite in_app_iff; [left|right]; trivial.
 Qed.
 
@@ -157,7 +157,7 @@ Lemma intp_fofml_prop : forall f hyp,
   wf_fml hyp f ->
   typ (intp_hyp hyp) (intp_fofml f) prop.
  induction f; simpl; intros.
- apply EQ_trm_typ; apply intp_fotrm_sort; red in H |- *; simpl in H |- *; intros; 
+ apply EQ_term_typ; apply intp_foterm_sort; red in H |- *; simpl in H |- *; intros; 
    apply H; apply in_or_app; [left|right]; trivial.
 
  apply True_symb_typ.
@@ -215,12 +215,12 @@ destruct Hax4 as (t, Hax4). exists t; simpl intp_fofml; trivial.
 generalize P_ax_intro5; intros Hax5. unfold ax5 in Hax5.
 destruct H as (g, (Hp, H)).
 apply intp_fofml_prop in Hp. simpl in Hp.
-setoid_replace prop with (lift 1 prop) using relation eq_trm in Hp; [|
+setoid_replace prop with (lift 1 prop) using relation eq_term in Hp; [|
   split; red; simpl; reflexivity].
 apply Hax5 in Hp. rewrite H. clear f H Hax5.
 simpl intp_fofml. destruct Hp as (t, Hp). exists t.
 revert Hp; apply typ_morph; [reflexivity|].
-unfold Impl, Fall. repeat rewrite <- subst_intp_subst_fml. simpl intp_fotrm.
+unfold Impl, Fall. repeat rewrite <- subst_intp_subst_fml. simpl intp_foterm.
 apply Prod_morph; [reflexivity|apply lift_morph].
  apply Prod_morph; [|reflexivity].
   apply Prod_morph; [reflexivity|].

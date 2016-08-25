@@ -22,26 +22,26 @@ Module Type SigIntp (Msyn : TheorySyn).
 Import Msyn.
 
 (*Interpretation first-order term*)
-Parameter intp_fotrm : foterm -> trm.
+Parameter intp_foterm : foterm -> term.
 
 (*Interpretation is not kind*)
-Axiom intp_fotrm_not_kind : forall t, intp_fotrm t <> kind.
+Axiom intp_foterm_not_kind : forall t, intp_foterm t <> kind.
 
 (*Properties about lift and interpretation term*)
-Axiom lift_intp_lift_trm_rec : forall t n k, 
-  eq_trm (lift_rec n k (intp_fotrm t)) 
-         (intp_fotrm (lift_trm_rec t n k)).
-Axiom lift_intp_lift_trm : forall t n,
-  eq_trm (lift n (intp_fotrm t)) 
-         (intp_fotrm (lift_trm t n)).
+Axiom lift_intp_lift_term_rec : forall t n k, 
+  eq_term (lift_rec n k (intp_foterm t)) 
+         (intp_foterm (lift_term_rec t n k)).
+Axiom lift_intp_lift_term : forall t n,
+  eq_term (lift n (intp_foterm t)) 
+         (intp_foterm (lift_term t n)).
 
 (*Properties about substitution and interpretation term*)
-Axiom subst_intp_subst_trm_rec : forall t N k, 
-  eq_trm (subst_rec (intp_fotrm N) k (intp_fotrm t)) 
-         (intp_fotrm (subst_trm_rec t N k)).
-Axiom subst_intp_subst_trm : forall t N, 
-  eq_trm (subst (intp_fotrm N) (intp_fotrm t)) 
-         (intp_fotrm (subst_trm t N)).
+Axiom subst_intp_subst_term_rec : forall t N k, 
+  eq_term (subst_rec (intp_foterm N) k (intp_foterm t)) 
+         (intp_foterm (subst_term_rec t N k)).
+Axiom subst_intp_subst_term : forall t N, 
+  eq_term (subst (intp_foterm N) (intp_foterm t)) 
+         (intp_foterm (subst_term t N)).
 
 End SigIntp.
 
@@ -56,7 +56,7 @@ Import Msyn Msem MSI.
 (*Interpretation of foformula*)
 Fixpoint intp_fofml f:=
   match f with
-  | eq_fotrm x y => EQ_trm (intp_fotrm x) (intp_fotrm y)
+  | eq_foterm x y => EQ_term (intp_foterm x) (intp_foterm y)
   | TF => True_symb
   | BF => False_symb
   | neg f => Neg (intp_fofml f)
@@ -69,13 +69,13 @@ Fixpoint intp_fofml f:=
 
 (*Properties about lift and interpretation formula*)
 Lemma lift_intp_lift_fml_rec : forall f n k,
-  eq_trm (lift_rec n k (intp_fofml f)) 
+  eq_term (lift_rec n k (intp_fofml f)) 
          (intp_fofml (lift_fml_rec f n k)).
 induction f; simpl intp_fofml; intros.
- unfold EQ_trm; unfold lift. repeat rewrite red_lift_prod. repeat rewrite red_lift_app.
+ unfold EQ_term; unfold lift. repeat rewrite red_lift_prod. repeat rewrite red_lift_app.
  apply Prod_morph; [apply Prod_morph; [generalize sort_clsd; intro H; destruct H as (H, _); apply H 
-   |simpl; split; red; reflexivity]|]; repeat rewrite eq_trm_lift_ref_bd by omega; 
- repeat rewrite <- lift_intp_lift_trm_rec; repeat rewrite lift_rec_comm with (q:=k) by omega; reflexivity.
+   |simpl; split; red; reflexivity]|]; repeat rewrite eq_term_lift_ref_bd by omega; 
+ repeat rewrite <- lift_intp_lift_term_rec; repeat rewrite lift_rec_comm with (q:=k) by omega; reflexivity.
 
  simpl; split; red; reflexivity.
 
@@ -87,13 +87,13 @@ induction f; simpl intp_fofml; intros.
 
  unfold Conj, lift. do 4 rewrite red_lift_prod.
  apply Prod_morph; [simpl; split; red; reflexivity|].
-  repeat rewrite eq_trm_lift_ref_bd by omega.
+  repeat rewrite eq_term_lift_ref_bd by omega.
   rewrite <- IHf1, <- IHf2.
   repeat rewrite lift_rec_comm with (q:=k) by omega; reflexivity.
       
  unfold Disj, lift. do 5 rewrite red_lift_prod.
   apply Prod_morph; [simpl; split; red; reflexivity|].
-   repeat rewrite eq_trm_lift_ref_bd by omega.
+   repeat rewrite eq_term_lift_ref_bd by omega.
    rewrite <- IHf1, <- IHf2.
    repeat rewrite lift_rec_comm with (q:=k) by omega; reflexivity.
      
@@ -105,30 +105,30 @@ induction f; simpl intp_fofml; intros.
  
  unfold Exst. do 4 rewrite red_lift_prod. 
  apply Prod_morph; [simpl; split; red; reflexivity|].
-  do 2 rewrite subst0_lift. do 2 rewrite eq_trm_lift_ref_bd by omega.
+  do 2 rewrite subst0_lift. do 2 rewrite eq_term_lift_ref_bd by omega.
   rewrite <- IHf. rewrite lift_rec_comm with (q:=S k) by omega.
   generalize sort_clsd; intro H; destruct H as (H, _).
   apply Prod_morph; [apply Prod_morph; [unfold lift; do 2 rewrite H|]|]; reflexivity.
 Qed.
       
 Lemma lift_intp_lift_fml : forall f n,
-  eq_trm (lift n (intp_fofml f)) (intp_fofml (lift_fml f n)).
+  eq_term (lift n (intp_fofml f)) (intp_fofml (lift_fml f n)).
 unfold lift, lift_fml; intros. apply lift_intp_lift_fml_rec.
 Qed.
 
 
 (*Properties about substitution and interpretation foformula*)
 Lemma subst_intp_subst_fml_rec : forall f N k,
-  eq_trm (subst_rec (intp_fotrm N) k (intp_fofml f)) 
+  eq_term (subst_rec (intp_foterm N) k (intp_fofml f)) 
          (intp_fofml (subst_fml_rec f N k)).
 induction f; simpl intp_fofml; intros.
- unfold EQ_trm. do 3 rewrite red_sigma_prod. 
+ unfold EQ_term. do 3 rewrite red_sigma_prod. 
  apply Prod_morph; [apply Prod_morph; [
    generalize sort_clsd; intro H; destruct H as (_, H); apply H|simpl; split; red; reflexivity]|].
   repeat rewrite red_sigma_app. repeat rewrite red_sigma_var_lt by omega.
-  do 2 rewrite <- subst_intp_subst_trm_rec.
+  do 2 rewrite <- subst_intp_subst_term_rec.
   unfold lift. repeat rewrite subst_lift_ge by omega. 
-  fold (lift 0 (intp_fotrm f)). fold (lift 0 (intp_fotrm f0)).
+  fold (lift 0 (intp_foterm f)). fold (lift 0 (intp_foterm f0)).
   repeat rewrite lift0. rewrite lift_rec_acc; [reflexivity|omega].
 
  simpl; split; red; reflexivity.
@@ -170,7 +170,7 @@ induction f; simpl intp_fofml; intros.
     [generalize sort_clsd; intro H; destruct H as (_, H); rewrite H; reflexivity|]|reflexivity].
    apply Prod_morph; [|reflexivity].
     apply lift_rec_morph. apply subst_rec_morph; [reflexivity|reflexivity|].
-     apply eq_trm_intro; [| |destruct (intp_fofml f); simpl; trivial]; intros.
+     apply eq_term_intro; [| |destruct (intp_fofml f); simpl; trivial]; intros.
       rewrite int_lift_rec_eq. unfold V.lams, V.shift.
        apply int_morph; [reflexivity|do 2 red; intros].
         destruct (le_gt_dec 1 a); [|reflexivity].
@@ -183,7 +183,7 @@ induction f; simpl intp_fofml; intros.
 Qed.
 
 Lemma subst_intp_subst_fml : forall f N,
-  eq_trm (subst (intp_fotrm N) (intp_fofml f)) 
+  eq_term (subst (intp_foterm N) (intp_fofml f)) 
           (intp_fofml (subst_fml  f N)).
 unfold subst; intros; apply subst_intp_subst_fml_rec with (k:=0).
 Qed.
@@ -216,16 +216,16 @@ Module Type AxIntp (Msyn : TheorySyn) (Msem : TheorySem) (MSI : SigIntp Msyn).
 Include LangHypIntp Msyn Msem MSI.
 Import Msyn Msem MSI.
 
-Axiom intp_fotrm_sort : forall hyp t,
-  wf_trm hyp t ->
-  typ (intp_hyp hyp) (intp_fotrm t) sort.
+Axiom intp_foterm_sort : forall hyp t,
+  wf_term hyp t ->
+  typ (intp_hyp hyp) (intp_foterm t) sort.
 
 (*The interpretation of the foformula is prop*)
 Lemma intp_fofml_prop : forall f hyp,
   wf_fml hyp f ->
   typ (intp_hyp hyp) (intp_fofml f) prop.
 induction f; simpl; intros.
- apply EQ_trm_typ; apply intp_fotrm_sort; red in H |- *; simpl in H |- *; intros; 
+ apply EQ_term_typ; apply intp_foterm_sort; red in H |- *; simpl in H |- *; intros; 
    apply H; apply in_or_app; [left|right]; trivial.
 
  apply True_symb_typ.

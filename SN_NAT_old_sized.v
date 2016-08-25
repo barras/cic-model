@@ -61,7 +61,7 @@ Qed.
 *)
 (** Universes *)
 (*Module Lc:=Lambda.
-Definition type (n:nat) : trm :=
+Definition type (n:nat) : term :=
   cst (mkTY (ecc n) (fun _ => snSAT)) Lc.K (fun _ _ => eq_refl) (fun _ _ _ => eq_refl).
 
 Lemma typ_Prop : forall e, typ e prop (type 0).
@@ -115,10 +115,10 @@ Qed.
 
 (** Ordinals *)
 
-Definition Ord (o:set) : trm :=
+Definition Ord (o:set) : term :=
   cst o Lc.K (fun _ _ => eq_refl) (fun _ _ _ => eq_refl).
 
-Definition Ordt (o:set) : trm :=
+Definition Ordt (o:set) : term :=
   cst (mkTY o (fun _ => snSAT)) Lc.K (fun _ _ => eq_refl) (fun _ _ _ => eq_refl).
 
 Definition typ_ord_kind : forall e o, zero ∈ o -> typ e (Ordt o) kind.
@@ -144,7 +144,7 @@ apply Lc.sn_K.
 Qed.
 
 
-Definition OSucc : trm -> trm.
+Definition OSucc : term -> term.
 (*begin show*)
 intros o; left; exists (fun i => osucc (int o i)) (fun j => tm o j).
 (*end show*)
@@ -161,7 +161,7 @@ intros o; left; exists (fun i => osucc (int o i)) (fun j => tm o j).
  apply tm_substitutive.
 Defined.
 
-Definition OSucct : trm -> trm.
+Definition OSucct : term -> term.
 (*begin show*)
 intros o; left; exists (fun i => mkTY (osucc (int o i)) (fun _ => snSAT)) (fun j => tm o j).
 (*end show*)
@@ -196,7 +196,7 @@ Qed.
 
 (** Nat *)
 
-Definition Nat : trm.
+Definition Nat : term.
 (*begin show*)
 left; exists (fun _ => mkTY NAT (fNATi omega)) (fun _ => Lc.K).
 (*end show*)
@@ -206,7 +206,7 @@ left; exists (fun _ => mkTY NAT (fNATi omega)) (fun _ => Lc.K).
  red; reflexivity.
 Defined.
 
-Definition NatI (O:trm) : trm.
+Definition NatI (O:term) : term.
 (*begin show*)
 left; exists (fun i => mkTY (NATi (int O i)) (fNATi (int O i))) (fun j => tm O j).
 (*end show*)
@@ -260,7 +260,7 @@ Qed.
 
 (* Zero *)
 
-Definition Zero : trm.
+Definition Zero : term.
 (* begin show *)
 left; exists (fun _ => ZERO) (fun _ => ZE).
 (* end show *)
@@ -290,7 +290,7 @@ Qed.
 
 (* Successor *)
 
-Definition Succ (o:trm): trm.
+Definition Succ (o:term): term.
 (* begin show *)
 left; exists (fun i => lam (int (NatI o) i) SUCC) (fun _ => Lc.Abs (SU (Lc.Ref 0))).
 (*end show *)
@@ -372,7 +372,7 @@ Qed.
 
 (* Case analysis *)
 
-Definition Natcase (fZ fS n : trm) : trm.
+Definition Natcase (fZ fS n : term) : term.
 (*begin show*)
 left; exists (fun i => NATCASE (int fZ i) (fun k => int fS (V.cons k i)) (int n i))
        (fun j => Lc.App2 (tm n j) (Lc.Abs (Lc.lift 1 (tm fZ j))) (Lc.Abs (tm fS (Lc.ilift j)))).
@@ -432,7 +432,7 @@ f_equal.
 Defined.
 
 Instance Natcase_morph :
-  Proper (eq_trm ==> eq_trm ==> eq_trm ==> eq_trm) Natcase.
+  Proper (eq_term ==> eq_term ==> eq_term ==> eq_term) Natcase.
 do 4 red; intros.
 split; red; simpl; intros.
  apply NATCASE_morph.
@@ -592,7 +592,7 @@ Qed.
 
 
   (* Non-occurrence : interp do not depend on variables in set [f] *)
-  Definition noccur (f:nat->bool) (T:trm) : Prop :=
+  Definition noccur (f:nat->bool) (T:term) : Prop :=
     forall i i',
     (forall n, if f n then True else i n == i' n) ->
     int T i == int T i'.
@@ -632,8 +632,8 @@ End Beq.
 Module B := VarMap.Make(Beq).
 
 Module OTeq.
-Definition t := option trm.
-Definition eq := @eq (option trm).
+Definition t := option term.
+Definition eq := @eq (option term).
 Definition eq_equiv : Equivalence eq := eq_equivalence.
 Existing Instance eq_equiv.
 End OTeq.
@@ -1014,7 +1014,7 @@ Qed.
 (** Recursor (without case analysis) *)
 
 (* NatFix O M is a fixpoint of domain Nati O with body M *)
-Definition NatFix (O M:trm) : trm.
+Definition NatFix (O M:term) : term.
 (*begin show*)
 left.
 exists (fun i =>
@@ -1084,8 +1084,8 @@ Section NatFixRules.
   Hypothesis infty_ord : isOrd infty.
   Variable E : fenv.
   Let e := tenv E.
-  Variable O U M : trm.
-  Hypothesis M_nk : ~ eq_trm M kind.
+  Variable O U M : term.
+  Hypothesis M_nk : ~ eq_term M kind.
   Hypothesis ty_O : typ e O (Ordt infty).
   Hypothesis ty_M : typ (Prod (NatI (Ref 0)) U::OSucct O::e)
     M (Prod (NatI (OSucc (Ref 1)))
@@ -1839,7 +1839,7 @@ Definition typ_monoval e M T :=
 Definition typ_impl e M T :=
   fx_equals e M /\ typ (tenv e) M T.
 
-Instance typ_impl_morph e : Proper (eq_trm ==> eq_trm ==> iff) (typ_impl e).
+Instance typ_impl_morph e : Proper (eq_term ==> eq_term ==> iff) (typ_impl e).
 apply morph_impl_iff2; auto with *.
 do 4 red; intros.
 destruct H1; split.
@@ -2117,7 +2117,7 @@ Definition nat_ind :=
 
 Lemma nat_ind_def :
   forall e, typ e nat_ind nat_ind_typ.
-assert (eq_trm Nat (NatI (Ord omega))).
+assert (eq_term Nat (NatI (Ord omega))).
  red; simpl.
  red; unfold NAT; reflexivity.
 unfold nat_ind, nat_ind_typ; intros.

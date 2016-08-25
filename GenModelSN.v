@@ -1,37 +1,14 @@
 Set Implicit Arguments.
 Require Import List Compare_dec.
 Require Import Sat.
-Require Import Models.
+Require Import Models SnModels TypModels.
 Require ObjectSN.
 
 Module Lc := Lambda.
 
-(** * Abstract strong mormalization model *)
-
-Module Type SN_addon (M : CC_Model).
-  Import M.
-
-  (** Types are equipped with a saturated set *)
-  Parameter Real : X -> SAT.
-  Parameter Real_morph : Proper (eqX ==> eqSAT) Real.
-
-  Parameter Real_sort : eqSAT (Real props) snSAT.
-
-  Parameter Real_prod : forall A B,
-    eqSAT (Real (prod A B))
-     (prodSAT (Real A) (depSAT (fun x=>x∈A) (fun x => Real (B x)))).
-
-  (** Every proposition is inhabited *)
-  Parameter daimon : X.
-  Parameter daimon_false : daimon ∈ prod props (fun P => P).
-
-  Existing Instance Real_morph.
-
-End SN_addon.
-
 (** * The abstract strong normalization proof. *)
 
-Module MakeModel(M : CC_Model) (SN : SN_addon M).
+Module MakeModel(M : CC_Model) (SN : SN_addon M) <: Syntax (* Judge *).
 Import M.
 Import SN.
 
@@ -45,7 +22,7 @@ Include ObjectSN.MakeObject(M).
 (** Handles the case of kind: a type that contains all "non-empty" types
    and that is included in no type.
  *)
-Definition in_int (M T:trm) (i:val) (j:Lc.intt) :=
+Definition in_int (M T:term) (i:val) (j:Lc.intt) :=
   M <> kind /\
   match T with
   | None => kind_ok M /\ Lc.sn (tm M j)
@@ -53,7 +30,7 @@ Definition in_int (M T:trm) (i:val) (j:Lc.intt) :=
   end.
 
 Instance in_int_morph : Proper
-  (eq_trm ==> eq_trm ==> eq_val ==> pointwise_relation nat (@eq Lc.term) ==> iff)
+  (eq_term ==> eq_term ==> eq_val ==> pointwise_relation nat (@eq Lc.term) ==> iff)
   in_int.
 apply morph_impl_iff4; auto with *.
 unfold in_int; do 5 red; intros.
@@ -112,7 +89,7 @@ revert in_T; pattern T at 1 4; case T; simpl.
 
  destruct 1; split; trivial.
  rewrite kind_ok_lift with (k:=0) in H.
- rewrite eq_trm_lift_ref_fv in H; auto with arith.
+ rewrite eq_term_lift_ref_fv in H; auto with arith.
 Qed.
 
 Lemma in_int_sn : forall i j M T,
@@ -122,7 +99,7 @@ apply sat_sn in sat; trivial.
 Qed.
 
 (** * Environments *)
-Definition env := list trm.
+Definition env := list term.
 
 Definition val_ok (e:env) (i:val) (j:Lc.intt) :=
   forall n T, nth_error e n = value T ->
@@ -163,26 +140,47 @@ apply varSAT.
 Qed.
 
 (** * Judgements *)
-
+Module J.
 (** #<a name="MakeModel.wf"></a># *)
 Definition wf (e:env) :=
   exists i, exists j, val_ok e i j.
-Definition typ (e:env) (M T:trm) :=
+Definition typ (e:env) (M T:term) :=
   forall i j, val_ok e i j -> in_int M T i j.
-Definition eq_typ (e:env) (M M':trm) :=
+Definition eq_typ (e:env) (M M':term) :=
   forall i j, val_ok e i j -> int M i == int M' i.
+Definition sub_typ (e:env) (M M':term) :=
+  forall i j, val_ok e i j ->
+  forall x t, x ∈ int M i -> inSAT t (Real (int M  i)) ->
+    x ∈ int M' i /\ inSAT t (Real (int M' i)).
 
-Instance typ_morph : forall e, Proper (eq_trm ==> eq_trm ==> iff) (typ e).
+Definition typ_sub (e:env) (s:sub) (f:env) :=
+  forall i j, val_ok e i j -> val_ok f (sint s i) (stm s j).
+
+Instance typ_morph : forall e, Proper (eq_term ==> eq_term ==> iff) (typ e).
 unfold typ; split; simpl; intros.
  rewrite <- H; rewrite <- H0; auto.
  rewrite H; rewrite H0; auto.
 Qed.
 
-Instance eq_typ_morph : forall e, Proper (eq_trm ==> eq_trm ==> iff) (eq_typ e).
+Instance eq_typ_morph : forall e, Proper (eq_term ==> eq_term ==> iff) (eq_typ e).
 unfold eq_typ; split; simpl; intros.
  rewrite <- H; rewrite <- H0; eauto.
  rewrite H; rewrite H0; eauto.
 Qed.
+
+Instance sub_typ_morph : forall e, Proper (eq_term ==> eq_term ==> iff) (sub_typ e).
+unfold sub_typ; split; simpl; intros.
+ rewrite <-H in H3,H4.
+ rewrite <-H0.
+ eauto.
+
+ rewrite H in H3,H4.
+ rewrite H0.
+ eauto.
+Qed.
+
+End J.
+Import J.
 
 Lemma assume_wf e M T :
   (wf e -> typ e M T) ->

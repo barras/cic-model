@@ -202,7 +202,7 @@ Qed.
 
 
 (** ** Extendability *)
-Definition cst (x:set) : trm.
+Definition cst (x:set) : term.
 (* begin show *)
 left; exists (fun _ =>x) (fun _ =>Lambda.K).
 (* end show *)

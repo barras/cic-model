@@ -23,7 +23,7 @@ Export natARG SAT_nat.
 
 (** * Nat and its constructors *)
 
-Definition Zero : trm.
+Definition Zero : term.
 (*begin show*)
 left; exists (fun _ => zero) (fun _ => ZE).
 (*end show*)
@@ -33,7 +33,7 @@ left; exists (fun _ => zero) (fun _ => ZE).
  red; reflexivity.
 Defined.
 
-Definition Succ : trm.
+Definition Succ : term.
 (*begin show*)
 left; exists (fun _ => lam (mkTY N cNAT) succ) (fun _ => SU).
 (*end show*)
@@ -43,7 +43,7 @@ left; exists (fun _ => lam (mkTY N cNAT) succ) (fun _ => SU).
  red; reflexivity.
 Defined.
 
-Definition Nat : trm.
+Definition Nat : term.
 (*begin show*)
 left; exists (fun _ => mkTY N cNAT) (fun _ => Lc.K).
 (*end show*)
@@ -153,7 +153,7 @@ split.
 Qed.
 
 (** Recursor *)
-Definition NatRec (f g n:trm) : trm.
+Definition NatRec (f g n:term) : term.
 (*begin show*)
 left; exists (fun i => natrec (int f i) (fun n y => app (app (int g i) n) y) (int n i))
              (fun j => Lc.App2 (tm n j) (tm f j) (tm g j)).

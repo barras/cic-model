@@ -19,14 +19,14 @@ Lemma typ_sort : forall e, typ e sort kind.
 Proof. apply typ_N. Qed.
 
 Lemma sort_clsd : 
-  (forall n k, eq_trm (lift_rec n k sort) sort) /\
-  (forall t k, eq_trm (subst_rec t k sort) sort).
+  (forall n k, eq_term (lift_rec n k sort) sort) /\
+  (forall t k, eq_term (subst_rec t k sort) sort).
 Proof. split; intros; simpl; split; red; reflexivity. Qed.
 
 Definition wf_clsd_env e := forall i j, val_ok e i j ->
-  exists j', val_ok e i j' /\ (forall n, closed_pure_trm (j' n)).
+  exists j', val_ok e i j' /\ (forall n, closed_pure_term (j' n)).
 
-Definition prf_T : trm.
+Definition prf_T : term.
 left. 
 exists (fun _ => lam props (fun x => lam x (fun y => y)))
   (fun _ => Lc.Abs (Lc.Abs (Lc.Ref 0))).
@@ -63,7 +63,7 @@ apply prod_intro_lam.
 Qed.
 
 Lemma FprfF : forall i j v,
-  (forall n : nat, closed_pure_trm (j n)) ->
+  (forall n : nat, closed_pure_term (j n)) ->
   [int v i, tm v j] \real prod props (fun p => p) -> False.
 intros i j v Hclsd Hv.
 assert (forall S, inSAT (Lc.App (tm v j) (Lc.Abs (Lc.Ref 0))) S) as HF.
@@ -84,7 +84,7 @@ assert (forall S, inSAT (Lc.App (tm v j) (Lc.Abs (Lc.Ref 0))) S) as HF.
 
  destruct (neutral_not_closed _ HF).
  inversion_clear H.
-  apply tm_closed in H0. unfold closed_pure_trm in Hclsd.
+  apply tm_closed in H0. unfold closed_pure_term in Hclsd.
     apply False_ind. apply H0. intros. apply Hclsd.
 
     inversion_clear H0. inversion_clear H.
@@ -122,7 +122,7 @@ apply prod_intro_lam.
    apply snSAT_intro; apply Lc.sn_abs; apply Lc.sn_lift; apply sat_sn in Hu; trivial.
 Qed.
 
-Definition P1t : trm.
+Definition P1t : term.
 left. exists (fun _ => P1) (fun _ => Lc.K).
 do 2 red; intros. reflexivity.
 
@@ -183,7 +183,7 @@ apply prod_intro_lam.
    apply snSAT_intro; apply Lc.sn_abs; apply Lc.sn_lift; apply sat_sn in Hu; trivial.
 Qed.
 
-Definition P2t : trm.
+Definition P2t : term.
 left. exists (fun _ => P2) (fun _ => Lc.K).
 do 2 red; intros. reflexivity.
 
@@ -224,7 +224,7 @@ intros. unfold P3. apply lam_ext; [reflexivity|do 2 red; intros].
   do 2 red; intros. rewrite H2; rewrite H; reflexivity.
 Qed.
 
-Definition P3t : trm -> trm.
+Definition P3t : term -> term.
 intros P. left.
 exists (fun i => P3 (int P i)) (fun j => tm P j).
 do 3 red; intros. apply P3_morph; rewrite H; reflexivity.
@@ -420,7 +420,7 @@ Lemma PredVary : forall e x y i j,
   typ e x sort ->
   typ e y sort ->
   val_ok e i j ->
-  (exists j', val_ok e i j' /\ (forall n, closed_pure_trm (j' n)) /\
+  (exists j', val_ok e i j' /\ (forall n, closed_pure_term (j' n)) /\
     (exists P, P <> kind /\ [int P i, tm P j'] \real int (Prod sort prop) i /\ 
       exists u, [int u i, tm u j'] \real (app (int P i) (int x i)) /\
         ((exists v, [int v i, tm v j'] \real (app (int P i) (int y i))) -> 
@@ -497,7 +497,7 @@ Lemma typ_S1 : forall e n,
   typ e n Nat ->
   typ e (App Succ n) Nat.
 intros e n Hn.
-setoid_replace Nat with (subst n Nat) using relation eq_trm;
+setoid_replace Nat with (subst n Nat) using relation eq_term;
   [|simpl; split; red; reflexivity].
 apply typ_app with (V:=Nat); [trivial|apply typ_S|discriminate|discriminate].
 Qed.
@@ -517,19 +517,19 @@ apply typ_abs; [left; apply typ_N| |discriminate].
 apply typ_abs; [left; apply typ_N| |discriminate].
 assert (forall n e, typ e n Nat ->
   eq_typ e (App (Abs Nat Nat) n) Nat).
- intros. setoid_replace Nat with (subst n Nat) using relation eq_trm at 3;
+ intros. setoid_replace Nat with (subst n Nat) using relation eq_term at 3;
    [|simpl; split; red; reflexivity].
  apply eq_typ_beta; [apply refl|apply refl|trivial|discriminate].
 
-setoid_replace (lift 2 Nat) with Nat using relation eq_trm;
+setoid_replace (lift 2 Nat) with Nat using relation eq_term;
   [|simpl; split; red; reflexivity].
 apply typ_conv with (T := App (Abs Nat Nat) (Ref 0)); [|apply H|discriminate|discriminate].
  apply typ_Nrect.
-  setoid_replace Nat with (lift 1 Nat) using relation eq_trm at 3;
+  setoid_replace Nat with (lift 1 Nat) using relation eq_term at 3;
     [apply typ_var; trivial|simpl; split; red; reflexivity].
   
   apply typ_conv with (T:=Nat); [| |discriminate|discriminate].
-   setoid_replace Nat with (lift 2 Nat) using relation eq_trm at 3;
+   setoid_replace Nat with (lift 2 Nat) using relation eq_term at 3;
      [apply typ_var; trivial|simpl; split; red; reflexivity].
 
    apply sym. apply H. apply typ_0.
@@ -538,18 +538,18 @@ apply typ_conv with (T := App (Abs Nat Nat) (Ref 0)); [|apply H|discriminate|dis
    apply typ_conv with (T:=Prod Nat (lift 1 Nat)); [apply typ_S| |discriminate|discriminate].
     apply sym. apply eq_typ_prod; [| |discriminate].
      unfold lift. rewrite red_lift_abs.
-     setoid_replace (lift_rec 1 0 Nat) with Nat using relation eq_trm;
+     setoid_replace (lift_rec 1 0 Nat) with Nat using relation eq_term;
        [apply H|simpl; split; red; reflexivity].
-      setoid_replace Nat with (lift 1 Nat) using relation eq_trm at 4;
+      setoid_replace Nat with (lift 1 Nat) using relation eq_term at 4;
         [apply typ_var; trivial|simpl; split; red; reflexivity].
       
      unfold lift at 2 3. rewrite red_lift_abs.
-     setoid_replace (lift_rec 1 0 Nat) with Nat using relation eq_trm;
+     setoid_replace (lift_rec 1 0 Nat) with Nat using relation eq_term;
        [apply H; apply typ_S1|simpl; split; red; reflexivity].
-      setoid_replace Nat with (lift 2 Nat) using relation eq_trm at 6;
+      setoid_replace Nat with (lift 2 Nat) using relation eq_term at 6;
         [apply typ_var; trivial|simpl; split; red; reflexivity].
 
- setoid_replace Nat with (lift 1 Nat) using relation eq_trm at 3;
+ setoid_replace Nat with (lift 1 Nat) using relation eq_term at 3;
    [apply typ_var; trivial|simpl; split; red; reflexivity].
 Qed.
 
@@ -558,10 +558,10 @@ Lemma typ_Add2 : forall e m n,
   typ e n Nat ->
   typ e (App (App Add m) n) Nat.
 intros e m n Hm Hn.
-setoid_replace Nat with (subst n Nat) using relation eq_trm;
+setoid_replace Nat with (subst n Nat) using relation eq_term;
   [|simpl; split; red; reflexivity].
 apply typ_app with (V:=Nat); [trivial| |discriminate|discriminate].
-setoid_replace (Prod Nat Nat) with (subst m (Prod Nat (lift 2 Nat))) using relation eq_trm;
+setoid_replace (Prod Nat Nat) with (subst m (Prod Nat (lift 2 Nat))) using relation eq_term;
   [|simpl; split; red; reflexivity].
 apply typ_app with (V:=Nat); [trivial|apply typ_Add|discriminate|discriminate].
 Qed.
@@ -618,17 +618,17 @@ intros e. unfold ax1_aux.
 assert (forall n e, typ e n Nat ->
   eq_typ e (App (Abs Nat prop) n) prop).
  intros. 
- setoid_replace prop with (subst n prop) using relation eq_trm at 2;
+ setoid_replace prop with (subst n prop) using relation eq_term at 2;
    [apply eq_typ_beta; [apply refl|apply refl|trivial|discriminate]
      |simpl; split; red; reflexivity].
 
 apply typ_abs; [left; apply typ_N| |discriminate].
 apply typ_conv with (T := App (Abs Nat prop) (Ref 0));
-  [|apply H; setoid_replace Nat with (lift 1 Nat) using relation eq_trm at 2;
+  [|apply H; setoid_replace Nat with (lift 1 Nat) using relation eq_term at 2;
     [apply typ_var; trivial|simpl; split; red; reflexivity]
    |discriminate|discriminate].
 apply typ_Nrect.
- setoid_replace Nat with (lift 1 Nat) using relation eq_trm at 2;
+ setoid_replace Nat with (lift 1 Nat) using relation eq_term at 2;
    [apply typ_var; trivial|simpl; split; red; reflexivity].
 
  apply typ_conv with (T:=prop); [apply True_symb_typ|apply sym; apply H; apply typ_0
@@ -640,19 +640,19 @@ apply typ_Nrect.
   
   apply sym; apply eq_typ_prod; [| |discriminate].
    unfold lift; rewrite red_lift_abs.
-   setoid_replace (lift_rec 1 0 Nat) with Nat using relation eq_trm;
+   setoid_replace (lift_rec 1 0 Nat) with Nat using relation eq_term;
      [|simpl; split; red; reflexivity].
-   setoid_replace (lift_rec 1 1 prop) with prop using relation eq_trm;
+   setoid_replace (lift_rec 1 1 prop) with prop using relation eq_term;
      [apply H|simpl; split; red; reflexivity].
-   setoid_replace Nat with (lift 1 Nat) using relation eq_trm at 3;
+   setoid_replace Nat with (lift 1 Nat) using relation eq_term at 3;
      [apply typ_var; trivial|simpl; split; red; reflexivity].
 
    unfold lift at 2; rewrite red_lift_abs.
-    setoid_replace (lift_rec 2 0 Nat) with Nat using relation eq_trm;
+    setoid_replace (lift_rec 2 0 Nat) with Nat using relation eq_term;
       [|simpl; split; red; reflexivity].
-    setoid_replace (lift_rec 2 1 prop) with prop using relation eq_trm;
+    setoid_replace (lift_rec 2 1 prop) with prop using relation eq_term;
       [apply H; apply typ_S1|simpl; split; red; reflexivity].
-    setoid_replace Nat with (lift 2 Nat) using relation eq_trm at 4;
+    setoid_replace Nat with (lift 2 Nat) using relation eq_term at 4;
       [apply typ_var; trivial|simpl; split; red; reflexivity].
 Qed.
 
@@ -699,21 +699,21 @@ rewrite beta_eq; [|do 2 red; reflexivity|]; trivial.
 Qed.
 
 Definition ax1 := forall e, exists t, 
-  typ e t (Fall (Neg (EQ_trm Zero (App (App Add (Ref 0)) (App Succ Zero))))).
+  typ e t (Fall (Neg (EQ_term Zero (App (App Add (Ref 0)) (App Succ Zero))))).
 
 Lemma P_ax_intro1 : ax1.
 unfold ax1. intros e.
-generalize (True_symb_intro (EQ_trm Zero (App (App Add (Ref 0)) (App Succ Zero))::Nat::e)).
+generalize (True_symb_intro (EQ_term Zero (App (App Add (Ref 0)) (App Succ Zero))::Nat::e)).
 intros Ht; destruct Ht as (t, Ht).
-exists (Abs Nat (Abs (EQ_trm Zero (App (App Add (Ref 0)) (App Succ Zero))) 
+exists (Abs Nat (Abs (EQ_term Zero (App (App Add (Ref 0)) (App Succ Zero))) 
 (App (App (Ref 0) ax1_aux) t))).
 apply typ_abs; [left; apply typ_N|unfold Neg|discriminate].
 apply Impl_intro; [|discriminate|].
- apply EQ_trm_typ; [apply typ_0|apply typ_Add2; [|apply typ_S1; apply typ_0]].
-  setoid_replace Nat with (lift 1 Nat) using relation eq_trm at 2;
+ apply EQ_term_typ; [apply typ_0|apply typ_Add2; [|apply typ_S1; apply typ_0]].
+  setoid_replace Nat with (lift 1 Nat) using relation eq_term at 2;
     [apply typ_var; trivial|simpl; split; red; reflexivity].
 
- setoid_replace (lift 1 False_symb) with (subst t False_symb) using relation eq_trm by
+ setoid_replace (lift 1 False_symb) with (subst t False_symb) using relation eq_term by
    (simpl; split; red; reflexivity).
  apply typ_app with (V:=True_symb); [trivial|clear Ht|discriminate|discriminate].
  apply typ_conv with (T:=(subst ax1_aux (Prod (App (Ref 0) (lift 2 Zero))
@@ -724,13 +724,13 @@ apply Impl_intro; [|discriminate|].
      (App (Ref 1) (lift 3 (App (App Add (Ref 0)) (App Succ Zero))))))) with 
    (lift 1 ((Prod (Prod Nat prop) (Prod (App (Ref 0) (lift 1 Zero))
      (App (Ref 1) (lift 2 (App (App Add (Ref 0)) (App Succ Zero)))))))) 
-   using relation eq_trm; [apply typ_var; trivial
+   using relation eq_term; [apply typ_var; trivial
      |unfold lift; do 3 rewrite red_lift_prod; do 11 rewrite red_lift_app].
-   rewrite eq_trm_lift_ref_fv; [simpl plus|omega].
-   rewrite eq_trm_lift_ref_bd; [|omega].
-   rewrite eq_trm_lift_ref_bd; [|omega].
-   rewrite eq_trm_lift_ref_fv; [simpl plus|omega].
-   rewrite eq_trm_lift_ref_fv; [simpl plus|omega].
+   rewrite eq_term_lift_ref_fv; [simpl plus|omega].
+   rewrite eq_term_lift_ref_bd; [|omega].
+   rewrite eq_term_lift_ref_bd; [|omega].
+   rewrite eq_term_lift_ref_fv; [simpl plus|omega].
+   rewrite eq_term_lift_ref_fv; [simpl plus|omega].
    rewrite lift_rec_acc; [simpl plus|omega].
    rewrite lift_rec_acc; [simpl plus|omega].
    rewrite lift_rec_acc; [simpl plus|omega].
@@ -740,7 +740,7 @@ apply Impl_intro; [|discriminate|].
 
   unfold subst. rewrite red_sigma_prod. do 2 rewrite red_sigma_app.
   rewrite red_sigma_var_eq; [rewrite lift0|discriminate].
-  setoid_replace ((subst_rec ax1_aux 0 (lift 2 Zero))) with Zero using relation eq_trm;
+  setoid_replace ((subst_rec ax1_aux 0 (lift 2 Zero))) with Zero using relation eq_term;
     [|simpl; split; red; reflexivity].
   rewrite red_sigma_var_eq; [|discriminate].
   rewrite subst_lift_lt; [|omega].
@@ -749,7 +749,7 @@ apply Impl_intro; [|discriminate|].
    apply eq_typ_app.
     unfold lift. unfold ax1_aux. rewrite red_lift_abs.
     apply eq_typ_abs; [| |discriminate].
-     setoid_replace (lift_rec 1 0 Nat) with Nat using relation eq_trm;
+     setoid_replace (lift_rec 1 0 Nat) with Nat using relation eq_term;
        [apply refl|simpl; split; red; reflexivity].
      
      red; intros; simpl. apply natrec_morph; [reflexivity| |reflexivity].
@@ -773,48 +773,48 @@ apply Impl_intro; [|discriminate|].
       rewrite natrec_S; [rewrite natrec_0; rewrite int_S; [reflexivity|trivial]
         |do 3 red; intros; rewrite H3; reflexivity|apply zero_typ].
 
-  setoid_replace Nat with (lift 3 Nat) using relation eq_trm at 2;
+  setoid_replace Nat with (lift 3 Nat) using relation eq_term at 2;
     [apply typ_var; trivial|simpl; split; red; reflexivity].
 Qed.
 
 
 (*Axiom2 : x + 1 = y + 1 -> x = y*)
 Definition ax2 := forall e, exists t, typ e t (Fall (Fall (Impl
-  (EQ_trm (App (App Add (Ref 0)) (App Succ Zero)) (App (App Add (Ref 1)) (App Succ Zero)))
-  (EQ_trm (Ref 0) (Ref 1))))).
+  (EQ_term (App (App Add (Ref 0)) (App Succ Zero)) (App (App Add (Ref 1)) (App Succ Zero)))
+  (EQ_term (Ref 0) (Ref 1))))).
 
 Lemma P_ax_intro2 : ax2.
 unfold ax2; intros e.
-exists (Abs Nat (Abs Nat (Abs (EQ_trm (App (App Add (Ref 0)) (App Succ Zero))
+exists (Abs Nat (Abs Nat (Abs (EQ_term (App (App Add (Ref 0)) (App Succ Zero))
   (App (App Add (Ref 1)) (App Succ Zero))) (Ref 0)))).
 apply typ_abs; [left; apply typ_N| |discriminate].
 apply typ_abs; [left; apply typ_N| |discriminate].
 apply Impl_intro; [|discriminate|].
- apply EQ_trm_typ.
+ apply EQ_term_typ.
   apply typ_Add2; [|apply typ_S1; apply typ_0].
-   setoid_replace Nat with (lift 1 Nat) using relation eq_trm at 3;
+   setoid_replace Nat with (lift 1 Nat) using relation eq_term at 3;
      [apply typ_var; trivial|simpl; split; red; reflexivity].
 
   apply typ_Add2; [|apply typ_S1; apply typ_0].
-   setoid_replace Nat with (lift 2 Nat) using relation eq_trm at 3;
+   setoid_replace Nat with (lift 2 Nat) using relation eq_term at 3;
      [apply typ_var; trivial|simpl; split; red; reflexivity].
 
-setoid_replace (lift 1 (EQ_trm (Ref 0) (Ref 1))) with 
-  (EQ_trm (Ref 1) (Ref 2)) using relation eq_trm; [
-    |unfold EQ_trm, lift; repeat rewrite red_lift_prod; repeat rewrite red_lift_app;
-      rewrite eq_trm_lift_ref_bd; [|omega]; rewrite lift_rec_acc; [simpl plus|omega];
-        rewrite eq_trm_lift_ref_fv; [simpl plus|omega]; rewrite eq_trm_lift_ref_bd; [|omega];
+setoid_replace (lift 1 (EQ_term (Ref 0) (Ref 1))) with 
+  (EQ_term (Ref 1) (Ref 2)) using relation eq_term; [
+    |unfold EQ_term, lift; repeat rewrite red_lift_prod; repeat rewrite red_lift_app;
+      rewrite eq_term_lift_ref_bd; [|omega]; rewrite lift_rec_acc; [simpl plus|omega];
+        rewrite eq_term_lift_ref_fv; [simpl plus|omega]; rewrite eq_term_lift_ref_bd; [|omega];
           rewrite lift_rec_acc; [simpl plus|omega]; 
-            repeat (rewrite eq_trm_lift_ref_fv; [simpl plus|omega]);
+            repeat (rewrite eq_term_lift_ref_fv; [simpl plus|omega]);
               apply Prod_morph; [apply Prod_morph; simpl; split; red|]; reflexivity].
 red; intros. red in H.
-assert (nth_error (EQ_trm (App (App Add (Ref 0)) (App Succ Zero))
+assert (nth_error (EQ_term (App (App Add (Ref 0)) (App Succ Zero))
   (App (App Add (Ref 1)) (App Succ Zero)) :: Nat :: Nat :: e) 0 = value (
-    EQ_trm (App (App Add (Ref 0)) (App Succ Zero))
+    EQ_term (App (App Add (Ref 0)) (App Succ Zero))
     (App (App Add (Ref 1)) (App Succ Zero)))) by trivial.
-assert (nth_error (EQ_trm (App (App Add (Ref 0)) (App Succ Zero))
+assert (nth_error (EQ_term (App (App Add (Ref 0)) (App Succ Zero))
   (App (App Add (Ref 1)) (App Succ Zero)) :: Nat :: Nat :: e) 1 = value Nat) by trivial.
-assert (nth_error (EQ_trm (App (App Add (Ref 0)) (App Succ Zero))
+assert (nth_error (EQ_term (App (App Add (Ref 0)) (App Succ Zero))
   (App (App Add (Ref 1)) (App Succ Zero)) :: Nat :: Nat :: e) 2 = value Nat) by trivial.
 apply H in H0. apply in_int_not_kind in H0; [|discriminate].
 apply H in H1. apply in_int_not_kind in H1; [destruct H1 as (H1, _)|discriminate].
@@ -824,15 +824,15 @@ unfold inX in H2; simpl in H2; rewrite El_def,eqNbot in H2.
 apply in_int_intro; [discriminate|discriminate|clear e H].
 assert ([i 0, j 0]\real (prod (prod (mkTY N cNAT) (fun _ => props)) (fun x => 
   prod (app x (i 1)) (fun y => app x (i 2)))) ->
-[int (Ref 0) i, tm (Ref 0) j]\real int (EQ_trm (Ref 1) (Ref 2)) i).
+[int (Ref 0) i, tm (Ref 0) j]\real int (EQ_term (Ref 1) (Ref 2)) i).
  apply real_morph; simpl; reflexivity.
 
 apply H; clear H.
 assert ([int (Ref 0) i, tm (Ref 0) j] \real int (lift 1
-  (EQ_trm (App (App Add (Ref 0)) (App Succ Zero))
+  (EQ_term (App (App Add (Ref 0)) (App Succ Zero))
     (App (App Add (Ref 1)) (App Succ Zero)))) i ->
   ([int (Ref 0) i, tm (Ref 0) j] \real int
-    (EQ_trm (App (App Add (Ref 0)) (App Succ Zero))
+    (EQ_term (App (App Add (Ref 0)) (App Succ Zero))
       (App (App Add (Ref 1)) (App Succ Zero)))  (V.shift 1 i))).
  unfold lift; rewrite int_lift_rec_eq. rewrite V.lams0; trivial.
 
@@ -881,30 +881,30 @@ Qed.
 
 (*Axiom 3 : x = x + 0*)
 Definition ax3 := forall e, exists t, 
-  typ e t (Fall (EQ_trm (Ref 0) (App (App Add (Ref 0)) Zero))).
+  typ e t (Fall (EQ_term (Ref 0) (App (App Add (Ref 0)) Zero))).
 
 Lemma P_ax_intro3 : ax3.
 unfold ax3.
 exists (Abs Nat (Abs (Prod Nat prop) (Abs (App (Ref 0) (Ref 1)) (Ref 0)))).
-unfold EQ_trm. unfold lift at 1.
+unfold EQ_term. unfold lift at 1.
 apply typ_abs; [left; apply typ_N| |discriminate].
 apply typ_abs; [left; apply typ_prod; 
   [left; trivial|left; apply typ_N|apply typ_prop]| |discriminate].
-rewrite (eq_trm_lift_ref_fv 1 0 0); [simpl plus|omega].
+rewrite (eq_term_lift_ref_fv 1 0 0); [simpl plus|omega].
 apply typ_abs; [right| |discriminate].
- setoid_replace prop with (subst (Ref 1) prop) using relation eq_trm at 2;
+ setoid_replace prop with (subst (Ref 1) prop) using relation eq_term at 2;
    [|simpl; split; red; reflexivity].
   apply typ_app with (V:=Nat); [| |discriminate|discriminate].
-   setoid_replace Nat with (lift 2 Nat) using relation eq_trm at 3;
+   setoid_replace Nat with (lift 2 Nat) using relation eq_term at 3;
      [apply typ_var; trivial|simpl; split; red; reflexivity].
 
-   setoid_replace (Prod Nat prop) with (lift 1 (Prod Nat prop)) using relation eq_trm at 2;
+   setoid_replace (Prod Nat prop) with (lift 1 (Prod Nat prop)) using relation eq_term at 2;
      [apply typ_var; trivial|simpl; split; red; reflexivity].
 
 apply typ_conv with (T:=(lift 1 (App (Ref 0) (Ref 1)))); 
   [apply typ_var; trivial| |discriminate|discriminate].
 unfold lift at 1. rewrite red_lift_app.
-do 2 (rewrite eq_trm_lift_ref_fv; [simpl plus|omega]).
+do 2 (rewrite eq_term_lift_ref_fv; [simpl plus|omega]).
 apply eq_typ_app; [apply refl|do 2 red; intros].
 unfold lift; rewrite int_lift_rec_eq. rewrite V.lams0.
 red in H.
@@ -921,7 +921,7 @@ Qed.
 
 (*Axiom 4 : (x + y) + 1 = x + (y + 1)*)
 Definition ax4 := forall e, exists t, 
-  typ e t (Fall(Fall (EQ_trm (App (App Add (App (App Add (Ref 0)) (Ref 1))) 
+  typ e t (Fall(Fall (EQ_term (App (App Add (App (App Add (Ref 0)) (Ref 1))) 
   (App Succ Zero)) (App (App Add (Ref 0)) (App (App Add (Ref 1)) (App Succ Zero)))))).
 
 Lemma P_ax_intro4 : ax4.
@@ -934,7 +934,7 @@ apply typ_abs; [left; apply typ_N| |discriminate].
 apply typ_abs; [left; apply typ_prod; [left; trivial|left; apply typ_N|apply typ_prop]| 
   |discriminate].
 unfold lift at 1. repeat rewrite red_lift_app.
-assert (eq_trm (lift_rec 1 0 Add) Add) as Hadd_lift.
+assert (eq_term (lift_rec 1 0 Add) Add) as Hadd_lift.
  unfold Add. repeat rewrite red_lift_abs.
  apply Abs_morph; [simpl; split; red; reflexivity|].
   apply Abs_morph; [simpl; split; red; reflexivity|].
@@ -945,30 +945,30 @@ assert (eq_trm (lift_rec 1 0 Add) Add) as Hadd_lift.
 
     unfold I.lams, I.shift; simpl; do 2 rewrite H; trivial.
 
-rewrite Hadd_lift. do 2 (rewrite eq_trm_lift_ref_fv; [simpl plus|omega]).
-setoid_replace (lift_rec 1 0 Succ) with Succ using relation eq_trm by 
+rewrite Hadd_lift. do 2 (rewrite eq_term_lift_ref_fv; [simpl plus|omega]).
+setoid_replace (lift_rec 1 0 Succ) with Succ using relation eq_term by 
   (simpl; split; red; reflexivity).
-setoid_replace (lift_rec 1 0 Zero) with Zero using relation eq_trm by 
+setoid_replace (lift_rec 1 0 Zero) with Zero using relation eq_term by 
   (simpl; split; red; reflexivity).
 apply typ_abs; [right| |discriminate].
  setoid_replace prop with 
    (subst (App (App Add (App (App Add (Ref 1)) (Ref 2))) (App Succ Zero)) prop)
-   using relation eq_trm at 2 by (simpl; split; red; reflexivity).
+   using relation eq_term at 2 by (simpl; split; red; reflexivity).
  apply typ_app with (V:=Nat); [| |discriminate|discriminate].
   apply typ_Add2; [|apply typ_S1; apply typ_0].
    apply typ_Add2.
-    setoid_replace Nat with (lift 2 Nat) using relation eq_trm at 4;
+    setoid_replace Nat with (lift 2 Nat) using relation eq_term at 4;
       [apply typ_var; trivial|simpl; split; red; reflexivity].
  
-    setoid_replace Nat with (lift 3 Nat) using relation eq_trm at 4;
+    setoid_replace Nat with (lift 3 Nat) using relation eq_term at 4;
       [apply typ_var; trivial|simpl; split; red; reflexivity].
 
-  setoid_replace (Prod Nat prop) with (lift 1 (Prod Nat prop)) using relation eq_trm at 2;
+  setoid_replace (Prod Nat prop) with (lift 1 (Prod Nat prop)) using relation eq_term at 2;
     [apply typ_var; trivial|simpl; split; red; reflexivity].
 
  apply typ_conv with (T:= lift 1 (App (Ref 0) (App (App Add (App (App Add (Ref 1)) (Ref 2))) 
    (App Succ Zero)))); [apply typ_var; trivial| |discriminate|discriminate].
-  unfold lift. rewrite red_lift_app. rewrite eq_trm_lift_ref_fv; [simpl plus|omega].
+  unfold lift. rewrite red_lift_app. rewrite eq_term_lift_ref_fv; [simpl plus|omega].
   apply eq_typ_app; [apply refl|do 2 red; intros].
    red in H.
    assert (nth_error (App (Ref 0) 
@@ -1048,7 +1048,7 @@ fold (typ e (Abs (subst Zero P) (Abs (Prod (lift 1 Nat) (Impl (lift_rec 1 1 P)
     (lift_rec 1 1 P)))) (Fall P))))).
 apply Impl_intro; [|discriminate|].
  apply typ_subst with (A:=Nat); [discriminate|discriminate| |apply typ_0].
-  setoid_replace prop with (lift 1 prop) using relation eq_trm in HP; [trivial
+  setoid_replace prop with (lift 1 prop) using relation eq_term in HP; [trivial
     |simpl; split; red; reflexivity].
 
  assert (typ (subst Zero P :: e) (Abs (Prod (lift 1 Nat) (Prod (lift_rec 1 1 P)
@@ -1076,12 +1076,12 @@ apply Impl_intro; [|discriminate|].
  apply H; clear H.
  apply typ_abs; [right| |discriminate].
   apply typ_prod; [right; trivial|left; 
-    setoid_replace (lift 1 Nat) with Nat using relation eq_trm; 
+    setoid_replace (lift 1 Nat) with Nat using relation eq_term; 
       [apply typ_N|split; red; simpl; reflexivity]|].
   apply typ_prod; [right; trivial|right; 
-    setoid_replace prop with (lift_rec 1 1 prop) using relation eq_trm; 
+    setoid_replace prop with (lift_rec 1 1 prop) using relation eq_term; 
       [apply weakening_bind; trivial|split; red; simpl; reflexivity]|].
-  setoid_replace prop with (lift 1 (lift_rec 1 1 (lift 1 prop))) using relation eq_trm;
+  setoid_replace prop with (lift 1 (lift_rec 1 1 (lift 1 prop))) using relation eq_term;
     [|simpl; split; red; reflexivity].
   apply weakening. 
   apply weakening_bind; trivial.
@@ -1089,7 +1089,7 @@ apply Impl_intro; [|discriminate|].
    unfold lift; rewrite lift_rec_comm by omega; apply weakening_bind; trivial.
 
    apply typ_Add2; [|apply typ_S1; apply typ_0].
-    setoid_replace Nat with (lift 1 Nat) using relation eq_trm at 2;  
+    setoid_replace Nat with (lift 1 Nat) using relation eq_term at 2;  
       [apply typ_var; trivial|split; red; simpl; reflexivity].
 
  apply typ_abs; [left; replace kind with (lift 1 (lift 1 kind)); [|trivial]| 
@@ -1099,7 +1099,7 @@ apply Impl_intro; [|discriminate|].
   apply typ_conv with (T:=(App (Abs (lift 1 (lift 1 (lift 1 Nat))) (lift_rec 3 1 P)) (Ref 0))); 
     [| |discriminate|destruct P; [discriminate|trivial]].
    apply typ_Nrect.
-    setoid_replace Nat with (lift 1 (lift 1 (lift 1 Nat))) using relation eq_trm at 3;
+    setoid_replace Nat with (lift 1 (lift 1 (lift 1 Nat))) using relation eq_term at 3;
        [apply typ_var; trivial|simpl; split; red; reflexivity].
      
     apply typ_conv with (T:=(lift 3 (subst Zero P))); [apply typ_var; trivial| 
@@ -1162,7 +1162,7 @@ apply Impl_intro; [|discriminate|].
             [|do 3 red; intros; repeat(replace (a0-0) with a0; [|omega])]; reflexivity.
       
          apply typ_S1.
-         setoid_replace Nat with (lift 2 (lift 1 (lift 1 (lift 1 Nat)))) using relation eq_trm at 4;
+         setoid_replace Nat with (lift 2 (lift 1 (lift 1 (lift 1 Nat)))) using relation eq_term at 4;
            [apply typ_var; trivial|simpl; split; red; reflexivity].
 
     rewrite eq_typ_beta with (N':=(Ref 0)) (M':=(lift_rec 3 1 P)); 

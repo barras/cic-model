@@ -145,10 +145,11 @@ Defined.
 
 
 (** General substitutions *)
-Record sub := mkSub {
+Record sub_ := mkSub {
   sub_f :> val -> val;
   sub_m : Proper (eq_val ==> eq_val) sub_f
 }.
+Definition sub := sub_.
 Existing Instance sub_m.
 
 Definition eq_sub (s1 s2:sub) :=
@@ -635,7 +636,6 @@ Qed.
 
 End T.
 Import T.
-Definition sub:=T.sub.
 
 (** * Environments *)
 Definition env := list term.

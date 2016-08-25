@@ -28,7 +28,7 @@ Section NAT_typing.
 
 Variable e:env.
 
-Definition NatI (O:trm) : trm.
+Definition NatI (O:term) : term.
 (*begin show*)
 left; exists (fun i => mkTY (TI NATf' (int O i)) cNAT)
              (fun j => tm O j).
@@ -114,7 +114,7 @@ Qed.
 
 (** Constructors *)
 
-Definition Zero : trm.
+Definition Zero : term.
 (* begin show *)
 left; exists (fun i => ZERO)
              (fun j => ZE).
@@ -150,7 +150,7 @@ split.
   revert H; apply NATf'_stages; auto.
 Qed.
 
-Definition Succ (O:trm) : trm.
+Definition Succ (O:term) : term.
 (* begin show *)
 left; exists (fun i => lam (mkTY (TI NATf' (int O i)) cNAT) SUCC)
              (fun j => Lc.App2 Lc.K (Lc.Abs (SU (Lc.Ref 0))) (tm O j)).
@@ -253,7 +253,7 @@ Qed.
 
 (* Case analysis *)
 
-Definition NatCase (b0 bS n : trm) : trm.
+Definition NatCase (b0 bS n : term) : term.
 (*begin show*)
 left; exists (fun i => NATCASE (int b0 i) (fun x => int bS (V.cons x i)) (int n i))
              (fun j => NCASE (tm b0 j) (Lc.Abs (tm bS (Lc.ilift j))) (tm n j)).
@@ -295,7 +295,7 @@ apply f_equal3 with (f:=Lc.App2).
 Defined.
 
 Instance NatCase_morph :
-  Proper (eq_trm ==> eq_trm ==> eq_trm ==> eq_trm) NatCase.
+  Proper (eq_term ==> eq_term ==> eq_term ==> eq_term) NatCase.
 do 4 red; intros.
 split; red; simpl; intros.
  unfold NATCASE.
@@ -533,7 +533,7 @@ End NAT_typing.
 (** Recursor (without case analysis) *)
 
 (* NatFix O M is a fixpoint of domain NatI O with body M *)
-Definition NatFix (O M:trm) : trm.
+Definition NatFix (O M:term) : term.
 (*begin show*)
 left.
 exists (fun i =>
@@ -606,7 +606,7 @@ Section NatFixRules.
 
   Variable E : fenv.
   Let e := tenv E.
-  Variable O U M : trm.
+  Variable O U M : term.
 
   Hypothesis ty_O : typ_ord e O.
   Hypothesis ty_M : typ (Prod (NatI (Ref 0)) U::OSucct O::e)

@@ -188,7 +188,7 @@ Qed.
 
 
 (** ** Extendability *)
-Definition cst (x:set) : trm.
+Definition cst (x:set) : term.
 (* begin show *)
 left; exists (fun _ =>x) (fun _ =>Lambda.K).
 (* end show *)
@@ -269,7 +269,7 @@ Qed.
 
 (** * Predicative universes: inference rules *)
 
-Definition type (n:nat) : trm := cst (sn_sort (ecc (S n))).
+Definition type (n:nat) : term := cst (sn_sort (ecc (S n))).
 
 Lemma cumul_Type : forall e n, sub_typ e (type n) (type (S n)).
 unfold type.
@@ -429,16 +429,16 @@ Module Lc := Lambda.
 
 
 (** Terms *)
-Fixpoint int_trm t :=
+Fixpoint int_term t :=
   match t with
   | Tm.Srt Tm.prop => prop
   | Tm.Srt (Tm.kind n) => type n
   | Tm.Ref n => Ref n
-  | Tm.App u v => App (int_trm u) (int_trm v)
-  | Tm.Abs T M => Abs (int_trm T) (int_trm M)
-  | Tm.Prod T U => Prod (int_trm T) (int_trm U)
+  | Tm.App u v => App (int_term u) (int_term v)
+  | Tm.Abs T M => Abs (int_term T) (int_term M)
+  | Tm.Prod T U => Prod (int_term T) (int_term U)
   end.
-Definition interp t := int_trm t.
+Definition interp t := int_term t.
 Definition int_env := List.map interp.
 
 Lemma interp_nk : forall T, interp T <> kind.
@@ -451,8 +451,8 @@ Section LiftAndSubstEquiv.
 (* Proof that lift and subst at both levels (SN and Tm) are equivalent. *)
 
 Lemma int_lift_rec : forall n t k,
-  eq_trm (lift_rec n k (int_trm t)) (int_trm (Tm.lift_rec n t k)).
-induction t; simpl int_trm; intros.
+  eq_term (lift_rec n k (int_term t)) (int_term (Tm.lift_rec n t k)).
+induction t; simpl int_term; intros.
  destruct s; simpl; trivial.
  split; red; intros; reflexivity.
 
@@ -471,7 +471,7 @@ induction t; simpl int_trm; intros.
 Qed.
 
 Lemma int_lift : forall n t,
-  eq_trm (int_trm (Tm.lift n t)) (lift n (int_trm t)).
+  eq_term (int_term (Tm.lift n t)) (lift n (int_term t)).
 intros.
 symmetry.
 unfold Tm.lift, lift.
@@ -479,19 +479,19 @@ apply int_lift_rec.
 Qed.
 
 Lemma int_subst_rec : forall arg,
-  int_trm arg <> kind ->
+  int_term arg <> kind ->
   forall t k,
-  eq_trm (subst_rec (int_trm arg) k (int_trm t)) (int_trm (Tm.subst_rec arg t k)).
+  eq_term (subst_rec (int_term arg) k (int_term t)) (int_term (Tm.subst_rec arg t k)).
 intros arg not_knd.
-induction t; simpl int_trm; intros.
+induction t; simpl int_term; intros.
  destruct s; simpl; trivial.
  split; red; intros; reflexivity.
 
  split; red; intros; reflexivity.
 
  simpl Tm.subst_rec.
- destruct (lt_eq_lt_dec k n) as [[fv|eqv]|bv]; simpl int_trm.
-  simpl int_trm.
+ destruct (lt_eq_lt_dec k n) as [[fv|eqv]|bv]; simpl int_term.
+  simpl int_term.
   destruct n; [inversion fv|].
   rewrite red_sigma_var_gt; auto with arith.
   reflexivity.
@@ -514,8 +514,8 @@ Qed.
 
 
 Lemma int_subst : forall u t,
-  int_trm u <> kind ->
-  eq_trm (int_trm (Tm.subst u t)) (subst (int_trm u) (int_trm t)).
+  int_term u <> kind ->
+  eq_term (int_term (Tm.subst u t)) (subst (int_term u) (int_term t)).
 unfold Tm.subst; symmetry; apply int_subst_rec; trivial.
 Qed.
 
@@ -527,7 +527,7 @@ End LiftAndSubstEquiv.
  *)
 Lemma red1_sound : forall x y,
   Tm.red1 x y ->
-  red_term (int_trm x) (int_trm y).
+  red_term (int_term x) (int_term y).
 induction 1; simpl; intros.
  rewrite int_subst.
   apply red_term_beta.
@@ -547,7 +547,7 @@ Lemma sn_sound : forall M,
   Acc (transp _ red_term) (interp M) ->
   Tm.sn M.
 intros M accM.
-apply Acc_inverse_image with (f:=int_trm) in accM.
+apply Acc_inverse_image with (f:=int_term) in accM.
 induction accM; intros.
 constructor; intros.
 apply H0; trivial.
@@ -667,7 +667,7 @@ induction 1; simpl; intros.
  destruct IHeq_typ1.
  destruct IHeq_typ2.
  split; trivial.
- apply typ_conv with (int_trm T'); eauto.
+ apply typ_conv with (int_term T'); eauto.
  apply sym; trivial.
 Qed.
 

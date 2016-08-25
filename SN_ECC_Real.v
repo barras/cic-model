@@ -17,7 +17,7 @@ Set Implicit Arguments.
 
 (** * Predicative universes: inference rules *)
 
-Definition type (n:nat) : trm := SN_CC_Real.cst (sn_sort (ecc (S n))).
+Definition type (n:nat) : term := SN_CC_Real.cst (sn_sort (ecc (S n))).
 
 Lemma cumul_Type : forall e n, sub_typ e (type n) (type (S n)).
 unfold type.

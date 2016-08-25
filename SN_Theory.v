@@ -27,11 +27,11 @@ induction n; simpl.
  rewrite IHn; reflexivity.
 Qed.
 
-Lemma hyp_ok_eq_trm : forall x y hyp,
-  hyp_ok_fml hyp (eq_fotrm x y) ->
-  hyp_ok_trm hyp x /\ hyp_ok_trm hyp y.
-unfold hyp_ok_fml, hyp_ok_trm.
-split; intros; apply H; rewrite fv_fml_eq_trm; 
+Lemma hyp_ok_eq_term : forall x y hyp,
+  hyp_ok_fml hyp (eq_foterm x y) ->
+  hyp_ok_term hyp x /\ hyp_ok_term hyp y.
+unfold hyp_ok_fml, hyp_ok_term.
+split; intros; apply H; rewrite fv_fml_eq_term; 
   rewrite in_app_iff; [left|right]; trivial.
 Qed.
 
@@ -126,9 +126,9 @@ induction 1; simpl.
   apply deriv_well_typed; trivial.
 
 (*fall_elim*)
- destruct IHderiv. exists (App x (intp_fotrm u)).
+ destruct IHderiv. exists (App x (intp_foterm u)).
  rewrite <- subst_intp_subst_fml. rewrite intp_fall in H1.
- apply Fall_elim; [| |apply intp_fotrm_sort]; trivial.
+ apply Fall_elim; [| |apply intp_foterm_sort]; trivial.
   rewrite <- intp_hyp_cons_sort. apply intp_fofml_prop.
   apply deriv_well_typed in H0. red in H0 |- *; intros.
   rewrite fv_fml_fall in H0. destruct n; simpl; trivial.
@@ -136,9 +136,9 @@ induction 1; simpl.
    
 (*exst_intro*)
  destruct IHderiv. rewrite intp_exst. 
- apply intp_fotrm_sort in H.
+ apply intp_foterm_sort in H.
  rewrite <- subst_intp_subst_fml in H1.
- apply Exst_intro with (a:=(intp_fotrm N)) (p:=x); trivial.
+ apply Exst_intro with (a:=(intp_foterm N)) (p:=x); trivial.
   rewrite <- intp_hyp_cons_sort. apply intp_fofml_prop.
   apply deriv_well_typed in H0; red in H0 |- *; intros.
   destruct n; simpl; trivial.
@@ -164,9 +164,9 @@ Qed.
 Lemma Equation_embed : forall n x y t,
   typ (const_env n) x sort ->
   typ (const_env n) y sort ->
-  typ (const_env n) t (EQ_trm x y) ->
+  typ (const_env n) t (EQ_term x y) ->
   eq_typ (const_env n) x y.
-intros. apply EQ_trm_eq_typ with (t:=t); trivial.
+intros. apply EQ_term_eq_typ with (t:=t); trivial.
 Qed.
 
 Lemma eq_typ_env : forall env1 env2 s s' x y,
@@ -212,10 +212,10 @@ induction n; simpl; intros.
 Qed.
 
 Lemma SN_T : forall e x y,
-  (exists n, deriv (const_hyp n) (eq_fotrm x y) /\ 
+  (exists n, deriv (const_hyp n) (eq_foterm x y) /\ 
     env_incl e (intp_hyp (const_hyp n))) ->
   (exists esi esj, 
-    eq_typ e (app_esub esi esj (intp_fotrm x)) (app_esub esi esj (intp_fotrm y))).
+    eq_typ e (app_esub esi esj (intp_foterm x)) (app_esub esi esj (intp_foterm y))).
 intros e x y Hderiv.
 destruct Hderiv as (n, (Hderiv, Hincl)).
 specialize intp_sound with (1:=Hderiv); intro H.
@@ -225,12 +225,12 @@ rewrite intp_hyp_env_const in H, Hincl.
 specialize esub_exst with (1:=Hincl); intros H'.
 destruct H' as (esi, (esj, H')). exists esi, esj. 
 apply eq_typ_env with (3:=H'); 
-  [apply intp_fotrm_not_kind|apply intp_fotrm_not_kind|].
+  [apply intp_foterm_not_kind|apply intp_foterm_not_kind|].
 apply deriv_well_typed in Hderiv.
-apply hyp_ok_eq_trm in Hderiv.
+apply hyp_ok_eq_term in Hderiv.
 destruct Hderiv as (Hokx, Hoky).
 apply Equation_embed with (3:=H); rewrite <- intp_hyp_env_const in H |- *;
-  [apply intp_fotrm_sort|apply intp_fotrm_sort]; trivial.
+  [apply intp_foterm_sort|apply intp_foterm_sort]; trivial.
 Qed.
 
 End SN_Theory.
@@ -239,9 +239,9 @@ Module SNT := SN_Theory PresburgerSyn PresburgerSem InterpPresburger.
 Import SNT PresburgerSyn PresburgerSem InterpPresburger.
 
 Lemma SN_Presburger : forall e x y,
-  (exists n, deriv (const_hyp n) (eq_fotrm x y) /\ 
+  (exists n, deriv (const_hyp n) (eq_foterm x y) /\ 
     env_incl e (intp_hyp (const_hyp n))) ->
   (exists esi esj, 
-    eq_typ e (app_esub esi esj (intp_fotrm x)) (app_esub esi esj (intp_fotrm y))).
+    eq_typ e (app_esub esi esj (intp_foterm x)) (app_esub esi esj (intp_foterm y))).
 apply SN_T.
 Qed.
