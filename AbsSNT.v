@@ -8,12 +8,10 @@
 (*****************************************************************************************)
 (*****************************************************************************************)
 
+Require Export GenLemmas.
 Require Import AbsTheoryIntp.
-
 Import AbsTheorySyn AbsTheorySem.
-Import Esub GenLemmas.
-Import SN_CC_Real.
-Import ZF SN SN_CC_Model.
+Import Esub.
 
 (*SN for the abstract theory*)
 Module Abs_SN_Theory (Msyn : TheorySyn) (Msem : TheorySem) (Mintp : TheoryIntp Msyn Msem).

@@ -1,7 +1,4 @@
-Require Import GenLemmas.
-
-Import SN_CC_Real.
-Import ZF SN SN_CC_Model.
+Require Export GenLemmas.
 
 Definition esub_i := {f : val->val | Proper (eq_val ==> eq_val) f}.
 

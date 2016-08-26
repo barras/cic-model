@@ -1,10 +1,6 @@
-Require Import ZF ZFcoc ZFuniv_real.
-Require Import AbsTheorySem.
-Require Import SN_nat.
-
-Import GenLemmas.
-Import SN_CC_Real SN_CC_Model.
-Import Sat SN SN_nat.
+Require Import ZF ZFcoc ZFuniv_real Sat.
+Require Import GenLemmas AbsTheorySem.
+Require Import SN_CC_Real SN_nat.
 
 (*Instantiate the semantic of First Order Theory with Presburger*)
 Module PSemSig <: AbsSemSig.
@@ -43,7 +39,7 @@ Defined.
 Lemma Tprf : forall i j, 
   [int prf_T i, tm prf_T j] \real prod props (fun x => prod x (fun _ => x)).
 intros. simpl int; simpl tm.
-apply prod_intro_lam.
+apply rprod_intro_lam.
  do 2 red; intros. apply lam_ext; [|do 2 red; intros]; trivial.
 
  do 2 red; intros. apply prod_ext; [|do 2 red; intros]; trivial.
@@ -51,7 +47,7 @@ apply prod_intro_lam.
  apply Lc.sn_abs. apply Lc.sn_var.
 
  intros. unfold Lc.subst. simpl Lc.subst_rec.
- apply prod_intro_lam.
+ apply rprod_intro_lam.
   do 2 red; intros; trivial.
 
   do 2 red; intros; reflexivity.
@@ -74,7 +70,7 @@ assert (forall S, inSAT (Lc.App (tm v j) (Lc.Abs (Lc.Ref 0))) S) as HF.
   split; trivial.
    rewrite Real_sort; trivial. apply snSAT_intro; apply Lc.sn_abs; apply Lc.sn_var.
 
- apply SN.prod_elim with (x:=mkProp S) (u:=Lc.Abs (Lc.Ref 0)) in Hv; trivial.
+ apply rprod_elim with (x:=mkProp S) (u:=Lc.Abs (Lc.Ref 0)) in Hv; trivial.
   destruct Hv. rewrite Real_mkProp in H1; trivial.
   unfold inX, mkProp at 2 in H0. rewrite El_def in H0.
   rewrite cc_bot_nop in H0; [|apply singl_intro].
@@ -108,7 +104,7 @@ assert (forall x, x ∈ N ->
 
    apply impredicative_prod; [do 2 red |]; trivial.
 
-apply prod_intro_lam.
+apply rprod_intro_lam.
  do 2 red; intros; apply natrec_morph; [reflexivity|do 3 red; reflexivity|trivial].
  
  do 2 red; reflexivity.
@@ -169,7 +165,7 @@ assert (forall x, x ∈ N ->
 
     apply impredicative_prod; [do 2 red; reflexivity|trivial].
 
-apply prod_intro_lam.
+apply rprod_intro_lam.
  do 2 red; intros; apply natrec_morph; [reflexivity|do 3 red; reflexivity|trivial].
  
  do 2 red; reflexivity.
@@ -251,21 +247,21 @@ assert (forall x, x ∈ N ->
    apply impredicative_prod; [do 2 red |]; trivial.
 
    specialize (inSAT_n k H1); intros H3. destruct H3 as (x1, (H3, _)).
-   apply SN.prod_elim with (x:=k) (u:=x1) in H; [|do 2 red; intros; reflexivity|].
+   apply rprod_elim with (x:=k) (u:=x1) in H; [|do 2 red; intros; reflexivity|].
     destruct H as (H, _); unfold inX in H; trivial.
 
     split; [unfold inX; rewrite El_def,eqNbot|]; trivial.
      rewrite Real_def; auto.
      intros; apply cNAT_morph; trivial.
 
-apply prod_intro_sn; [|do 2 red; reflexivity|apply real_sn in H; trivial|].
+apply rprod_intro_sn; [|do 2 red; reflexivity|apply real_sn in H; trivial|].
  do 2 red; intros; apply natrec_morph; [reflexivity
    |do 3 red; intros; rewrite H3; reflexivity|trivial].
 
  intros. assert (x ∈ N).
   destruct H1 as (H1, _). unfold inX in H1; rewrite El_def,eqNbot in H1; trivial.
 
- apply SN.prod_elim with (x:=x) (u:=u0) in H; [apply H0 in H2|do 2 red; reflexivity|trivial].
+ apply rprod_elim with (x:=x) (u:=u0) in H; [apply H0 in H2|do 2 red; reflexivity|trivial].
   split; [unfold inX|rewrite Real_sort; [apply real_sn in H|]]; trivial.
 Qed.
 
@@ -299,7 +295,7 @@ intros. apply impredicative_prod.
  intros; apply impredicative_prod.
   do 2 red; intros; reflexivity.
 
-  apply ZFuniv_real.prod_elim with (x:=m0) in H1; trivial.
+  apply prod_elim with (x:=m0) in H1; trivial.
    do 2 red; intros; reflexivity.
    
    rewrite El_def,eqNbot; trivial.
@@ -350,17 +346,17 @@ apply prod_intro.
     
      apply impredicative_prod; [do 2 red|]; trivial.
 
-     apply ZFuniv_real.prod_elim with (x:=k) in H2; 
+     apply prod_elim with (x:=k) in H2; 
        [|do 2 red; intros; reflexivity|rewrite El_def]; auto.
 
-  apply ZFuniv_real.prod_elim with (x:=(P3 x0)) in HS; [|do 2 red; intros|trivial].
+  apply prod_elim with (x:=(P3 x0)) in HS; [|do 2 red; intros|trivial].
   2 : apply prod_ext; [|do 2 red; intros]; rewrite H6; reflexivity.
   assert (El (prod (app (P3 x0) (succ n)) (fun _ : X => app (P3 x0) (succ m))) ==
    El (prod (app x0 n) (fun _ : X => app x0 m))).
    apply El_morph; apply prod_ext; [|do 2 red; intros]; rewrite P3_SUCC; trivial; reflexivity.
 
   rewrite H5 in HS; clear H5.
-  apply ZFuniv_real.prod_elim with (x:=x1) in HS; trivial.
+  apply prod_elim with (x:=x1) in HS; trivial.
    do 2 red; intros; reflexivity.
 
 assert (x == (lam (prod (mkTY N cNAT) (fun _ => props)) 
@@ -380,7 +376,7 @@ assert ([lam (prod (mkTY N cNAT) (fun _ : set => props))
 apply real_morph; [trivial| |]; reflexivity.
 
 apply H4. clear H0 H H1 H2 H3 H4.
-apply prod_intro_sn.
+apply rprod_intro_sn.
  do 2 red; intros. apply lam_ext; [rewrite H0; reflexivity|do 2 red; intros].
   apply app_ext; trivial.
    apply app_ext; [reflexivity|].
@@ -391,17 +387,17 @@ apply prod_intro_sn.
 
  apply real_sn in HS; trivial.
 
- intros. apply prod_intro_sn.
+ intros. apply rprod_intro_sn.
   do 2 red; intros. rewrite H1; reflexivity. 
   
   do 2 red; intros. reflexivity.
 
-  apply SN.prod_elim with (3:=H) in HS.
+  apply rprod_elim with (3:=H) in HS.
    apply real_sn in HS; trivial.
 
    do 2 red; intros. apply prod_ext; [|do 2 red; intros]; rewrite H1; reflexivity.
 
-  intros. apply SN.prod_elim with (x:=P3 x0) (u:=u) in HS; [| |apply P3_real; trivial].
+  intros. apply rprod_elim with (x:=P3 x0) (u:=u) in HS; [| |apply P3_real; trivial].
   2 : do 2 red; intros; apply prod_ext; [|do 2 red; intros]; rewrite H2; reflexivity.
    assert ([app x (P3 x0), GenRealSN.Lc.App y u]\real
        prod (app (P3 x0) (succ n)) (fun _ : X => app (P3 x0) (succ m)) ->
@@ -411,7 +407,7 @@ apply prod_intro_sn.
      apply prod_ext; [|do 2 red; intros]; rewrite <- P3_SUCC; trivial; reflexivity.
    
    apply H1 in HS. clear H1.
-   apply SN.prod_elim with (x:=x1) (u:=u0) in HS; [|do 2 red; reflexivity|]; trivial.
+   apply rprod_elim with (x:=x1) (u:=u0) in HS; [|do 2 red; reflexivity|]; trivial.
 Qed.
 
 

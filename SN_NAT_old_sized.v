@@ -6,9 +6,8 @@
 
 Require Import List Bool Models.
 Require SN_CC_Real_old.
-Import ZFgrothendieck.
-Import ZF ZFsum ZFnats ZFrelations ZFord ZFfix.
-Require Import ZFfunext ZFfixrec ZFecc (*ZFuniv_real*) ZFind_nat SATtypes SATnat_old_real.
+Import ZF ZFsum ZFnats ZFrelations ZFord ZFfix ZFgrothendieck.
+Require Import ZFfunext ZFfixrec ZFecc ZFind_nat SATtypes SATnat_old_real.
 
 Import SN_CC_Real_old.
 Import SN_CC_Real_old.SN.
@@ -341,7 +340,7 @@ red; intros.
 destruct tyord_inv with (2:=H0) (3:=H1) as (?,(?,?)); trivial.
 clear H0.
 apply in_int_intro; try discriminate.
-apply prod_intro_sn.
+apply rprod_intro_sn.
  red; intros.
  rewrite H5; reflexivity.
 

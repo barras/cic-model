@@ -10,7 +10,6 @@ Require Import basic Can Sat SATnat SN_CC_Real.
 Require Import TypModels.
 Require Import ZF ZFcoc ZFuniv_real ZFind_natbot.
 Module Lc:=Lambda.
-Import SN_CC_Model SN.
 
 (* Building the realizability on the nats of ZFind_natbot *)
 Module natARG <: SimpleNats.
@@ -85,13 +84,7 @@ Lemma typ_N e : typ e Nat kind.
 red; simpl; intros.
 unfold in_int; simpl.
 split; [discriminate|split; auto with *].
- red.
- exists nil.
- exists Nat; [reflexivity|].
- exists empty.
- red; intros; rewrite ElNat_eq; auto.
-
- apply Lc.sn_K.
+apply Lc.sn_K.
 Qed.
 
 (** Typing rules of constructors *)

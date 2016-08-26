@@ -6,10 +6,10 @@
  *)
 
 Set Implicit Arguments.
-Require Import basic Can Sat SATnat SN_CC_Real.
-Require Import ZF ZFcoc ZFuniv_real ZFnats.
+Require Import basic ZF ZFcoc ZFuniv_real ZFnats.
+Require Import Sat SATnat SN_CC_Real.
 Module Lc:=Lambda.
-Import SN_CC_Model SN.
+Import CC_Real.
 
 (* Building the realizability on the nats of ZFnats *)
 Module natARG <: SimpleNats.
@@ -106,7 +106,7 @@ Qed.
 Lemma sn_SU : Lc.sn SU.
 unfold SU.
 constructor; intros ? h.
-apply nf_norm in h;[contradiction|repeat constructor].
+apply Lc.nf_norm in h;[contradiction|repeat constructor].
 Qed.
 
 
@@ -114,8 +114,8 @@ Lemma typ_S : forall e, typ e Succ (Prod Nat (lift 1 Nat)).
 intros.
 apply typ_common;[exact I|intros i j isval].
 rewrite intProd_eq.
-apply prod_intro_sn.
- red; intros.
+apply rprod_intro_sn.
+ red; red; intros.
  rewrite H0; reflexivity.
 
  red; intros.
@@ -138,18 +138,8 @@ Qed.
 Lemma typ_N : forall e, typ e Nat kind.
 red; red; simpl; intros.
 split;[discriminate|].
-split.
- red.
- exists List.nil.
- exists Nat.
-  reflexivity.
-
-  exists empty.
-  simpl; intros _.
-  unfold SN_CC_Model.inX; rewrite El_def.
-  apply union2_intro1; apply singl_intro.
-
- exact Lc.sn_K.
+split; trivial.
+exact Lc.sn_K.
 Qed.
 
 (** Recursor *)

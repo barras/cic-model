@@ -1,36 +1,9 @@
 Require Import Sat.
 Require Import ZF ZFcoc ZFord ZFgrothendieck.
 Require Import ZFlambda.
+Require Import Models SnModels.
 
 Set Implicit Arguments.
-
-(** * Auxiliary lemmas: *)
-
-Lemma G_CCLam U :
-  grot_univ U ->
-  omega ∈ U ->
-  CCLam ∈ U.
-intros.
-assert (U_singl := G_singl _ H).
-assert (U_N : ZFnats.N ∈ U).
- apply G_N; trivial.
-assert (U_0 : ZFnats.zero ∈ U).
- apply G_inf_nontriv; trivial.
-assert (U_succ : forall n, n ∈ U -> ZFnats.succ n ∈ U).
- intros.
- apply G_union2; auto.
-unfold CCLam.
-unfold Lam.Lambda.
-apply G_TI; trivial.
- do 2 red; intros.
- unfold Lam.LAMf.
- rewrite H1; reflexivity.
-
- intros.
- unfold Lam.LAMf.
- auto 20 using G_union2, G_prodcart.
-Qed.
-Hint Resolve G_CCLam.
 
 (** * Encoding of types *)
 
@@ -81,19 +54,6 @@ apply union_elim in H0; destruct H0.
 apply empty_ax in H1; trivial.
 Qed.
 
-(* Accessing the realizability relation.
-   inSAT t (Real T x), means that t is a realizer of x in type T. It
-   implicitely requires x ∈ El T. 
- *)
-Definition Real T x := sSAT (cc_app (snd T) x) .
-
-Instance Real_morph : Proper (eq_set==>eq_set==>eqSAT) Real.
-do 3 red; intros.
-unfold Real.
-apply sSAT_morph.
-rewrite H; rewrite H0; reflexivity.
-Qed.
-
 Lemma Elt_def : forall X R, Elt (mkTY X R) == X.
 unfold El,mkTY; intros.
 apply fst_def.
@@ -104,21 +64,6 @@ unfold El,Elt,mkTY; intros.
 rewrite fst_def; reflexivity.
 Qed.
 
-Lemma Real_def : forall x X R,
-  (forall x x', x ∈ cc_bot X -> x == x' -> eqSAT (R x) (R x')) ->
-  x ∈ cc_bot X ->
-  eqSAT (Real (mkTY X R) x) (R x).
-intros.
-unfold Real, mkTY.
-rewrite snd_def.
-rewrite cc_beta_eq; auto.
- apply iSAT_id.
-
- do 2 red; intros.
- apply iSAT_morph; auto.
-Qed.
-
-
 Lemma Elt_El x y : x ∈ Elt y -> x ∈ El y.
 intros; apply cc_bot_intro; trivial.
 Qed.
@@ -126,6 +71,7 @@ Lemma empty_El y : empty ∈ El y.
 unfold El; auto.
 Qed.
 Hint Resolve Elt_El empty_El.
+
 
 (** * Universes *)
 
@@ -219,7 +165,6 @@ rewrite sup_ax.
 Qed.
 
 
-
 Lemma sn_sort_intro K T A :
   (forall x x', x ∈ cc_bot T -> x == x' -> eqSAT (A x) (A x')) ->
   T ∈ K -> mkTY T A ∈ El (sn_sort K).
@@ -255,15 +200,6 @@ apply sn_sort_elim_raw in H0; destruct H0 as [?|(U,(A,(?,(?,?))))].
  rewrite H0; auto.
 
  rewrite H0; apply sn_sort_intro; auto.
-Qed.
-
-Lemma Real_sort_sn T K : T ∈ El (sn_sort K) -> eqSAT (Real (sn_sort K) T) snSAT.
-intros.
-unfold sn_sort.
-apply Real_def.
- reflexivity.
-
- unfold sn_sort in H; rewrite El_def in H; trivial.
 Qed.
 
 Lemma sn_sort_in_type K1 K2 :
@@ -310,7 +246,9 @@ apply sn_sort_elim in T_in_K; destruct T_in_K.
  apply G_union2; auto.
 Qed.
 
-Definition sn_props := sn_sort props.
+(** Universe of propositions *)
+
+Notation sn_props := (sn_sort props).
 
 Lemma El_in_props P :
   P ∈ El sn_props ->
@@ -319,19 +257,13 @@ intros.
 apply cc_bot_prop.
 apply sn_sort_elim in H; destruct H; trivial.
 rewrite H.
+rewrite Elt_empty.
 apply power_intro; intros.
-apply union_elim in H0; destruct H0.
-apply subset_elim1 in H1.
-apply union_elim in H1; destruct H1.
-apply empty_ax in H2; contradiction.
+apply empty_ax in H0; contradiction.
 Qed.
 
 Definition mkProp S := mkTY (singl empty) (fun _ => S).
-Lemma Real_mkProp S x : x == empty -> eqSAT (Real (mkProp S) x) S.
-intros.
-unfold mkProp; rewrite Real_def; auto with *.
-rewrite H; auto.
-Qed.
+
 Lemma El_mkProp : forall S, El (mkProp S) == singl empty.
 intros.
 apply singl_ext;  auto.
@@ -340,6 +272,7 @@ unfold mkProp in H; rewrite El_def in H.
 apply cc_bot_ax in H; destruct H; trivial.
 apply singl_elim in H; trivial.
 Qed.
+
 Lemma mkProp_intro S : mkProp S ∈ El sn_props.
 apply sn_sort_intro.
  reflexivity.
@@ -354,26 +287,78 @@ Lemma El_props_true P :
   P ∈ El sn_props -> El P == singl empty.
 intros.
 apply sn_sort_elim in H.
+apply singl_ext; auto.
+intros.
+apply cc_bot_ax in H0; destruct H0; trivial.
 destruct H.
- rewrite H.
- apply eq_set_ax.
- intros.
- unfold El; rewrite cc_bot_ax.
- split; intros.
-  apply singl_intro_eq; destruct H0; trivial.
-  rewrite Elt_empty in H0; apply  empty_ax  in H0; contradiction.
+ rewrite H in H0.
+ rewrite Elt_empty in H0.
+ apply empty_ax in H0; contradiction.
 
-  apply singl_elim in H0; auto.
-
- unfold El.
- apply singl_ext; auto.
- intros.
- apply cc_bot_ax in H0; destruct H0; auto.
  apply props_proof_irrelevance with (1:=H); trivial.
 Qed.
 
 
-(** * Dependent product *)
+
+(** * Now we build an instance of the abstract SN model *)
+
+Module CC_Real <: CC_SN_Model.
+
+Definition X := set.
+Definition inX x y := x ∈ El y.
+Definition eqX := eq_set.
+Definition eqX_equiv := eq_set_equiv.
+Definition in_ext : Proper (eq_set ==> eq_set ==> iff) inX.
+apply morph_impl_iff2; auto with *.
+unfold inX; do 4 red; intros.
+rewrite H,H0 in H1; trivial.
+Qed.
+
+(* Accessing the realizability relation.
+   inSAT t (Real T x), means that t is a realizer of x in type T. It
+   implicitely requires x ∈ El T. 
+ *)
+Definition Real T x := sSAT (cc_app (snd T) x) .
+
+Instance Real_morph : Proper (eq_set==>eq_set==>eqSAT) Real.
+do 3 red; intros.
+unfold Real.
+apply sSAT_morph.
+rewrite H; rewrite H0; reflexivity.
+Qed.
+
+Lemma Real_def : forall x X R,
+  (forall x x', x ∈ cc_bot X -> x == x' -> eqSAT (R x) (R x')) ->
+  x ∈ cc_bot X ->
+  eqSAT (Real (mkTY X R) x) (R x).
+intros.
+unfold Real, mkTY.
+rewrite snd_def.
+rewrite cc_beta_eq; auto.
+ apply iSAT_id.
+
+ do 2 red; intros.
+ apply iSAT_morph; auto.
+Qed.
+
+(** Sorts *)
+
+Lemma Real_sort_sn T K : T ∈ El (sn_sort K) -> eqSAT (Real (sn_sort K) T) snSAT.
+intros.
+unfold sn_sort.
+apply Real_def.
+ reflexivity.
+
+ unfold sn_sort in H; rewrite El_def in H; trivial.
+Qed.
+
+Lemma Real_mkProp S x : x == empty -> eqSAT (Real (mkProp S) x) S.
+intros.
+unfold mkProp; rewrite Real_def; auto with *.
+rewrite H; auto.
+Qed.
+
+(** Dependent product *)
 
 (** The realizability relation of a dependent product of domain type A
    and co-domain family of types F for a  function f:
@@ -494,3 +479,74 @@ apply sn_sort_intro.
  specialize H0 with (1:=H1).
  apply El_in_props; trivial.
 Qed.
+
+
+Definition eq_fun dom f g := (* ZF.eq_fun (El dom) f g. *)
+  forall x x', x ∈ El dom -> x == x' -> f x == g x'.
+
+Definition props := sn_props.
+
+Lemma lam_ext :
+  forall x1 x2 f1 f2,
+  x1 == x2 ->
+  eq_fun x1 f1 f2 ->
+  lam x1 f1 == lam x2 f2.
+intros.
+apply cc_lam_ext; trivial.
+apply El_morph; trivial.
+Qed.
+
+Definition app_ext := cc_app_morph.
+
+Lemma prod_ext :
+  forall x1 x2 f1 f2,
+  x1 == x2 ->
+  eq_fun x1 f1 f2 ->
+  prod x1 f1 == prod x2 f2.
+unfold prod, eqX, mkTY; intros.
+apply couple_morph.
+ apply cc_prod_ext; intros.
+  apply El_morph; trivial.
+  red; intros.
+  apply El_morph; auto.
+
+ apply cc_lam_ext.
+  apply cc_bot_morph.
+  apply cc_prod_ext; intros.
+   apply El_morph; trivial.
+   red; intros.
+   apply El_morph; auto.
+
+  red; intros.
+  apply iSAT_morph.
+  unfold piSAT.
+  apply piSAT0_morph; auto with *.
+   red; intros; rewrite H; reflexivity.
+
+   intros; rewrite H; reflexivity.
+
+   intros; apply Real_morph; auto with *.
+   rewrite H2; reflexivity.
+Qed.
+
+Lemma beta_eq:
+  forall dom F x,
+  eq_fun dom F F ->
+  inX x dom ->
+  app (lam dom F) x == F x.
+unfold app, lam, inX, eqX, El; intros.
+apply cc_beta_eq; trivial.
+Qed.
+
+  Lemma Real_sort P : inX P props -> eqSAT (Real props P) snSAT.
+intros.
+apply Real_sort_sn; trivial.
+Qed.
+
+  Definition daimon := empty.
+  Lemma daimon_false : inX daimon (prod props (fun P => P)).
+red; auto.
+Qed.
+
+End CC_Real.
+Export CC_Real.

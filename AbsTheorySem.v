@@ -4,12 +4,7 @@
 (************************************************************************************)
 (************************************************************************************)
 
-Require Import List.
-Require Import Esub.
-
-Import GenLemmas.
-Import SN_CC_Real.
-Import ZF SN SN_CC_Model.
+Require Import GenLemmas Esub.
 
 (************************************************************************************)
 (*Abstract signature of semantic*)
@@ -68,9 +63,9 @@ destruct Ht as (_, Ht).
 
 apply Hxy; clear Hxy Hclsd e Hx Hy j' Hok' Hok.
 unfold EQ_term in Ht. simpl int in Ht.
-apply SN.prod_elim with (x:=int P i) (u:=tm P j) in Ht; [
+apply rprod_elim with (x:=int P i) (u:=tm P j) in Ht; [
   |do 2 red; intros; apply prod_ext; [|do 2 red; intros; rewrite H2]; rewrite H0; reflexivity|trivial].
-apply SN.prod_elim with (x:=int u i) (u:=tm u j) in Ht.
+apply rprod_elim with (x:=int u i) (u:=tm u j) in Ht.
  exists (App (App t P) u). revert Ht; apply real_morph; simpl; [reflexivity| |reflexivity].
   rewrite split_lift. do 2 rewrite int_cons_lift_eq; reflexivity.
 

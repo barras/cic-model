@@ -235,6 +235,14 @@ red; intros.
 apply interSAT_elim with (1:=H).
 Qed.
 
+Lemma interSAT_ax : forall A F u,
+    A ->
+    ((forall x:A, inSAT u (F x)) <->
+     inSAT u (interSAT F)).
+split; intros.
+ apply interSAT_intro; auto.
+ apply interSAT_elim; trivial.
+Qed.
 
   Lemma interSAT_mono A (F G:A->SAT):
     (forall x, inclSAT (F x) (G x)) ->

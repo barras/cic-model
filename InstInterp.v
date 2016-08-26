@@ -1,12 +1,7 @@
+Require Import GenLemmas ModelTheory.
 Require Import InstSyn.
 Require Import InstSem.
-
-Import ModelTheory.
-Import GenLemmas.
-Import SN_CC_Real SN_CC_Model.
-Import ZF SN.
-Import List.
-
+Import ZF CC_Real SN_CC_Real.
 
 Module InterpPresburger <: InterpTheory PresburgerSyn PresburgerSem.
 

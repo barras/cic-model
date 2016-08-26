@@ -1,10 +1,8 @@
 Require Export basic.
 Require Import Sat.
 Require Import ZF ZFcoc ZFuniv_real ZFecc ZFlambda.
-
-Require SN_CC_Real.
-Import SN_CC_Real.SN_CC_Model SN_CC_Real.SN.
-Export SN_CC_Real.
+Require Export SN_CC_Real.
+Import CC_Real.
 
 (** Strong normalization proof of the Extended Calculus of Constructions.
     It is an extension of SN_CC_Real, so it does support strong eliminations.
@@ -38,7 +36,7 @@ red; intros.
 destruct H0.
 unfold int, cst, iint.
 simpl int in H0,H1.
-unfold props,sn_props in H0,H1.
+unfold props in H0,H1.
 rewrite Real_sort_sn in H1; trivial.
 apply and_split; intros.
  revert H0; apply sort_incl.
@@ -58,7 +56,7 @@ apply and_split; intros.
  apply ecc_in1.
 
  simpl.
- unfold SN_CC_Model.Real; rewrite Real_sort_sn; trivial.
+ rewrite Real_sort_sn; trivial.
  apply snSAT_intro.
  apply Lambda.sn_K.
 Qed.
@@ -72,7 +70,7 @@ apply and_split; intros.
  apply ecc_in2.
 
  simpl int; simpl tm.
- unfold SN_CC_Model.Real; rewrite Real_sort_sn; trivial.
+ rewrite Real_sort_sn; trivial.
  apply snSAT_intro.
  apply Lambda.sn_K.
 Qed.
@@ -90,7 +88,7 @@ apply and_split; intros.
  transitivity (ecc 0); red; intros; [apply ecc_incl_prop|apply ecc_incl]; trivial.
 
  revert H2; simpl int.
- unfold SN_CC_Model.Real, props, sn_props.
+ unfold props.
  rewrite Real_sort_sn; trivial.
  rewrite Real_sort_sn; trivial.
 Qed.
@@ -108,7 +106,7 @@ apply and_split; intros.
  red; intros; apply ecc_incl; trivial.
 
  revert H2; simpl int.
- unfold SN_CC_Model.Real, props, sn_props.
+ unfold props.
  rewrite Real_sort_sn; trivial.
  rewrite Real_sort_sn; trivial.
 Qed.
@@ -145,7 +143,7 @@ apply and_split; intros.
     intros in_U.
   apply H0 in in_U.
   destruct in_U  as (_,(in_U,satU)).
-  unfold SN_CC_Model.Real in *; simpl int in *.
+  simpl int in *.
   rewrite Real_sort_sn in H3,satU|-*; auto.
   rewrite tm_subst_cons in satU.
   apply sat_sn in satU.

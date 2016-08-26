@@ -1,12 +1,8 @@
-Require Import PSyn.
-Require Import PSem.
-Require Import AbsTheoryIntp.
+Require Import GenLemmas AbsTheoryIntp.
+Require Import PSyn PSem.
+Import ZF ZFuniv_real.
+Import SN_CC_Real SN_nat.
 
-Import SN_nat.
-Import GenLemmas.
-Import SN_CC_Real SN_CC_Model.
-Import ZF ZFuniv_real SN.
-Import List.
 
 (*******************************************************************)
 (*Interpret Presburger signature*)

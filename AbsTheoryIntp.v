@@ -4,14 +4,10 @@
 (************************************************************************************)
 (************************************************************************************)
 
+Require Export GenLemmas.
 Require Import AbsTheorySyn.
 Require Import AbsTheorySem.
 
-Import Compare_dec.
-Import List.
-Import GenLemmas.
-Import SN_CC_Real.
-Import SN SN_CC_Model.
 
 (************************************************************************************)
 (*Abstract interpretation of signature*)

@@ -1,5 +1,4 @@
 Require Import ModelTheory.
-Import Compare_dec List.
 
 (*Instantiate the syntax of First Order Theory with Presburger*)
 Module PresburgerSyn <: TheorySyn.

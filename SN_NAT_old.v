@@ -5,10 +5,10 @@
  *)
 
 Set Implicit Arguments.
-Require Import basic Can Sat SATnat_old SN_CC_Real_old.
-Require Import ZF ZFcoc ZFuniv_real ZFind_nat.
+Require Import basic Sat SATnat_old.
+Require Import ZF ZFcoc ZFuniv_real ZFind_nat SN_CC_Real_old.
+Import CCSN SN.
 Module Lc:=Lambda.
-Import SN CCSN.
 Require Import TypModels.
 
 (** * Nat and its constructors *)
@@ -84,7 +84,7 @@ Qed.
 Lemma sn_SU : Lc.sn SU.
 unfold SU.
 constructor; intros ? h.
-apply nf_norm in h;[contradiction|repeat constructor].
+apply Lc.nf_norm in h;[contradiction|repeat constructor].
 Qed.
 
 
@@ -93,7 +93,7 @@ intros.
 apply typ_common;[exact I|intros i j isval].
 rewrite intProd_eq.
 change (int Succ i) with (lam (int Nat i) SUCC).
-apply prod_intro_sn.
+apply rprod_intro_sn.
  red; intros.
  rewrite H0; reflexivity.
 

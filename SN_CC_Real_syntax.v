@@ -2,7 +2,7 @@
 (** The semantic construction *)
 
 Require Import basic SN_CC_Real.
-Import SN_CC_Model SN.
+Import ZFuniv_real CC_Real.
 
 (***********************************************************************************************)
 (** * Strong Normalization on actual syntax *)

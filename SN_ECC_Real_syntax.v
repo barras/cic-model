@@ -1,6 +1,5 @@
 Require Lambda.
 Require Import ZF ZFuniv_real Sat SN_ECC_Real.
-Import SN SN_CC_Model.
 
 (** * Mapping from syntactic entities to their semantic counterparts. *)
 

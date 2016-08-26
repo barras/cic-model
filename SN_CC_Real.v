@@ -3,6 +3,8 @@ Require Import Sat.
 Require Import ZF ZFcoc ZFuniv_real.
 Require Import ZFlambda.
 Require Import Models SnModels.
+Require GenRealSN.
+Set Implicit Arguments.
 
 (** Strong normalization proof of the Calculus of Constructions.
     It is based on GenRealSN, so it does support strong eliminations.
@@ -11,126 +13,10 @@ Require Import Models SnModels.
     functions.
  *)
 
-Set Implicit Arguments.
-
-(***********************************************************************)
-(** First the model requirements *)
-
-Module SN_CC_Model <: CC_SN_Model.
-
-Definition X:=set.
-Definition inX x y := x ∈ El y.
-Definition eqX := eq_set.
-Lemma eqX_equiv : Equivalence eqX.
-Proof eq_set_equiv.
-
-Lemma in_ext: Proper (eqX ==> eqX ==> iff) inX.
-do 3 red; intros.
-unfold inX, El, eqX in *.
-rewrite H; rewrite H0; reflexivity.
-Qed.
-
-Definition eq_fun (x:X) (f1 f2:X->X) :=
-  forall y1 y2, inX y1 x -> y1 == y2 -> f1 y1 == f2 y2.
-
-
-Definition lam := lam.
-Definition app := app.
-
-Lemma lam_ext :
-  forall x1 x2 f1 f2,
-  x1 == x2 ->
-  eq_fun x1 f1 f2 ->
-  lam x1 f1 == lam x2 f2.
-intros.
-apply cc_lam_ext; trivial.
-apply El_morph; trivial.
-Qed.
-
-Definition app_ext := cc_app_morph.
-
-Lemma prod_ext :
-  forall x1 x2 f1 f2,
-  x1 == x2 ->
-  eq_fun x1 f1 f2 ->
-  prod x1 f1 == prod x2 f2.
-unfold prod, eqX, mkTY; intros.
-apply couple_morph.
- apply cc_prod_ext; intros.
-  apply El_morph; trivial.
-  red; intros.
-  apply El_morph; auto.
-
- apply cc_lam_ext.
-  apply cc_bot_morph.
-  apply cc_prod_ext; intros.
-   apply El_morph; trivial.
-   red; intros.
-   apply El_morph; auto.
-
-  red; intros.
-  apply iSAT_morph.
-  unfold piSAT.
-  apply piSAT0_morph; auto with *.
-   red; intros; rewrite H; reflexivity.
-
-   intros; rewrite H; reflexivity.
-
-   intros; apply Real_morph; auto with *.
-   rewrite H2; reflexivity.
-Qed.
-
-Definition prod_intro := prod_intro.
-Definition prod_elim := prod_elim.
-Definition prod := prod.
-Definition props := sn_props.
-Definition impredicative_prod := impredicative_prod.
-
-Lemma beta_eq:
-  forall dom F x,
-  eq_fun dom F F ->
-  inX x dom ->
-  app (lam dom F) x == F x.
-unfold app, lam, inX, eqX, El; intros.
-apply cc_beta_eq; trivial.
-Qed.
-
-(***********************************************************************)
-(** Building the SN addon *)
-
-  Definition Real : X -> X -> SAT := Real.
-
-  Lemma Real_morph : Proper (eqX ==> eqX ==> eqSAT) Real.
-Proof Real_morph.
-
-  Lemma Real_sort P : inX P props -> eqSAT (Real props P) snSAT.
-intros.
-apply Real_sort_sn; trivial.
-Qed.
-
-  Lemma Real_prod : forall dom f F,
-    eq_fun dom F F ->
-    inX f (prod dom F) ->
-    eqSAT (Real (prod dom F) f) (piSAT dom F (app f)).
-Proof Real_prod.
-
-  Definition daimon := empty.
-
-  Lemma daimon_false : inX daimon (prod props (fun P => P)).
-red; auto.
-Qed.
-
-End SN_CC_Model.
-Import SN_CC_Model.
-
-(***********************************************************************)
-(*
-----
-*)
-
-Require GenRealSN.
-Module SN := GenRealSN.MakeModel SN_CC_Model.
-Import SN.
+Module SN := GenRealSN.MakeModel CC_Real.
+Export SN.
+Hint Unfold inX.
+Existing Instance in_ext.
 
 (** Derived properties *)
 
@@ -193,6 +79,12 @@ rewrite Real_int_prod.
  symmetry; apply El_morph; apply int_cons_lift_eq.
 Qed.
 
+Lemma kind_ok_trivial T : kind_ok T.
+exists nil.
+exists T; simpl; auto with *.
+exists empty; auto with *.
+Qed.
+Hint Resolve kind_ok_trivial.
 
 (** ** Extendability *)
 Definition cst (x:set) : term.
@@ -211,13 +103,8 @@ Lemma mkSET_kind e x :
   typ e (mkSET x) kind.
 red; intros.
 split;[discriminate|].
-split;[|apply Lambda.sn_K].
-exists nil; exists (mkSET x).
- reflexivity.
-
- exists empty; simpl; intros _.
- apply union2_intro1.
- apply singl_intro.
+split; trivial.
+apply Lambda.sn_K.
 Qed.
 
 Lemma cst_typ e x y :
@@ -231,7 +118,7 @@ apply and_split; intros.
  apply union2_intro2; trivial.
 
  simpl.
- unfold SN_CC_Model.Real; rewrite Real_def.
+ rewrite Real_def.
   apply Lambda.sn_K.
 
   reflexivity.
@@ -340,13 +227,13 @@ assert (forall S, inSAT (Lc.App prf (Lc.Abs (Lc.Ref 0))) S).
   apply and_split; intros.
    red; apply sn_sort_intro; auto with *.
 
-   unfold props, sn_props.
+   unfold CC_Real.props.
    rewrite Real_sort_sn; trivial.
    apply snSAT_intro; apply Lc.sn_abs; apply Lc.sn_var.
- assert (H2 := @prod_elim props (int M (V.nil props)) (mkTY (singl empty) (fun _ => S))
+ assert (H2 := @rprod_elim props (int M (V.nil props)) (mkTY (singl empty) (fun _ => S))
                   (fun P=>P) prf (Lc.Abs (Lc.Ref 0))).
  destruct H2; trivial.
-  red; auto.
+  do 2 red; auto.
 
   split; trivial.
 

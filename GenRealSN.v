@@ -64,7 +64,7 @@ apply H; trivial.
 Qed.
 *)
 (* Works even when dom is empty: *)
-Lemma prod_intro_sn : forall dom f F m,
+Lemma rprod_intro_sn : forall dom f F m,
   eq_fun dom f f ->
   eq_fun dom F F ->
   Lc.sn m ->
@@ -84,7 +84,7 @@ rewrite beta_eq; trivial.
 apply H2; auto.
 Qed.
 
-Lemma prod_intro_lam : forall dom f F m,
+Lemma rprod_intro_lam : forall dom f F m,
   eq_fun dom f f ->
   eq_fun dom F F ->
   Lc.sn m ->
@@ -92,7 +92,7 @@ Lemma prod_intro_lam : forall dom f F m,
    [f x, Lc.subst u m] \real F x) ->
   [lam dom f, Lc.Abs m] \real prod dom F.
 intros.
-apply prod_intro_sn; intros; trivial.
+apply rprod_intro_sn; intros; trivial.
  apply Lc.sn_abs; trivial.
 
  destruct H2 with (1:=H3).
@@ -102,7 +102,7 @@ apply prod_intro_sn; intros; trivial.
  apply sat_sn in H6; auto.
 Qed.
 
-Lemma prod_elim : forall dom f x F t u,
+Lemma rprod_elim : forall dom f x F t u,
   eq_fun dom F F ->
   [f,t] \real prod dom F ->
   [x,u] \real dom ->
@@ -384,7 +384,7 @@ destruct H.
  destruct H0 as (_,mem); simpl in *.
  exists (app daimon (int T i)).
  apply real_daimon with (Lc.App SatSet.daimon (tm T j)).
- apply prod_elim with (dom:=props) (F:=fun P => P); trivial.
+ apply rprod_elim with (dom:=props) (F:=fun P => P); trivial.
   red; intros; trivial.
 
   split; [apply daimon_false|apply varSAT].
@@ -658,7 +658,7 @@ specialize (ty_u _ _ is_val).
 apply in_int_not_kind in ty_v; trivial.
 apply in_int_not_kind in ty_u; try discriminate.
 simpl in *.
-apply prod_elim with (x:=int v i) (u:=tm v j) in ty_u; trivial.
+apply rprod_elim with (x:=int v i) (u:=tm v j) in ty_u; trivial.
  apply in_int_intro; simpl; trivial; try discriminate.
   destruct Ur as [Ur|]; simpl; try discriminate; trivial.
 
@@ -676,7 +676,7 @@ Lemma prod_intro2 : forall dom f F t m,
   (forall x u, [x, u] \real dom -> [f x, Lc.subst u m] \real F x) ->
   [lam dom f, CAbs t m] \real prod dom F.
 intros.
-apply prod_intro_lam in H3; trivial.
+apply rprod_intro_lam in H3; trivial.
 unfold CAbs; apply real_exp_K; trivial.
 (* *)
 destruct H2.
@@ -939,7 +939,7 @@ assert (eqx : x == lam (int U2 i) (app x)).
   red; intros.
   rewrite H0; reflexivity.
 rewrite eqx.
-apply prod_intro_sn.
+apply rprod_intro_sn.
  red; intros; apply app_ext; auto with *.
 
  red; intros.
@@ -952,7 +952,7 @@ apply prod_intro_sn.
   apply vcons_add_var; trivial.
   rewrite (eqU _ _ is_val); trivial.
 
-  apply prod_elim with (2:=in1).
+  apply rprod_elim with (2:=in1).
    red; intros.
    rewrite H1; auto with *.
 

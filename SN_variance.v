@@ -2,7 +2,7 @@ Require SN_ECC_Real.
 Import ZF ZFsum ZFnats ZFrelations ZFord ZFfix.
 Require Import ZFfunext ZFcoc ZFuniv_real.
 Import Sat.
-Import SN_CC_Real.SN_CC_Model SN_CC_Real.SN SN_ECC_Real.
+Import SN_ECC_Real.
 
 (********************************************************************************)
 (** Occurrences *)

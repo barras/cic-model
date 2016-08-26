@@ -4,34 +4,6 @@ Require Import ZFlambda.
 
 Set Implicit Arguments.
 
-(** * Auxiliary lemmas: *)
-
-Lemma G_CCLam U :
-  grot_univ U ->
-  omega ∈ U ->
-  CCLam ∈ U.
-intros.
-assert (U_singl := G_singl _ H).
-assert (U_N : ZFnats.N ∈ U).
- apply G_N; trivial.
-assert (U_0 : ZFnats.zero ∈ U).
- apply G_inf_nontriv; trivial.
-assert (U_succ : forall n, n ∈ U -> ZFnats.succ n ∈ U).
- intros.
- apply G_union2; auto.
-unfold CCLam.
-unfold Lam.Lambda.
-apply G_TI; trivial.
- do 2 red; intros.
- unfold Lam.LAMf.
- rewrite H1; reflexivity.
-
- intros.
- unfold Lam.LAMf.
- auto 20 using G_union2, G_prodcart.
-Qed.
-Hint Resolve G_CCLam.
-
 (** * Encoding of types *)
 
 Definition mkTY x S := couple x (iSAT S).

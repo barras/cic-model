@@ -1,9 +1,6 @@
-Require Import ZF ZFnats ZFord ZFcoc ZFuniv_real.
+Require Import ZF ZFnats ZFord ZFcoc.
 Require Import Sat.
-
-Require Import SN_ECC_Real.
-Import SN_CC_Real.SN_CC_Model. (* The abstract model instance *)
-Import SN_CC_Real.SN.          (* The generic model construction *)
+Require Import ZFuniv_real SN_ECC_Real.
 
 (** Typing rules for ordinals
 *)
@@ -11,7 +8,7 @@ Import SN_CC_Real.SN.          (* The generic model construction *)
 (** * Ordinals *)
 
 Definition Ordt (o:set) : term :=
-  cst (mkTY o (fun _ => snSAT)) Lc.K (fun _ _ => eq_refl) (fun _ _ _ => eq_refl).
+  SN.T.cst (mkTY o (fun _ => snSAT)) Lc.K (fun _ _ => eq_refl) (fun _ _ _ => eq_refl).
 
 Definition typ_ord_kind : forall e o, typ e (Ordt o) kind.
 red; simpl; intros.

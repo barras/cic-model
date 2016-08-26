@@ -9,7 +9,7 @@ Import ZFgrothendieck.
 Import ZF ZFsum ZFnats ZFrelations ZFord ZFfix.
 Require Import ZFfunext ZFfixrec ZFcoc ZFecc ZFind_natbot SATtypes SATnat_real.
 
-Import SN_CC_Real.SN_CC_Model SN_CC_Real.SN SN_ECC_Real ZFuniv_real.
+Import ZFuniv_real SN_ECC_Real.
 Opaque Real.
 Import Sat Sat.SatSet.
 
@@ -502,7 +502,7 @@ apply and_split; intros.
     simpl.
     rewrite int_lift_eq.
     apply cc_app_morph; [reflexivity|].
-    fold SN_CC_Model.lam; rewrite beta_eq; auto with *.
+    rewrite beta_eq; auto with *.
      red; intros; apply inr_morph; trivial.
 
      red; rewrite El_def.     

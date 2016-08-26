@@ -12,7 +12,8 @@ Require Import ZFlambda.
 
 Set Implicit Arguments.
 
-Require Import Models.
+Require Import Models SnModels SN_CC_Real.
+(*
 Module SN_CC_Model <: CC_Model.
 
 Definition X:=set.
@@ -120,19 +121,20 @@ Qed.
 
 End SN_CC_Model.
 Import SN_CC_Model.
-
+*)
 
 (***********************************************************************)
 (*
 ----
 *)
 
-Require GenRealSN.
+(*Require GenRealSN.
 Module SN := GenRealSN.MakeModel SN_CC_Model.
 Import SN.
+*)
 
 (** Derived properties *)
-
+(*
 Lemma El_int_prod U V i :
   El (int (Prod U V) i) == cc_prod (El (int U i)) (fun x => El (int V (V.cons x i))).
 simpl.
@@ -259,7 +261,7 @@ apply H in H0.
 simpl in H0.
 apply couple_injection in H0; destruct H0; trivial.
 Qed.
-
+*)
 (** * Predicative universes: inference rules *)
 
 Definition type (n:nat) : term := cst (sn_sort (ecc (S n))).
@@ -283,7 +285,7 @@ red; intros.
 destruct H0.
 unfold int, cst, iint.
 simpl int in H0,H1.
-unfold props,sn_props in H0,H1.
+unfold props in H0,H1.
 rewrite Real_sort_sn in H1; trivial.
 apply and_split; intros.
  revert H0; apply sort_incl.
@@ -303,7 +305,7 @@ apply and_split; intros.
  apply ecc_in1.
 
  simpl.
- unfold SN_CC_Model.Real; rewrite Real_sort_sn; trivial.
+ rewrite Real_sort_sn; trivial.
  apply snSAT_intro.
  apply Lambda.sn_K.
 Qed.
@@ -317,7 +319,7 @@ apply and_split; intros.
  apply ecc_in2.
 
  simpl int; simpl tm.
- unfold SN_CC_Model.Real; rewrite Real_sort_sn; trivial.
+ rewrite Real_sort_sn; trivial.
  apply snSAT_intro.
  apply Lambda.sn_K.
 Qed.
@@ -335,7 +337,7 @@ apply and_split; intros.
  transitivity (ecc 0); red; intros; [apply ecc_incl_prop|apply ecc_incl]; trivial.
 
  revert H2; simpl int.
- unfold SN_CC_Model.Real, props, sn_props.
+ unfold props.
  rewrite Real_sort_sn; trivial.
  rewrite Real_sort_sn; trivial.
 Qed.
@@ -353,7 +355,7 @@ apply and_split; intros.
  red; intros; apply ecc_incl; trivial.
 
  revert H2; simpl int.
- unfold SN_CC_Model.Real, props, sn_props.
+ unfold props.
  rewrite Real_sort_sn; trivial.
  rewrite Real_sort_sn; trivial.
 Qed.
@@ -373,9 +375,6 @@ Definition sub_typ_covariant : forall e U1 U2 V1 V2,
   sub_typ e (Prod U1 V1) (Prod U2 V2).
 intros.
 apply sub_typ_covariant; trivial.
-unfold eqX, inX; intros.
-rewrite El_prod in H3; trivial.
-apply cc_eta_eq in H3; trivial.
 Qed.
 
 Lemma typ_predicative_prod e T U n :
@@ -402,7 +401,7 @@ apply and_split; intros.
     intros in_U.
   apply H0 in in_U.
   destruct in_U  as (_,(in_U,satU)).
-  unfold SN_CC_Model.Real in *; simpl int in *.
+  simpl int in *.
   rewrite Real_sort_sn in H3,satU|-*; auto.
   rewrite tm_subst_cons in satU.
   apply sat_sn in satU.

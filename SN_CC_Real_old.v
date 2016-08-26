@@ -395,7 +395,7 @@ assert (forall S, inSAT (Lc.App prf (Lc.Abs (Lc.Ref 0))) S).
   rewrite Real_sort; auto.
   apply snSAT_intro.
   apply Lc.sn_abs; auto.
- assert (H2 := @prod_elim props (int M (V.nil props)) (mkProp S) (fun P=>P) prf (Lc.Abs (Lc.Ref 0))).
+ assert (H2 := @rprod_elim props (int M (V.nil props)) (mkProp S) (fun P=>P) prf (Lc.Abs (Lc.Ref 0))).
  destruct H2; trivial.
   red; auto.
 

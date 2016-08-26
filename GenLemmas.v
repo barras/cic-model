@@ -1,11 +1,5 @@
 (*This files are the defintions and lemmas about general SN model*)
-
-
-Require Import SN_CC_Real.
-
-Import ZF SN_CC_Model SN.
-Import List.
-Existing Instance in_ext.
+Require Export basic ZF SN_CC_Real ZFuniv_real.
 
 Reserved Notation "[ x , t ] \real A" (at level 60).
 

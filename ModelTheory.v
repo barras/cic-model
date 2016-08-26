@@ -1,6 +1,4 @@
-Require Import List.
-Require Import Compare_dec.
-Require Import Omega.
+Require Export basic.
 
 (******************************************************************************************)
 (*It is the syntax model of the theory*)
@@ -132,8 +130,7 @@ End TheorySyn.
 
 Require Import GenLemmas.
 
-Import SN_CC_Real.
-Import ZF SN SN_CC_Model.
+Import ZFuniv_real SN_CC_Real.
 
 
 (************************************************************************************)

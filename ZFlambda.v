@@ -1,6 +1,6 @@
 Require Import Setoid Compare_dec Wf_nat.
 Require Import Lambda.
-Require Import ZF ZFpairs ZFnats ZFord.
+Require Import ZF ZFpairs ZFnats ZFord ZFgrothendieck.
 Require Import Sat.
 
 (** * The set of lambda-terms with constants *)
@@ -380,16 +380,6 @@ destruct t; destruct u; simpl;
  rewrite (IH _ _ H0); rewrite (IH _ _ H1); trivial.
 Qed.
 
-
-Lemma interSAT_ax : forall A F u,
-    A ->
-    ((forall x:A, inSAT u (F x)) <->
-     inSAT u (interSAT F)).
-split; intros.
- apply interSAT_intro; auto.
- apply interSAT_elim; trivial.
-Qed.
-
 (** Embedding saturated sets in a set *)
 Definition iSAT S :=
   subset CCLam (fun x => exists2 t, inSAT t S & x == iLAM t).
@@ -490,5 +480,28 @@ rewrite repl_ax.
  rewrite H1; rewrite H2; reflexivity.
 Qed.
 
+Lemma G_CCLam U :
+  grot_univ U ->
+  omega ∈ U ->
+  CCLam ∈ U.
+intros.
+assert (U_singl := G_singl _ H).
+assert (U_N : ZFnats.N ∈ U).
+ apply G_N; trivial.
+assert (U_0 : ZFnats.zero ∈ U).
+ apply G_inf_nontriv; trivial.
+assert (U_succ : forall n, n ∈ U -> ZFnats.succ n ∈ U).
+ intros.
+ apply G_union2; auto.
+unfold CCLam.
+unfold Lam.Lambda.
+apply G_TI; trivial.
+ do 2 red; intros.
+ unfold Lam.LAMf.
+ rewrite H1; reflexivity.
 
- 
+ intros.
+ unfold Lam.LAMf.
+ auto 20 using G_union2, G_prodcart.
+Qed.
+Hint Resolve G_CCLam.
