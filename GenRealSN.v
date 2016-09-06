@@ -286,6 +286,21 @@ split; trivial.
 apply varSAT.
 Qed.
 
+Lemma val_ok_shift1 e i j T :
+  val_ok (T::e) i j ->
+  val_ok e (V.shift 1 i) (I.shift 1 j).
+unfold val_ok; intros.
+destruct (H (S n) _ H0).
+split;[discriminate|].
+destruct T0 as [|T0]; simpl in *.
+ rewrite V.lams0 in H2|-*.
+ trivial.
+
+ destruct H2.
+ split; trivial.
+ rewrite kind_ok_lift with (k:=0).
+ rewrite red_lift_ref; simpl; trivial.
+Qed.
 
 (** * Judgements *)
 
@@ -334,6 +349,12 @@ unfold sub_typ; split; simpl; intros.
 
  rewrite H in H3.
  rewrite H0; eauto.
+Qed.
+
+Lemma eq_term_eq_typ e M M' :
+  eq_term M M' -> eq_typ e M M'.
+red; simpl; intros.
+apply int_morph; auto with *.
 Qed.
 
 End J.
@@ -845,22 +866,16 @@ Lemma weakening : forall e M T A,
   typ (A::e) (lift 1 M) (lift 1 T).
 unfold typ, in_int; intros.
 assert (val_ok e (V.lams 0 (V.shift 1) i) (I.lams 0 (I.shift 1) j)).
+ apply val_ok_shift1 in H0.
  red; intros.
- rewrite I.lams0; rewrite V.lams0; unfold V.shift, I.shift; simpl.
- red in H0.
- apply H0 with (n:=S n) in H1.
- revert H1.
- unfold in_int; destruct T0 as [(T0,T0m)|]; simpl.
-  intros (_,realV); split;[discriminate|exact realV].
-
-  intros (_,(ne,sat)); split;[discriminate|split; trivial].
-
-  rewrite kind_ok_lift with (k:=0).
-  rewrite eq_term_lift_ref_fv; auto with *.
+ apply H0 in H1.
+ rewrite V.lams0, I.lams0.
+ trivial.
 destruct H with (1:=H1) as (M_nk, inT).
 split.
  destruct M; try discriminate.
  elim M_nk; trivial.
+
  revert inT; pattern T at 1 4; case T; intros; simpl.
  unfold lift.
  do 2 rewrite int_lift_rec_eq.

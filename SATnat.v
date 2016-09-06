@@ -1,5 +1,7 @@
 (** Saturated sets constructions related to natural numbers: interpreting constructors,
-    dependent pattern-matching and fixpoint. Does not support size annotations. *)
+    dependent pattern-matching and fixpoint. Does not support size annotations because
+    the definition of (fNAT k) requires that the branch associated to the successor
+    has to be defined for *all* numbers, not just those smaller than k. *)
 
 Set Implicit Arguments.
 Require Import basic Lambda Can Sat.
@@ -108,8 +110,10 @@ Qed.
 
 (** * Realizability relation of Nat: fixpoint of fNAT *)
 
-(** cNAT is intersection of all families that are post-fixpoint (that is,
-    P s.t. fNAT P included in P) *)
+(** cNAT is the intersection of all families that are post-fixpoint (that is,
+    P s.t. fNAT P included in P). Here we require k to be well-typed (k ∈ N),
+    but we could do otherwise. Note that k∈N instead of k∈Nbot ensures that
+    cNAT is neuSAT for neutral values. *)
 Definition cNAT n :=
   depSAT (fun P => Proper (eq_set==>eqSAT) P /\
                    forall k, k ∈ N -> inclSAT (fNAT P k) (P k)) (fun P => P n).

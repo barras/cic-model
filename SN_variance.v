@@ -385,6 +385,17 @@ destruct H1; split.
  rewrite <- H; rewrite <- H0; eauto.
 Qed.
 
+Lemma typ_impl_inj e M T :
+  typ e M T ->
+  typ_impl (tinj e) M T.
+split; trivial.
+red; intros.
+apply int_morph; auto with *.
+intros k.
+generalize (proj2 (proj2 H0) k); simpl.
+auto.
+Qed.
+
 Lemma typ_var_impl : forall e n t T,
     spec_var e n = false ->
     nth_error (tenv e) n = value t ->
@@ -524,16 +535,35 @@ Definition typ_ord_mono (e:fenv) O :=
 Definition typ_ord_impl (e:fenv) O :=
   fx_equals e O /\ typ_ord (tenv e) O.
 
-  Lemma OSucc_sub : forall e O,
-    fx_subval e O ->
-    fx_subval e (OSucc O).
-unfold fx_subval; simpl; intros.
-unfold osucc.
+Lemma OSucc_subval e O :
+  typ_ord (tenv e) O ->
+  fx_subval e O ->
+  fx_subval e (OSucc O).
+unfold fx_subval; intros.
+specialize H0 with (1:=H1).
+destruct (H _ _ (proj1 H1)) as (?,_).
+destruct (H _ _ (proj1 (proj2 H1))) as (?,_).
+simpl.
+apply osucc_mono; trivial.
+Qed.
+
+Hint Resolve OSucc_subval.
+
+  Lemma typ_Ordt_ord e O o :
+    isOrd o ->
+    typ e O (Ordt o) ->
+    typ_ord e O.
 red; intros.
-rewrite subset_ax in H1 |-*.
-destruct H1; split; auto.
-revert H1; apply power_mono.
-eauto.
+destruct H0 with (1:=H1) as (_,(?,?)).
+simpl in H2; red in H2.
+rewrite El_def in H2.
+simpl in H3; rewrite Real_def in H3; trivial.
+2:reflexivity.
+apply sat_sn in H3; split; trivial.
+apply cc_bot_ax in H2; destruct H2.
+ rewrite H2; trivial.
+
+ apply isOrd_inv with o; trivial.
 Qed.
 
   Lemma OSucc_fx_sub : forall e O o,
@@ -543,7 +573,8 @@ Qed.
     typ_monoval e (OSucc O) (Ordt (osucc o)).
 destruct 3.
 split.
- apply OSucc_sub; trivial.
+ apply OSucc_subval; trivial.
+ apply typ_Ordt_ord with o; trivial.
 
  red; simpl; intros.
  apply in_int_intro; try discriminate.

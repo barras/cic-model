@@ -1156,7 +1156,7 @@ Lemma TIeq: forall i i' j j' o',
   TI (WF A B i) o' == TI (WF A B i') o'.
 intros; apply TI_morph_gen; auto with *.
 red; intros.
-apply W_F_ext.
+apply W_F_ext; trivial.
  apply El_morph.
  apply (Aeq _ _ _ _ H).
 
@@ -1168,8 +1168,6 @@ apply W_F_ext.
   rewrite (Aeq _ _ _ _ H) in H2.
   rewrite H3 in H2.
   split;[trivial|apply varSAT].
-
- (*apply cc_bot_morph;*) trivial.
 Qed.
 
 (*
@@ -1296,32 +1294,34 @@ assert (RBm : Proper (eq_set ==> eq_set ==> eqSAT)
  rewrite H,H0; reflexivity.
 destruct tyord_inv with (3:=tyO) (4:=proj1 val_m); trivial.
 destruct tyord_inv with (3:=tyO) (4:=proj1 (proj2 val_m)); trivial.
-red in eqA; specialize eqA with (1:=val_m).
+(*red in eqA; specialize eqA with (1:=val_m).*)
 specialize subO with (1:=val_m).
 red in xreal; rewrite El_int_W in xreal.
 rewrite Real_int_W in xsat; trivial.
 assert (cc_bot (TI (WF A B i) (int O i)) ⊆ cc_bot (TI (WF A B i') (int O i'))).
  apply cc_bot_mono.
  transitivity (TI (WF A B i') (int O i)).
-  intro; apply eq_elim.
+  apply eq_incl.
+  apply TIeq with (4:=val_m); trivial.
+
+(*  intro; apply eq_elim.
   apply TI_morph_gen; auto with *.
   red; intros.
   apply W_F_ext; auto with *.
-   apply El_morph; trivial.
-
-   red; intros.
-   apply El_morph.
-   apply eqB with (I.cons daimon j) (I.cons daimon j').
-    apply val_push_var; auto with *.
+  red; intros.
+  apply El_morph.
+  apply eqB with (I.cons daimon j) (I.cons daimon j').
+   apply val_push_var; auto with *.
     split; [trivial|apply varSAT].
-    rewrite H5 in H4.
-    rewrite eqA in H4.
-    split; [trivial|apply varSAT].
+   rewrite H5 in H4.
+   rewrite eqA in H4.
+   split; [trivial|apply varSAT].
 
 (*   apply cc_bot_morph; trivial.*)
-
+*)
   destruct H0; destruct H2.
   apply TI_mono; trivial.
+red in eqA; specialize eqA with (1:=val_m).
 split.
  red; rewrite El_int_W; auto.
 

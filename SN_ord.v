@@ -100,4 +100,34 @@ Qed.
 Definition typ_ord (e:env) (O:term) : Prop :=
   forall i j, val_ok e i j -> isOrd (int O i) /\ Lc.sn (tm O j).
 
-(* typ_ord OSucc *)
+Lemma OSucc_typ e O :
+  typ_ord e O ->
+  typ_ord e (OSucc O).
+unfold typ_ord; intros.
+destruct H with (1:=H0).
+split; simpl; auto.
+Qed.
+
+Hint Resolve OSucc_typ.
+
+Lemma typ_ord_varS e n T :
+  typ_ord e (Ref n) ->
+  typ_ord (T::e) (Ref (S n)).
+unfold typ_ord; simpl; intros.
+apply val_ok_shift1 in H0.
+apply H with (1:=H0).
+Qed.
+
+Lemma typ_ord_var0 e o :
+  isOrd o ->
+  typ_ord (OSucct (cst o)::e) (Ref 0).
+red; simpl; intros.
+destruct (H0 0 _ eq_refl).
+destruct H2.
+simpl in H2,H3; red in H2; rewrite El_def in H2; rewrite Real_def in H3; trivial.
+2:reflexivity.
+apply sat_sn in H3; split; trivial.
+apply cc_bot_ax in H2; destruct H2.
+ rewrite H2; auto.
+ apply isOrd_inv with (osucc o); auto.
+Qed.

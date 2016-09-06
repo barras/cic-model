@@ -685,6 +685,21 @@ split; simpl; red; intros.
 
   omega.
 Qed.
+Lemma red_lift_ref_bound n k i :
+  (i < k)%nat ->
+  eq_term (lift_rec n k (Ref i)) (Ref i).
+intros; simpl.
+unfold V.lams, V.shift, I.lams, I.shift.
+destruct (le_gt_dec  k i).
+ exfalso; omega.
+split; red; intros; auto.
+Qed.
+Lemma red_lift_ref n k i :
+  eq_term (lift_rec n k (Ref i)) (Ref (if le_gt_dec k i then n+i else i)).
+destruct (le_gt_dec k i).
+apply eq_term_lift_ref_fv; trivial.
+apply red_lift_ref_bound; trivial.
+Qed.
 
 (*
 Lemma lift1var : forall n, eq_term (lift 1 (Ref n)) (Ref (S n)).
@@ -924,6 +939,24 @@ split; red; intros.
    omega.
   omega.
  omega.
+Qed.
+Lemma red_sigma_ref N k i :
+  N <> kind ->
+  eq_term (subst_rec N k (Ref i))
+    match lt_eq_lt_dec k i with
+    | inleft (left _) => Ref (Peano.pred i)
+    | inleft (right _) => lift k N
+    | inright _ => Ref i
+    end.
+intros.
+destruct (lt_eq_lt_dec k i) as [[?|?]|?].
+ destruct i; simpl Peano.pred.
+  inversion l.
+ apply red_sigma_var_gt; auto with arith.
+
+ subst i; apply red_sigma_var_eq; trivial.
+
+ apply red_sigma_var_lt; auto with arith.
 Qed.
 
 Lemma simpl_subst_lift_rec A M k :

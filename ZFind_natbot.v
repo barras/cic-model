@@ -635,14 +635,15 @@ split; intros; trivial.
 Qed.
 
 
-Let fix_typ0 o :
-  isOrd o ->
-  o ⊆ ord ->
-  NATREC' M o ∈ cc_prod (TI NATf' o) (U o).
+  Lemma NATREC'_typ_strict o :
+    isOrd o ->
+    o ⊆ ord ->
+    NATREC' M o ∈ cc_prod (TI NATf' o) (U o).
 intros.
 destruct REC_wt with (1:=H) (2:=NATREC'_recursor H H0).
 apply Qty; auto.
 Qed.
+Hint Resolve NATREC'_typ_strict.
 
   Lemma NATREC'_typ o:
     isOrd o ->
@@ -650,24 +651,34 @@ Qed.
     NATREC' M o ∈ cc_prod (Nati o) (U o).
 intros.
 apply natprod_ext_mt; trivial.
-apply fix_typ0 with (1:=H); trivial.
+apply NATREC'_typ_strict with (1:=H); trivial.
 Qed.
 Hint Resolve NATREC'_typ.
 
 
-  Lemma NATREC'_strict o :
+  Lemma NATREC'_strict o x :
     isOrd o ->
     o ⊆ ord ->
-    cc_app (NATREC' M o) empty == empty.
+    ~ x ∈ TI NATf' o ->
+    cc_app (NATREC' M o) x == empty.
 intros.
 eapply cc_app_outside_domain.
  rewrite cc_eta_eq with (f:=NATREC' M o).
   eapply is_cc_fun_lam.
   do 2 red; intros; apply cc_app_morph; auto with *.
 
-  apply fix_typ0; trivial.
+  apply NATREC'_typ_strict; trivial.
 
- intros h; apply mt_not_in_NATf' in h; auto with *.
+  trivial.
+Qed.
+
+  Lemma NATREC'_mt o :
+    isOrd o ->
+    o ⊆ ord ->
+    cc_app (NATREC' M o) empty == empty.
+intros.
+apply NATREC'_strict; trivial.
+intros h; apply mt_not_in_NATf' in h; auto with *.
 Qed.
 
   Lemma NATREC'_irr o o' x :
@@ -680,9 +691,9 @@ Qed.
 intros.
 apply cc_bot_ax in H3; destruct H3.
  rewrite H3.
- rewrite NATREC'_strict; trivial.
+ rewrite NATREC'_mt; trivial.
  2:transitivity o'; trivial.
- rewrite NATREC'_strict; auto with *.
+ rewrite NATREC'_mt; auto with *.
 
  apply REC_ord_irrel with (1:=H0) (2:=NATREC'_recursor H0 H2); auto with *.
 Qed.
@@ -923,14 +934,13 @@ Section NAT'_Univ.
 (* Universe facts *)
   Variable U : set.
   Hypothesis Ugrot : grot_univ U.
-  Hypothesis Unontriv : omega ∈ U.  
 
   Lemma G_NATf' X : X ∈ U -> NATf' X ∈ U.
 intros.
-unfold NATf'.
 assert (empty ∈ U).
- apply G_trans with omega; auto. 
- apply zero_omega.
+ apply G_incl with X; trivial.
+intros z h; apply empty_ax in h; contradiction.
+unfold NATf'.
 apply G_sum; trivial.
  unfold ZFind_basic.UNIT.
  apply G_union2; trivial.
@@ -940,7 +950,8 @@ apply G_sum; trivial.
  apply G_singl; auto.
 Qed.
 
-  Lemma G_NAT' : NAT' ∈ U.
+  Lemma G_NAT' : omega ∈ U -> NAT' ∈ U.
+intros.
 apply G_TI; auto with *.
 apply G_NATf'.
 Qed.
