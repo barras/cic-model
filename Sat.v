@@ -326,6 +326,20 @@ Qed.
 red; intros.
 rewrite neuSAT_def in H; trivial.
 Qed.
+
+
+(** If t belongs to all reducibility candidates, then it has a free variable *)
+  Lemma neutral_not_closed :
+  forall t, (forall S, inSAT t S) -> exists k, occur k t.
+intros.
+assert (neu := H (exist _ _ neutral_is_cand : SAT)).
+simpl in neu.
+destruct neu as (_,(u,?,(nfu,neuu))).
+destruct nf_neutral_open with (1:=nfu) (2:=neuu) as (k,occ).
+exists k.
+apply red_closed with u; auto.
+Qed.
+
  
   Lemma KSAT_intro : forall A t m,
     sn t ->

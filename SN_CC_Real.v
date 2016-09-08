@@ -180,20 +180,6 @@ Qed.
 
 Module Lc := Lambda.
 
-(** If t belongs to all reducibility candidates, then it has a free variable *)
-Lemma neutral_not_closed :
-  forall t, (forall S, inSAT t S) -> exists k, Lc.occur k t.
-intros.
-assert (neu := H (exist _ _ Can.neutral_is_cand : SAT)).
-simpl in neu.
-destruct neu.
-destruct H1.
-destruct H2.
-destruct Lc.nf_neutral_open with (1:=H2) (2:=H3).
-exists x0.
-apply Lc.red_closed with x; auto.
-Qed.
-
 (** Another consistency proof. *)
 
 (** What is original is that it is based on the strong normalization model which
