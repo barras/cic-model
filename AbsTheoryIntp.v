@@ -70,25 +70,25 @@ Lemma lift_intp_lift_fml_rec : forall f n k,
 induction f; simpl intp_fofml; intros.
  unfold EQ_term; unfold lift. repeat rewrite red_lift_prod. repeat rewrite red_lift_app.
  apply Prod_morph; [apply Prod_morph; [generalize sort_clsd; intro H; destruct H as (H, _); apply H 
-   |simpl; split; red; reflexivity]|]; repeat rewrite eq_term_lift_ref_bd by omega; 
+   |simpl; split; [red|]; reflexivity]|]; repeat rewrite eq_term_lift_ref_bd by omega; 
  repeat rewrite <- lift_intp_lift_term_rec; repeat rewrite lift_rec_comm with (q:=k) by omega; reflexivity.
 
- simpl; split; red; reflexivity.
+ simpl; split; [red|]; reflexivity.
 
- simpl; split; red; reflexivity.
+ simpl; split; [red|]; reflexivity.
 
  unfold Neg, Impl. rewrite red_lift_prod.
  apply Prod_morph; trivial.
-  simpl; split; red; reflexivity.
+  simpl; split; [red|]; reflexivity.
 
  unfold Conj, lift. do 4 rewrite red_lift_prod.
- apply Prod_morph; [simpl; split; red; reflexivity|].
+ apply Prod_morph; [simpl; split; [red|]; reflexivity|].
   repeat rewrite eq_term_lift_ref_bd by omega.
   rewrite <- IHf1, <- IHf2.
   repeat rewrite lift_rec_comm with (q:=k) by omega; reflexivity.
       
  unfold Disj, lift. do 5 rewrite red_lift_prod.
-  apply Prod_morph; [simpl; split; red; reflexivity|].
+  apply Prod_morph; [simpl; split; [red|]; reflexivity|].
    repeat rewrite eq_term_lift_ref_bd by omega.
    rewrite <- IHf1, <- IHf2.
    repeat rewrite lift_rec_comm with (q:=k) by omega; reflexivity.
@@ -100,7 +100,7 @@ induction f; simpl intp_fofml; intros.
  apply Prod_morph; [generalize sort_clsd; intro H; destruct H as (H, _); apply H|trivial].
  
  unfold Exst. do 4 rewrite red_lift_prod. 
- apply Prod_morph; [simpl; split; red; reflexivity|].
+ apply Prod_morph; [simpl; split; [red|]; reflexivity|].
   do 2 rewrite subst0_lift. do 2 rewrite eq_term_lift_ref_bd by omega.
   rewrite <- IHf. rewrite lift_rec_comm with (q:=S k) by omega.
   generalize sort_clsd; intro H; destruct H as (H, _).
@@ -120,22 +120,22 @@ Lemma subst_intp_subst_fml_rec : forall f N k,
 induction f; simpl intp_fofml; intros.
  unfold EQ_term. do 3 rewrite red_sigma_prod. 
  apply Prod_morph; [apply Prod_morph; [
-   generalize sort_clsd; intro H; destruct H as (_, H); apply H|simpl; split; red; reflexivity]|].
+   generalize sort_clsd; intro H; destruct H as (_, H); apply H|simpl; split; [red|]; reflexivity]|].
   repeat rewrite red_sigma_app. repeat rewrite red_sigma_var_lt by omega.
   do 2 rewrite <- subst_intp_subst_term_rec.
   unfold lift. repeat rewrite subst_lift_ge by omega. 
   fold (lift 0 (intp_foterm f)). fold (lift 0 (intp_foterm f0)).
   repeat rewrite lift0. rewrite lift_rec_acc; [reflexivity|omega].
 
- simpl; split; red; reflexivity.
+ simpl; split; [red|]; reflexivity.
 
- simpl; split; red; reflexivity.
+ simpl; split; [red|]; reflexivity.
 
  unfold Neg, Impl. rewrite red_sigma_prod. 
- apply Prod_morph; [trivial|simpl; split; red; reflexivity].
+ apply Prod_morph; [trivial|simpl; split; [red|]; reflexivity].
 
  unfold Conj. do 4 rewrite red_sigma_prod. 
- apply Prod_morph; [simpl; split; red; reflexivity|].
+ apply Prod_morph; [simpl; split; [red|]; reflexivity|].
   unfold lift. repeat rewrite subst_lift_ge by omega.
   fold (lift 0 (intp_fofml f1)). fold (lift 0 (intp_fofml f2)).
   do 2 rewrite lift0. rewrite lift_rec_acc by omega.
@@ -143,7 +143,7 @@ induction f; simpl intp_fofml; intros.
   rewrite IHf1, IHf2; reflexivity.
 
  unfold Disj. do 5 rewrite red_sigma_prod. 
- apply Prod_morph; [simpl; split; red; reflexivity|].
+ apply Prod_morph; [simpl; split; [red|]; reflexivity|].
   unfold lift. repeat rewrite subst_lift_ge by omega.
   fold (lift 0 (intp_fofml f1)). fold (lift 0 (intp_fofml f2)).
   do 2 rewrite lift0. rewrite lift_rec_acc by omega.
@@ -159,7 +159,7 @@ induction f; simpl intp_fofml; intros.
  apply Prod_morph; [generalize sort_clsd; intro H; destruct H as (_, H); apply H|trivial].
 
  unfold Exst. do 4 rewrite red_sigma_prod. 
- apply Prod_morph; [simpl; split; red; reflexivity|].
+ apply Prod_morph; [simpl; split; [red|]; reflexivity|].
   repeat rewrite subst0_lift. do 2 rewrite red_sigma_var_lt by omega.
   unfold lift; repeat rewrite subst_lift_ge by omega. rewrite <- IHf. fold (lift 0 sort). rewrite lift0. 
   apply Prod_morph; [apply Prod_morph; 
@@ -172,10 +172,8 @@ induction f; simpl intp_fofml; intros.
         destruct (le_gt_dec 1 a); [|reflexivity].
          replace (1+(0+(a-1))) with a; [reflexivity|omega].
 
-      rewrite tm_lift_rec_eq. unfold I.lams, I.shift.
-       apply tm_morph; [reflexivity|do 2 red; intros].
-        destruct (le_gt_dec 1 a); [|reflexivity].
-         replace (1+(0+(a-1))) with a; [reflexivity|omega].
+      rewrite tmm_lift_rec_eq.
+      rewrite Lc.lift_rec0; trivial.
 Qed.
 
 Lemma subst_intp_subst_fml : forall f N,

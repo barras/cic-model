@@ -584,6 +584,7 @@ split.
   apply lt_osucc_compat; trivial.
   apply ole_lts; auto.
  split; simpl; trivial.
+ rewrite <- !tm_tmm.
  rewrite Real_def; auto with *.
   assert (h:= H2 _ _ H3).
   apply in_int_sn in h.

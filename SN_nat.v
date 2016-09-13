@@ -25,32 +25,23 @@ Export natARG SAT_nat.
 
 Definition Zero : term.
 (*begin show*)
-left; exists (fun _ => zero) (fun _ => ZE).
+left; exists (fun _ => zero);[|exact ZE].
 (*end show*)
  do 2 red; reflexivity.
- do 2 red; reflexivity.
- red; reflexivity.
- red; reflexivity.
 Defined.
 
 Definition Succ : term.
 (*begin show*)
-left; exists (fun _ => lam (mkTY N cNAT) succ) (fun _ => SU).
+left; exists (fun _ => lam (mkTY N cNAT) succ);[|exact SU].
 (*end show*)
  do 2 red; reflexivity.
- do 2 red; reflexivity.
- red; reflexivity.
- red; reflexivity.
 Defined.
 
 Definition Nat : term.
 (*begin show*)
-left; exists (fun _ => mkTY N cNAT) (fun _ => Lc.K).
+left; exists (fun _ => mkTY N cNAT);[|exact Lc.K].
 (*end show*)
  do 2 red; reflexivity.
- do 2 red; reflexivity.
- red; reflexivity.
- red; reflexivity.
 Defined.
 
 
@@ -145,8 +136,8 @@ Qed.
 (** Recursor *)
 Definition NatRec (f g n:term) : term.
 (*begin show*)
-left; exists (fun i => natrec (int f i) (fun n y => app (app (int g i) n) y) (int n i))
-             (fun j => Lc.App2 (tm n j) (tm f j) (tm g j)).
+left; exists (fun i => natrec (int f i) (fun n y => app (app (int g i) n) y) (int n i));
+[|exact (Lc.App2 (tmm n) (tmm f) (tmm g))].
 (*end show*)
  do 2 red; intros.
  apply natrec_morph.
@@ -156,15 +147,6 @@ left; exists (fun i => natrec (int f i) (fun n y => app (app (int g i) n) y) (in
   rewrite H; rewrite H0; rewrite H1; reflexivity.
 (**)
   rewrite H; reflexivity.
-(**)
- do 2 red; intros.
- rewrite H; auto.
-(**)
- red; intros; simpl.
- repeat rewrite tm_liftable; trivial.
-(**)
- red; intros; simpl.
- repeat rewrite tm_substitutive; trivial.
 Defined.
 
 
@@ -218,6 +200,7 @@ assert (NRtyp : forall n, n ∈ N ->
 apply and_split; intros.
  red; apply NRtyp; trivial.
 
+ rewrite <- !tm_tmm.
  red in H.
  apply fNAT_def with (P:=fun k => Real (app (int P i) k) (natrec (int f i) gg k))
     (A:=cNAT).

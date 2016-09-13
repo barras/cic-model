@@ -37,32 +37,23 @@ Module Make <: Nat_Rules SN_CC_Real.SN.
 
 Definition Zero : term.
 (*begin show*)
-left; exists (fun _ => ZERO) (fun _ => ZE).
+left; exists (fun _ => ZERO);[|exact ZE].
 (*end show*)
  do 2 red; reflexivity.
- do 2 red; reflexivity.
- red; reflexivity.
- red; reflexivity.
 Defined.
 
 Definition Succ : term.
 (*begin show*)
-left; exists (fun _ => lam (mkTY NAT' cNAT) SUCC) (fun _ => SU).
+left; exists (fun _ => lam (mkTY NAT' cNAT) SUCC);[|exact SU].
 (*end show*)
  do 2 red; reflexivity.
- do 2 red; reflexivity.
- red; reflexivity.
- red; reflexivity.
 Defined.
 
 Definition Nat : term.
 (*begin show*)
-left; exists (fun _ => mkTY NAT' cNAT) (fun _ => Lc.K).
+left; exists (fun _ => mkTY NAT' cNAT);[|exact Lc.K].
 (*end show*)
  do 2 red; reflexivity.
- do 2 red; reflexivity.
- red; reflexivity.
- red; reflexivity.
 Defined.
 
 Lemma ElNat_eq i : El (int Nat i) == cc_bot NAT'.
@@ -141,23 +132,14 @@ Qed.
 (** Recursor *)
 Definition NatRec (f g n:term) : term.
 (*begin show*)
-left; exists (fun i => NAT_RECT (int f i) (fun n y => app (app (int g i) n) y) (int n i))
-             (fun j => Lc.App2 (tm n j) (tm f j) (tm g j)).
+left; exists (fun i => NAT_RECT (int f i) (fun n y => app (app (int g i) n) y) (int n i));
+[|exact (Lc.App2 (tmm n) (tmm f) (tmm g))].
 (*end show*)
  do 2 red; intros.
  apply NAT_RECT_morph.
   rewrite H; reflexivity.
   do 2 red; intros; repeat apply cc_app_morph; trivial; apply int_morph; auto with *.
   rewrite H; reflexivity.
-(**)
-  do 2 red; intros.
-  rewrite H; reflexivity.
-(**)
- red; intros; simpl.
- repeat rewrite tm_liftable; trivial.
-(**)
- red; intros; simpl.
- repeat rewrite tm_substitutive; trivial.
 Defined.
 
 
@@ -219,6 +201,7 @@ apply and_split; intros.
 
  red in H.
  simpl tm.
+ rewrite <- !tm_tmm.
  apply cNAT_pre in satn; trivial.
  assert (satn' := proj1 (fNAT_def _ _ _) satn); clear satn.
  apply satn' with (P:=fun k => Real (app (int P i) k) (NAT_RECT (int f i) gg k)).

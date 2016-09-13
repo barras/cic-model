@@ -148,6 +148,7 @@ apply and_split; intros.
   rewrite tm_subst_cons in satU.
   apply sat_sn in satU.
   apply Lambda.sn_subst in satU.
+  simpl; rewrite <- !tm_tmm.
   apply KSAT_intro with (A:=snSAT); auto.
 Qed.
 

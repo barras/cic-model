@@ -113,8 +113,8 @@ Qed.
 
 Definition WI (O:term) : term.
 (*begin show*)
-left; exists (fun i => mkTY (TI (WF i) (int O i)) (RW i (int O i)))
-             (fun j => Lc.App2 Lc.K (tm A j) (Lc.App2 Lc.K (Lc.Abs(tm B (Lc.ilift j))) (tm O j))).
+left; exists (fun i => mkTY (TI (WF i) (int O i)) (RW i (int O i)));
+[|exact (Lc.App2 Lc.K (tmm A) (Lc.App2 Lc.K (Lc.Abs(tmm B)) (tmm O)))].
 (*end show*)
  do 2 red; intros.
  apply mkTY_ext; intros.
@@ -124,35 +124,6 @@ left; exists (fun i => mkTY (TI (WF i) (int O i)) (RW i (int O i)))
 
   apply RW_morph; trivial.
   rewrite H; reflexivity.
- (**)
- do 2 red; intros.
- rewrite H; reflexivity.
- (**)
- red; intros.
- simpl.
- rewrite <- tm_liftable.
- rewrite <- tm_liftable.
- rewrite <- tm_liftable.
- unfold Lc.App2.
- f_equal.
- f_equal.
- f_equal.
- f_equal.
- apply tm_morph; auto with *.
- apply Lc.ilift_binder_lift.
- (**)
- red; intros.
- simpl.
- rewrite <- tm_substitutive.
- rewrite <- tm_substitutive.
- rewrite <- tm_substitutive.
- unfold Lc.App2.
- f_equal.
- f_equal.
- f_equal.
- f_equal.
- apply tm_morph; auto with *.
- apply Lc.ilift_binder.
 Defined.
 
 Lemma El_int_W O i :
@@ -185,9 +156,8 @@ split;[|split].
 
  exists nil; exists (WI O);[reflexivity|].
  exists empty; simpl; auto.
- red; auto.
 
- simpl.
+ simpl; rewrite <- !tm_tmm.
  apply real_sn in H0.
  apply Lc.sn_K2; trivial.
  apply Lc.sn_K2; trivial.
@@ -199,23 +169,10 @@ Qed.
 
 Definition Wc (x:term) (f:term) : term.
 (* begin show *)
-left; exists (fun i => mkw (int x i) (int f i))
-             (fun j => WC (tm x j) (tm f j)).
+left; exists (fun i => mkw (int x i) (int f i));
+[|exact (WC (tmm x) (tmm f))].
 (* end show *)
  do 2 red; intros; apply mkw_morph; apply int_morph; auto with *.
- (**)
- do 2 red; intros.
- rewrite H; reflexivity.
- (**)
- red; intros.
- unfold WC, COUPLE; simpl.
- do 2 rewrite tm_liftable.
- do 2 rewrite Lc.permute_lift; reflexivity.
- (**)
- red; intros.
- unfold WC, COUPLE; simpl.
- do 2 rewrite tm_substitutive.
- do 2 rewrite Lc.commut_lift_subst; reflexivity.
 Defined.
 
 
@@ -250,6 +207,8 @@ split.
 
  rewrite Real_int_W; auto.
  simpl.
+ rewrite <- !Lc.sub_all_lift_1.
+ rewrite <- !tm_tmm.
  unfold RW; apply Real_WC; auto with *.
   rewrite w1_eq.
   apply H0.
@@ -285,8 +244,8 @@ Definition W_CASE b w :=
 
 Definition Wcase (b n : term) : term.
 (*begin show*)
-left; exists (fun i => W_CASE (int b i) (int n i))
-             (fun j => WCASE (tm b j) (tm n j)).
+left; exists (fun i => W_CASE (int b i) (int n i));
+[|exact (WCASE (tmm b) (tmm n))].
 (*end show*)
 do 2 red; intros.
 unfold W_CASE.
@@ -294,28 +253,20 @@ apply cond_set_morph.
  rewrite H; reflexivity.
  rewrite H; reflexivity.
 (**)
-do 2 red; intros.
-unfold WCASE; rewrite H; reflexivity.
-(**)
-red; intros; simpl.
-unfold WCASE; simpl.
-do 2 rewrite tm_liftable; reflexivity.
-(**)
-red; intros; simpl.
-unfold WCASE; simpl.
-do 2 rewrite tm_substitutive; reflexivity.
 Defined.
 
 Instance Wcase_morph :
   Proper (eq_term ==> eq_term ==> eq_term) Wcase.
 do 3 red; intros.
-split; red; simpl; intros.
+split.
+ red; simpl; intros.
  unfold sigma_case.
  apply cond_set_morph.
   rewrite H0; rewrite H1; reflexivity.
   rewrite H; rewrite H0; rewrite H1; reflexivity.
 
- rewrite H; rewrite H0; rewrite H1; reflexivity.
+ unfold itm.
+ rewrite H,H0; reflexivity.
 Qed.
 
 Lemma Wcase_iota : forall X F G,
@@ -384,11 +335,13 @@ apply and_split; intros.
   (* neutral case *)
   rewrite H1 in H6.
   unfold WCASE.
+  rewrite <- !tm_tmm.
   eapply prodSAT_elim;[|apply H5].
   unfold RW in H6; rewrite rWi_neutral in H6; auto with *.
   apply neuSAT_def; trivial.
 
   (* regular case *)
+  rewrite <- !tm_tmm.
   eapply Real_WCASE with (6:=H1) (7:=H6)
     (C:=fun x => Real (app (int P i) x) (mkw_case (fun x f => app (app (int G i) x) f) x));
      auto with *.
@@ -525,6 +478,7 @@ apply and_split; intros.
  rewrite tm_subst_cons in snB.
  apply Lc.sn_subst in snB.
  simpl.
+ rewrite <- !tm_tmm.
  apply snSAT_intro.
  apply Lc.sn_K2; trivial.
  apply Lc.sn_K2; trivial.
@@ -540,8 +494,8 @@ Qed.
 Definition WFix (O M:term) : term.
 (*begin show*)
 left.
-exists (fun i => WREC (fun o' f => int M (V.cons f (V.cons o' i))) (int O i))
-       (fun j => WFIX (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j))))).
+exists (fun i => WREC (fun o' f => int M (V.cons f (V.cons o' i))) (int O i));
+[|exact (WFIX (Lc.Abs (Lc.subst_rec (tmm O) (tmm M) 1)))].
 (*end show*)
  do 2 red; intros.
  apply WREC_morph.
@@ -551,49 +505,6 @@ exists (fun i => WREC (fun o' f => int M (V.cons f (V.cons o' i))) (int O i))
   apply V.cons_morph; trivial.
 
   apply int_morph; auto with *.
- (* *)
- do 2 red; intros.
- rewrite H; reflexivity.
-
- (* *)
- red; intros.
- replace (Lc.lift_rec 1
-     (WFIX (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j))))) k) with
-   (WFIX (Lc.lift_rec 1 (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j)))) k)).
-  simpl.
-  f_equal.
-  f_equal.
-  rewrite <- tm_liftable.
-  apply tm_morph; auto with *.
-  rewrite <- Lc.ilift_binder_lift.
-  apply Lc.ilift_morph.
-  intros [|k']; simpl; trivial.
-  apply tm_liftable.
-
-  generalize  (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j)))); intro.
-  unfold WFIX, FIXP; simpl.
-  rewrite <- Lc.permute_lift.
-  reflexivity.
-
- (* *)
- red; intros.
- replace (Lc.subst_rec u
-     (WFIX (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j))))) k) with
-   (WFIX (Lc.subst_rec u (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j)))) k)).
-  simpl.
-  f_equal.
-  f_equal.
-  rewrite <- tm_substitutive.
-  apply tm_morph; auto with *.
-  rewrite <- Lc.ilift_binder.
-  apply Lc.ilift_morph.
-  intros [|k']; simpl; trivial.
-  apply tm_substitutive.
-
-  generalize  (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j)))); intro.
-  unfold WFIX, FIXP; simpl.
-  rewrite <- Lc.commut_lift_subst.
-  reflexivity.
 Defined.
 
 
@@ -994,14 +905,16 @@ apply and_split; intros.
   rewrite H3; reflexivity.
 
 (**)
+replace (tm (WFix O M) j)
+ with (WFIX (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j))))).
 simpl.
 rewrite Real_prod; auto with *.
 2:intros ? ? ? h; rewrite h; reflexivity.
 unfold piSAT.
 eapply inSAT_morph;[reflexivity| |].
-2:apply WREC_sat with (7:=WREC_ok H)
+2:apply WREC_sat with (7:=WREC_ok H) (ot:=tm O j)
  (RA:=Real(int A i))(RB:=fun x =>Real(int B(V.cons x i)))
- (RF:= fun o => tm M (Lc.ilift (I.cons o j)))
+ (RF:= fun o => tm M (Lc.ilift (I.cons (tm O j) j)))
  (RU:= fun o w => Real (int U (V.cons w (V.cons o i)))); auto with *.
  apply piSAT0_morph.
   red; intros.
@@ -1118,6 +1031,36 @@ eapply inSAT_morph;[reflexivity| |].
   intros [|[|k]]; try reflexivity.
   unfold V.cons, V.lams,V.shift; simpl.
   replace (k-0) with k; auto with *.
+
+unfold tm at 3, WFix,itm.
+unfold WFIX; simpl.
+unfold FIXP; simpl.
+f_equal.
+f_equal.
+f_equal.
+unfold Lc.lift; simpl.
+f_equal.
+rewrite <- tm_liftable.
+rewrite <- tmm_subst_rec_eq.
+rewrite <- tmm_lift_rec_eq.
+rewrite <- tm_tmm.
+rewrite tm_lift_rec_eq.
+rewrite tm_subst_rec_eq.
+apply tm_morph; auto with *.
+intros [|[|k]].
+ reflexivity.
+
+ unfold I.lams, I.shift; simpl.
+ rewrite <- Lc.permute_lift.
+ unfold Lc.lift; rewrite <- !tm_liftable.
+ apply tm_morph; auto with *.
+ intros k.
+ replace (k-0) with k by omega.
+ trivial.
+
+ unfold I.lams, I.shift, I.cons; simpl.
+ replace (k-0) with k by omega.
+ rewrite <- Lc.permute_lift; trivial.
 Qed.
 
 

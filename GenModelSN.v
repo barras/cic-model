@@ -154,7 +154,7 @@ Definition sub_typ (e:env) (M M':term) :=
 
 Definition typ_sub (e:env) (s:sub) (f:env) :=
   forall i j, val_ok e i j ->
-  val_ok f (sint s i) (stm s j).
+  val_ok f (sint s i) (fun k => Lc.sub_all j (stm s k)).
 
 Instance typ_morph : forall e, Proper (eq_term ==> eq_term ==> iff) (typ e).
 unfold typ; split; simpl; intros.
@@ -418,6 +418,7 @@ apply prod_elim with (x:=int v i) in H1; trivial.
  apply in_int_intro; simpl; trivial; try discriminate.
   rewrite <- int_subst_eq; trivial.
 
+  rewrite <- !tm_tmm.
   rewrite <- int_subst_eq.
   apply prodSAT_elim with (v:=tm v j) in H2; trivial.
   apply (depSAT_elim _ H2); trivial.
@@ -448,6 +449,7 @@ apply in_int_intro; simpl; try discriminate.
   apply in_int_not_kind in is_val; trivial.
   destruct is_val; trivial.
 
+ rewrite <- !tm_tmm.
  rewrite Real_prod.
  specialize inh_T with (1:=is_val).
  destruct inh_T as (snT, (wit, in_T)).
@@ -528,6 +530,7 @@ split;[discriminate|split;simpl].
   destruct in_U; trivial.
 
  (* sat *)
+ rewrite <- !tm_tmm.
  destruct in_U as (_,(_,satU)).
  rewrite Real_sort in satU|-*; simpl.
  rewrite tm_subst_cons in satU.
@@ -563,6 +566,7 @@ destruct is_srt; subst s2.
   destruct in_U as (_,(mem,_)); trivial.
 
   (* sn *)
+  rewrite <- !tm_tmm.
   destruct in_U as (_,(_,satU)).
   rewrite tm_subst_cons in satU.
   apply Lc.sn_subst in satU.

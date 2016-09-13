@@ -31,14 +31,14 @@ Lemma int_lift_rec : forall n t k,
   eq_term (lift_rec n k (int_term t)) (int_term (Tm.lift_rec n t k)).
 induction t; simpl int_term; intros.
  destruct s; simpl; trivial.
- split; red; intros; reflexivity.
+ split; [red|]; intros; reflexivity.
 
  simpl; unfold V.lams, I.lams, V.shift, I.shift.
  destruct (le_gt_dec k n0); simpl.
   replace (k+(n+(n0-k))) with (n+n0) by omega.
-  split; red; auto.
+  split; [red|]; auto.
 
-  split; red; auto.
+  split; [red|]; auto.
 
  rewrite red_lift_abs; rewrite IHt1; rewrite IHt2; reflexivity.
  rewrite red_lift_app; rewrite IHt1; rewrite IHt2; reflexivity.
@@ -61,7 +61,7 @@ Lemma int_subst_rec : forall arg,
 intros arg not_knd.
 induction t; simpl int_term; intros.
  destruct s; simpl; trivial.
- split; red; intros; reflexivity.
+ split; [red|]; intros; reflexivity.
 
  simpl Tm.subst_rec.
  destruct (lt_eq_lt_dec k n) as [[fv|eqv]|bv]; simpl int_term.

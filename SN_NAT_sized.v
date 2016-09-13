@@ -47,8 +47,8 @@ Variable e:env.
 
 Definition NatI (O:term) : term.
 (*begin show*)
-left; exists (fun i => mkTY (TI NATf' (int O i)) cNAT)
-             (fun j => tm O j).
+left; exists (fun i => mkTY (TI NATf' (int O i)) cNAT);
+[|exact (tmm O)].
 (*end show*)
  do 2 red; intros.
  apply mkTY_ext; intros.
@@ -59,17 +59,6 @@ left; exists (fun i => mkTY (TI NATf' (int O i)) cNAT)
    apply int_morph; auto with *.
 
   apply cNAT_morph; trivial.
- (**)
- do 2 red; intros.
- rewrite H; reflexivity.
- (**)
- red; intros.
- rewrite <- tm_liftable.
- reflexivity.
- (**)
- red; intros.
- rewrite <- tm_substitutive.
- reflexivity.
 Defined.
 
 Lemma El_int_NatI O i :
@@ -99,6 +88,7 @@ split;[|split].
 (* red; auto.*)
 
  simpl.
+ rewrite <- tm_tmm.
  apply tyO.
 Qed.
 
@@ -127,6 +117,7 @@ apply and_split; intros.
  red in H.
  change (int (type n) i) with (sn_sort (ecc (S n))).
  rewrite Real_sort_sn; trivial.
+ simpl; rewrite <- !tm_tmm; trivial.
 Qed.
 
 
@@ -184,18 +175,9 @@ Qed.
 
 Definition Zero : term.
 (* begin show *)
-left; exists (fun i => M.zero)
-             (fun j => ZE).
+left; exists (fun i => M.zero); [|exact ZE].
 (* end show *)
  do 2 red; intros; reflexivity.
- (**)
- do 2 red; intros; reflexivity.
- (**)
- red; intros.
- reflexivity.
- (**)
- red; intros.
- reflexivity.
 Defined.
 
 
@@ -221,26 +203,13 @@ Qed.
 
 Definition Succ (O:term) : term.
 (* begin show *)
-left; exists (fun i => lam (mkTY (TI NATf' (int O i)) cNAT) succ)
-             (fun j => Lc.App2 Lc.K (Lc.Abs (SU (Lc.Ref 0))) (tm O j)).
+left; exists (fun i => lam (mkTY (TI NATf' (int O i)) cNAT) succ);
+[|exact (Lc.App2 Lc.K (Lc.Abs (SU (Lc.Ref 0))) (tmm O))].
 (* end show *)
  do 2 red; intros; apply cc_lam_morph; auto with *.
   rewrite !El_def.
   rewrite H; reflexivity.
   apply succ_morph.
- (**)
- do 2 red; intros.
- rewrite H; reflexivity.
- (**)
- red; intros.
- simpl.
- rewrite <- tm_liftable.
- reflexivity.
- (**)
- red; intros.
- simpl.
- rewrite <- tm_substitutive.
- reflexivity.
 Defined.
 
 
@@ -284,6 +253,7 @@ apply and_split.
 
  intros tyS.
  simpl.
+ rewrite <- !tm_tmm.
  rewrite Real_prod; trivial.
  2:do 2 red; intros; apply mkTY_ext; [
   rewrite !V.lams0; reflexivity |
@@ -324,8 +294,8 @@ Qed.
 
 Definition NatCase (b0 bS n : term) : term.
 (*begin show*)
-left; exists (fun i => natcase (int b0 i) (fun x => int bS (V.cons x i)) (int n i))
-             (fun j => NCASE (tm b0 j) (Lc.Abs (tm bS (Lc.ilift j))) (tm n j)).
+left; exists (fun i => natcase (int b0 i) (fun x => int bS (V.cons x i)) (int n i));
+[|exact (NCASE (tmm b0) (Lc.Abs (tmm bS)) (tmm n))].
 (*end show*)
 do 2 red; intros.
 apply natcase_morph.
@@ -335,38 +305,11 @@ apply natcase_morph.
  rewrite H,H0; reflexivity.
 
  rewrite H; reflexivity.
-(**)
-do 2 red; intros.
-rewrite H; reflexivity.
-(**)
-unfold NCASE; red; intros; simpl.
-apply f_equal3 with (f:=Lc.App2).
- rewrite <- (tm_liftable j n); reflexivity.
-
- rewrite (tm_liftable _ b0).
- rewrite Lc.permute_lift.
- reflexivity.
-
- rewrite <- (tm_liftable _ bS).
- rewrite !Lc.ilift_binder_lift.
- reflexivity.
-(**)
-unfold NCASE; red; intros; simpl.
-apply f_equal3 with (f:=Lc.App2).
- rewrite <- (tm_substitutive _ n); reflexivity.
-
- rewrite (tm_substitutive _ b0).
- rewrite Lc.commut_lift_subst.
- reflexivity.
-
- rewrite <- (tm_substitutive _ bS).
- rewrite Lc.ilift_binder.
- reflexivity.
 Defined.
 
 Instance NatCase_morph :
   Proper (eq_term ==> eq_term ==> eq_term ==> eq_term) NatCase.
-split; red; simpl; intros.
+split; [red|]; simpl; intros.
  apply natcase_morph.
   apply int_morph; trivial.
 
@@ -376,11 +319,7 @@ split; red; simpl; intros.
 
   apply int_morph; trivial.
 
- rewrite H.
- rewrite H0.
- rewrite H1.
- rewrite H2.
- reflexivity.
+ rewrite H,H0,H1; reflexivity.
 Qed.
 
 
@@ -484,6 +423,21 @@ apply and_split; intros.
   apply H; exists X0; trivial.
 
  (* Reducibility *)
+
+ assert (eqcase : tm (NatCase B0 BS n) j=
+         NCASE (tm B0 j) (Lc.Abs (tm BS (Lc.ilift j))) (tm n j)).
+  unfold NCASE; simpl.
+  rewrite <- !tm_tmm.
+  unfold Lc.App2; f_equal.
+  f_equal.
+  f_equal.
+  unfold Lc.lift; rewrite <- !tm_liftable.
+  rewrite <- tmm_lift_rec_eq.
+  rewrite <- tm_tmm.
+  rewrite tm_lift_rec_eq.
+  apply tm_morph; auto with *.
+  intros [|k]; simpl; reflexivity.
+ rewrite eqcase.
  simpl in H|-*.
  apply neutr_dec' in tyN; simpl; auto with *.
  destruct tyN.
@@ -649,8 +603,8 @@ Definition NatFix (O M:term) : term.
 (*begin show*)
 left.
 exists (fun i =>
-         natfix (fun o' f => int M (V.cons f (V.cons o' i))) (int O i))
-       (fun j => NATFIX (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j))))).
+         natfix (fun o' f => int M (V.cons f (V.cons o' i))) (int O i));
+[|exact (NATFIX (Lc.Abs (Lc.subst_rec (tmm O) (tmm M) 1)))].
 (*end show*)
  do 2 red; intros.
  apply natfix_morph.
@@ -660,50 +614,6 @@ exists (fun i =>
   apply V.cons_morph; trivial.
 
   apply int_morph; auto with *.
-
- (* *)
- do 2 red; intros.
- rewrite H; reflexivity.
-
- (* *)
- red; intros.
- replace (Lc.lift_rec 1
-     (NATFIX (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j))))) k) with
-   (NATFIX (Lc.lift_rec 1 (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j)))) k)).
-  simpl.
-  f_equal.
-  f_equal.
-  rewrite <- tm_liftable.
-  apply tm_morph; auto with *.
-  rewrite <- Lc.ilift_binder_lift.
-  apply Lc.ilift_morph.
-  intros [|k']; simpl; trivial.
-  apply tm_liftable.
-
-  generalize  (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j)))); intro.
-  unfold NATFIX, FIXP; simpl.
-  rewrite <- Lc.permute_lift.
-  reflexivity.
-
- (* *)
- red; intros.
- replace (Lc.subst_rec u
-     (NATFIX (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j))))) k) with
-   (NATFIX (Lc.subst_rec u (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j)))) k)).
-  simpl.
-  f_equal.
-  f_equal.
-  rewrite <- tm_substitutive.
-  apply tm_morph; auto with *.
-  rewrite <- Lc.ilift_binder.
-  apply Lc.ilift_morph.
-  intros [|k']; simpl; trivial.
-  apply tm_substitutive.
-
-  generalize  (Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j)))); intro.
-  unfold NATFIX, FIXP; simpl.
-  rewrite <- Lc.commut_lift_subst.
-  reflexivity.
 Defined.
 
 
@@ -1009,6 +919,32 @@ apply and_split; intros.
 
 (**)
  set (m:=Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j)))).
+ assert (eqfix : tm (NatFix O M) j = NATFIX m).
+  simpl; unfold NATFIX, FIXP.
+  f_equal.
+  f_equal.
+  f_equal.
+  unfold Lc.lift; subst m; simpl.
+  f_equal.
+  rewrite tm_tmm.
+  rewrite <- Lc.sub_all_lift_rec.
+  rewrite Lc.sub_all_lift_r.
+  rewrite Lc.sub_all_subst_rr.
+  apply Lc.sub_all_ext.
+  intros [|[|k]]; try reflexivity.
+   unfold I.lams,I.shift; simpl.
+   rewrite tm_tmm.
+   unfold Lc.lift; rewrite <- Lc.sub_all_lift_rec.
+   rewrite <- Lc.sub_all_lift_rec.
+   apply Lc.sub_all_ext.
+   intros k.
+   replace (k-0) with k by omega.
+   rewrite Lc.permute_lift_rec; auto with *.
+
+   unfold I.lams,I.shift; simpl.
+   replace (k-0) with k by omega.
+   unfold Lc.lift; rewrite Lc.permute_lift_rec; auto with *.
+ rewrite eqfix.
  red in H2; rewrite El_int_prod in H2.
  rewrite Real_int_prod; trivial.
  cut (inSAT (NATFIX m)
@@ -1395,10 +1331,10 @@ apply typ_abs; try discriminate.
     apply typ_var0.
     split;[discriminate|].
     apply sub_refl; apply eq_term_eq_typ.
-    split; simpl; red; intros; auto with *.
+    split; simpl; [red|]; intros; auto with *.
 
     apply sub_refl; apply eq_term_eq_typ.
-    split; simpl; red; intros; auto with *.
+    split; simpl; [red|]; intros; auto with *.
 (*
  left.
  split;[discriminate|].
@@ -1424,15 +1360,15 @@ apply typ_abs; try discriminate.
     apply typ_var0.
     split;[discriminate|].
     apply sub_refl; apply eq_term_eq_typ.
-    split; simpl; red; intros; auto with *.
+    split; simpl; [red|]; intros; auto with *.
 
     apply typ_var0.
     split;[discriminate|].
     apply sub_refl; apply eq_term_eq_typ.
-    split; simpl; red; intros; auto with *.
+    split; simpl; [red|]; intros; auto with *.
 
    apply sub_refl; apply eq_term_eq_typ.
-   split; simpl; red; intros; auto with *.
+   split; simpl; [red|]; intros; auto with *.
 
   eapply typ_subsumption with (subst (App (Succ infty) (Ref 1)) prop); try discriminate.
    apply typ_app with (NatI infty); try discriminate.
@@ -1441,12 +1377,12 @@ apply typ_abs; try discriminate.
       apply typ_var0.
       split;[discriminate|].
       apply sub_refl; apply eq_term_eq_typ.
-      split; simpl; red; intros; auto with *.
+      split; simpl; [red|]; intros; auto with *.
 
       apply typ_S; trivial.
 
      apply sub_refl; apply eq_term_eq_typ.
-     split; simpl; red; intros; trivial.
+     split; simpl; [red|]; intros; trivial.
      apply mkTY_ext; trivial.
       rewrite TI_mono_succ; auto with *.
       rewrite <- NAT_eqn; auto with *.
@@ -1456,10 +1392,10 @@ apply typ_abs; try discriminate.
     apply typ_var0.
     split;[discriminate|].
     apply sub_refl; apply eq_term_eq_typ.
-    split; simpl; red; intros; auto with *.
+    split; simpl; [red|]; intros; auto with *.
 
    apply sub_refl; apply eq_term_eq_typ.
-   split; simpl; red; intros; auto with *.
+   split; simpl; [red|]; intros; auto with *.
 
 set (E0 := Prod (NatI infty)
                  (Prod (App (Ref 2) (Ref 0))
@@ -1495,15 +1431,13 @@ apply typ_natfix'' with (U:=App (Ref 4) (Ref 0)); auto.
     split;[discriminate|].
     apply sub_trans with (NatI (OSucc (Ref 1))).
      apply sub_refl; apply eq_term_eq_typ.
-     split; red; simpl; intros.
-      apply mkTY_ext.
+     split; [red|]; simpl; intros; trivial.
+     apply mkTY_ext.
       apply TI_morph; auto with *.
       apply osucc_morph.
       apply H.
 
       intros; apply cNAT_morph; trivial.
-
-      apply H.
 
      apply NatI_sub_infty.
      apply OSucc_typ.
@@ -1513,10 +1447,10 @@ apply typ_natfix'' with (U:=App (Ref 4) (Ref 0)); auto.
     apply typ_var0.
     split;[discriminate|].
     apply sub_refl; apply eq_term_eq_typ.
-    split; simpl; red; intros; auto with *.
+    split; simpl; [red|]; intros; auto with *.
 
    apply sub_refl; apply eq_term_eq_typ.
-   split; simpl; red; intros; auto with *.
+   split; simpl; [red|]; intros; auto with *.
 
  (* fix body *)
  apply ext_abs; try discriminate.
@@ -1620,11 +1554,9 @@ rewrite red_lift_ref_bound; auto with arith.
      apply eq_typ_app; [apply refl|].
      apply trans with (App (Succ infty) (Ref 1)).
       apply eq_term_eq_typ.
-      split; simpl; red; intros.
-       apply app_ext; auto with *.
-       apply H.
-
-       rewrite <- (H 1); reflexivity.
+      split; simpl; [red|]; intros; trivial.
+      apply app_ext; auto with *.
+      apply H.
 
      red; intros; simpl.
      assert (i 1 ∈ cc_bot (TI NATf' (i 4))).
@@ -1663,11 +1595,11 @@ rewrite red_lift_ref_bound; auto with arith.
       unfold lift; rewrite !red_lift_prod, !red_lift_app, !red_lift_ref.
       simpl Ref.
       apply Prod_morph.
-       split; red; simpl; auto with *.
+       split; [red|]; simpl; auto with *.
       apply Prod_morph; auto with *.
       apply App_morph; auto with *.
       apply App_morph; auto with *.
-      split; red; simpl; auto with *.
+      split; [red|]; simpl; auto with *.
 
      eapply typ_var_impl.
       compute; reflexivity.
@@ -1677,14 +1609,12 @@ rewrite red_lift_ref_bound; auto with arith.
 
       apply sub_trans with (NatI (Ref 3)).
        apply sub_refl; apply eq_term_eq_typ.
-       split; red; simpl; intros.
-        apply mkTY_ext.
-         apply TI_morph; auto with *.
-         apply H.
-
-         intros; apply cNAT_morph; trivial.
-
+       split; [red|]; simpl; intros; trivial.
+       apply mkTY_ext.
+        apply TI_morph; auto with *.
         apply H.
+
+        intros; apply cNAT_morph; trivial.
 
      apply NatI_sub_infty.
      apply typ_ord_varS.

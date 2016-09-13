@@ -54,11 +54,8 @@ Definition natSAT :=
 
 Definition T : term.
 left.
-exists (fun _ => mkTY (singl empty) natSAT) (fun _ => Lc.K).
+exists (fun _ => mkTY (singl empty) natSAT);[|exact Lc.K].
  do 2 red; reflexivity.
- do 2 red; reflexivity.
- red; reflexivity.
- red; reflexivity.
 Defined.
 
 Definition ZE := Lc.Abs (Lc.Abs (Lc.Ref 1)).
@@ -99,36 +96,22 @@ Qed.
 
 
 Definition Zero : term.
-left; exists (fun _ => empty) (fun _ => ZE).
+left; exists (fun _ => empty);[|exact ZE].
  do 2 red; reflexivity.
- do 2 red; reflexivity.
- red; reflexivity.
- red; reflexivity.
 Defined.
 
 
 Definition Succ : term.
-left; exists (fun _ => lam (mkTY (singl empty) natSAT) (fun x => x)) (fun _ => SU).
+left; exists (fun _ => lam (mkTY (singl empty) natSAT) (fun x => x));
+[|exact SU].
  do 2 red; reflexivity.
- do 2 red; reflexivity.
- red; reflexivity.
- red; reflexivity.
 Defined.
 
 Definition NatRec (f g n:term) : term.
-left; exists (fun i => int f i)
-             (fun j => Lc.App2 (tm n j) (tm f j) (Lc.App (tm g j) ZE)).
+left; exists (fun i => int f i);
+[|exact (Lc.App2 (tmm n) (tmm f) (Lc.App (tmm g) ZE))].
  do 2 red; intros.
  rewrite H; reflexivity.
-
- do 2 red; intros.
- rewrite H; auto.
-
- red; intros; simpl.
- repeat rewrite tm_liftable; trivial.
-
- red; intros; simpl.
- repeat rewrite tm_substitutive; trivial.
 Defined.
 
 
@@ -227,6 +210,7 @@ split.
  reflexivity.
 
  simpl tm.
+ rewrite <- !tm_tmm.
  specialize (H _ _ H3).
  destruct H as (_,(n_ty,H)). 
  simpl in n_ty.

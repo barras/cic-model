@@ -319,7 +319,8 @@ Definition sub_typ (e:env) (M M':term) :=
 Definition eq_typ' e M N := eq_typ e M N /\ conv_term M N.
 
 Definition typ_sub (e:env) (s:sub) (f:env) :=
-  forall i j, val_ok e i j -> val_ok f (sint s i) (stm s j).
+  forall i j, val_ok e i j ->
+  val_ok f (sint s i) (fun k => Lc.sub_all j (stm s k)).
 
 Instance typ_morph : forall e, Proper (eq_term ==> eq_term ==> iff) (typ e).
 unfold typ; split; simpl; intros.
@@ -683,8 +684,8 @@ apply rprod_elim with (x:=int v i) (u:=tm v j) in ty_u; trivial.
   destruct Ur as [Ur|]; simpl; try discriminate; trivial.
 
   rewrite <- int_subst_eq; trivial.
+  rewrite <- !tm_tmm.
   trivial.
-
 
  red; intros.
  rewrite H0; reflexivity.
@@ -720,6 +721,7 @@ apply prod_intro2; intros.
 
  apply add_var_eq_fun; auto with *.
 
+ rewrite <- !tm_tmm.
  apply ty_T with (1:=is_val).
 
  apply ty_T with (1:=is_val).
@@ -727,6 +729,7 @@ apply prod_intro2; intros.
  apply vcons_add_var with (x:=x) (T:=T) (t:=u) in is_val; trivial.
  apply ty_M in is_val.
  apply in_int_not_kind in is_val; trivial.
+ rewrite <- !tm_tmm.
  rewrite <- tm_subst_cons; trivial.
 Qed.
 
@@ -797,6 +800,7 @@ split;[discriminate|apply and_split;simpl;intros].
  destruct in_U as (_,(in_U,satU)).
  rewrite Real_sort in satU|-*; simpl; trivial.
  rewrite tm_subst_cons in satU.
+ rewrite <- !tm_tmm.
  apply sat_sn in satU.
  apply Lc.sn_subst in satU.
  apply KSAT_intro with (A:=snSAT); auto.
@@ -829,6 +833,7 @@ destruct is_srt; subst s2.
   destruct in_U as (_,(mem,_)); trivial.
 
   (* sn *)
+  rewrite <- !tm_tmm.
   destruct in_U as (_,(_,satU)).
   rewrite tm_subst_cons in satU.
   apply Lc.sn_subst in satU.
@@ -887,6 +892,7 @@ destruct n; simpl in *.
  split;[discriminate|].
  destruct A as [A|]; simpl in *.
   rewrite V.lams0.
+  rewrite <-tm_tmm.
   exact H3.
 
   elim H; trivial.
@@ -917,7 +923,9 @@ destruct A as [A|]; simpl; trivial.
  split.
   rewrite int_Sub_eq; trivial.
 
-  rewrite tm_Sub_eq.
+  rewrite tm_tmm, tm_Sub_eq.
+  rewrite tm_tmm in H1.
+  rewrite <- Lc.sub_all_comp.
   revert H1; apply Real_morph; [reflexivity|].
   rewrite int_Sub_eq; reflexivity.
 
@@ -927,7 +935,7 @@ destruct A as [A|]; simpl; trivial.
   apply kind_ok_Sub; trivial.
 
   rewrite tm_tmm in H1|-*; rewrite tm_Sub_eq.
-  rewrite <- sub_all_comp; trivial.*)
+  rewrite <- Lc.sub_all_comp; trivial.*)
 Qed.
 
 Lemma typ_sub_eq_typ : forall env1 env2 s x y,

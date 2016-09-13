@@ -30,26 +30,23 @@ Lemma lift_intp_lift_term_rec : forall t n k,
           (intp_foterm (lift_term_rec t n k)).
 induction t; intros.
  simpl; case_eq (le_gt_dec k n); simpl; intros.
-  split; red; simpl; intros.
+  split; [red|]; simpl; intros.
    unfold V.lams, V.shift.
    rewrite H. replace (k+(n0+(n-k))) with (n+n0) by omega. apply H0.
 
-   unfold I.lams, I.shift.
-   rewrite H. replace (k+(n0+(n-k))) with (n+n0) by omega. apply H0.
+   f_equal; omega.
 
-  split; red; simpl; intros.
+  split; [red|trivial]; simpl; intros.
    rewrite V.lams_bv; trivial.
 
-   rewrite I.lams_bv; trivial.
+ simpl; split; [red|]; reflexivity.
 
- simpl; split; red; reflexivity.
-
- simpl; split; red; reflexivity.
+ simpl; split; [red|]; reflexivity.
 
  simpl intp_foterm. do 2 rewrite red_lift_app.
  apply App_morph; trivial.
   apply App_morph; trivial.
-   simpl; split; red; reflexivity.
+   simpl; split; [red|]; reflexivity.
 Qed.
 
 Lemma lift_intp_lift_term : forall t n,
@@ -62,20 +59,17 @@ Lemma subst_intp_subst_term_rec : forall t nn k,
          (intp_foterm (subst_term_rec t nn k)).
 induction t; intros; simpl intp_foterm.
  simpl; destruct (lt_eq_lt_dec k n) as [[lt|eq]|bt]; simpl.
-  split; red; intros.
+  split; [red|]; intros.
    unfold V.lams, V.shift; simpl. 
    destruct (le_gt_dec k n) as [le|gt]; [|omega].
     replace (n-k) with (S (Peano.pred n-k)) by omega; simpl.
     replace (k+(Peano.pred n-k)) with (Peano.pred n) by omega; apply H.
 
-   unfold I.lams, I.shift; simpl.
-   destruct (le_gt_dec k n) as [le|gt]; [|omega].
-    replace (n-k) with (S (Peano.pred n-k)) by omega; simpl.
-    replace (k+(Peano.pred n-k)) with (Peano.pred n) by omega; apply H.
+   trivial.
 
   case_eq (intp_foterm (lift_term nn k)); intros; 
     [|apply intp_foterm_not_kind in H; trivial].
-   split; red; intros; subst k.
+   split; [red|]; intros; subst k.
     unfold V.lams; simpl.
     destruct (le_gt_dec n n) as [le|gt]; [|omega].
      replace (n-n) with 0 by omega; simpl. rewrite H0.
@@ -84,22 +78,21 @@ induction t; intros; simpl intp_foterm.
       rewrite <- int_lift_rec_eq. fold (lift n (intp_foterm nn)).
       rewrite lift_intp_lift_term. rewrite H; simpl; reflexivity.
 
-    unfold I.lams; simpl.
-    destruct (le_gt_dec n n) as [le|gt]; [|omega].
-     replace (n-n) with 0 by omega; simpl. rewrite H0.
-     setoid_replace (I.shift n y) with (I.lams 0 (I.shift n) y) 
-       using relation Lc.eq_intt; [|rewrite I.lams0; reflexivity].
-      rewrite <- tm_lift_rec_eq. fold (lift n (intp_foterm nn)).
-      rewrite lift_intp_lift_term. rewrite H; simpl; reflexivity.
+    transitivity (tmm (Some i)).
+    2:reflexivity.
+    rewrite <- H.
+    unfold Lc.lift; rewrite <- tmm_lift_rec_eq.
+    apply tmm_morph.
+    apply lift_intp_lift_term.
 
-  simpl; split; red; intros; [rewrite V.lams_bv|rewrite I.lams_bv]; trivial.
+  simpl; split; [red|]; intros; [rewrite V.lams_bv|]; trivial.
 
- simpl; split; red; reflexivity.
+ simpl; split; [red|]; reflexivity.
  
- simpl; split; red; reflexivity.
+ simpl; split; [red|]; reflexivity.
 
  do 2 rewrite red_sigma_app. apply App_morph; trivial.
-  apply App_morph; [simpl; split; red; reflexivity|trivial].
+  apply App_morph; [simpl; split; [red|]; reflexivity|trivial].
 Qed.
 
 Lemma subst_intp_subst_term : forall t N, 
@@ -212,7 +205,7 @@ generalize P_ax_intro5; intros Hax5. unfold ax5 in Hax5.
 destruct H as (g, (Hp, H)).
 apply intp_fofml_prop in Hp. simpl in Hp.
 setoid_replace prop with (lift 1 prop) using relation eq_term in Hp; [|
-  split; red; simpl; reflexivity].
+  split; [red|]; simpl; reflexivity].
 apply Hax5 in Hp. rewrite H. clear f H Hax5.
 simpl intp_fofml. destruct Hp as (t, Hp). exists t.
 revert Hp; apply typ_morph; [reflexivity|].

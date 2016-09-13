@@ -202,12 +202,21 @@ induction n; simpl; intros.
  destruct H with (n0:=0) (t:=sort); [split; [simpl; trivial|apply sort_not_kind]|clear H].
  destruct H' as (es, H).
  exists (sub_cons (Ref x) es).
- red; simpl; intros. apply H1 in H0. apply H in H1.
- apply in_int_not_kind in H0; 
-   [|case_eq sort; [discriminate|intro HF; apply sort_not_kind in HF; contradiction]].
- apply vcons_add_var; [trivial| |apply sort_not_kind].
-  unfold lift in H0; rewrite int_lift_rec_eq in H0.
-  revert H0; apply real_morph; [|apply sort_closed|]; reflexivity.
+ apply typ_sub_cons; trivial.
+  apply sort_not_kind.
+
+  apply typ_subsumption with (lift (S x) sort).
+   apply typ_var; trivial.
+    red; intros.
+    rewrite int_Sub_eq.
+    rewrite int_lift_eq in H2.
+    rewrite sort_closed; exact H2.
+
+    intros h; apply sort_not_kind.
+    destruct sort; trivial; discriminate.
+
+    intros h; apply sort_not_kind.
+    destruct sort; trivial; discriminate.
 Qed.
 
 Lemma SN_T : forall e x y,

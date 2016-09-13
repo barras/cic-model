@@ -1532,6 +1532,15 @@ induction 1; simpl; intros; auto.
   apply IHclos_trans1.
   apply IHclos_trans2.
 Qed.
+Lemma sub_all_lift_1 j t:
+   lift 1 (sub_all j t) = sub_all (ilift j) (lift 1 t).
+unfold lift; rewrite sub_all_lift_r.
+rewrite <- sub_all_lift_rec.
+apply sub_all_ext.
+intro k; simpl.
+rewrite I.lams0.
+reflexivity.
+Qed.
 
 
 

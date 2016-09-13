@@ -89,12 +89,9 @@ Hint Resolve kind_ok_trivial.
 (** ** Extendability *)
 Definition cst (x:set) : term.
 (* begin show *)
-left; exists (fun _ =>x) (fun _ =>Lambda.K).
+left; exists (fun _ =>x);[|exact Lambda.K].
 (* end show *)
  do 2 red; reflexivity.
- do 2 red; reflexivity.
- red; reflexivity.
- red; reflexivity.
 Defined.
 
 Definition mkSET (x:set) := cst (mkTY x (fun _ => snSAT)).

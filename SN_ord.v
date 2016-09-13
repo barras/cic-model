@@ -8,7 +8,7 @@ Require Import ZFuniv_real SN_ECC_Real.
 (** * Ordinals *)
 
 Definition Ordt (o:set) : term :=
-  SN.T.cst (mkTY o (fun _ => snSAT)) Lc.K (fun _ _ => eq_refl) (fun _ _ _ => eq_refl).
+  SN.T.cst (mkTY o (fun _ => snSAT)) Lc.K.
 
 Definition typ_ord_kind : forall e o, typ e (Ordt o) kind.
 red; simpl; intros.
@@ -34,37 +34,20 @@ Qed.
 
 Definition OSucc : term -> term.
 (*begin show*)
-intros o; left; exists (fun i => osucc (int o i)) (fun j => tm o j).
+intros o; left; exists (fun i => osucc (int o i));[|exact (tmm o)].
 (*end show*)
  do 2 red; intros.
  rewrite H; reflexivity.
- (**)
- do 2 red; intros.
- rewrite H; reflexivity.
- (**)
- red; intros.
- apply tm_liftable.
- (**)
- red; intros.
- apply tm_substitutive.
 Defined.
 
 Definition OSucct : term -> term.
 (*begin show*)
-intros o; left; exists (fun i => mkTY (osucc (int o i)) (fun _ => snSAT)) (fun j => tm o j).
+intros o; left; exists (fun i => mkTY (osucc (int o i)) (fun _ => snSAT));
+[|exact (tmm o)].
 (*end show*)
  do 2 red; intros.
  apply mkTY_ext; auto with *.
  rewrite H; reflexivity.
- (**)
- do 2 red; intros.
- rewrite H; reflexivity.
- (**)
- red; intros.
- apply tm_liftable.
- (**)
- red; intros.
- apply tm_substitutive.
 Defined.
 
 Lemma El_int_osucc O' i :
@@ -106,6 +89,7 @@ Lemma OSucc_typ e O :
 unfold typ_ord; intros.
 destruct H with (1:=H0).
 split; simpl; auto.
+rewrite <- tm_tmm; auto.
 Qed.
 
 Hint Resolve OSucc_typ.
