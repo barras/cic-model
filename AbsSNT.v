@@ -11,7 +11,6 @@
 Require Export GenLemmas.
 Require Import AbsTheoryIntp.
 Import AbsTheorySyn AbsTheorySem.
-Import Esub.
 
 (*SN for the abstract theory*)
 Module Abs_SN_Theory (Msyn : TheorySyn) (Msem : TheorySem) (Mintp : TheoryIntp Msyn Msem).
@@ -138,15 +137,15 @@ induction 1; simpl.
 Qed.
 
 Lemma SN_T : forall e x y,
-  (exists hyp a b i j, 
-    x = app_esub i j (intp_foterm a) /\
-    y = app_esub i j (intp_foterm b) /\
+  (exists hyp a b s, 
+    x = Sub (intp_foterm a) s /\
+    y = Sub (intp_foterm b) s /\
     wf_clsd_env (intp_hyp hyp) /\
-    typ_esub e i j (intp_hyp hyp) /\
+    typ_sub e s (intp_hyp hyp) /\
     deriv hyp (eq_foterm a b)) ->
   eq_typ e x y.
 intros e x y Hyp.
-destruct Hyp as (hyp, (a, (b, (i, (j, (Hx, (Hy, (Hclsd, (He, Hderiv))))))))).
+destruct Hyp as (hyp, (a, (b, (s, (Hx, (Hy, (Hclsd, (He, Hderiv)))))))).
 (*a and b are well typed in theory syntax*)
 specialize deriv_well_typed with (1:=Hderiv); intro Hwf.
 assert (wf_term hyp a /\ wf_term hyp b) as Hwfab.
@@ -167,7 +166,7 @@ apply EQ_term_elim in HEQ; [|exact Hclsd|exact Hwfa|exact Hwfb].
 
 (*eq_typ relation maintains after variable recocation*)
 subst x y. 
-apply explicit_sub_eq_typ with (3:=He); 
+apply typ_sub_eq_typ with (3:=He); 
   [apply intp_foterm_not_kind|apply intp_foterm_not_kind|exact HEQ].
 Qed.
 

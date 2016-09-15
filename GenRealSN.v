@@ -230,8 +230,7 @@ split; try discriminate.
   rewrite int_cons_lift_eq; trivial.
 
   destruct mem; split; trivial.
-  rewrite kind_ok_lift with (k:=0) in H.
-  rewrite eq_term_lift_ref_fv in H; auto with arith.
+  apply kind_ok_refS; trivial.
 Qed.
 
 Lemma in_int_sn : forall i j M T,
@@ -684,6 +683,8 @@ apply rprod_elim with (x:=int v i) (u:=tm v j) in ty_u; trivial.
   destruct Ur as [Ur|]; simpl; try discriminate; trivial.
 
   rewrite <- int_subst_eq; trivial.
+  trivial.
+
 
  red; intros.
  rewrite H0; reflexivity.
@@ -857,6 +858,91 @@ generalize (proj1 H); intro.
 apply in_int_not_kind in H; trivial.
 apply in_int_intro; trivial.
 rewrite <- H0; trivial.
+Qed.
+
+(** Explicit substitutions *)
+Lemma typ_sub_nil e s :
+  typ_sub e s nil.
+red; intros.
+red; intros.
+simpl in H0.
+destruct n; simpl in H0; discriminate H0.
+Qed.
+
+
+Lemma typ_sub_cons env1 env2 s t A :
+  A <> kind ->
+  typ_sub env1 s env2 ->
+  typ env1 t (Sub A s) ->
+  typ_sub env1 (sub_cons t s) (A::env2).
+red; intros; simpl.
+red in H0.
+specialize H0 with (1:=H2).
+red in H1.
+specialize H1 with (1:=H2).
+destruct H1.
+red; intros.
+destruct n; simpl in *.
+ injection H4; clear H4; intros; subst T.
+ split;[discriminate|].
+ destruct A as [A|]; simpl in *.
+  rewrite V.lams0.
+  exact H3.
+
+  elim H; trivial.
+
+ destruct (H0 _ _ H4).
+ split;[discriminate|].
+ destruct T as [T|]; simpl in *.
+  exact H6.
+
+  destruct H6; split; trivial.
+  apply kind_ok_refS; trivial.
+Qed.
+
+Lemma typ_sub_sub env1 env2 s t A :
+  A <> kind ->
+  typ_sub env1 s env2 ->
+  typ env2 t A -> 
+  typ env1 (Sub t s) (Sub A s).
+red; intros Ank ty_s ty_t i j valok.
+apply ty_s in valok.
+apply ty_t in valok.
+destruct valok.
+split.
+ destruct t; simpl; trivial.
+ discriminate.
+destruct A as [A|]; simpl; trivial.
+ destruct H0.
+ split.
+  rewrite int_Sub_eq; trivial.
+
+  rewrite tm_Sub_eq.
+  revert H1; apply Real_morph; [reflexivity|].
+  rewrite int_Sub_eq; reflexivity.
+
+ elim Ank; trivial.
+(* destruct H0.
+ split.
+  apply kind_ok_Sub; trivial.
+
+  rewrite tm_tmm in H1|-*; rewrite tm_Sub_eq.
+  rewrite <- sub_all_comp; trivial.*)
+Qed.
+
+Lemma typ_sub_eq_typ : forall env1 env2 s x y,
+  x <> kind ->
+  y <> kind ->
+  typ_sub env1 s env2 ->
+  eq_typ env2 x y ->
+  eq_typ env1 (Sub x s) (Sub y s).
+red; intros. 
+apply H1 in H3. 
+apply H2 in H3; simpl; trivial.
+simpl.
+destruct x;[|elim H;trivial].
+destruct y;[|elim H0;trivial].
+trivial.
 Qed.
 
 (** Weakening *)

@@ -88,8 +88,7 @@ revert in_T; pattern T at 1 4; case T; simpl.
  rewrite int_cons_lift_eq; trivial.
 
  destruct 1; split; trivial.
- rewrite kind_ok_lift with (k:=0) in H.
- rewrite eq_term_lift_ref_fv in H; auto with arith.
+ apply kind_ok_refS; trivial.
 Qed.
 
 Lemma in_int_sn : forall i j M T,
@@ -154,7 +153,8 @@ Definition sub_typ (e:env) (M M':term) :=
     x ∈ int M' i /\ inSAT t (Real (int M' i)).
 
 Definition typ_sub (e:env) (s:sub) (f:env) :=
-  forall i j, val_ok e i j -> val_ok f (sint s i) (stm s j).
+  forall i j, val_ok e i j ->
+  val_ok f (sint s i) (stm s j).
 
 Instance typ_morph : forall e, Proper (eq_term ==> eq_term ==> iff) (typ e).
 unfold typ; split; simpl; intros.

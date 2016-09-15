@@ -62,6 +62,76 @@ Section Terms.
 
 End Terms.
 
+(* Term-interpretation *)
+Require VarMap.
+
+Module LCeq.
+  Definition t := term.
+  Definition eq := @Logic.eq term.
+  Definition eq_equiv : Equivalence eq := eq_equivalence.
+End LCeq.
+Module I := VarMap.Make(LCeq).
+
+Notation intt := I.map.
+Notation eq_intt := I.eq_map.
+
+Import I.
+Existing Instance cons_morph.
+Existing Instance cons_morph'.
+Existing Instance shift_morph.
+Existing Instance lams_morph.
+
+
+Definition ilift (j:intt) : intt :=
+  fun k => match k with
+  | 0 => Ref 0
+  | S n => lift 1 (j n)
+  end.
+
+Instance ilift_morph : Proper (eq_intt ==> eq_intt) ilift.
+do 4 red; intros.
+unfold ilift.
+destruct a; simpl; auto.
+rewrite H; trivial.
+Qed.
+
+Lemma ilift_lams : forall k f j,
+  (forall j j', (forall a, lift 1 (j a) = j' a) ->
+   forall a, lift 1 (f j a) = f j' a) ->
+  eq_intt (ilift (I.lams k f j)) (I.lams (S k) f (ilift j)).
+intros.
+do 2 red; intros.
+destruct a; simpl.
+ reflexivity.
+
+ unfold I.lams; simpl.
+ destruct (le_gt_dec k a); simpl; trivial.
+ apply H.
+ unfold I.shift, ilift; simpl; intros; trivial.
+Qed.
+
+Fixpoint sub_all (s:intt) t :=
+  match t with
+  | Ref n => s n
+  | Abs u => Abs (sub_all (ilift s) u)
+  | App u v => App (sub_all s u) (sub_all s v)
+  end. 
+
+Lemma sub_all_morph : Proper (eq_intt ==> eq ==> eq) sub_all.
+intros s s' eqs t t' eqt; subst t'.
+revert s s' eqs; induction t; simpl; intros; auto.
+ f_equal; apply IHt.
+ apply ilift_morph; trivial.
+
+ f_equal; auto.
+Qed.
+
+Lemma sub_all_ext s s' t :
+  eq_intt s s' ->
+  sub_all s t = sub_all s' t.
+intros; apply sub_all_morph; trivial.
+Qed.
+
   Hint Constructors subterm occur.
 
 Section Beta_Reduction.
@@ -1334,52 +1404,136 @@ Qed.
 
 End Confluence.
 
-(* Term-interpretation *)
-Require VarMap.
+(* N-ary substitution *)
 
-Module LCeq.
-  Definition t := term.
-  Definition eq := @Logic.eq term.
-  Definition eq_equiv : Equivalence eq := eq_equivalence.
-End LCeq.
-Module I := VarMap.Make(LCeq).
+Lemma sub_all_lift_rec n k t j :
+ sub_all (fun i => lift_rec n (j i) k) t =
+ lift_rec n (sub_all j t) k.
+revert j k; induction t; simpl; intros; trivial.
+ f_equal.
+ rewrite <- IHt.
+ apply sub_all_ext; intros i.
+ unfold ilift; destruct i; simpl; trivial.
+ apply permute_lift_rec; auto with arith.
 
-Notation intt := I.map.
-Notation eq_intt := I.eq_map.
-
-Import I.
-Existing Instance cons_morph.
-Existing Instance cons_morph'.
-Existing Instance shift_morph.
-Existing Instance lams_morph.
-
-Definition ilift (j:intt) : intt :=
-  fun k => match k with
-  | 0 => Ref 0
-  | S n => lift 1 (j n)
-  end.
-
-Instance ilift_morph : Proper (eq_intt ==> eq_intt) ilift.
-do 4 red; intros.
-unfold ilift.
-destruct a; simpl; auto.
-rewrite H; trivial.
+ f_equal; trivial.
 Qed.
 
-Lemma ilift_lams : forall k f j,
-  (forall j j', (forall a, lift 1 (j a) = j' a) ->
-   forall a, lift 1 (f j a) = f j' a) ->
-  eq_intt (ilift (I.lams k f j)) (I.lams (S k) f (ilift j)).
-intros.
-do 2 red; intros.
-destruct a; simpl.
- reflexivity.
+Lemma sub_all_subst_rec u k t j :
+ sub_all (fun n => subst_rec u (j n) k) t =
+ subst_rec u (sub_all j t) k.
+revert j k; induction t; simpl; intros; trivial.
+ f_equal.
+ rewrite <- IHt.
+ apply sub_all_ext; intros n.
+ unfold ilift; destruct n; simpl; trivial.
+ symmetry; apply commut_lift_subst.
 
- unfold I.lams; simpl.
- destruct (le_gt_dec k a); simpl; trivial.
- apply H.
- unfold I.shift, ilift; simpl; intros; trivial.
+ f_equal; trivial.
 Qed.
+Lemma sub_all_lift_r n k j M :
+  sub_all j (lift_rec n M k) =
+  sub_all (I.lams k (I.shift n) j) M.
+revert k j; induction M; simpl; intros.
+ unfold I.lams.
+ destruct (le_gt_dec k n0); simpl; trivial.
+ unfold I.shift.
+ apply f_equal with (f:=j); omega.
+
+ f_equal.
+ rewrite IHM.
+ apply sub_all_ext; intros [|i]; simpl.
+  reflexivity.
+
+  unfold I.lams; simpl.
+  destruct (le_gt_dec k i); simpl; trivial.
+
+ f_equal; trivial.
+Qed.
+Lemma sub_all_subst_rr k N M j:
+  sub_all j (subst_rec N M k) =
+  sub_all (I.lams k (I.cons (sub_all (I.shift k j) N)) j) M.
+revert k j; induction M; simpl; intros.
+ unfold I.lams.
+ destruct (lt_eq_lt_dec k n) as [[?|?]|?]; destruct (le_gt_dec k n);
+   simpl; trivial; try (exfalso; omega).
+  unfold I.cons.
+  destruct n as[|n];[inversion l|].
+  replace (S n - k) with (S(n-k)) by omega; simpl.
+  unfold I.shift; apply f_equal with (f:=j); omega.
+
+  subst k; replace (n-n) with 0 by omega; simpl.
+  unfold lift; rewrite sub_all_lift_r.
+  apply sub_all_ext.
+  apply I.lams0.
+
+ f_equal.
+ rewrite IHM.
+ apply sub_all_ext; intros [|i]; simpl.
+  reflexivity.
+
+  unfold I.lams; simpl.
+  destruct (le_gt_dec k i); simpl; trivial.
+  unfold I.cons.
+  destruct (i-k).
+   unfold lift; rewrite <- sub_all_lift_rec.
+   apply sub_all_ext.
+   intros k'; unfold I.shift; simpl; trivial.
+
+   unfold I.shift.
+   unfold ilift; simpl; trivial.
+
+ f_equal; trivial.
+Qed.
+Lemma sub_all_subst_r N M j :
+  sub_all j (subst N M) =
+  subst (sub_all j N) (sub_all (ilift j) M).
+unfold subst; rewrite sub_all_subst_rr.
+rewrite <- sub_all_subst_rec.
+apply sub_all_ext.
+intros k.
+rewrite I.lams0.
+destruct k; simpl.
+ rewrite lift0; trivial.
+
+ rewrite simpl_subst; trivial.
+ rewrite lift0; trivial.
+Qed.
+Lemma sub_all_comp s t j :
+ sub_all (fun i => sub_all s (j i)) t =
+ sub_all s (sub_all j t).
+revert j s; induction t; simpl; intros; trivial.
+ f_equal.
+ rewrite <- IHt.
+ apply sub_all_ext; intros i.
+ unfold ilift; destruct i; simpl; trivial.
+ unfold lift at 3; rewrite sub_all_lift_r.
+ unfold lift at 1; rewrite <- sub_all_lift_rec.
+ apply sub_all_ext; intros i'; simpl.
+ unfold I.lams,I.shift; simpl.
+ replace (i'-0) with i' by omega; trivial. 
+
+ f_equal; trivial.
+Qed.
+Lemma sub_all_redp u v :
+  redp u v -> forall j, redp (sub_all j u) (sub_all j v).
+induction 1; simpl; intros; auto.
+ apply t_step.
+ revert j; induction H; simpl; intros; auto.
+
+ rewrite sub_all_subst_r.
+ constructor.
+
+ constructor; trivial.
+ constructor; trivial.
+ constructor; trivial.
+
+ apply t_trans with (sub_all j y); trivial.
+  apply IHclos_trans1.
+  apply IHclos_trans2.
+Qed.
+
+
 
 Lemma ilift_binder : forall u j k,
   eq_intt
@@ -1420,6 +1574,7 @@ destruct a; simpl.
  unfold I.lams; simpl.
  destruct (le_gt_dec k a); simpl; trivial.
 Qed.
+
 
 (* Substitutivity property *)
 

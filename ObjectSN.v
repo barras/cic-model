@@ -171,6 +171,26 @@ Definition eq_sub (s1 s2:sub) :=
      (eq_val ==> eq_val)%signature (sint s1) (sint s2) /\
      (Lc.eq_intt ==> Lc.eq_intt)%signature (stm s1) (stm s2).
 
+Global Instance eq_sub_equiv : Equivalence eq_sub.
+split; red; intros.
+ red; split;red; intros; auto with *.
+  apply sint_morph; trivial.
+  apply stm_morph; trivial.
+
+ destruct H.
+ red; split;red; intros; auto with *.
+  symmetry; apply H; symmetry; trivial.
+  symmetry; apply H0; symmetry; trivial.
+
+ destruct H; destruct H0.
+ red; split; red; intros.
+  transitivity (sint y x0); auto.
+  apply H; reflexivity.
+
+  transitivity (stm y x0); auto.
+  apply H1; reflexivity.
+Qed.
+
 Definition sub_comp (s1 s2 : sub) : sub.
 (*begin show*)
 exists (fun i => sint s1 (sint s2 i))
@@ -302,6 +322,27 @@ intros i.
 apply (stm_subst s).
 Defined.
 
+Lemma int_Sub_eq t s i :
+  int (Sub t s) i == int t (sint s i).
+destruct t as [t|]; simpl;reflexivity.
+Qed.
+
+Lemma tm_Sub_eq t s j :
+  tm (Sub t s) j = tm t (stm s j).
+destruct t as [t|]; simpl; reflexivity.
+Qed.
+
+Lemma eq_Sub_comp t s1 s2 :
+  eq_term (Sub (Sub t s1) s2) (Sub t (sub_comp s1 s2)).
+apply eq_term_intro; intros.
+ rewrite !int_Sub_eq.
+ unfold sub_comp; simpl; reflexivity.
+
+ rewrite !tm_Sub_eq.
+ unfold sub_comp; simpl; reflexivity.
+
+ destruct t as [t|]; simpl; trivial.
+Qed.
 
 (** Property of substitutivity: whenever a term-denotation contains
    a free var, then it comes from the term-valuation (but we can't tell which
@@ -1308,6 +1349,12 @@ unfold kind_ok; split; intros.
   apply H0.
 Qed.
 
+Lemma kind_ok_refS n :
+  kind_ok (Ref n) -> kind_ok (Ref (S n)).
+intros.
+apply kind_ok_lift with (k:=0) in H.
+rewrite eq_term_lift_ref_fv in H; auto with arith.
+Qed.
 
 End T.
 Export T.

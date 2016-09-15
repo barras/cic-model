@@ -1,5 +1,4 @@
 Require Import InstInterp.
-Require Import Esub.
 
 Import InstSyn InstSem ModelTheory.
 Import SN_CC_Real.
@@ -169,13 +168,13 @@ Lemma Equation_embed : forall n x y t,
 intros. apply EQ_term_eq_typ with (t:=t); trivial.
 Qed.
 
-Lemma eq_typ_env : forall env1 env2 s s' x y,
+Lemma eq_typ_env : forall env1 env2 s x y,
   x <> kind ->
   y <> kind ->
-  typ_esub env1 s s' env2 ->
+  typ_sub env1 s env2 ->
   eq_typ env2 x y ->
-  eq_typ env1 (app_esub s s' x) (app_esub s s' y).
-apply explicit_sub_eq_typ.
+  eq_typ env1 (Sub x s) (Sub y s).
+apply typ_sub_eq_typ.
 Qed.
 
 Definition env_incl env1 env2 := forall n t,
@@ -191,18 +190,18 @@ Qed.
 
 Lemma esub_exst : forall env1 n,
   env_incl env1 (const_env n) ->
-  exists esi esj, typ_esub env1 esi esj (const_env n).
+  exists es, typ_sub env1 es (const_env n).
 induction n; simpl; intros.
- exists id_sub_i, id_sub_j. 
- rewrite const_env0; apply esub_typ_id.
+ exists sub_id. 
+ rewrite const_env0; apply typ_sub_nil.
 
  rewrite const_envS in H |- *.
  specialize env_incl_cons with (1:=H); intro H'.
  apply IHn in H'; clear IHn.
  unfold env_incl in H. 
  destruct H with (n0:=0) (t:=sort); [split; [simpl; trivial|apply sort_not_kind]|clear H].
- destruct H' as (esi, (esj, H)).
- exists (sub_cons_i (Ref x) esi), (sub_cons_j (Ref x) esj).
+ destruct H' as (es, H).
+ exists (sub_cons (Ref x) es).
  red; simpl; intros. apply H1 in H0. apply H in H1.
  apply in_int_not_kind in H0; 
    [|case_eq sort; [discriminate|intro HF; apply sort_not_kind in HF; contradiction]].
@@ -214,8 +213,8 @@ Qed.
 Lemma SN_T : forall e x y,
   (exists n, deriv (const_hyp n) (eq_foterm x y) /\ 
     env_incl e (intp_hyp (const_hyp n))) ->
-  (exists esi esj, 
-    eq_typ e (app_esub esi esj (intp_foterm x)) (app_esub esi esj (intp_foterm y))).
+  (exists es, 
+    eq_typ e (Sub (intp_foterm x) es) (Sub (intp_foterm y) es)).
 intros e x y Hderiv.
 destruct Hderiv as (n, (Hderiv, Hincl)).
 specialize intp_sound with (1:=Hderiv); intro H.
@@ -223,7 +222,7 @@ destruct H as (p, H).
 rewrite intp_eq_fml in H.
 rewrite intp_hyp_env_const in H, Hincl.
 specialize esub_exst with (1:=Hincl); intros H'.
-destruct H' as (esi, (esj, H')). exists esi, esj. 
+destruct H' as (es, H'). exists es. 
 apply eq_typ_env with (3:=H'); 
   [apply intp_foterm_not_kind|apply intp_foterm_not_kind|].
 apply deriv_well_typed in Hderiv.
@@ -241,7 +240,7 @@ Import SNT PresburgerSyn PresburgerSem InterpPresburger.
 Lemma SN_Presburger : forall e x y,
   (exists n, deriv (const_hyp n) (eq_foterm x y) /\ 
     env_incl e (intp_hyp (const_hyp n))) ->
-  (exists esi esj, 
-    eq_typ e (app_esub esi esj (intp_foterm x)) (app_esub esi esj (intp_foterm y))).
+  (exists es, 
+    eq_typ e (Sub (intp_foterm x) es) (Sub (intp_foterm y) es)).
 apply SN_T.
 Qed.
