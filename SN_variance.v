@@ -233,29 +233,21 @@ apply val_push_var; auto.
  unfold inX; rewrite <- H4; rewrite <- H0; trivial.
 Qed.
 
-  Lemma fx_eq_rec_call : forall e n x T U,
-    ords e n = false ->
-    fixs e n = Some T ->
+  Lemma fx_eq_app_irr e m x T :
     T <> kind ->
-    typ (tenv e) (Ref n) (Prod (lift (S n) T) U) ->
+    fx_extends e T m ->
     fx_equals e x ->
-    typ (tenv e) x (lift (S n) T) ->
-    fx_equals e (App (Ref n) x).
-unfold fx_equals; intros.
+    typ (tenv e) x T ->
+    fx_equals e (App m x).
+unfold typ, fx_extends,fx_equals; intros Tnk m_ext x_eq x_ty i i' j j' valm.
 simpl.
-specialize H3 with (1:=H5).
-rewrite <- H3.
-destruct H5 as (Hty,(Hty',Hrec)).
-specialize Hrec with n.
-rewrite H in Hrec; rewrite H0 in Hrec.
-apply Hrec.
-red in H4; specialize H4 with (1:=Hty); trivial.
-apply in_int_not_kind in H4; trivial.
-2:destruct T;[discriminate|elim H1;reflexivity].
-destruct H4 as (?,_ ).
-unfold inX in H4.
-unfold lift in H4; rewrite int_lift_rec_eq in H4.
-rewrite V.lams0 in H4; trivial.
+specialize x_eq with (1:=valm).
+specialize m_ext with (1:=valm).
+rewrite <- x_eq.
+apply m_ext.
+specialize x_ty with (1:=proj1 valm).
+apply in_int_not_kind in x_ty; trivial.
+destruct x_ty as (?,_ ); trivial.
 Qed.
 
   (* Covariance *)
@@ -333,6 +325,34 @@ Qed.
 
   (* Function subtyping *)
 
+  Lemma fx_ext_var e n T :
+    ords e n = false ->
+    fixs e n = Some T ->
+    fx_extends e (lift (S n) T) (Ref n).
+red; intros.
+simpl.   
+assert (h := proj2 (proj2 H1) n).
+rewrite H,H0 in h.
+red; intros.
+apply h.
+rewrite int_lift_eq in H2; trivial.
+Qed.
+
+  Lemma fx_eq_rec_call : forall e n x T U,
+    ords e n = false ->
+    fixs e n = Some T ->
+    T <> kind ->
+    typ (tenv e) (Ref n) (Prod (lift (S n) T) U) ->
+    fx_equals e x ->
+    typ (tenv e) x (lift (S n) T) ->
+    fx_equals e (App (Ref n) x).
+intros.
+apply fx_eq_app_irr with (lift (S n) T); trivial.
+ destruct T; [discriminate|elim H1; trivial].
+
+ apply fx_ext_var; trivial.
+Qed.
+
   Lemma fx_abs : forall e U T M,
     T <> kind ->
     fx_sub e T ->
@@ -394,6 +414,17 @@ apply int_morph; auto with *.
 intros k.
 generalize (proj2 (proj2 H0) k); simpl.
 auto.
+Qed.
+
+
+Lemma typ_impl_subsumption e M T T' :
+  typ_impl e M T ->
+  sub_typ (tenv e) T T' ->
+  T <> kind ->
+  T' <> kind ->
+  typ_impl e M T'.
+ destruct 1; split; trivial.
+ apply  typ_subsumption with T; trivial.
 Qed.
 
 Lemma typ_var_impl : forall e n t T,

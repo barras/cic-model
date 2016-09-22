@@ -100,6 +100,15 @@ Qed.
 Definition typ_ord (e:env) (O:term) : Prop :=
   forall i j, val_ok e i j -> isOrd (int O i) /\ Lc.sn (tm O j).
 
+Lemma typ_ord_cst e o :
+  isOrd o ->
+  typ_ord e (cst o).
+split; simpl; trivial.
+apply Lc.sn_K.
+Qed.
+Hint Resolve typ_ord_cst.
+
+
 Lemma OSucc_typ e O :
   typ_ord e O ->
   typ_ord e (OSucc O).
@@ -118,16 +127,29 @@ apply val_ok_shift1 in H0.
 apply H with (1:=H0).
 Qed.
 
+Lemma typ_ord_var0_ord e O :
+  O <> kind ->
+  typ_ord e O ->
+  typ_ord (OSucct O::e) (Ref 0).
+red; simpl; intros.
+destruct (H1 0 _ eq_refl).
+apply val_ok_shift1  in  H1.
+red in H0; specialize H0 with (1:=H1).
+destruct H0 as (?,_).
+destruct H3.
+red in H3; rewrite int_lift_eq in H3.
+apply sat_sn in H4; split; trivial.
+apply cc_bot_ax in H3; destruct H3.
+ simpl in H3; rewrite H3; auto.
+
+ simpl in H3; rewrite Elt_def in H3.
+ apply isOrd_inv with (2:=H3); auto.
+Qed.
+
 Lemma typ_ord_var0 e o :
   isOrd o ->
   typ_ord (OSucct (cst o)::e) (Ref 0).
-red; simpl; intros.
-destruct (H0 0 _ eq_refl).
-destruct H2.
-simpl in H2,H3; red in H2; rewrite El_def in H2; rewrite Real_def in H3; trivial.
-2:reflexivity.
-apply sat_sn in H3; split; trivial.
-apply cc_bot_ax in H2; destruct H2.
- rewrite H2; auto.
- apply isOrd_inv with (osucc o); auto.
+intros.
+apply typ_ord_var0_ord; auto.
+discriminate.
 Qed.

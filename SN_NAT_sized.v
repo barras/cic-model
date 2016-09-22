@@ -72,6 +72,40 @@ left; exists (fun i => mkTY (TI NATf' (int O i)) cNAT)
  reflexivity.
 Defined.
 
+Global Instance NatI_morph : Proper (eq_term==>eq_term) NatI.
+do 2 red; intros.
+apply eq_term_intro; simpl; trivial; intros.
+ apply mkTY_ext.
+  rewrite H; reflexivity.
+
+  intros.
+  apply cNAT_morph; trivial.
+
+ rewrite H; reflexivity.
+Qed.
+Lemma eq_sb_NatI A k O :
+     eq_term (subst_rec A k (NatI O)) (NatI (subst_rec A k O)).
+apply eq_term_intro; simpl; trivial.
+ intros; apply mkTY_ext; intros.
+  rewrite int_subst_rec_eq; reflexivity.
+
+  apply cNAT_morph; trivial.
+
+ intros.
+ rewrite tm_subst_rec_eq; trivial.
+Qed.
+Lemma eq_lft_NatI n k O :
+     eq_term (lift_rec n k (NatI O)) (NatI (lift_rec n k O)).
+apply eq_term_intro; simpl; trivial.
+ intros; apply mkTY_ext; intros.
+  rewrite int_lift_rec_eq; reflexivity.
+
+  apply cNAT_morph; trivial.
+
+ intros.
+ rewrite tm_lift_rec_eq; trivial.
+Qed.
+
 Lemma El_int_NatI O i :
   El (int (NatI O) i) == cc_bot (TI NATf' (int O i)).
 simpl.
@@ -569,6 +603,24 @@ Qed.
 End NAT_typing.
 Hint Resolve typ_infty.
 
+Lemma ext_S e O :
+  typ_ord (tenv e) O ->
+  fx_subval e O ->
+  fx_extends e (NatI O) (Succ O).
+red; red; simpl; intros.
+rewrite beta_eq; trivial.
+2:red; intros; apply succ_morph; trivial.
+rewrite beta_eq; auto with *.
+ red; intros; apply succ_morph; trivial.
+red; rewrite El_def in H2|-*.
+revert H2; apply cc_bot_mono.
+destruct H with (1:=proj1 H1) as (?,_).
+destruct H with (1:=proj1 (proj2 H1)) as (?,_).
+apply TI_mono; auto.
+apply H0 with (1:=H1).
+Qed.
+
+
 Lemma impl_NatCase e O b0 bS n P :
   typ_ord_mono e O ->
   typ_impl e b0 (App P Zero) ->
@@ -621,24 +673,88 @@ split.
   apply H2.
 Qed.
 
+Lemma impl_NatCase' e O0 b0 bS n P :
+   P <> kind ->
+   typ_ord_mono e O0 ->
+       typ_impl e b0 (subst Zero P) ->
+       typ_impl (push_var e (NatI O0)) bS
+         (subst (App (lift 1 (Succ O0)) (Ref 0)) (lift1 1 P)) ->
+       typ_impl e n (NatI (OSucc O0)) ->
+       typ_impl e (NatCase b0 bS n) (subst n P).
+intros Pnk tyO tyb0 tybS tyn.
+apply typ_impl_subsumption with (App (Abs (NatI (OSucc O0)) P) n).
+3:discriminate.
+3:destruct P;[discriminate|elim Pnk; trivial].
+ 
+ apply impl_NatCase with (O0:=O0); trivial.
+  apply typ_impl_subsumption with (subst Zero P); trivial.
+  2:destruct P;[discriminate|elim Pnk; trivial].
+  2:discriminate.
+  apply sub_refl.
+  symmetry; apply eq_typ_betar.
+  2:discriminate.
+  apply typ_0.
+  apply tyO.
 
-Lemma ext_S e O :
-  typ_ord (tenv e) O ->
-  fx_subval e O ->
-  fx_extends e (NatI O) (Succ O).
-red; red; simpl; intros.
-rewrite beta_eq; trivial.
-2:red; intros; apply succ_morph; trivial.
-rewrite beta_eq; auto with *.
- red; intros; apply succ_morph; trivial.
-red; rewrite El_def in H2|-*.
-revert H2; apply cc_bot_mono.
-destruct H with (1:=proj1 H1) as (?,_).
-destruct H with (1:=proj1 (proj2 H1)) as (?,_).
-apply TI_mono; auto.
-apply H0 with (1:=H1).
+  apply typ_impl_subsumption with
+    (subst (App (lift 1 (Succ O0)) (Ref 0)) (lift1 1 P)); trivial.
+  2:destruct P;[discriminate|elim Pnk; trivial].
+  2:discriminate.
+  unfold lift at 2.
+  rewrite red_lift_abs.
+  apply sub_refl.
+  symmetry; apply eq_typ_betar.
+  2:discriminate.
+  apply typ_subsumption with (subst (Ref 0)(lift 1 (lift 1 (NatI (OSucc O0))))).
+  3:discriminate.
+  3:discriminate.
+   apply typ_app with (lift 1 (NatI O0)).
+   3:discriminate.
+   3:discriminate.
+    apply typ_var.
+    reflexivity.
+
+    eapply typ_subsumption.
+    apply weakening.
+    apply typ_S.
+    apply tyO.
+    2:discriminate.
+    2:discriminate.
+    apply sub_refl; apply eq_term_eq_typ.
+    unfold lift; rewrite red_lift_prod.
+    apply Prod_morph; auto with *.
+    apply eq_term_intro; [| |simpl; trivial].
+     intros; rewrite !int_lift_rec_eq.
+     apply int_morph; auto with *.
+     intros [|k]; reflexivity.
+
+     intros; rewrite !tm_lift_rec_eq.
+     apply tm_morph; auto with *.
+     intros [|k]; reflexivity.
+
+apply sub_refl; apply eq_term_eq_typ.
+fold (lift 1 (NatI (OSucc O0))).
+apply eq_term_intro.
+ intros i.
+ rewrite <- int_subst_eq.
+ rewrite !int_lift_eq.
+ apply int_morph; auto with *.
+ reflexivity.
+
+ intros j.
+ unfold subst; rewrite tm_subst_rec_eq.
+ unfold lift; rewrite !tm_lift_rec_eq. 
+ apply tm_morph; auto with *.
+ rewrite !I.lams0.
+ reflexivity.
+
+ exact I.
+
+ apply sub_refl.
+ apply eq_typ_betar; trivial.
+ apply tyn.
+ discriminate.
 Qed.
-
 
 
 (*****************************************************************************)
@@ -1395,10 +1511,10 @@ apply typ_abs; try discriminate.
     apply typ_var0.
     split;[discriminate|].
     apply sub_refl; apply eq_term_eq_typ.
-    split; simpl; red; intros; auto with *.
+    apply eq_term_intro; simpl; auto; try reflexivity.
 
     apply sub_refl; apply eq_term_eq_typ.
-    split; simpl; red; intros; auto with *.
+    apply eq_term_intro; simpl; auto; try reflexivity.
 (*
  left.
  split;[discriminate|].
@@ -1429,10 +1545,10 @@ apply typ_abs; try discriminate.
     apply typ_var0.
     split;[discriminate|].
     apply sub_refl; apply eq_term_eq_typ.
-    split; simpl; red; intros; auto with *.
+    apply eq_term_intro; simpl; auto; try reflexivity.
 
    apply sub_refl; apply eq_term_eq_typ.
-   split; simpl; red; intros; auto with *.
+   apply eq_term_intro; simpl; auto; try reflexivity.
 
   eapply typ_subsumption with (subst (App (Succ infty) (Ref 1)) prop); try discriminate.
    apply typ_app with (NatI infty); try discriminate.
@@ -1441,12 +1557,12 @@ apply typ_abs; try discriminate.
       apply typ_var0.
       split;[discriminate|].
       apply sub_refl; apply eq_term_eq_typ.
-      split; simpl; red; intros; auto with *.
+      apply eq_term_intro; simpl; auto; try reflexivity.
 
       apply typ_S; trivial.
 
      apply sub_refl; apply eq_term_eq_typ.
-     split; simpl; red; intros; trivial.
+     apply eq_term_intro; intros; simpl; auto; try reflexivity.
      apply mkTY_ext; trivial.
       rewrite TI_mono_succ; auto with *.
       rewrite <- NAT_eqn; auto with *.
@@ -1456,7 +1572,7 @@ apply typ_abs; try discriminate.
     apply typ_var0.
     split;[discriminate|].
     apply sub_refl; apply eq_term_eq_typ.
-    split; simpl; red; intros; auto with *.
+    apply eq_term_intro; intros; simpl; auto; try reflexivity.
 
    apply sub_refl; apply eq_term_eq_typ.
    split; simpl; red; intros; auto with *.
@@ -1513,10 +1629,10 @@ apply typ_natfix'' with (U:=App (Ref 4) (Ref 0)); auto.
     apply typ_var0.
     split;[discriminate|].
     apply sub_refl; apply eq_term_eq_typ.
-    split; simpl; red; intros; auto with *.
+    apply eq_term_intro; intros; simpl; auto; try reflexivity.
 
    apply sub_refl; apply eq_term_eq_typ.
-   split; simpl; red; intros; auto with *.
+   apply eq_term_intro; intros; simpl; auto; try reflexivity.
 
  (* fix body *)
  apply ext_abs; try discriminate.
@@ -2022,6 +2138,193 @@ End Example.
 
 Print Assumptions minus_def.
 *)
+
+(* "Map" is size-preserving *)
+
+Definition map O :=
+  NatFix O
+    (*o,Hrec*)
+    (Abs (*n*) (NatI (OSucc (Ref 1)))
+    (NatCase
+       Zero
+       (*n'*)
+       (App(Succ (Ref 3)) (App (Ref 2) (Ref 0))) (* S(Hrec n') *)
+       (Ref 0))).
+
+Definition map_typ O := Prod (NatI O) (NatI (lift 1 O)).
+
+Lemma map_def e O :
+  O <> kind ->
+  typ_ord e O ->
+  typ e (map O) (map_typ O).
+unfold map, map_typ; intros Onk tyO.
+change e with (tenv (tinj e)).
+apply typ_natfix'' with (U:=NatI (Ref 1)); auto.
+ discriminate.
+
+ (* sub *)
+ apply sub_refl; apply eq_term_eq_typ.
+ apply Prod_morph;[reflexivity|].
+ rewrite eq_sb_NatI.
+ apply NatI_morph; rewrite red_sigma_ref; trivial.
+ reflexivity.
+
+ (* codom mono *)
+ split.
+  apply NatI_sub.
+   apply typ_ord_varS.
+   apply typ_ord_var0_ord; trivial.
+
+   apply var_sub; reflexivity.
+
+  left.
+  apply typ_NatI.   
+  apply typ_ord_varS.
+  apply typ_ord_var0_ord; trivial.
+
+ (* fix body *)
+ apply ext_abs; try discriminate.
+  split.
+   apply NatI_sub.
+    apply OSucc_typ.
+    apply typ_ord_varS.
+    apply typ_ord_var0_ord; trivial.
+
+    apply OSucc_subval.
+     apply typ_ord_varS.
+     apply typ_ord_var0_ord; trivial.
+
+     apply var_sub; reflexivity.
+
+   left.
+   apply typ_NatI.   
+   apply OSucc_typ.
+   apply typ_ord_varS.
+   apply typ_ord_var0_ord; trivial.
+
+ apply typ_impl_subsumption with (subst (Ref 0) (NatI(OSucc(Ref 3)))).
+ 3:discriminate.
+ 3:discriminate.
+  apply impl_NatCase' with (O0:=Ref 2).
+   discriminate.
+
+  (* ord mono *)
+  split.
+   apply var_sub; simpl; trivial.
+
+   apply typ_ord_varS.
+   apply typ_ord_varS.
+   apply typ_ord_var0_ord; trivial.
+ 
+  (* branch 0 *)
+  split.
+   apply fx_eq_noc.
+   red; simpl; reflexivity.
+
+   apply typ_subsumption with (NatI (OSucc (Ref 2))).
+   3:discriminate.
+   3:discriminate.
+    apply typ_0.
+    apply typ_ord_varS.
+    apply typ_ord_varS.
+    apply typ_ord_var0_ord; trivial.
+
+    apply sub_refl; apply eq_term_eq_typ.
+    unfold subst; rewrite eq_sb_NatI; apply NatI_morph.
+    apply eq_term_intro; simpl; trivial.    
+    reflexivity.
+
+  (* branch S *)
+  split.
+  apply fx_eq_app_irr with (NatI (Ref 3)).
+    discriminate.
+   apply ext_S.
+    apply typ_ord_varS.
+    apply typ_ord_varS.
+    apply typ_ord_varS.
+    apply typ_ord_var0_ord; trivial.
+   apply var_sub; reflexivity.
+
+   apply fx_eq_rec_call with (NatI (Ref 0)) (NatI (Ref 4)); trivial.
+    discriminate.
+
+    apply typ_var0; split;[discriminate|].
+    apply sub_refl; apply eq_term_eq_typ.
+    unfold lift; rewrite red_lift_prod.
+    apply Prod_morph.
+     apply eq_term_intro; trivial; reflexivity.
+     apply eq_term_intro; trivial; reflexivity.
+   
+    apply fx_eq_noc; apply noc_var; auto.
+   
+    apply typ_var0; split;[discriminate|].
+    apply sub_refl; apply eq_term_eq_typ.
+    apply eq_term_intro; trivial; reflexivity.
+
+    eapply typ_subsumption.
+     eapply typ_app.
+      apply typ_var; reflexivity.
+    apply typ_var0; split;[discriminate|].
+    apply sub_refl; apply eq_term_eq_typ.
+    unfold lift; rewrite red_lift_prod.
+    apply Prod_morph;[|reflexivity].
+    apply eq_term_intro; trivial; reflexivity.
+     discriminate.
+     discriminate.
+     2:discriminate.
+     2:discriminate.
+
+    apply sub_refl; apply eq_term_eq_typ.
+    apply eq_term_intro; trivial; reflexivity.
+
+  eapply typ_subsumption.
+   eapply typ_app.
+   2:apply typ_S.  
+3:discriminate.
+3:discriminate.
+4:discriminate.
+4:discriminate.
+    2:apply typ_ord_varS.
+    2:apply typ_ord_varS.
+    2:apply typ_ord_varS.
+    2:apply typ_ord_var0_ord; trivial.
+
+  eapply typ_subsumption.
+   eapply typ_app.
+    eapply typ_var;reflexivity.
+2:discriminate.
+5:discriminate.
+apply typ_var0.
+split.
+ discriminate.
+  apply sub_refl; apply eq_term_eq_typ.
+   unfold lift; rewrite red_lift_prod.
+   apply Prod_morph;[|reflexivity].
+2:discriminate.
+3:discriminate.   
+  apply eq_term_intro; trivial; reflexivity.
+
+  apply sub_refl; apply eq_term_eq_typ.
+  apply eq_term_intro; trivial; reflexivity.
+
+  apply sub_refl; apply eq_term_eq_typ.
+  apply eq_term_intro; trivial; reflexivity.
+  
+  (* scrutinee *)
+  eapply typ_var_impl. 2:reflexivity.
+  2:discriminate.
+  2:discriminate.
+  reflexivity.
+
+  apply sub_refl; apply eq_term_eq_typ.
+  apply eq_term_intro; simpl; auto.
+  reflexivity.
+
+ (* sub case pred *)
+ apply sub_refl; apply eq_term_eq_typ.
+ apply eq_term_intro; trivial; reflexivity.
+Qed.
+
 End Example.
 End Examples.
 
@@ -2291,7 +2594,8 @@ Definition test := (
   typ_natfix,
   natfix_extend,
   natfix_eq_S,
-  Examples.nat_ind_def
+  Examples.nat_ind_def,
+  Examples.map_def
 ).
 
 Print Assumptions test.
