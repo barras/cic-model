@@ -12,7 +12,7 @@ Reserved Notation "[ x , t ] \real A" (at level 60).
 (******************************************************************************)
 (* The generic model construction: *)
 
-Module MakeModel (M : CC_SN_Model) <: Syntax (*Judge*).
+Module MakeModel (M : SN_NoUniv_Model) <: Syntax (*Judge*).
 Import M.
 
 (* Derived properties of the abstract SN model *)
@@ -466,6 +466,66 @@ intros (i,(j,is_val)) ty.
 apply ty in is_val.
 apply in_int_sn in is_val.
 apply simul with (1:=is_val) (2:=eq_refl).
+Qed.
+
+
+(** * Consistency out of the strong normalization model *)
+
+(** What is original is that it is based on the strong normalization model which
+   precisely inhabits all types and propositions. We get out of this by noticing that
+   non provable propositions contain no closed realizers. So, by a substitutivity
+   invariant (realizers of terms typed in the empty context cannot introduce free
+   variables), we derive the impossibility to derive absurdity in the empty context.
+
+   The result is at the level of the model. See SN_CC_Real_syntax for the proof that
+   the actual syntax (libraries Term and TypeJudge) can be mapped to the model
+   and thus deriving the metatheoretical properties on the actual type of derivation.
+ *)
+
+(** If there exists a proposition whose proofs are realized only by neutral
+    terms, then there is no closed proof of the absurd proposition. *)
+Theorem model_consistency FF :
+  FF ∈ props ->
+  (forall w, w ∈ FF -> eqSAT (Real FF w) neuSAT) ->
+  forall M, ~ typ List.nil M (Prod prop (Ref 0)).
+intros tyFF neutr M prf_of_false.
+red in prf_of_false.
+(* The valuation below contains only closed terms, and it interprets the
+   empty context *) 
+assert (valok : val_ok List.nil (V.nil props) (I.nil (Lc.Abs (Lc.Ref 0)))).
+ red; intros.
+ destruct n; discriminate H.
+specialize prf_of_false with (1:=valok).
+clear valok.
+destruct prf_of_false as (_,(tym,satm)).
+simpl in tym,satm.
+set (prf := tm M (I.nil (Lc.Abs (Lc.Ref 0)))) in *.
+assert (forall S, inSAT (Lc.App prf (Lc.Abs (Lc.Ref 0))) S).
+ assert (H2 := @rprod_elim props (int M (V.nil props)) FF
+                  (fun P=>P) prf (Lc.Abs (Lc.Ref 0))).
+ destruct H2; trivial.
+  red; auto.
+
+  split; trivial. 
+
+  split; trivial.
+  rewrite Real_sort; trivial.
+  apply snSAT_intro.
+  apply Lc.sn_abs; auto with *.  
+
+ rewrite neutr in H0; trivial.
+ apply neuSAT_def; trivial.
+destruct (neutral_not_closed _ H).
+inversion_clear H0.
+ apply tm_closed in H1.
+ apply H1.
+ red; intros.
+ unfold I.nil in H0; simpl in H0.
+ inversion_clear H0.
+ inversion H2.
+
+ inversion_clear H1.
+ inversion H0.
 Qed.
 
 

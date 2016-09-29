@@ -8,7 +8,7 @@ Set Implicit Arguments.
 
 Definition mkTY x S := couple x (iSAT S).
 Definition Elt T := fst T. (* total elements *)
-Definition El T := union2 (singl empty) (Elt T). (* partial elements *)
+Definition El T := cc_bot (Elt T). (* partial elements *)
 Definition Real T := sSAT (snd T) .
 
 Instance El_morph : morph1 El.

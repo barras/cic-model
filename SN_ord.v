@@ -1,6 +1,7 @@
 Require Import ZF ZFnats ZFord ZFcoc.
 Require Import Sat.
 Require Import ZFuniv_real SN_ECC_Real.
+Module Lc := Lambda.
 
 (** Typing rules for ordinals
 *)

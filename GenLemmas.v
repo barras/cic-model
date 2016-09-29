@@ -1,5 +1,6 @@
 (*This files are the defintions and lemmas about general SN model*)
 Require Export basic ZF SN_CC_Real ZFuniv_real.
+Module Lc := Lambda.
 
 Reserved Notation "[ x , t ] \real A" (at level 60).
 

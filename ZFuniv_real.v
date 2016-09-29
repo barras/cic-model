@@ -302,7 +302,7 @@ Qed.
 
 (** * Now we build an instance of the abstract SN model *)
 
-Module CC_Real <: CC_SN_Model.
+Module CC_Real <: SN_Univ_Model.
 
 Definition X := set.
 Definition inX x y := x ∈ El y.
@@ -544,6 +544,9 @@ apply Real_sort_sn; trivial.
 Qed.
 
   Definition daimon := empty.
+  Lemma daimon_in_all_types A : inX daimon A.
+red; auto.
+Qed.
   Lemma daimon_false : inX daimon (prod props (fun P => P)).
 red; auto.
 Qed.

@@ -14,8 +14,8 @@ Set Implicit Arguments.
 
 (** * Building the CC abstract SN model *)
 
-Require Import Models.
-Module SN_ECC_Model <: CC_Model.
+Require Import Models SnModels.
+Module AbstractModel <: SN_CC_Model.
 
 Definition X := set.
 Definition inX x y := x ∈ El y.
@@ -113,14 +113,8 @@ unfold app, lam, inX, eqX; intros.
 apply cc_beta_eq; auto.
 Qed.
 
-End SN_ECC_Model.
-
-Import SN_ECC_Model.
-
 (***********************************************************************)
 (** Building the SN addon *)
-
-Module SN_ECC_addon.
 
   Definition Real : X -> SAT := Real.
 
@@ -150,7 +144,12 @@ Qed.
 red; auto.
 Qed.
 
-End SN_ECC_addon.
+  Lemma daimon_in_all_types A : inX daimon A.
+red; auto.
+Qed.
+
+End AbstractModel.
+Export AbstractModel.
 
 (***********************************************************************)
 (*
@@ -158,7 +157,7 @@ End SN_ECC_addon.
 *)
 
 Require GenModelSN.
-Module SN := GenModelSN.MakeModel SN_ECC_Model SN_ECC_addon.
+Module SN := GenModelSN.MakeModel AbstractModel.
 
 (** ** Extendability *)
 Definition cst (x:set) : SN.T.term.
@@ -194,7 +193,7 @@ apply SN.in_int_intro; try discriminate.
  unfold mkTY, Elt.
  rewrite fst_def; trivial. 
 
- unfold SN_ECC_addon.Real, Real, SN.T.tm, SN.T.int, mkSET, cst, SN.T.iint, SN.T.itm.
+ unfold Real, ZFuniv.Real, SN.T.tm, SN.T.int, mkSET, cst, SN.T.iint, SN.T.itm.
  unfold mkTY; rewrite snd_def.
  rewrite iSAT_id.
  apply Lambda.sn_K.
@@ -265,7 +264,7 @@ apply SN.in_int_intro.
  apply ecc_in1.
 
  simpl SN.T.int; simpl SN.T.tm.
- unfold SN_ECC_addon.Real; rewrite Real_sort_sn.
+ unfold Real; rewrite Real_sort_sn.
  apply snSAT_intro.
  apply Lambda.sn_K.
 
@@ -281,7 +280,7 @@ apply SN.in_int_intro.
  apply ecc_in2.
 
  simpl SN.T.int; simpl SN.T.tm.
- unfold SN_ECC_addon.Real; rewrite Real_sort_sn.
+ unfold Real; rewrite Real_sort_sn.
  apply snSAT_intro.
  apply Lambda.sn_K.
 
@@ -302,7 +301,7 @@ split.
  transitivity (ecc 0); red; intros; [apply ecc_incl_prop|apply ecc_incl]; trivial.
 
  revert H2; simpl SN.T.int.
- unfold SN_ECC_addon.Real, props, sn_props; do 2 rewrite Real_sort_sn; trivial.
+ unfold Real, props, sn_props; do 2 rewrite Real_sort_sn; trivial.
 Qed.
 
 Lemma typ_type_cumul e T n :
@@ -318,7 +317,7 @@ split.
  red; intros; apply ecc_incl; trivial.
 
  revert H2; simpl SN.T.int.
- unfold SN_ECC_addon.Real, props, sn_props; do 2 rewrite Real_sort_sn; trivial.
+ unfold Real, props, sn_props; do 2 rewrite Real_sort_sn; trivial.
 Qed.
 
 Lemma typ_type_cumul_le e T m n :
@@ -353,7 +352,7 @@ split.
     intros in_U.
   apply H0 in in_U.
   destruct in_U  as (_,(_,satU)).
-  unfold SN_ECC_addon.Real in *; simpl SN.T.int in *.
+  unfold Real in *; simpl SN.T.int in *.
   rewrite Real_sort_sn in *.
   simpl in satU|-*.
   rewrite SN.T.tm_subst_cons in satU.

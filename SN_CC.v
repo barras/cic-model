@@ -7,48 +7,6 @@ Require Import ZFlambda.
 
 Set Implicit Arguments.
 
-(***********************************************************************)
-(** * Proving the SN requirements *)
-
-Module CCSN.
-
-Definition mkTY x S := couple x (iSAT S).
-Definition El T := fst T.
-Definition Real T := sSAT (snd T) .
-
-Definition piSAT A (F:set->SAT) :=
-  prodSAT (Real A) (depSAT (fun y => y ∈ El A) F).
-
-Definition sn_prod A F :=
-  mkTY (cc_prod (El A) (fun x => El (F x)))
-       (piSAT A (fun x => Real (F x))).
-
-Definition sn_lam A F := cc_lam (El A) F.
-
-Lemma sn_prod_intro : forall dom f F,
-  ext_fun (El dom) f ->
-  ext_fun (El dom) F ->
-  (forall x, x ∈ El dom -> f x ∈ El (F x)) ->
-  sn_lam dom f ∈ El (sn_prod dom F).
-intros.
-unfold sn_lam, sn_prod, mkTY, El.
-rewrite fst_def.
-apply cc_prod_intro; intros; auto.
-do 2 red; intros.
-apply fst_morph; auto.
-Qed.
-
-
-Lemma sn_prod_elim : forall dom f x F,
-  f ∈ El (sn_prod dom F) ->
-  x ∈ El dom ->
-  cc_app f x ∈ El (F x).
-intros.
-unfold sn_prod, mkTY, El in H.
-rewrite fst_def in H.
-apply cc_prod_elim with (dom:=El dom) (F:=fun x => El(F x)); trivial.
-Qed.
-
 Lemma cc_impredicative_prod_non_empty : forall dom F,
   ext_fun dom F ->
   (forall x, x ∈ dom -> F x == singl prf_trm) ->
@@ -83,70 +41,18 @@ apply singl_ext; intros.
   apply app_morph; trivial.
 Qed.
 
-
-Definition sn_props :=
-  mkTY (replSAT(fun A => mkTY (singl prf_trm) A)) snSAT.
-
-Lemma prop_repl_morph :
-  Proper (eqSAT ==> eq_set) (fun A => couple (singl prf_trm) (iSAT A)).
-do 2 red; intros.
-apply couple_morph; try reflexivity.
-apply iSAT_morph; trivial.
-Qed.
-Hint Resolve prop_repl_morph.
-
-Lemma sn_impredicative_prod : forall dom F,
-  ext_fun (El dom) F ->
-  (forall x, x ∈ El dom -> F x ∈ El sn_props) ->
-  sn_prod dom F ∈ El sn_props.
-unfold sn_props, mkTY, El; intros.
-rewrite fst_def.
-rewrite replSAT_ax; trivial.
-unfold sn_prod, mkTY.
-exists (piSAT dom (fun x : set => Real (F x))).
-apply couple_morph; try reflexivity.
-apply cc_impredicative_prod_non_empty; intros.
- do 2 red; intros.
- unfold El; apply fst_morph; auto.
-
- specialize H0 with (1:=H1).
- rewrite fst_def in H0.
- rewrite replSAT_ax in H0; trivial.
- destruct H0.
- rewrite H0; unfold El; rewrite fst_def.
- reflexivity.
-Qed.
-
-  Lemma sn_proof_of_false : prf_trm ∈ El (sn_prod sn_props (fun P => P)).
-setoid_replace prf_trm with (cc_lam (El sn_props) (fun _ => prf_trm)).
- unfold sn_prod, mkTY, El; rewrite fst_def.
- apply cc_prod_intro; intros.
-  do 2 red; reflexivity.
-
-  do 2 red; intros; apply fst_morph; trivial.
-  unfold sn_props, mkTY in H.
-  rewrite fst_def in H.
-  rewrite replSAT_ax in H; trivial.
-  destruct H as (A, eq_x).
-  rewrite eq_x.
-  rewrite fst_def.
-  apply singl_intro.
-
- symmetry.
- apply cc_impredicative_lam; intros.
-  do 2 red; intros; reflexivity.
-  reflexivity.
-Qed.
-
-End CCSN.
-Import CCSN.
-
+(***********************************************************************)
 (** * Building the CC abstract SN model *)
 
-Require Import Models.
-Module SN_CC_Model <: CC_Model.
+Require Import Models SnModels.
+Module AbstractModel <: SN_CC_Model.
 
+(** Denotations are sets *)
 Definition X := set.
+Definition mkTY x S := couple x (iSAT S).
+Definition El T := fst T.
+Definition Real T := sSAT (snd T) .
+  
 Definition inX x y := x ∈ El y.
 Definition eqX := eq_set.
 Lemma eqX_equiv : Equivalence eqX.
@@ -158,23 +64,57 @@ unfold inX, El, eqX in *.
 rewrite H; rewrite H0; reflexivity.
 Qed.
 
-Definition props := sn_props.
-Definition app := cc_app.
-Definition lam := sn_lam.
-Definition prod := sn_prod.
-
-Notation "x ∈ y" := (inX x y).
-Notation "x == y" := (eqX x y).
+Lemma Real_morph : Proper (eqX ==> eqSAT) Real.
+do 2 red; intros.
+apply sSAT_morph.
+apply snd_morph; trivial.
+Qed.
 
 Definition eq_fun (x:X) (f1 f2:X->X) :=
-  forall y1 y2, y1 ∈ x -> y1 == y2 -> f1 y1 == f2 y2.
+  forall y1 y2, inX y1 x -> y1 == y2 -> f1 y1 == f2 y2.
+
+(** Pi-types *)
+
+Definition piSAT A (F:set->SAT) :=
+  prodSAT (Real A) (depSAT (fun y => y ∈ El A) F).
+
+Definition prod A F :=
+  mkTY (cc_prod (El A) (fun x => El (F x)))
+       (piSAT A (fun x => Real (F x))).
+
+Definition app := cc_app.
+Definition lam A F := cc_lam (El A) F.
+
+Lemma prod_intro : forall dom f F,
+  ZF.ext_fun (El dom) f ->
+  ZF.ext_fun (El dom) F ->
+  (forall x, x ∈ El dom -> f x ∈ El (F x)) ->
+  lam dom f ∈ El (prod dom F).
+intros.
+unfold lam, prod, mkTY, El.
+rewrite fst_def.
+apply cc_prod_intro; intros; auto.
+do 2 red; intros.
+apply fst_morph; auto.
+Qed.
+
+Lemma prod_elim dom f x F :
+  ZF.ext_fun (El dom) F -> (* unused assumption *)
+  f ∈ El (prod dom F) ->
+  x ∈ El dom ->
+  app f x ∈ El (F x).
+intros _ tyf tyx.
+unfold prod, mkTY, El in tyf.
+rewrite fst_def in tyf.
+apply cc_prod_elim with (dom:=El dom) (F:=fun x => El(F x)); trivial.
+Qed.
 
 Lemma lam_ext :
   forall x1 x2 f1 f2,
   x1 == x2 ->
-  eq_fun x1 f1 f2 ->
+  ZF.eq_fun (El x1) f1 f2 ->
   lam x1 f1 == lam x2 f2.
-unfold lam, sn_lam, eqX; intros.
+unfold lam, eqX; intros.
 apply cc_lam_ext; trivial.
 unfold El; rewrite H; reflexivity.
 Qed.
@@ -185,9 +125,9 @@ Proof cc_app_morph.
 Lemma prod_ext :
   forall x1 x2 f1 f2,
   x1 == x2 ->
-  eq_fun x1 f1 f2 ->
+  ZF.eq_fun (El x1) f1 f2 ->
   prod x1 f1 == prod x2 f2.
-unfold prod, sn_prod, eqX, mkTY, El; intros.
+unfold prod, eqX, mkTY, El; intros.
 apply couple_morph.
  apply cc_prod_ext; intros.
   rewrite H; reflexivity.
@@ -205,56 +145,82 @@ apply couple_morph.
    apply sSAT_morph; apply snd_morph; apply H0; trivial; reflexivity.
 Qed.
 
-Lemma prod_intro : forall dom f F,
-  eq_fun dom f f ->
-  eq_fun dom F F ->
-  (forall x, x ∈ dom -> f x ∈ F x) ->
-  lam dom f ∈ prod dom F.
-Proof sn_prod_intro.
-
-Lemma prod_elim : forall dom f x F,
-  eq_fun dom F F ->
-  f ∈ prod dom F ->
-  x ∈ dom ->
-  app f x ∈ F x.
-intros.
-eapply sn_prod_elim; eauto.
-Qed.
-
-Lemma impredicative_prod : forall dom F,
-  eq_fun dom F F ->
-  (forall x, x ∈ dom -> F x ∈ props) ->
-  prod dom F ∈ props.
-Proof sn_impredicative_prod.
 
 Lemma beta_eq:
   forall dom F x,
-  eq_fun dom F F ->
-  x ∈ dom ->
+  ZF.eq_fun (El dom) F F ->
+  x ∈ El dom ->
   app (lam dom F) x == F x.
 unfold app, lam, inX, eqX, El; intros.
 apply cc_beta_eq; trivial.
 Qed.
 
-End SN_CC_Model.
+(** Impredicative prop *)
 
-Import SN_CC_Model.
+Definition props :=
+  mkTY (replSAT(fun A => mkTY (singl prf_trm) A)) snSAT.
+
+Lemma prop_repl_morph :
+  Proper (eqSAT ==> eq_set) (fun A => couple (singl prf_trm) (iSAT A)).
+do 2 red; intros.
+apply couple_morph; try reflexivity.
+apply iSAT_morph; trivial.
+Qed.
+Hint Resolve prop_repl_morph.
+
+Lemma impredicative_prod : forall dom F,
+  ZF.ext_fun (El dom) F ->
+  (forall x, x ∈ El dom -> F x ∈ El props) ->
+  prod dom F ∈ El props.
+unfold props, mkTY, El; intros.
+rewrite fst_def.
+rewrite replSAT_ax; trivial.
+unfold prod, mkTY.
+exists (piSAT dom (fun x => Real (F x))).
+apply couple_morph; try reflexivity.
+apply cc_impredicative_prod_non_empty; intros.
+ do 2 red; intros.
+ unfold El; apply fst_morph; auto.
+
+ specialize H0 with (1:=H1).
+ rewrite fst_def in H0.
+ rewrite replSAT_ax in H0; trivial.
+ destruct H0.
+ rewrite H0; unfold El; rewrite fst_def.
+ reflexivity.
+Qed.
+
+  Definition daimon := empty.
+
+  Lemma daimon_false : daimon ∈ El (prod props (fun P => P)).
+setoid_replace daimon with (cc_lam (El props) (fun _ => prf_trm)).
+ unfold prod, mkTY, El; rewrite fst_def.
+ apply cc_prod_intro; intros.
+  do 2 red; reflexivity.
+
+  do 2 red; intros; apply fst_morph; trivial.
+  unfold props, mkTY in H.
+  rewrite fst_def in H.
+  rewrite replSAT_ax in H; trivial.
+  destruct H as (A, eq_x).
+  rewrite eq_x.
+  rewrite fst_def.
+  apply singl_intro.
+
+ symmetry.
+ apply cc_impredicative_lam; intros.
+  do 2 red; intros; reflexivity.
+  reflexivity.
+Qed.
+
+Notation "x ∈ y" := (inX x y).
+Notation "x == y" := (eqX x y).
 
 (***********************************************************************)
 (** Building the SN addon *)
 
-Module SN_CC_addon.
-
-  Definition Real : X -> SAT := Real.
-
-  Lemma Real_morph : Proper (eqX ==> eqSAT) Real.
-do 2 red; intros.
-apply sSAT_morph.
-apply snd_morph; trivial.
-Qed.
-
   Lemma Real_sort : eqSAT (Real props) snSAT.
-unfold Real, CCSN.Real, props, sn_props, mkTY.
+unfold Real, props, mkTY.
 rewrite snd_def.
 rewrite iSAT_id.
 reflexivity.
@@ -262,20 +228,16 @@ Qed.
 
   Lemma Real_prod : forall A B,
     eqSAT (Real (prod A B))
-     (prodSAT (Real A)
-        (interSAT (fun p:{y|y∈ A} => Real (B (proj1_sig p))))).
-unfold Real, CCSN.Real, prod, sn_prod, piSAT, mkTY; intros.
+          (prodSAT (Real A) (depSAT (fun y => y ∈ A) (fun y => Real (B y)))).
+unfold Real, prod, piSAT, mkTY; intros.
 rewrite snd_def.
 rewrite iSAT_id.
 reflexivity.
 Qed.
 
-  Definition daimon := empty.
 
-  Lemma daimon_false : daimon ∈ prod props (fun P => P).
-Proof sn_proof_of_false.
-
-End SN_CC_addon.
+End AbstractModel.
+Export AbstractModel.
 
 (***********************************************************************)
 (*
@@ -284,7 +246,7 @@ End SN_CC_addon.
 
 
 Require GenModelSN.
-Module SN := GenModelSN.MakeModel SN_CC_Model SN_CC_addon.
+Module SN := GenModelSN.MakeModel AbstractModel.
 
 (** ** Extendability *)
 Definition cst (x:set) : SN.T.term.
@@ -308,7 +270,7 @@ exists nil; exists (mkSET x).
  reflexivity.
 
  exists w; simpl; intros _.
- unfold SN_CC_Model.inX, mkTY, El.
+ unfold inX, mkTY, El.
  rewrite fst_def; trivial.
 Qed.
 
@@ -318,10 +280,10 @@ Lemma cst_typ e x y :
 red; intros.
 apply SN.in_int_intro; try discriminate.
  simpl.
- unfold SN_CC_Model.inX, mkTY, El.
+ unfold inX, mkTY, El.
  rewrite fst_def; trivial.
-
- unfold SN_CC_addon.Real, Real, SN.T.tm, SN.T.int, mkSET, cst, SN.T.iint, SN.T.itm.
+ 
+ unfold Real, SN.T.tm, SN.T.int, mkSET, cst, SN.T.iint, SN.T.itm.
  unfold mkTY; rewrite snd_def.
  rewrite iSAT_id.
  apply Lambda.sn_K.
@@ -338,7 +300,7 @@ apply H in H0.
 apply SN.in_int_not_kind in H0.
 2:discriminate.
 destruct H0 as (H0,_ ); simpl in H0.
-unfold SN_CC_Model.inX, mkTY, El in H0.
+unfold inX, mkTY, El in H0.
 rewrite fst_def in H0; trivial.
 Qed.
 
@@ -658,3 +620,25 @@ Qed.
    assumption.)
  *)
 Print Assumptions strong_normalization.
+
+Lemma consistency M M' :
+  ~ Ty.eq_typ nil M M' (Tm.Prod (Tm.Srt Tm.prop) (Tm.Ref 0)).
+intros prf_of_false.
+apply interp_sound in prf_of_false.
+destruct prf_of_false as (_,prf_of_false).
+apply SN.model_consistency with (FF:=mkTY (singl empty) neuSAT) in prf_of_false;
+  trivial.
+ red.
+ unfold props, El, mkTY.
+ rewrite fst_def.
+ rewrite replSAT_ax.
+  exists neuSAT; reflexivity.
+
+  do 2 red ;intros.
+  rewrite H; reflexivity.
+
+ unfold Real, mkTY.
+ rewrite snd_def.
+ apply iSAT_id.
+Qed.
+

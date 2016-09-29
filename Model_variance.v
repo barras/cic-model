@@ -426,6 +426,26 @@ split.
   discriminate.
 Qed.
 
+  Lemma typ_ext_ref e n T U :
+    ords e n = false ->
+    fixs e n = Some T ->
+    nth_error (tenv e) n = Some (Prod T U) ->
+    typ_ext e (Ref n)  (lift (S n) T) (lift1 (S n) U).               
+intros notord isfun varty.
+split.
+ red; simpl; intros.
+ assert (var := proj2 (proj2 H) n).
+ rewrite notord, isfun in var. 
+ red; intros.
+ unfold lift in H0; rewrite int_lift_rec_eq in H0.
+ rewrite V.lams0 in H0.
+ auto.
+
+ unfold lift, lift1.
+ rewrite <- eq_lift_prod.
+ apply typ_var; trivial.
+Qed.
+  
   Lemma typ_eq_abs : forall e s1 U T T' M,
     U <> kind ->
     s1=prop \/ s1=kind ->

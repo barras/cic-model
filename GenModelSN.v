@@ -8,9 +8,8 @@ Module Lc := Lambda.
 
 (** * The abstract strong normalization proof. *)
 
-Module MakeModel(M : CC_Model) (SN : SN_addon M) <: Syntax (* Judge *).
+Module MakeModel(M : SN_CC_Model) <: Syntax (* Judge *).
 Import M.
-Import SN.
 
 (** We use the generic model construction based on the
    abstract model
@@ -208,6 +207,48 @@ intros (i,(j,is_val)) ty.
 apply ty in is_val.
 apply in_int_sn in is_val.
 apply simul with (1:=is_val) (2:=eq_refl).
+Qed.
+
+(** If there exists a proposition whose proofs are realized only by neutral
+    terms, then there is no closed proof of the absurd proposition. *)
+Theorem model_consistency FF :
+  FF ∈ props ->
+  eqSAT (Real FF) neuSAT ->
+  forall M, ~ typ List.nil M (Prod prop (Ref 0)).
+intros tyFF neutr M prf_of_false.
+red in prf_of_false.
+(* The valuation below contains only closed terms, and it interprets the
+   empty context *) 
+assert (valok : val_ok List.nil (V.nil props) (I.nil (Lc.Abs (Lc.Ref 0)))).
+ red; intros.
+ destruct n; discriminate H.
+specialize prf_of_false with (1:=valok).
+clear valok.
+destruct prf_of_false as (_,(tym,satm)).
+simpl in tym,satm.
+set (prf := tm M (I.nil (Lc.Abs (Lc.Ref 0)))) in *.
+assert (forall S, inSAT (Lc.App prf (Lc.Abs (Lc.Ref 0))) S).
+ apply neuSAT_def.
+ assert (inSAT (Lc.Abs (Lc.Ref 0)) (Real props)).
+  rewrite Real_sort; trivial.
+  apply snSAT_intro.
+  apply Lc.sn_abs; auto with *.  
+ rewrite Real_prod in satm.
+ apply prodSAT_elim with (2:=H) in satm.
+ apply depSAT_elim' in satm.
+ rewrite <- neutr.
+ apply satm; trivial.
+destruct (neutral_not_closed _ H).
+inversion_clear H0.
+ apply tm_closed in H1.
+ apply H1.
+ red; intros.
+ unfold I.nil in H0; simpl in H0.
+ inversion_clear H0.
+ inversion H2.
+
+ inversion_clear H1.
+ inversion H0.
 Qed.
 
 

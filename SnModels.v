@@ -2,10 +2,37 @@ Require Export basic.
 Require Import Models.
 Require Import Sat.
 
+(** * Inhabitability condition of SN models*)
 
+(** For CC, we may just requires all props to be inhabited,
+    which implies that any typable kind is also inhabited.
+    However this does not scale to universes. *)
+Module Type AllPropsInhabited (M : CC_Model).
+  Import M.
+  (** Proposition "false" is inhabited *)
+  Parameter daimon : X.
+  Parameter daimon_false : daimon ∈ prod props (fun P => P).
+End AllPropsInhabited.
+
+(** To deal with universes, we need all types to be inhabited.
+    Note that the condition below implies (daimon ∈ daimon),
+    so "∈" cannot be the plain set membership. *)
+Module Type AllTypesInhabited (M : CC_Model).
+  Import M.
+  (** Every type is inhabited *)
+  Parameter daimon : X.
+  Parameter daimon_in_all_types : forall A, daimon ∈ A.
+End AllTypesInhabited.
+
+Module InhabitPropsFromTypes
+       (M : CC_Model) (H : AllTypesInhabited M) <: AllPropsInhabited M.
+  Definition daimon := H.daimon.
+  Definition daimon_false := H.daimon_in_all_types (M.prod M.props (fun P=>P)).
+End InhabitPropsFromTypes.
+  
 (** * Abstract strong mormalization model ( *not* supporting strong eliminations) *)
 
-Module Type SN_addon (M : CC_Model).
+Module Type SAT_weak_addon (M : CC_Model).
   Import M.
 
   (** Types are equipped with a saturated set *)
@@ -18,17 +45,21 @@ Module Type SN_addon (M : CC_Model).
     eqSAT (Real (prod A B))
      (prodSAT (Real A) (depSAT (fun x=>x∈A) (fun x => Real (B x)))).
 
-  (** Every proposition is inhabited *)
-  Parameter daimon : X.
-  Parameter daimon_false : daimon ∈ prod props (fun P => P).
-
   Existing Instance Real_morph.
 
-End SN_addon.
+End SAT_weak_addon.
+
+Module Type SN_CC_Model :=
+  CC_Model <+ SAT_weak_addon <+ AllPropsInhabited.
+Module Type SN_CC_addon (M : CC_Model) :=
+  SAT_weak_addon M  <+ AllPropsInhabited M.
+
+Module Type SN_univ_addon (M : CC_Model) :=
+  SAT_weak_addon M  <+ AllTypesInhabited M.
 
 (** * Abstract strong mormalization model (supporting strong eliminations) *)
 
-Module Type RealSN_addon (M : CC_Model).
+Module Type SAT_strong_addon (M : CC_Model).
   Import M.
 
   (** Types are equipped with a saturated set for eachh value *)
@@ -46,10 +77,10 @@ Module Type RealSN_addon (M : CC_Model).
 
   Existing Instance Real_morph.
 
-  (** Every proposition is inhabited *)
-  Parameter daimon : X.
-  Parameter daimon_false : daimon ∈ prod props (fun P => P).
+End SAT_strong_addon.
 
-End RealSN_addon.
+Module Type SN_NoUniv_Model :=
+  CC_Model <+ SAT_strong_addon <+ AllPropsInhabited.
 
-Module Type CC_SN_Model := CC_Model <+ RealSN_addon.
+Module Type SN_Univ_Model :=
+  CC_Model <+ SAT_strong_addon <+ AllTypesInhabited.

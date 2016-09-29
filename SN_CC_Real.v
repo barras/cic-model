@@ -178,64 +178,20 @@ Qed.
 
 (** * Consistency out of the strong normalization model *)
 
-Module Lc := Lambda.
-
 (** Another consistency proof. *)
 
-(** What is original is that it is based on the strong normalization model which
-   precisely inhabits all types and propositions. We get out of this by noticing that
-   non provable propositions contain no closed realizers. So, by a substitutivity
-   invariant (realizers of terms typed in the empty context cannot introduce free
-   variables), we derive the impossibility to derive absurdity in the empty context.
-
-   The result is at the level of the model. See SN_CC_Real_syntax for the proof that
-   the actual syntax (libraries Term and TypeJudge) can be mapped to the model
-   and thus deriving the metatheoretical properties on the actual type of derivation.
- *)
 Theorem consistency : forall M, ~ typ List.nil M (Prod prop (Ref 0)).
 red; intros.
-red in H.
-(* The valuation below contains only closed terms, and it interprets the
-   empty context *) 
-assert (val_ok List.nil (V.nil props) (I.nil (Lc.Abs (Lc.Ref 0)))).
- red; intros.
- destruct n; discriminate H0.
-apply H in H0.
-clear H.
-red in H0; simpl in_int in H0.
-destruct H0 as (_,H0).
-simpl int in H0.
-destruct H0.
-set (prf := tm M (I.nil (Lc.Abs (Lc.Ref 0)))) in H0.
-assert (forall S, inSAT (Lc.App prf (Lc.Abs (Lc.Ref 0))) S).
+apply model_consistency with (FF:=mkTY (singl prf_trm) (fun _ => neuSAT)) in H;
+  trivial.
+ apply sn_sort_intro.
+  reflexivity.
+
+  apply one_in_props.
+
  intros.
- assert ([mkTY (singl empty) (fun _ => S), Lc.Abs (Lc.Ref 0)] \real props). 
-  apply and_split; intros.
-   red; apply sn_sort_intro; auto with *.
-
-   unfold CC_Real.props.
-   rewrite Real_sort_sn; trivial.
-   apply snSAT_intro; apply Lc.sn_abs; apply Lc.sn_var.
- assert (H2 := @rprod_elim props (int M (V.nil props)) (mkTY (singl empty) (fun _ => S))
-                  (fun P=>P) prf (Lc.Abs (Lc.Ref 0))).
- destruct H2; trivial.
-  do 2 red; auto.
-
-  split; trivial.
-
-  rewrite Real_def in H3; auto with *.
-  red in H2; rewrite El_def in H2; trivial.
-destruct (neutral_not_closed _ H1).
-inversion_clear H2.
- apply tm_closed in H3.
- apply H3.
- red; intros.
- unfold I.nil in H2; simpl in H2.
- inversion_clear H2.
- inversion H4.
-
- inversion_clear H3.
- inversion H2.
+ red in H0; rewrite El_def  in H0.
+ rewrite Real_def; auto with *.
 Qed.
 
 Print Assumptions consistency.

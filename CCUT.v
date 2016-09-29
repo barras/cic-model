@@ -5,7 +5,7 @@ Require Import ZFind_nat.
 
 Require Import SN_CC.
 
-Import CCSN SN_CC_Model SN_CC_addon SN SN.J.
+Import SN SN.J.
 
 Parameter Symb : Type.
 Parameter isCstr : Symb -> Prop.
@@ -23,7 +23,7 @@ Lemma inSAT_Real : forall x t S,
   inSAT t S ->
   inSAT t (Real (mkTY x S)).
 intros.
-unfold Real, CCSN.Real, mkTY.
+unfold Real, mkTY.
 rewrite ZFpairs.snd_def.
 rewrite ZFlambda.iSAT_id; trivial.
 Qed.
@@ -154,14 +154,14 @@ split.
  split.
   simpl.
   apply prod_intro.
-   red; intros; auto with *.
+   do 2 red; intros; auto with *.
 
-   red; intros; reflexivity.
+   do 2 red; intros; reflexivity.
 
    intros; auto.
 
   simpl int.
-  unfold prod, sn_prod.
+  unfold prod.
   apply inSAT_Real.
   unfold piSAT.
   simpl tm.
@@ -240,7 +240,7 @@ split.
  specialize (H2 _ _ H3).
  destruct H2 as (_,(_,H2)). 
  simpl int in H2.
- unfold prod, sn_prod in H2.
+ unfold prod in H2.
  apply inSAT_Real_rev in H2.
  unfold piSAT at 1 in H2.
  destruct H.
