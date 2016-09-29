@@ -3,8 +3,10 @@ ModelNat.html
 ModelNat_ZFind.html
 SN_W.html
 SN_NAT.html
+SN_NAT_sized.html
 SN_nat.html
-SN_CIC.html
 SN_P.html
 SN_CC_Real_syntax.html
 SN_ECC_Real_syntax.html
+SN_CC.html
+SN_ECC.html
