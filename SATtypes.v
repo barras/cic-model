@@ -1528,25 +1528,29 @@ assert (H' := fun h => interSAT_elim H (exist _ neuSAT h));
 auto.
 Qed.
 
-Definition tiSAT (F:set->set) (A:(set->SAT)->set->SAT) (o:set) (x:set) : SAT :=
+Section SAT_Recursor.
+
+Variable F:set->set.
+Hypothesis Fmono : Proper (incl_set==>incl_set) F.
+Variable A:(set->SAT)->set->SAT.  
+Hypothesis Am : Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A.
+
+Definition tiSAT (o:set) (x:set) : SAT :=
   sSAT (cc_app (REC (fun o' f => cc_lam (TI F (osucc o'))
                                    (fun y => iSAT (A (fun z => sSAT (cc_app f z)) y))) o) x).
 
-Lemma tiSAT_ext1 A F f o :
-  Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A ->
+Lemma tiSAT_ext1 f o :
   ext_fun (TI F (osucc o)) (fun y => iSAT (A (fun z => sSAT (cc_app f z)) y)).
 do 2 red; intros.
 apply iSAT_morph.
-apply H; trivial.
+apply Am; trivial.
 red; intros.
 apply sSAT_morph.
-rewrite H2; reflexivity.
+rewrite H1; reflexivity.
 Qed.
 Hint Resolve tiSAT_ext1.
 
-Instance tiSAT_morph F A :
-  Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A ->
-  Proper (eq_set ==> eq_set ==> eqSAT) (tiSAT F A).
+Instance tiSAT_morph : Proper (eq_set ==> eq_set ==> eqSAT) tiSAT.
 do 3 red; intros.
 unfold tiSAT.
 apply sSAT_morph.
@@ -1554,28 +1558,24 @@ apply cc_app_morph; trivial.
 apply REC_morph; trivial.
 do 3 red; intros.
 apply cc_lam_ext; auto with *.
- rewrite H2; reflexivity.
+ rewrite H1; reflexivity.
 
  red; intros.
  apply iSAT_morph.
- apply H; trivial.
+ apply Am; trivial.
  red; intros.
- rewrite H3; rewrite H6; reflexivity.
+ rewrite H2; rewrite H5; reflexivity.
 Qed.
 
-Lemma tiSAT_recursor o A F :
-  Proper (incl_set==>incl_set) F ->
-  Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A ->
+Lemma tiSAT_recursor o :
   (forall R R' o', isOrd o' -> o' ⊆ o ->
-   (forall x x', x ∈ TI F o' -> x==x' -> eqSAT (R x) (R' x')) ->
-   (forall x, ~ x ∈ TI F o -> eqSAT (R x) neuSAT) ->
-   (forall x, ~ x ∈ TI F o -> eqSAT (R' x) neuSAT) ->
+   (forall x x', x ∈ TI F o' \/ ~ x ∈ TI F o -> x==x' -> eqSAT (R x) (R' x')) ->
    forall x x', x ∈ TI F (osucc o') -> x==x' -> eqSAT (A R x) (A R' x')) ->
   isOrd o ->
   recursor o (TI F)
     (fun o f => forall x, x∈TI F o -> cc_app f x == iSAT(sSAT(cc_app f x)))
     (fun o' f => cc_lam (TI F (osucc o')) (fun y => iSAT (A (fun z => sSAT (cc_app f z)) y))).
-intros Fm Am Aext oo.
+intros Aext oo.
 split; intros.
  apply TI_morph.
 
@@ -1616,24 +1616,25 @@ split; intros.
    transitivity o'; trivial.
 
    intros.
-   apply sSAT_morph.
-   rewrite <- H6.
-   apply H3; trivial.
+   destruct H5.
+    apply sSAT_morph.
+    rewrite <- H6.
+    apply H3; trivial.
 
-   intros.
-   rewrite cc_app_outside_domain with (dom:=TI F o0).
-    apply sSAT_mt.
-    apply H1.
-   intros h; apply H5; revert h; apply TI_mono; auto with *.
-   apply H1.
-   transitivity o'; trivial.  
+    rewrite cc_app_outside_domain with (x:=x0)(dom:=TI F o0).
+     rewrite cc_app_outside_domain with (x:=x')(dom:=TI F o').
+      reflexivity.
 
-   intros.
-   rewrite cc_app_outside_domain with (dom:=TI F o').
-    apply sSAT_mt.
-    apply H2.
-   intros h; apply H5; revert h; apply TI_mono; auto with *.
-   apply H2.
+      apply H2.
+
+      rewrite <- H6.
+      intros h; apply H5; revert h; apply TI_mono; auto with *.
+      apply H2.
+
+     apply H1.
+     intros h; apply H5; revert h; apply TI_mono; auto with *.
+      apply H1.
+      transitivity o'; trivial.  
 
   revert H4; apply TI_mono; auto with *.
    apply isOrd_succ; apply H2.
@@ -1643,55 +1644,47 @@ split; intros.
     apply H2.
 Qed.
 
-Lemma tiSAT_eq o A F :
-  Proper (incl_set==>incl_set) F ->
-  Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A ->
+Lemma tiSAT_eq o :
   (forall R R' o', isOrd o' -> o' ⊆ o ->
-   (forall x x', x ∈ TI F o' -> x==x' -> eqSAT (R x) (R' x')) ->
-   (forall x, ~ x ∈ TI F o -> eqSAT (R x) neuSAT) ->
-   (forall x, ~ x ∈ TI F o -> eqSAT (R' x) neuSAT) ->
+   (forall x x', x ∈ TI F o' \/ ~ x ∈ TI F o -> x==x' -> eqSAT (R x) (R' x')) ->
    forall x x', x ∈ TI F (osucc o') -> x==x' -> eqSAT (A R x) (A R' x')) ->
   isOrd o ->
   forall x,
   x ∈ TI F o ->
-  eqSAT (tiSAT F A o x) (A (tiSAT F A o) x).
+  eqSAT (tiSAT o x) (A (tiSAT o) x).
 intros.
 unfold tiSAT.
-specialize tiSAT_recursor with (1:=H) (2:=H0) (3:=H1) (4:=H2); intro rec.
-rewrite REC_expand with (1:=H2) (2:=rec) (3:=H3).
+specialize tiSAT_recursor with (1:=H) (2:=H0); intro rec.
+rewrite REC_expand with (1:=H0) (2:=rec) (3:=H1).
 rewrite cc_beta_eq.
  rewrite iSAT_id.
  reflexivity.
 
  do 2 red; intros.
  apply iSAT_morph.
- apply H0; trivial.
+ apply Am; trivial.
  red; intros.
  apply sSAT_morph.
  apply cc_app_morph; trivial.
  reflexivity.
 
- revert H3; apply TI_incl; auto.
+ revert H1; apply TI_incl; auto.
 Qed.
 
 
-Lemma tiSAT_outside_domain o A F :
-  Proper (incl_set==>incl_set) F ->
-  Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A ->
+Lemma tiSAT_outside_domain o :
   (forall R R' o', isOrd o' -> o' ⊆ o ->
-   (forall x x', x ∈ TI F o' -> x==x' -> eqSAT (R x) (R' x')) ->
-   (forall x, ~ x ∈ TI F o -> eqSAT (R x) neuSAT) ->
-   (forall x, ~ x ∈ TI F o -> eqSAT (R' x) neuSAT) ->
+   (forall x x', x ∈ TI F o' \/ ~ x ∈ TI F o -> x==x' -> eqSAT (R x) (R' x')) ->
    forall x x', x ∈ TI F (osucc o') -> x==x' -> eqSAT (A R x) (A R' x')) ->
   isOrd o ->
   forall x,
   ~ x ∈ TI F o ->
-  eqSAT (tiSAT F A o x) neuSAT.
+  eqSAT (tiSAT o x) neuSAT.
 intros.
-specialize tiSAT_recursor with (1:=H) (2:=H0) (3:=H1) (4:=H2); intro rec.
+specialize tiSAT_recursor with (1:=H) (2:=H0); intro rec.
 unfold tiSAT.
 rewrite REC_eqn with (2:=rec); trivial.
-fold (tiSAT F A o).
+fold (tiSAT o).
 rewrite cc_app_outside_domain with (dom:=TI F o); trivial.
  apply sSAT_mt.
 
@@ -1700,72 +1693,61 @@ rewrite cc_app_outside_domain with (dom:=TI F o); trivial.
 Qed.
 
 
-Lemma tiSAT_mono o1 o2 A F:
-  Proper (incl_set==>incl_set) F ->
-  Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A ->
+Lemma tiSAT_mono o1 o2 :
   (forall R R' o', isOrd o' -> o' ⊆ o2 ->
-   (forall x x', x ∈ TI F o' -> x==x' -> eqSAT (R x) (R' x')) ->
-   (forall x, ~ x ∈ TI F o2 -> eqSAT (R x) neuSAT) ->
-   (forall x, ~ x ∈ TI F o2 -> eqSAT (R' x) neuSAT) ->
+   (forall x x', x ∈ TI F o' \/ ~ x ∈ TI F o2 -> x==x' -> eqSAT (R x) (R' x')) ->
    forall x x', x ∈ TI F (osucc o') -> x==x' -> eqSAT (A R x) (A R' x')) ->
   isOrd o1 ->
   isOrd o2 ->
   o1 ⊆ o2 ->
   forall x,
   x ∈ TI F o1 ->
-  eqSAT (tiSAT F A o1 x) (tiSAT F A o2 x).
+  eqSAT (tiSAT o1 x) (tiSAT o2 x).
 intros.
-specialize tiSAT_recursor with (1:=H) (2:=H0) (3:=H1) (4:=H3); intro rec.
+specialize tiSAT_recursor with (1:=H) (2:=H1); intro rec.
 unfold tiSAT at 2.
 rewrite <- REC_ord_irrel with (2:=rec) (o:=o1); auto with *.
 reflexivity.
 Qed.
 
-Lemma tiSAT_succ_eq o A F :
-  Proper (incl_set==>incl_set) F ->
-  Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A ->
+Lemma tiSAT_succ_eq o :
   (forall R R' o', isOrd o' -> o' ⊆ osucc o ->
-   (forall x x', x ∈ TI F o' -> x==x' -> eqSAT (R x) (R' x')) ->
-   (forall x, ~ x ∈ TI F (osucc o) -> eqSAT (R x) neuSAT) ->
-   (forall x, ~ x ∈ TI F (osucc o) -> eqSAT (R' x) neuSAT) ->
+   (forall x x', x ∈ TI F o' \/ ~ x ∈ TI F (osucc o) -> x==x' -> eqSAT (R x) (R' x')) ->
    forall x x', x ∈ TI F (osucc o') -> x==x' -> eqSAT (A R x) (A R' x')) ->
   isOrd o ->
   forall x,
   x ∈ TI F (osucc o) ->
-  eqSAT (tiSAT F A (osucc o) x) (A (tiSAT F A o) x).
+  eqSAT (tiSAT (osucc o) x) (A (tiSAT o) x).
 intros.
 rewrite tiSAT_eq; auto.
-apply H1 with o; auto with *.
+apply H with o; auto with *.
  red; intros; apply isOrd_trans with o; auto.
-
- intros.
- transitivity (tiSAT F A o x0).
-  symmetry; apply tiSAT_mono; auto with *.
-  red; intros; apply isOrd_trans with o; auto.
-
-  apply tiSAT_morph; auto with *.
-
- intros.
- apply tiSAT_outside_domain; auto.
 
  intros.
  assert (o ⊆ osucc o).
   red; intros; apply isOrd_trans with o; auto.
- apply tiSAT_outside_domain; auto.
-  intros.
-  apply H1 with o'; trivial.  
-   transitivity o; trivial.
+ transitivity (tiSAT o x0);[symmetry|].
+  destruct H2.
+   apply tiSAT_mono; auto with *.
 
-   intros.
-   apply H9.
-   intros h; apply H13; revert h; apply TI_mono; auto with *.
+   rewrite tiSAT_outside_domain; auto.
+    rewrite tiSAT_outside_domain; auto with *.
 
-   intros.
-   apply H10.
-   intros h; apply H13; revert h; apply TI_mono; auto with *.
+    intros.
+    apply H with o'; trivial.  
+     transitivity o; trivial.
 
-  intros h; apply H4; revert h; apply TI_mono; auto with *.
+     intros.
+     apply H7; trivial.
+     destruct H10; [left|right]; trivial.
+     intros h; apply H10; revert h; apply TI_mono; auto with *.
+
+    intros h; apply H2; revert h; apply TI_mono; auto with *.
+   
+  apply tiSAT_morph; auto with *.
 Qed.
+
+End SAT_Recursor.
 
 (* useful ?
 Lemma FIXP_TI_sat G o F A m X :

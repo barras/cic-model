@@ -270,8 +270,8 @@ Hypothesis RA_morph : Proper (eq_set ==> eqSAT) RA.
 Hypothesis RB_morph : Proper (eq_set ==> eq_set ==> eqSAT) RB.
 
 Definition rW (X:set->SAT) (w:set) : SAT :=
-  sigmaReal RA (fun x f => piSAT0 (fun i => i ∈ B x) (RB x)
-    (fun i => condSAT (~cc_app f i==empty) (X (cc_app f i))))
+  sigmaReal RA
+    (fun x f => piSAT0 (fun i => i ∈ B x) (RB x) (fun i => X (cc_app f i)))
     (couple (w1 w) (w2 w)).
 
 Lemma rW_morph :
@@ -286,11 +286,8 @@ apply sigmaReal_morph_gen; auto with *.
 
   apply RB_morph; auto with *.
 
-  apply condSAT_morph.
-   rewrite H2; reflexivity.
-
-   apply H.
-   rewrite H2; reflexivity.
+  apply H.
+  rewrite H2; reflexivity.
 
  rewrite H0; reflexivity.
 Qed.
@@ -298,7 +295,7 @@ Hint Resolve rW_morph.
 
 
 Lemma rW_mono_gen' Y X X':
-  (forall x x', x ∈ Y -> x==x' -> inclSAT (X x) (X' x')) ->
+  (forall x x', x ∈ cc_bot Y -> x==x' -> inclSAT (X x) (X' x')) ->
   forall x x', x ∈ WF Y -> x==x' -> inclSAT (rW X x) (rW X' x').
 intros Xmono x x' xty eqx'.
 unfold rW.
@@ -311,35 +308,25 @@ apply cartSAT_mono.
   intros; rewrite eqx'; reflexivity.
 
   intros i ity.
-  apply condSAT_ext; auto with *.
-   rewrite <- eqx'; trivial.
-
-   intros nmt _.
-   rewrite snd_def in nmt.
-   apply Xmono.
-   2:rewrite eqx'; reflexivity.
-   rewrite snd_def.
-   apply W_F_elim in xty; trivial.
-   destruct xty as (xty,(fty,_)); auto.
-   assert (ity' : i ∈ B (w1 x)).
-    revert ity; apply eq_elim; apply Bext.
-     rewrite fst_def, <-eqx'; trivial.
-     rewrite fst_def, <-eqx'; reflexivity.
-   specialize cc_prod_elim with (1:=fty) (2:=ity'); intros yty.
-   rewrite cc_bot_ax in yty; destruct yty; trivial.
-   contradiction.
+  apply Xmono.
+  2:rewrite eqx'; reflexivity.
+  rewrite snd_def.
+  apply W_F_elim in xty; trivial.
+  destruct xty as (xty,(fty,_)); auto.
+  assert (ity' : i ∈ B (w1 x)).
+   revert ity; apply eq_elim; apply Bext.
+    rewrite fst_def, <-eqx'; trivial.
+    rewrite fst_def, <-eqx'; reflexivity.
+  apply cc_prod_elim with (1:=fty) (2:=ity').
 Qed.
 
 Lemma rW_mono_gen Y X X':
-  (forall x, x ∈ Y -> inclSAT (X x) (X' x)) ->
+  (forall x, x ∈ cc_bot Y -> inclSAT (X x) (X' x)) ->
   forall x, x ∈ WF Y -> inclSAT (rW X x) (rW X' x).
 intros Xmono x xty.
 apply cartSAT_mono; auto with *.
 eapply piSAT0_mono with (f:=fun x => x); auto with *.
 intros i ity.
-apply condSAT_ext; auto with *.
-intros nmt _.
-rewrite snd_def in nmt.
 apply Xmono.
 rewrite snd_def.
 apply W_F_elim in xty; trivial.
@@ -348,14 +335,12 @@ assert (ity' : i ∈ B (w1 x)).
  revert ity; apply eq_elim; apply Bext.
   rewrite fst_def; trivial.
   rewrite fst_def; reflexivity.
-specialize cc_prod_elim with (1:=fty) (2:=ity'); intros yty.
-rewrite cc_bot_ax in yty; destruct yty; trivial.
-contradiction.
+apply cc_prod_elim with (1:=fty) (2:=ity').
 Qed.
 
 Lemma rW_mono FX X X':
   FX ⊆ WF FX ->
-  inclFam FX X X' ->
+  inclFam (cc_bot FX) X X' ->
   inclFam FX (rW X) (rW X').
 red; intros.
 apply H in H1.
@@ -364,7 +349,7 @@ Qed.
 
 Lemma rW_irrel (R R' : set -> SAT) (o : set) :
  isOrd o ->
- (forall x x' : set, x ∈ TI WF o -> x == x' -> eqSAT (R x) (R' x')) ->
+ (forall x x' : set, x ∈ cc_bot (TI WF o) -> x == x' -> eqSAT (R x) (R' x')) ->
  forall x x' : set,
  x ∈ TI WF (osucc o) -> x == x' -> eqSAT (rW R x) (rW R' x').
 intros.
@@ -424,8 +409,7 @@ Lemma Real_WC_gen X RX a b x f :
   Proper (eq_set==>eqSAT) RX ->
   mkw a b ∈ WF X ->
   inSAT x (RA a) ->
-  inSAT f (piSAT0 (fun i => i ∈ B a) (RB a)
-            (fun i => condSAT (~cc_app b i==empty) (RX (cc_app b i)))) ->
+  inSAT f (piSAT0 (fun i => i ∈ B a) (RB a) (fun i => RX (cc_app b i))) ->
   inSAT (WC x f) (rW RX (mkw a b)).
 intros.
 unfold rW, WC.
@@ -468,7 +452,7 @@ Lemma Real_WCASE_gen X RX C n nt bt:
   inSAT bt (piSAT0 (fun x => x ∈ A) RA (fun x =>
             piSAT0 (fun f => f ∈ cc_arr (B x) (cc_bot X))
                    (fun f => piSAT0 (fun i => i ∈ B x) (RB x)
-                      (fun i => condSAT (~cc_app f i==empty) (RX (cc_app f i))))
+                      (fun i => RX (cc_app f i)))
                    (fun f => C (mkw x f)))) ->
   inSAT (WCASE bt nt) (C n).
 intros Cm nty xreal breal.
@@ -604,6 +588,9 @@ apply tiSAT_mono; trivial.
  apply W_F_mono; trivial.
 
  intros; apply rW_irrel with (o:=o'); trivial.
+ intros; apply H5; trivial.
+ apply cc_bot_ax in H8; destruct H8;[right|left]; trivial.
+ intros h; apply mt_not_in_W_F in h; auto.
 Qed.
 
 Lemma rWi_succ_eq o x :
@@ -615,6 +602,9 @@ apply tiSAT_succ_eq; auto.
  apply W_F_mono; trivial.
 
  intros; apply rW_irrel with (o:=o'); trivial.
+ intros; apply H3; trivial.
+ apply cc_bot_ax in H6; destruct H6;[right|left]; trivial.
+ intros h; apply mt_not_in_W_F in h; auto.
 Qed.
 (*
 Lemma rWi_fix x :
@@ -635,6 +625,9 @@ Lemma rWi_neutral o :
 intros.
 apply tiSAT_outside_domain; auto with *.
  intros; apply rW_irrel with (o:=o'); trivial.
+ intros; apply H2; trivial.
+ apply cc_bot_ax in H5; destruct H5;[right|left]; trivial.
+ intros h; apply mt_not_in_W_F in h; auto.
 
  intro.
  apply mt_not_in_W_F in H0; auto with *.
@@ -658,19 +651,6 @@ rewrite (rW_morph (rWi_morph (reflexivity o)) H4).
 apply Real_WC_gen with (TI WF o); auto with *.
  apply rWi_morph; reflexivity.
  rewrite <- H4; trivial.
-
- apply piSAT0_intro; intros.
-  apply sat_sn in H2; trivial.
- specialize cc_prod_elim with (1:=H3) (2:=H5); intros yty.
- apply piSAT0_elim' in H2; red in H2.
- specialize H2 with (1:=H5) (2:=H6).
- rewrite cc_bot_ax in yty; destruct yty.
-  rewrite H7 in H2.
-  apply neuSAT_def.
-  rewrite rWi_neutral in H2; trivial.
-
-  rewrite condSAT_ok; trivial.
-  apply mt_not_in_W_F in H7; trivial.
 Qed.
 
 Lemma Real_WCASE o C n nt bt:
@@ -687,14 +667,6 @@ intros oo Cm nty nreal breal.
 rewrite rWi_succ_eq in nreal; trivial.
 rewrite TI_mono_succ in nty; auto with *.
 apply Real_WCASE_gen with (2:=nty) (3:=nreal); trivial.
-revert bt breal.
-apply piSAT0_mono with (f:=fun x=>x); auto with *.
-intros x xty.
-apply piSAT0_mono with (f:=fun x=>x); auto with *.
-intros f fty.
-apply piSAT0_mono with (f:=fun x=>x); auto with *.
-intros i ity.
-apply condSAT_smaller.
 Qed.
 
 (** * Structural fixpoint: *)
@@ -911,15 +883,12 @@ apply cc_lam_ext.
     rewrite fst_def; trivial.
     rewrite H12; reflexivity.
 
-   apply condSAT_morph.
+   apply ZFlambda.sSAT_morph.
+   apply cc_app_morph.
+    apply H6; trivial.
+
+    rewrite !snd_def.
     rewrite H12; reflexivity.
-
-    apply ZFlambda.sSAT_morph.
-    apply cc_app_morph.
-     apply H6; trivial.
-
-     rewrite !snd_def.
-     rewrite H12; reflexivity.
 Qed.
 
 Instance rWi_morph_gen : Proper
@@ -956,14 +925,11 @@ apply cc_lam_ext.
 
    apply H2; auto with *; rewrite H10; reflexivity.
 
-   apply condSAT_morph.
+   apply ZFlambda.sSAT_morph.
+   apply cc_app_morph.
+    apply H5; trivial.
+
     rewrite H10; reflexivity.
-
-    apply ZFlambda.sSAT_morph.
-    apply cc_app_morph.
-     apply H5; trivial.
-
-     rewrite H10; reflexivity.
 Qed.
 
 End Make.
