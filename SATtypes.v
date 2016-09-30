@@ -1515,6 +1515,19 @@ Require Import ZFfixrec.
 Require Import ZFrelations.
 Require Import ZFord ZFfix.
 
+(* –> ZFlambda *)
+Lemma sSAT_mt : eqSAT (sSAT empty) neuSAT.
+unfold sSAT,complSAT.
+apply neuSAT_ext.
+red; intros.
+assert (h : forall t, sn t -> iLAM t ∈ empty -> inSAT t neuSAT).
+ intros.
+ apply empty_ax in H1; contradiction.
+assert (H' := fun h => interSAT_elim H (exist _ neuSAT h));
+   clear H; simpl in H'.
+auto.
+Qed.
+
 Definition tiSAT (F:set->set) (A:(set->SAT)->set->SAT) (o:set) (x:set) : SAT :=
   sSAT (cc_app (REC (fun o' f => cc_lam (TI F (osucc o'))
                                    (fun y => iSAT (A (fun z => sSAT (cc_app f z)) y))) o) x).
@@ -1553,7 +1566,10 @@ Qed.
 Lemma tiSAT_recursor o A F :
   Proper (incl_set==>incl_set) F ->
   Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A ->
-  (forall R R' o', isOrd o' -> o' ⊆ o -> (forall x x', x ∈ TI F o' -> x==x' -> eqSAT (R x) (R' x')) ->
+  (forall R R' o', isOrd o' -> o' ⊆ o ->
+   (forall x x', x ∈ TI F o' -> x==x' -> eqSAT (R x) (R' x')) ->
+   (forall x, ~ x ∈ TI F o -> eqSAT (R x) neuSAT) ->
+   (forall x, ~ x ∈ TI F o -> eqSAT (R' x) neuSAT) ->
    forall x x', x ∈ TI F (osucc o') -> x==x' -> eqSAT (A R x) (A R' x')) ->
   isOrd o ->
   recursor o (TI F)
@@ -1598,10 +1614,26 @@ split; intros.
   apply Aext with o0; auto with *.
    apply H1.
    transitivity o'; trivial.
-  intros.
-  apply sSAT_morph.
-  rewrite <- H6.
-  apply H3; trivial.
+
+   intros.
+   apply sSAT_morph.
+   rewrite <- H6.
+   apply H3; trivial.
+
+   intros.
+   rewrite cc_app_outside_domain with (dom:=TI F o0).
+    apply sSAT_mt.
+    apply H1.
+   intros h; apply H5; revert h; apply TI_mono; auto with *.
+   apply H1.
+   transitivity o'; trivial.  
+
+   intros.
+   rewrite cc_app_outside_domain with (dom:=TI F o').
+    apply sSAT_mt.
+    apply H2.
+   intros h; apply H5; revert h; apply TI_mono; auto with *.
+   apply H2.
 
   revert H4; apply TI_mono; auto with *.
    apply isOrd_succ; apply H2.
@@ -1611,11 +1643,13 @@ split; intros.
     apply H2.
 Qed.
 
-
 Lemma tiSAT_eq o A F :
   Proper (incl_set==>incl_set) F ->
   Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A ->
-  (forall R R' o', isOrd o' -> o' ⊆ o -> (forall x x', x ∈ TI F o' -> x==x' -> eqSAT (R x) (R' x')) ->
+  (forall R R' o', isOrd o' -> o' ⊆ o ->
+   (forall x x', x ∈ TI F o' -> x==x' -> eqSAT (R x) (R' x')) ->
+   (forall x, ~ x ∈ TI F o -> eqSAT (R x) neuSAT) ->
+   (forall x, ~ x ∈ TI F o -> eqSAT (R' x) neuSAT) ->
    forall x x', x ∈ TI F (osucc o') -> x==x' -> eqSAT (A R x) (A R' x')) ->
   isOrd o ->
   forall x,
@@ -1644,7 +1678,10 @@ Qed.
 Lemma tiSAT_outside_domain o A F :
   Proper (incl_set==>incl_set) F ->
   Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A ->
-  (forall R R' o', isOrd o' -> o' ⊆ o -> (forall x x', x ∈ TI F o' -> x==x' -> eqSAT (R x) (R' x')) ->
+  (forall R R' o', isOrd o' -> o' ⊆ o ->
+   (forall x x', x ∈ TI F o' -> x==x' -> eqSAT (R x) (R' x')) ->
+   (forall x, ~ x ∈ TI F o -> eqSAT (R x) neuSAT) ->
+   (forall x, ~ x ∈ TI F o -> eqSAT (R' x) neuSAT) ->
    forall x x', x ∈ TI F (osucc o') -> x==x' -> eqSAT (A R x) (A R' x')) ->
   isOrd o ->
   forall x,
@@ -1656,23 +1693,20 @@ unfold tiSAT.
 rewrite REC_eqn with (2:=rec); trivial.
 fold (tiSAT F A o).
 rewrite cc_app_outside_domain with (dom:=TI F o); trivial.
-2:apply is_cc_fun_lam.
-2:do 2 red; intros; apply cc_app_morph; auto with *.
-unfold sSAT,complSAT.
-apply eqSAT_def.
-split; intros.
-2:apply neuSAT_def; trivial.
-assert (H4' := fun h => interSAT_elim H4 (exist _ neuSAT h));
-  clear H4; simpl in H4'.
-apply H4'; intros.
-apply empty_ax in H5; contradiction.
+ apply sSAT_mt.
+
+ apply is_cc_fun_lam.
+ do 2 red; intros; apply cc_app_morph; auto with *.
 Qed.
 
 
 Lemma tiSAT_mono o1 o2 A F:
   Proper (incl_set==>incl_set) F ->
   Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A ->
-  (forall R R' o', isOrd o' -> o' ⊆ o2 -> (forall x x', x ∈ TI F o' -> x==x' -> eqSAT (R x) (R' x')) ->
+  (forall R R' o', isOrd o' -> o' ⊆ o2 ->
+   (forall x x', x ∈ TI F o' -> x==x' -> eqSAT (R x) (R' x')) ->
+   (forall x, ~ x ∈ TI F o2 -> eqSAT (R x) neuSAT) ->
+   (forall x, ~ x ∈ TI F o2 -> eqSAT (R' x) neuSAT) ->
    forall x x', x ∈ TI F (osucc o') -> x==x' -> eqSAT (A R x) (A R' x')) ->
   isOrd o1 ->
   isOrd o2 ->
@@ -1690,7 +1724,10 @@ Qed.
 Lemma tiSAT_succ_eq o A F :
   Proper (incl_set==>incl_set) F ->
   Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A ->
-  (forall R R' o', isOrd o' -> o' ⊆ osucc o -> (forall x x', x ∈ TI F o' -> x==x' -> eqSAT (R x) (R' x')) ->
+  (forall R R' o', isOrd o' -> o' ⊆ osucc o ->
+   (forall x x', x ∈ TI F o' -> x==x' -> eqSAT (R x) (R' x')) ->
+   (forall x, ~ x ∈ TI F (osucc o) -> eqSAT (R x) neuSAT) ->
+   (forall x, ~ x ∈ TI F (osucc o) -> eqSAT (R' x) neuSAT) ->
    forall x x', x ∈ TI F (osucc o') -> x==x' -> eqSAT (A R x) (A R' x')) ->
   isOrd o ->
   forall x,
@@ -1700,12 +1737,34 @@ intros.
 rewrite tiSAT_eq; auto.
 apply H1 with o; auto with *.
  red; intros; apply isOrd_trans with o; auto.
-intros.
-transitivity (tiSAT F A o x0).
- symmetry; apply tiSAT_mono; auto with *.
- red; intros; apply isOrd_trans with o; auto.
 
- apply tiSAT_morph; auto with *.
+ intros.
+ transitivity (tiSAT F A o x0).
+  symmetry; apply tiSAT_mono; auto with *.
+  red; intros; apply isOrd_trans with o; auto.
+
+  apply tiSAT_morph; auto with *.
+
+ intros.
+ apply tiSAT_outside_domain; auto.
+
+ intros.
+ assert (o ⊆ osucc o).
+  red; intros; apply isOrd_trans with o; auto.
+ apply tiSAT_outside_domain; auto.
+  intros.
+  apply H1 with o'; trivial.  
+   transitivity o; trivial.
+
+   intros.
+   apply H9.
+   intros h; apply H13; revert h; apply TI_mono; auto with *.
+
+   intros.
+   apply H10.
+   intros h; apply H13; revert h; apply TI_mono; auto with *.
+
+  intros h; apply H4; revert h; apply TI_mono; auto with *.
 Qed.
 
 (* useful ?
