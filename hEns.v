@@ -34,6 +34,11 @@ Lemma isProp_forall A P :
   (forall x, isProp (P x)) -> isProp (forall x:A, P x).
 Admitted.  
 
+Lemma isProp_iff {A B:Prop} : isProp A -> isProp B -> isProp (A<->B).
+intros.
+apply isProp_conj; apply isProp_forall; trivial.
+Qed.
+
 Lemma is_prop_uip A (x y:A) :
   isProp A -> isProp (x=y).
 red; intros.
@@ -41,6 +46,12 @@ assert (K : forall (r : x = y), r = eq_trans (H x x) (eq_sym (H y x))).
  intro r; destruct r.
  destruct (H x x); reflexivity.
 eapply eq_trans;[|symmetry];apply K.
+Qed.
+
+Lemma isSet_prop A :
+  isProp A -> isSet A.
+red; intros.
+apply is_prop_uip; trivial.
 Qed.
 
 Lemma isProp_isProp A : isProp (isProp A).
@@ -68,6 +79,16 @@ revert p0; destruct e; simpl; intros.
 destruct (Pp x p p0).
 reflexivity.
 Qed.
+Lemma sig_proj1_intro {A} {P:A->Prop} Pp
+      {p q:@sig A P} (e:p=q) :
+  e = sig_intro p q Pp (sig_proj1 e).
+destruct e.
+simpl.
+unfold sig_intro.
+destruct p as (p,t); simpl.
+replace (Pp p t t) with (eq_refl t); trivial.
+apply is_prop_uip; trivial.
+Qed.
 
 Lemma isProp_sig :
   forall {A} {P:A->Prop}, (forall a, isProp (P a)) ->
@@ -93,47 +114,20 @@ f_equal.
 apply H. 
 Qed.
 
-(** Predicate extensionality: consequence of univalence *)
-Parameter pred_ext :
-  forall {A} {P Q:A->Prop},
-  (forall a, isProp (P a)) ->
-  (forall a, isProp (Q a)) ->
-  (forall a, P a <-> Q a) ->
-  P = Q.
-
-Parameter isProp_pred_eq :
-  forall {A} {P Q:A->Prop},
-  (forall a, isProp (P a)) ->
-  (forall a, isProp (Q a)) ->
-  isProp (P=Q).
-(*
-Lemma isSet_pred X : isSet {Q:X->Prop | forall x, isProp (Q x)}.
-red; intros.
-assert (forall p, p = sig_intro x y (fun x => isProp_forall _ _ (fun x => isProp_isProp _)) (sig_proj1 p)).
-clear.
-intros.
-destruct p.
-unfold sig_intro; simpl.
-destruct x; simpl.
-replace  (isProp_forall X (fun x0 : X => isProp (x x0))
-           (fun x0 : X => isProp_isProp (x x0)) i i) with (eq_refl i).
- reflexivity.
-assert (isProp (forall z, isProp (x z))).
- apply isProp_forall.
- intros; apply isProp_isProp.
-apply (is_prop_uip _ i i) in H.
-apply H.
-
-rewrite (H p), (H q).
-destruct (pred_ext' (proj2_sig x) (proj2_sig y) (sig_proj1 p) (sig_proj1 q)).
-reflexivity.
-Qed.
- *)
-
 (** Prop-truncation *)
-Parameter tr : Type -> Prop.
+Definition tr X := forall P:Prop, isProp P -> (X->P) -> P.
+Lemma tr_prop X : isProp (tr X).
+apply isProp_forall; intros P.
+apply isProp_forall; intros Pp.
+apply isProp_forall; trivial.
+Qed.
+Definition tr_i {X} (x:X) : tr X := fun _ _ f => f x.
+(*Definition tr_ind_nodep {X P} (Pp:isProp P) (h:X->P) (t:tr X) : P :=
+  t P Pp h.*)
+
+(*Parameter tr : Type -> Prop.
 Parameter tr_prop : forall X, isProp (tr X).
-Parameter tr_i : forall {X}, X -> tr X.
+Parameter tr_i : forall {X}, X -> tr X.*)
 Parameter tr_ind_nodep : forall {X P},
   isProp P -> (X->P) -> tr X -> P.
 
@@ -190,6 +184,66 @@ apply uniq; trivial.
 exact (proj2_sig (descr Pp uniq w)).
 Qed.
 
+
+(** Predicate extensionality: consequence of univalence *)
+Parameter pred_ext :
+  forall {A} {P Q:A->Prop},
+  (forall a, isProp (P a)) ->
+  (forall a, isProp (Q a)) ->
+  (forall a, P a <-> Q a) ->
+  P = Q.
+(*
+Lemma isProp_forall' A (P:A->Prop) :
+  (forall x, isProp (P x)) -> isProp (forall x:A, P x).
+red; intros.
+assert (P = fun _ => True).
+ apply pred_ext; auto.
+ red; intros.
+ destruct x0; destruct y0; reflexivity.
+ split; trivial.
+ generalize x y.
+rewrite H0. 
+intros.
+*)
+
+Definition pred_ext' {A} {P Q:A->Prop}
+  (Pp : forall a, isProp (P a)) (Qp : forall a, isProp (Q a))
+  (e:forall a, P a <-> Q a) : P=Q :=
+  eq_trans (eq_sym (pred_ext Pp Pp (fun a => conj (fun x => x)(fun x => x))))
+           (pred_ext Pp Qp e).
+
+Definition pred_eqv {A} {P Q:A->Prop}
+  (e:P=Q) a : P a <-> Q a :=
+  conj (fun x => match e in _=X return X a with eq_refl => x end)
+       (fun x => match eq_sym e in _=X return X a with eq_refl => x end).
+
+Definition pred_eqv_ext {A} {P Q:A->Prop}
+           (Pp : forall a, isProp (P a)) (Qp : forall a, isProp (Q a))
+           (w:P=Q) :
+  pred_ext' Pp Qp (pred_eqv w) = w.
+revert Qp; destruct w.
+simpl; intros.  
+unfold pred_ext'.
+replace Qp with Pp.
+2:apply isProp_forall; intros; apply isProp_isProp.
+pose (w := pred_ext Pp Pp (fun _ => conj (fun x =>x) (fun x=>x))).
+change (eq_trans (eq_sym w) w = eq_refl).
+destruct w.
+reflexivity.
+Qed.
+
+Lemma isProp_pred_eq :
+  forall {A} {P Q:A->Prop},
+  (forall a, isProp (P a)) ->
+  (forall a, isProp (Q a)) ->
+  isProp (P=Q).
+red; intros.  
+rewrite <-(pred_eqv_ext H H0 x), <-(pred_eqv_ext H H0 y).
+apply f_equal with (f:=pred_ext' H H0).
+apply isProp_forall; intros.
+apply isProp_iff; trivial.
+Qed.
+
 (** Quotient *)
 
 Require Import Setoid.
@@ -216,32 +270,6 @@ Qed.
                                          
 Definition quo (X:Type) (R:X->X->Prop) :=
   { P : X->Prop | tr (isClass R P) }.
-
-Definition quo_i {X} {R:X->X->Prop} (Rr:isRel R) (x:X) : quo X R :=
-  existT (fun P => tr(isClass R P))
-    (fun y => R x y)
-    (tr_i (isClass_eq Rr x)).
-
-Lemma quo_i_eq {X R} (Rr:isRel  R) {x y:X} :
-  quo_i _ x = quo_i _ y <-> R x y.
-split.
- intros.
- apply sig_proj1 in H; simpl in H.
- apply f_app with (x:=y) in H.
- rewrite H; reflexivity.
-
- intros.
- apply sig_intro.
-  intros.
-  apply tr_prop.
-
-  simpl; apply pred_ext.
-   intros; apply Rr.
-   intros; apply Rr.
-
-   intros; rewrite H.
-   reflexivity.  
-Qed.
 
 Lemma isProp_quo_proj1 {X R} (x:quo X R) (z:X) :
   isProp (proj1_sig x z).
@@ -276,6 +304,32 @@ apply sig_intro.
   apply isProp_quo_proj1.
 Qed.
 
+Lemma isSet_quo X (R:X->X->Prop) (Rr:isRel R) : isSet (quo X R).
+red; intros.
+rewrite (sig_proj1_intro (fun _ => tr_prop _) p).
+rewrite (sig_proj1_intro (fun _ => tr_prop _) q).
+f_equal.
+apply isProp_pred_eq; apply isProp_quo_proj1.
+Qed.
+
+
+Definition quo_i {X} {R:X->X->Prop} (Rr:isRel R) (x:X) : quo X R :=
+  existT (fun P => tr(isClass R P))
+    (fun y => R x y)
+    (tr_i (isClass_eq Rr x)).
+
+Lemma quo_i_eq {X R} (Rr:isRel  R) {x y:X} :
+  quo_i _ x = quo_i _ y <-> R x y.
+split.
+ intros.
+ apply sig_proj1 in H; simpl in H.
+ apply f_app with (x:=y) in H.
+ rewrite H; reflexivity.
+
+ intros; apply quo_ext; simpl; intros; trivial.
+ rewrite H; reflexivity.
+Qed.
+
 Lemma class_quo_proj1 X R (Rr:isRel R) (q:quo X R) w :
   proj1_sig q w <-> q = quo_i _ w.
 split; intros.
@@ -284,7 +338,7 @@ split; intros.
  assert (Pp := isProp_quo_proj1 q).
  destruct q as (P,Pc); simpl in *.
  elim Pc using tr_ind; intros.
-  apply isProp_conj; apply isProp_forall; intros; auto.
+  apply isProp_iff; auto.
   apply Rr.
  destruct x0 as (_,w',_,eqvP).
  rewrite eqvP in H|-*.
@@ -294,24 +348,7 @@ split; intros.
  reflexivity.
 Qed.
 
-
-Lemma quo_isSet X (R:X->X->Prop) (Rr:isRel R) : isSet (quo X R).
-red; intros.
-assert (forall e:x=y, e = sig_intro x y (fun _ => tr_prop _) (sig_proj1 e)).
- destruct e.
- simpl.
- unfold sig_intro.
- destruct x; simpl.
- replace (tr_prop (isClass R x) t t) with (eq_refl t); trivial.
- apply is_prop_uip; trivial.
- apply tr_prop.
-rewrite (H p), (H q).
-f_equal.
-apply isProp_pred_eq; apply isProp_quo_proj1.
-Qed.
-
-
-  Lemma quo_ind {X} {R:X->X->Prop} (Rr:isRel R) (P:quo X R->Type):
+Lemma quo_ind {X} {R:X->X->Prop} (Rr:isRel R) (P:quo X R->Type):
   (forall x, isProp (P x)) ->
   (forall (x:X), P (quo_i Rr x)) ->
   forall x:quo X R, P x.
@@ -321,10 +358,10 @@ elim w using tr_ind; auto.
 clear w; intros (w,wdef).
 rewrite class_quo_proj1 with (Rr:=Rr) in wdef.
 rewrite wdef; trivial.
-Defined.
+Qed.
 
-  Lemma quo_ind_eq {X} {R:X->X->Prop} {Rr:isRel R} {P:quo X R->Type} Pp h (x:X) :
-    quo_ind _ P Pp h (quo_i _ x) = h x.
+Lemma quo_ind_eq {X} {R:X->X->Prop} {Rr:isRel R} {P:quo X R->Type} Pp h (x:X) :
+  quo_ind _ P Pp h (quo_i _ x) = h x.
 apply Pp.
 Qed.
 
@@ -338,24 +375,15 @@ Section QuotientSetInduction.
   Variable hcomp :
     forall x y (r:R x y), eq_rect _ P (h x) _ (proj2 (quo_i_eq _) r) = h y.
 
-  Let imgP x :=
-    tr { p:P x | tr {x':X & { e: quo_i _ x' = x | eq_rect _ P (h x') _ e = p}}}.
+  Let img x p := {x':X & { e: quo_i _ x' = x | eq_rect _ P (h x') _ e = p}}.
 
-  Lemma quo_imgP (q:quo X R) : imgP q.
-elim q using (quo_ind Rr).
- intros; apply tr_prop.
-intros.
-apply tr_i.
-exists (h x).
-apply tr_i.
-exists x; auto.
-exists eq_refl; trivial.
-Qed.
- 
-Lemma imgP_uniq q (p p':P q) :
-  {x:X & { e: quo_i _ x = q | eq_rect _ P (h x) _ e = p}} ->
-  {x:X & { e: quo_i _ x = q | eq_rect _ P (h x) _ e = p'}} ->
-  p=p'.
+  Lemma img_ex q : img (quo_i Rr q) (h q).
+exists q.
+exists (eq_refl (quo_i _ q)).    
+reflexivity.
+Defined.
+
+  Lemma img_uniq q (p p':P q) : img q p -> img q p' -> p = p'.
 intros (x0,(eqx0,imgx0)) (x1,(eqx1,imgx1)).
 rewrite <- imgx0, <- imgx1.
 clear imgx0 imgx1.
@@ -366,21 +394,28 @@ assert (R x0 x1).
 replace eqx0 with (proj2 (quo_i_eq _) H).
  apply hcomp.
 
- apply quo_isSet; trivial.
+ apply isSet_quo; trivial.
 Qed.
 
-Lemma imgP_uniq_tr q (p p':P q) :
-  tr {x:X & { e: quo_i _ x = q | eq_rect _ P (h x) _ e = p}} ->
-  tr {x:X & { e: quo_i _ x = q | eq_rect _ P (h x) _ e = p'}} ->
-  p=p'.
+  Lemma img_uniq_tr q (p p':P q) : tr (img q p) -> tr (img q p') -> p=p'.
 intros.
 elim H using tr_ind; intros.
  red; intros; apply Ps.
 elim H0 using tr_ind; intros.
  red; intros; apply Ps.
-apply imgP_uniq; trivial.
+apply img_uniq; trivial.
 Qed.
 
+  Let imgP x := tr { p:P x | tr (img x p) }.
+
+  Lemma quo_imgP (q:quo X R) : imgP q.
+elim q using (quo_ind Rr).
+ intros; apply tr_prop.
+intros.
+apply tr_i; exists (h x).
+apply tr_i; apply img_ex.
+Qed.
+ 
  Lemma quo_ind_set (q:quo X R) : P q.
 assert (p' := quo_imgP q).
 apply descr in p'.
@@ -388,17 +423,14 @@ apply descr in p'.
 
  intros; apply tr_prop.
 
- apply imgP_uniq_tr.
+ apply img_uniq_tr.
 Defined.
 
  Lemma quo_ind_set_eq (x:X) :
   quo_ind_set (quo_i _ x) = h x.
 unfold quo_ind_set.
 apply descr_eq.
-apply tr_i.
-exists x.
-exists (eq_refl (quo_i _ x)).
-reflexivity.
+apply tr_i; apply img_ex.
 Qed.
 
 End QuotientSetInduction.
@@ -511,13 +543,6 @@ Qed.
 
 Hint Resolve isProp_eq_set isProp_incl_set isProp_in_set tr_prop.
 
-(*Lemma eq_elim0 : forall x y i,
-  eq_set x y ->
-  tr { j | eq_set (elts x i) (elts y j)}.
-destruct x; simpl; intros.
-destruct H.
-auto.
-Qed.*)
 Lemma eq_elim0 x y i :
   eq_set x y ->
   in_set (elts x i) y.
@@ -594,7 +619,7 @@ split; red; intros.
 Qed.
 
 Lemma isSet_qset : isSet qset.
-apply quo_isSet; auto with *.
+apply isSet_quo; auto with *.
 Qed.
 
 
@@ -605,17 +630,16 @@ Lemma qset_set_eq (x:set) :
   qset_set (quo_i _ x) = eq_set x.
 unfold qset_set.
 apply pred_ext; intros; auto.
- red; intros.
- apply quo_isSet; auto with *.
+ red; intros; apply isSet_qset.
 
  apply quo_i_eq.
 Qed.
 
-
+(*
 Definition is_set (P:set->Prop) := tr (isClass eq_set P).
 Definition mk_qset (P:set->Prop) (Ps:is_set P) : qset :=
   exist is_set P Ps.
-
+*)
 
 Definition in_qset (x y:qset) :=
   tr { x' | x = quo_i _ x' /\ tr{ y' | y = quo_i _ y' /\ in_set x' y'}}.
@@ -633,7 +657,6 @@ clear H1.
 destruct 1 as (y',(?,?)).
 eauto.
 Qed.
-
 
 Lemma in_set_eqv x y :
   in_qset (quo_i _ x) (quo_i _ y) <-> in_set x y.
@@ -781,7 +804,7 @@ assert (forall a x y, eq_set x y -> h a x = h a y).
 pose (qh := fun a => quo_ind_set_nodep _ isSet_qset (h a) (H a) b).
 apply quo_ind_set_nodep with (1:=_) (h0:=qh) (4:=a).
  exact isSet_qset.
- intros.
+intros.
 unfold qh.
 elim b using (quo_ind _).
  red; intros.
@@ -803,23 +826,20 @@ unfold quo_ind_set_nodep.
 eapply transitivity.
 match goal with
     |- context[quo_ind_set ?X ?R ?Rr ?P ?Ps ?h ?hcomp (quo_i ?Rr ?x)] =>
-    pose (thm := quo_ind_set_eq X R Rr P Ps h hcomp x)
+  apply (quo_ind_set_eq X R Rr P Ps h hcomp x)
 end.
-apply thm.
 match goal with
     |- context[quo_ind_set ?X ?R ?Rr ?P ?Ps ?h ?hcomp (quo_i ?Rr ?x)] =>
-    pose (thm' := quo_ind_set_eq X R Rr P Ps h hcomp x)
+  apply (quo_ind_set_eq X R Rr P Ps h hcomp x)
 end.
-apply thm'.
 Qed.
-
 
 Lemma qpair_ax : forall a b z,
   in_qset z (qpair a b) <-> tr (z=a \/ z=b).
 intros.
 assert (forall a b z, isProp (in_qset z (qpair a b) <-> tr (z=a\/z=b))).  
  intros.
- apply isProp_conj;apply isProp_forall; intros; auto.
+ apply isProp_iff; auto.
  apply tr_prop.
 elim a using (quo_ind _); auto.
 clear a; intros a.
