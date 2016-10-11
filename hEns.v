@@ -231,18 +231,17 @@ rewrite H0.
 intros.
 *)
 
+Definition pred_eqv {A} {P Q:A->Prop} (e:P=Q) a : P a <-> Q a.
+Proof conj (fun x => match e in _=X return X a with eq_refl => x end)
+           (fun x => match eq_sym e in _=X return X a with eq_refl => x end).
+
 (* Version of pred_ext that returns the reflexivity when
-   given the identity equivalence *)
+   given the identity equivalence, so it is the inverse of pred_eqv *)
 Definition pred_ext' {A} {P Q:A->Prop}
   (Pp : forall a, isProp (P a)) (Qp : forall a, isProp (Q a))
   (e:forall a, P a <-> Q a) : P=Q :=
-  eq_trans (eq_sym (pred_ext Pp Pp (fun a => conj (fun x => x)(fun x => x))))
+  eq_trans (eq_sym (pred_ext Pp Pp (pred_eqv eq_refl)))
            (pred_ext Pp Qp e).
-
-Definition pred_eqv {A} {P Q:A->Prop}
-  (e:P=Q) a : P a <-> Q a :=
-  conj (fun x => match e in _=X return X a with eq_refl => x end)
-       (fun x => match eq_sym e in _=X return X a with eq_refl => x end).
 
 Definition pred_eqv_ext {A} {P Q:A->Prop}
            (Pp : forall a, isProp (P a)) (Qp : forall a, isProp (Q a))
@@ -253,10 +252,7 @@ simpl; intros.
 unfold pred_ext'.
 replace Qp with Pp.
 2:apply isProp_forall; intros; apply isProp_isProp.
-pose (w := pred_ext Pp Pp (fun _ => conj (fun x =>x) (fun x=>x))).
-change (eq_trans (eq_sym w) w = eq_refl).
-destruct w.
-reflexivity.
+destruct (pred_ext Pp Pp (pred_eqv eq_refl)); reflexivity.
 Qed.
 
 Lemma isProp_pred_eq {A} {P Q:A->Prop} :
@@ -482,6 +478,52 @@ split; intros h; elim h using tr_ind; intros; auto.
  destruct x; apply tr_i; eauto.
 Qed.
 
+(* Set-truncation form Prop-truncation + quotients *)
+
+Definition tr0 X := quo X (fun x y => tr(x=y)). 
+
+Instance isRel_treq {X} : isRel (fun x y:X => tr(x=y)).
+split; auto.
+split ;red; intros.
+ apply tr_i; reflexivity.
+
+ elim H using tr_ind; intros; auto.
+ apply tr_i; symmetry; trivial.
+
+ elim H using tr_ind; intros; auto.
+ elim H0 using tr_ind; intros; auto.
+ apply tr_i; transitivity y; trivial.
+Qed.
+
+Definition tr0_i {X} (x:X) : tr0 X := quo_i _ x.
+
+Definition tr0_ind_set {X} (P:tr0 X->Type) :
+  (forall x, isSet (P x)) ->
+  (forall x:X, P (tr0_i x)) ->
+  forall x', P x'.
+intros.
+apply (quo_ind_set _ _ _) with (h:=X0); trivial.
+red.
+intros.
+elim r using tr_ind.
+ red; intros; apply H.
+
+ clear r; intros e.
+ destruct e.
+ assert (proj2 (quo_i_eq _) (tr_i (eq_refl x)) = eq_refl (quo_i _ x)).
+  apply isSet_quo; auto with *.
+ rewrite H0; reflexivity.
+Defined.
+
+Lemma tr0_ind_set_eq {X} (P:tr0 X->Type)
+  (Pp:forall x, isSet (P x))
+  (h:forall x:X, P (tr0_i x)) (x:X) :
+  tr0_ind_set P Pp h (tr0_i x) = h x.
+unfold tr0_ind_set.
+apply quo_ind_set_eq.
+Qed.
+
+(** * The type of sets *)
 Module S.
 
 (* The level of indexes *)
