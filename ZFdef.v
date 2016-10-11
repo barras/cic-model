@@ -33,13 +33,13 @@ End SetTheory.
    Plays the role of regularity axiom, but in an intutionistic
    setting (regularity is classical). *)
 Module Type WfSetTheory (L:SublogicTheory).
-Include SetTheory.
+  Import L.
+  Include SetTheory.
 
 Parameter
  (wf_ax: forall P:set->Prop,
-    (forall x, L.isL (P x)) ->
-    (forall x, (forall y, y ∈ x -> P y) -> P x) ->
-    forall x, P x).
+    (forall x, (forall y, y ∈ x -> #P y) -> #P x) ->
+    forall x, #P x).
 
 End WfSetTheory.
 
@@ -85,17 +85,17 @@ Include WfSetTheory L.
 Import L.
 
 Parameter
- (empty_ex: L.Tr(exists empty, forall x, x ∈ empty -> #False))
+ (empty_ex: #(exists empty, forall x, x ∈ empty -> #False))
  (pair_ex: forall a b, #exists c, forall x, x ∈ c <-> #(x == a \/ x == b))
  (union_ex: forall a, #exists b,
     forall x, x ∈ b <-> #exists2 y, x ∈ y & y ∈ a)
  (subset_ex : forall a P, #exists b,
-    forall x, x ∈ b <-> (x ∈ a /\ exists2 x', x==x' & P x'))
+    forall x, x ∈ b <-> (x ∈ a /\ #exists2 x', x==x' & P x'))
  (infinity_ex: #exists2 infinite,
-    #exists2 empty, (forall x, x ∈ empty -> L.Tr False) &
+    #exists2 empty, (forall x, x ∈ empty -> #False) &
         empty ∈ infinite &
     (forall x, x ∈ infinite ->
-     #exists2 y, (forall z, z ∈ y <-> (z == x \/ z ∈ x)) &
+     #exists2 y, (forall z, z ∈ y <-> #(z == x \/ z ∈ x)) &
        y ∈ infinite))
  (power_ex: forall a, #exists b,
      forall x, x ∈ b <-> (forall y, y ∈ x -> y ∈ a)).

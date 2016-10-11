@@ -161,9 +161,8 @@ Defined.
 
 Lemma wf_ax :
   forall (P:set->Prop),
-  (forall x, P x -> P x) ->
   (forall x, (forall y, in_set y x -> P y) -> P x) -> forall x, P x.
-intros P _ H x.
+intros P H x.
 cut (forall x', eq_set x x' -> P x');[auto using eq_set_refl|].
 induction x; intros.
 apply H; intros.

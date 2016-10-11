@@ -693,7 +693,7 @@ Proof proj2 (proj2_sig infinite_sig).
 
 (** well-founded induction *)
 
-Lemma wf_ax (P:set->Prop):
+Lemma wf_ax0 (P:set->Prop):
   (forall x, isL (P x)) ->
   (forall x, (forall y, y ∈ x -> P y) -> P x) ->
   forall x, P x.
@@ -703,11 +703,18 @@ cut (forall xs (x:set), x == Z2set xs -> P x).
  Tdestruct (Z2set_surj x).
  eauto.
 clear x.
-intros xs; elim xs using Z.wf_ax; intros; auto.
+intros xs; elim xs using Z.wf_ax0; intros; auto.
 apply H0; intros.
 Tdestruct (Z2set_surj y).
 rewrite H2,H4 in H3.
 apply in_inZ in H3; eauto.
+Qed.
+
+Lemma wf_ax :
+  forall (P:set->Prop),
+  (forall x, (forall y, y ∈ x -> #P y) -> #P x) ->
+  forall x, #P x.
+intros; apply wf_ax0 with (P:=fun x => #P x); auto.
 Qed.
 
 (** * Skolemizing Replacement *)

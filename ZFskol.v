@@ -872,10 +872,9 @@ Proof proj2 (proj2_sig infinite_sig).
 (* well-founded induction *)
 
 Lemma wf_ax : forall (P:set->Prop),
-  (forall x, P x -> P x) ->
   (forall x, (forall y, y ∈ x -> P y) -> P x) ->
   forall x, P x.
-intros P _ H x.
+intros P H x.
 cut (forall xs (x:set), x == Z2set xs -> P x).
  intros.
  destruct (Z2set_surj x).

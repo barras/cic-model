@@ -216,6 +216,46 @@ Lemma rFF' (Q:Prop) : Tr False -> isL Q -> Q.
 intros.
 apply H0; apply rFF; trivial.
 Qed.
+Ltac Tin := apply TrI.
+Ltac Texists t := Tin; exists t.
+Ltac Tleft := Tin; left.
+Ltac Tright := Tin; right.
+
+(** Elimination tactics:
+    - Tabsurd replaces the current goal with Tr False (ex-falso)
+    - Telim H implements rules H:Tr P |- G   -->  |- P->G when G is a L-prop
+    - Tdestruct H is the equivalent of destruct on a hypothesis Tr(Ind x).
+      The goal shall be an L-prop
+ *)
+
+Ltac prove_isL :=
+  intros;
+  lazymatch goal with
+  | |- isL(Tr _) => apply Tr_isL
+  | |- isL(_ /\ _) => apply and_isL; prove_isL
+  | |- isL True => apply T_isL; exact I
+  | |- isL(impl _ _) => apply imp_isL; prove_isL
+  | |- isL(iff _ _) => apply iff_isL; prove_isL
+  | |- isL(_ -> _) => apply imp_isL; prove_isL
+  | |- isL(forall x, _) => apply fa_isL; intro; prove_isL
+  | |- isL _ => auto 10; fail "Cannot prove isL side-condition"
+  | |- _ => fail "Tactic prove_isL does not apply to this goal"
+  end.
+
+Ltac Tabsurd := 
+  lazymatch goal with
+  | |- Tr _ => apply rFF
+  | |- _ => apply rFF';[|auto 10;fail"Cannot prove isL side-condition"]
+  end.
+Ltac Telim H :=
+  lazymatch goal with
+  | |- Tr _ => apply TrB with (1:=H); try clear H
+  | |- _ => apply Tr_ind with (3:=H);[auto 10;fail"Cannot prove isL side-condition"|]; try clear H
+  end.
+Tactic Notation "Tdestruct" constr(H) :=
+  Telim H; destruct 1.
+Tactic Notation "Tdestruct" constr(H) "as" simple_intropattern(p) :=
+  Telim H; intros p.
 
 End BuildLogic.
 

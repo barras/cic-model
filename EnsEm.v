@@ -315,13 +315,28 @@ Defined.
 
 (** Set induction *)
 
-Lemma wf_ax :
+Lemma wf_ax0 :
   forall (P:set->Prop),
   (forall x, isL (P x)) ->
   (forall x, (forall y, y ∈ x -> P y) -> P x) ->
   forall x, P x.
-intros P isLP H x.
+intros P PisL H x.
 cut (forall x', x == x' -> P x');[auto using eq_set_refl|].
+induction x; intros.
+apply H; intros.
+apply eq_set_sym in H1.
+apply eq_elim with (2:=H1) in H2.
+Tdestruct H2.
+apply H0 with x.
+apply eq_set_sym; trivial.
+Qed.
+
+Lemma wf_ax :
+  forall (P:set->Prop),
+  (forall x, (forall y, y ∈ x -> #P y) -> #P x) ->
+  forall x, #P x.
+intros P H x.
+cut (forall x', x == x' -> #P x');[auto using eq_set_refl|].
 induction x; intros.
 apply H; intros.
 apply eq_set_sym in H1.
@@ -1147,7 +1162,8 @@ Qed.
 Lemma V_trans : forall x y z,
   z ∈ y -> y ∈ V x -> z ∈ V x.
 intros x.
-apply wf_ax with (x:=x); auto.
+(*apply (fun h => @Tr_ind _ _ h (fun x=>x)); auto.*)
+apply wf_ax0 with (P:=fun x => forall y z, z ∈ y -> y ∈ V x -> z ∈ V x) (x:=x); auto.
 clear x; intros.
 rewrite V_def in H1|-*.
 Tdestruct H1.
@@ -1189,7 +1205,7 @@ Qed.
 
 Lemma V_compl : forall x z, z ∈ V x <-> V z ∈ V x. 
 intros x.
-pattern x; apply wf_ax; clear x; intros; auto.
+pattern x; apply wf_ax0; clear x; intros; auto.
 repeat rewrite V_def.
 split; intros.
  Tdestruct H0.
@@ -1247,7 +1263,7 @@ cut (forall y, V y ∈ power (V x) -> P y).
  intros.
  apply H1.
  rewrite power_ax; auto.
-apply wf_ax with (x:=x); intros; auto.
+apply wf_ax0 with (x:=x); intros; auto.
 apply H0; intros.
 rewrite power_ax in H2; specialize H2 with (1:=H3).
 rewrite V_def in H2.
@@ -1262,7 +1278,7 @@ Hypothesis EM : forall A, #(A \/ (A->#False)).
 Lemma V_total : forall x y, #(V x ∈ V y \/ V y ∈ power (V x)).
 intros x y.
 revert x.
-apply wf_ax with (x:=y); clear y; auto.
+apply wf_ax0 with (x:=y); clear y; auto.
 intros y Hy x.
 Tdestruct (EM (#exists2 y', y' ∈ V y & V x ∈ power y')).
  Tleft.
