@@ -1,21 +1,31 @@
 Require Import ZFskol.
 Require Import Sublogic.
 
+Definition transport {A} (P:A->Type) {x y} (e:x=y) (h:P x) : P y :=
+  eq_rect _ P h _ e.
+
 Lemma f_app A (B:A->Type) (f g:forall x, B x) x :
    f = g -> f x = g x.
 destruct 1; reflexivity.
 Qed.
 
+Definition eqD {A} (P:A->Type) {x y} (e:x=y) (h1:P x) (h2:P y) : Prop :=
+  transport P e h1 = h2.
+
 Definition sig_proj1 {A B} {p q:@sig A B} (e:p=q) : proj1_sig p = proj1_sig q :=
   f_equal _ e.
+Definition sig_proj2 {A B} {p q:@sig A B} (e:p=q) :
+    eqD B (sig_proj1 e) (proj2_sig p) (proj2_sig q) :=
+  match e with eq_refl => eq_refl end.
 
 (** In this file, we give an attempt to build a model of IZF
    in Coq + definite description + prop-truncation
  *)
 Definition isProp X := forall x y:X, x=y.
 
-Definition isSet X :=
-  forall (x y:X) (p q:x=y), p=q.
+Lemma isProp_True : isProp True.
+red; intros [ ] [ ]; reflexivity.
+Qed.
 
 Lemma isProp_False : isProp False.
 red; intros; contradiction.
@@ -46,12 +56,6 @@ assert (K : forall (r : x = y), r = eq_trans (H x x) (eq_sym (H y x))).
  intro r; destruct r.
  destruct (H x x); reflexivity.
 eapply eq_trans;[|symmetry];apply K.
-Qed.
-
-Lemma isSet_prop A :
-  isProp A -> isSet A.
-red; intros.
-apply is_prop_uip; trivial.
 Qed.
 
 Lemma isProp_isProp A : isProp (isProp A).
@@ -99,6 +103,15 @@ apply sig_intro; auto.
 apply H0; apply proj2_sig.
 Qed.
 
+Definition isSet X :=
+  forall (x y:X) (p q:x=y), p=q.
+
+Lemma isSet_prop A :
+  isProp A -> isSet A.
+red; intros.
+apply is_prop_uip; trivial.
+Qed.
+
 Lemma isSet_sig X (R:X->Prop) :
    isSet X -> (forall x, isProp (R x)) -> isSet (@sig X R).
 red; intros.
@@ -130,6 +143,12 @@ Parameter tr_prop : forall X, isProp (tr X).
 Parameter tr_i : forall {X}, X -> tr X.*)
 Parameter tr_ind_nodep : forall {X P},
   isProp P -> (X->P) -> tr X -> P.
+
+Lemma tr_elim : forall {P},
+  isProp P -> tr P -> P.
+intros.
+apply @tr_ind_nodep with (X:=P); trivial.
+Qed.
 
 Lemma tr_ind {X} (P : tr X -> Type) :
     (forall x, isProp (P x)) ->
@@ -164,7 +183,13 @@ Module trSub <: ConsistentSublogic.
   Definition TrCons : ~ Tr False :=
     fun p => tr_ind (fun _ => False) (fun _ => isProp_False) (fun x=>x) p.
 End trSub.
-Import trSub.
+Module TrSubThms <: SublogicTheory := BuildConsistentSublogic trSub.
+Import trSub TrSubThms.
+Lemma isL_tr : forall P, isL (tr P).
+red; intros.
+apply tr_ind_tr with (2:=H); trivial.
+Qed.
+Hint Resolve isL_tr.
 
 Lemma descr :
   forall {A} {P:A->Prop}, (forall a, isProp (P a)) ->
@@ -206,6 +231,8 @@ rewrite H0.
 intros.
 *)
 
+(* Version of pred_ext that returns the reflexivity when
+   given the identity equivalence *)
 Definition pred_ext' {A} {P Q:A->Prop}
   (Pp : forall a, isProp (P a)) (Qp : forall a, isProp (Q a))
   (e:forall a, P a <-> Q a) : P=Q :=
@@ -232,15 +259,14 @@ destruct w.
 reflexivity.
 Qed.
 
-Lemma isProp_pred_eq :
-  forall {A} {P Q:A->Prop},
+Lemma isProp_pred_eq {A} {P Q:A->Prop} :
   (forall a, isProp (P a)) ->
   (forall a, isProp (Q a)) ->
   isProp (P=Q).
-red; intros.  
-rewrite <-(pred_eqv_ext H H0 x), <-(pred_eqv_ext H H0 y).
-apply f_equal with (f:=pred_ext' H H0).
-apply isProp_forall; intros.
+intros Pp Qp e1 e2.  
+rewrite <-(pred_eqv_ext Pp Qp e1), <-(pred_eqv_ext Pp Qp e2).
+apply f_equal with (f:=pred_ext' Pp Qp).
+apply isProp_forall; intros a.
 apply isProp_iff; trivial.
 Qed.
 
@@ -373,9 +399,9 @@ Section QuotientSetInduction.
   Variable Ps : forall x, isSet (P x).
   Variable h : forall (x:X), P (quo_i _ x).
   Variable hcomp :
-    forall x y (r:R x y), eq_rect _ P (h x) _ (proj2 (quo_i_eq _) r) = h y.
+    forall x y (r:R x y), eqD P (proj2 (quo_i_eq _) r) (h x) (h y).
 
-  Let img x p := {x':X & { e: quo_i _ x' = x | eq_rect _ P (h x') _ e = p}}.
+  Let img x p := {x':X & { e: quo_i _ x' = x | eqD P e (h x') p}}.
 
   Lemma img_ex q : img (quo_i Rr q) (h q).
 exists q.
@@ -444,18 +470,26 @@ intros.
 apply quo_ind_set with (Rr:=Rr) (P:=fun _ => P) (h:=h); trivial.
 intros.
 destruct (proj2 (quo_i_eq _) r); simpl; auto.
+apply H0; trivial.
 Defined.
 
+Hint Resolve tr_prop isProp_forall isProp_conj isProp_iff.
 
+Lemma tr_ex_sig {A} {P:A->Prop} :
+  (#exists x, P x) <-> tr{x|P x}.
+split; intros h; elim h using tr_ind; intros; auto.
+ destruct x; apply tr_i; eauto.
+ destruct x; apply tr_i; eauto.
+Qed.
 
-Module IZF_R <: IZF_R_Ex_sig CoqSublogicThms.
+Module S.
 
 (* The level of indexes *)
 Definition Ti := Type.
 
-Inductive set_ : Type :=
-  sup (X:Ti) (f:X->set_).
-Definition set := set_.
+Inductive set : Type :=
+  sup (X:Ti) (f:X->set).
+
 
 Definition idx (x:set) := let (X,_) := x in X.
 Definition elts (x:set) : idx x -> set :=
@@ -464,8 +498,8 @@ Definition elts (x:set) : idx x -> set :=
   end.
 
 Fixpoint eq_set (x y:set) {struct x} :=
-  (forall i, tr { j | eq_set (elts x i) (elts y j)}) /\
-  (forall j, tr { i | eq_set (elts x i) (elts y j)}).
+  (forall i, #exists j, eq_set (elts x i) (elts y j)) /\
+  (forall j, #exists i, eq_set (elts x i) (elts y j)).
 
 Lemma isProp_eq_set x y : isProp (eq_set x y).
 destruct x; simpl; intros.
@@ -510,22 +544,24 @@ Qed.
 
 
 Lemma eq_set_def : forall x y,
-  (forall i, tr { j | eq_set (elts x i) (elts y j)}) ->
-  (forall j, tr { i | eq_set (elts x i) (elts y j)}) ->
+  (forall i, #exists j, eq_set (elts x i) (elts y j)) ->
+  (forall j, #exists i, eq_set (elts x i) (elts y j)) ->
   eq_set x y.
 destruct x; simpl; auto.
 Qed.
 
 Definition in_set x y :=
-  tr { j | eq_set x (elts y j)}.
+  #exists j, eq_set x (elts y j).
+
 
 Lemma in_set_ind P x y :
   isProp P ->
   (forall j, eq_set x (elts y j) -> P) ->
   in_set x y -> P.
 intros.
+apply (proj1 tr_ex_sig) in H0.
 elim H0 using tr_ind; auto.  
-destruct 1; eauto.
+destruct 1; intros; eauto.
 Qed.
 
 Lemma isProp_in_set x y : isProp (in_set x y).
@@ -540,8 +576,8 @@ apply isProp_forall; intros.
 auto.
 apply tr_prop.
 Qed.
-
 Hint Resolve isProp_eq_set isProp_incl_set isProp_in_set tr_prop.
+
 
 Lemma eq_elim0 x y i :
   eq_set x y ->
@@ -554,23 +590,23 @@ Qed.
 Lemma eq_set_ax : forall x y,
   eq_set x y <-> (forall z, in_set z x <-> in_set z y).
 unfold in_set; split; intros.
- split; intros; elim H0 using tr_ind_tr; destruct 1.
+ split; intros h; Tdestruct h.
   elim (eq_elim0 x y x0) using in_set_ind; intros; auto.
-  apply tr_i; exists j; apply eq_set_trans with (elts x x0); trivial.
+  Texists j; apply eq_set_trans with (elts x x0); trivial.
 
   apply eq_set_sym in H.
   elim (eq_elim0 y x x0) using in_set_ind; intros; auto.
-  apply tr_i; exists j; apply eq_set_trans with (elts y x0); trivial.
+  Texists j; apply eq_set_trans with (elts y x0); trivial.
 
   apply eq_set_def; intros.
    apply H.
-   apply tr_i; exists i; apply eq_set_refl.
+   Texists i; apply eq_set_refl.
 
    destruct (H (elts y j)).
    elim H1 using in_set_ind; intros; auto.
-    apply tr_i; exists j0; apply eq_set_sym; trivial.
+    Texists j0; apply eq_set_sym; trivial.
 
-    apply tr_i; exists j; apply eq_set_refl.
+    Texists j; apply eq_set_refl.
 Qed.
 
 Definition elts' (x:set) (i:idx x) : {y|in_set y x}.
@@ -606,33 +642,281 @@ destruct (H0 x); auto.
 Qed.
 
 
-Definition qset := quo set eq_set.
-
-Instance isRel_eqset : isRel eq_set.
-split; intros; auto.
-split; red; intros.
- apply eq_set_refl.
-
- apply eq_set_sym; trivial.  
-
- apply eq_set_trans with y; trivial.  
+  Lemma wf_ax :
+  forall (P:set->Prop),
+  (forall x, isProp (P x)) ->
+  (forall x, (forall y, in_set y x -> P y) -> P x) -> forall x, P x.
+intros P Pp H x.
+cut (forall x', eq_set x x' -> P x');[auto using eq_set_refl|].
+induction x; intros.
+apply H; intros.
+assert (in_set y (sup X f)).
+ apply eq_elim with x'; trivial.
+ apply eq_set_sym; trivial.
+clear H1 H2.
+elim H3 using in_set_ind; intros; auto.
+apply eq_set_sym in H1; eauto.
 Qed.
 
-Lemma isSet_qset : isSet qset.
+
+Definition empty :=
+  sup False (fun x => match x with end).
+
+Lemma empty_ax : forall x, ~ in_set x empty.
+red; intros.
+elim H using in_set_ind; intros.
+ apply isProp_False.
+contradiction.
+Qed.
+
+Definition singl x := sup unit (fun _ => x).
+
+Definition pair_spec (a b:set->Prop) (x:set) : Prop :=
+  forall z, in_set z x <-> #(a z \/ b z).
+
+Definition pair x y :=
+  sup bool (fun b => if b then x else y).
+
+Lemma pair_spec_intro a b :
+  pair_spec (fun a' => eq_set a' a) (fun b' => eq_set b' b) (pair a b).
+intros z.
+unfold pair; simpl.
+split; intros.
+ elim H using in_set_ind; intros; auto.
+ apply tr_i.
+ destruct j; auto.
+
+ elim H using tr_ind; intros; auto.
+ destruct x.
+  apply tr_i; exists true; trivial.
+  apply tr_i; exists false; trivial.
+Qed.
+
+Lemma pair_ax : forall a b z,
+  in_set z (pair a b) <-> #(eq_set z a \/ eq_set z b).
+Proof pair_spec_intro.
+
+
+Lemma pair_morph :
+  forall a a', eq_set a a' -> forall b b', eq_set b b' ->
+  eq_set (pair a b) (pair a' b').
+unfold pair.
+simpl; intros.
+split; intros.
+ apply tr_i; exists i; destruct i; trivial.
+ apply tr_i; exists j; destruct j; trivial.
+Qed.
+
+Definition subset_spec (x:set) (P:set->Prop) (y:set) :=
+  forall z,
+  in_set z y <->
+  in_set z x /\ # (exists2 z', eq_set z z' & P z').
+
+Definition subset (x:set) (P:set->Prop) :=
+  sup {a|exists2 x', eq_set (elts x a) x' & P x'}
+    (fun y => elts x (proj1_sig y)).
+
+Lemma subset_ax : forall x P, subset_spec x P (subset x P).
+red.
+unfold subset; simpl.
+split; intros.
+ elim H using in_set_ind; simpl; intros; auto.
+ clear H; destruct j as (j,?); simpl in H0.
+ split.
+  apply tr_i; exists j; trivial.
+
+  destruct e.
+  apply tr_i; exists x0; trivial.
+  apply eq_set_trans with (elts x j); trivial.
+
+ destruct H.
+ elim H using in_set_ind; auto.
+ clear H; intros.
+ elim H0 using tr_ind; intros; auto.
+ destruct x0.
+ assert (exists2 x', eq_set (elts x j) x' & P x').
+  exists x0; trivial.
+  apply eq_set_trans with z; trivial.
+  apply eq_set_sym; trivial.
+ apply tr_i; exists
+  (@exist _ (fun a=>exists2 x',eq_set (elts x a) x' & P x')
+    j H3); simpl; trivial.
+Qed.
+
+Definition power (x:set) :=
+  sup (idx x->Prop)
+   (fun P => subset x (fun y => exists2 i, eq_set y (elts x i) & P i)).
+
+Lemma power_ax : forall x z,
+  in_set z (power x) <->
+  (forall y, in_set y z -> in_set y x).
+unfold power; simpl; intros.
+split; intros.
+ elim H using in_set_ind; intros; auto.
+ simpl in *.
+ specialize eq_elim with (1:=H0)(2:=H1); intro.
+ apply (proj1 (proj1 (subset_ax _ _ _) H2)).
+
+ apply tr_i; exists (fun i => in_set (elts x i) z); simpl.
+ apply eq_intro; intros.
+  apply (fun x P z => proj2 (subset_ax x P z)).
+  split; auto.
+  elim H with z0 using in_set_ind; trivial; intros.
+  Texists z0.
+   apply eq_set_refl.
+
+   exists j; trivial.
+   apply in_reg with z0; trivial.
+
+  elim (proj2 (proj1 (subset_ax _ _ _) H0)) using tr_ind; intros; auto.
+  destruct x0 as (z', ?, (i,?,?)).
+  apply in_reg with (elts x i); trivial.
+  apply eq_set_sym; apply eq_set_trans with z'; trivial.
+Qed.
+
+Lemma power_morph : forall x y,
+  eq_set x y -> eq_set (power x) (power y).
+intros.
+apply eq_intro; intros.
+ rewrite power_ax in H0|-*; intros.
+ apply eq_elim with x; auto.
+
+ apply eq_set_sym in H.
+ rewrite power_ax in H0|-*; intros.
+ apply eq_elim with y; auto.
+Qed.
+
+  
+ Definition union (x:set) :=
+  sup {i:idx x & idx (elts x i)}
+    (fun p => elts (elts x (projS1 p)) (projS2 p)).
+
+Lemma union_ax : forall a z,
+  in_set z (union a) <-> #exists2 b, in_set z b & in_set b a.
+unfold in_set at 1, union; simpl; intros.
+split; intros.
+ Tdestruct H.
+ Texists (elts a (projT1 x)).
+  Texists (projT2 x); trivial.
+  Texists (projT1 x); apply eq_set_refl.
+
+ Tdestruct H.
+ Tdestruct H0.
+ assert (in_set z (elts a x0)).
+  apply eq_elim with x; trivial.
+ Tdestruct H1.
+ Texists (existT (fun i=>idx(elts a i)) x0 x1); simpl.
+ trivial.
+Qed.
+
+Lemma union_morph :
+  forall a a', eq_set a a' -> eq_set (union a) (union a').
+intros.
+apply eq_set_ax; intros z.
+rewrite union_ax.
+rewrite union_ax.
+split; intros h; Tdestruct h as (b,?,?); Texists b; trivial.
+ apply eq_elim with a; trivial.
+ apply eq_elim with a'; trivial.
+ apply eq_set_sym; trivial.
+Qed.
+
+
+Fixpoint num (n:nat) : set :=
+  match n with
+  | 0 => empty
+  | S k => union (pair (num k) (pair (num k) (num k)))
+  end.
+
+Definition infinity := sup _ num.
+
+Lemma infty_ax1 : in_set empty infinity.
+ Texists 0.
+ unfold elts, infinity, num.
+ apply eq_set_refl.
+Qed.
+
+Lemma infty_ax2 : forall x, in_set x infinity ->
+  in_set (union (pair x (pair x x))) infinity.
+intros.
+elim H using in_set_ind; intros; auto.
+Texists (S j).
+simpl elts.
+apply union_morph.
+apply pair_morph; trivial.
+apply pair_morph; trivial.
+Qed.
+
+Definition replf (x:set) (F:set->set) :=
+  sup _ (fun i => F (elts x i)).
+
+Lemma replf_ax : forall x F z,
+  (forall z z', in_set z x ->
+   eq_set z z' -> eq_set (F z) (F z')) ->
+  (in_set z (replf x F) <->
+   #exists2 y, in_set y x & eq_set z (F y)).
+unfold replf; simpl; intros.
+split; intros.
+ elim H0 using in_set_ind; intros; auto.
+ simpl in *.
+ Texists (elts x j); trivial.
+ Texists j; apply eq_set_refl.
+
+ elim H0 using tr_ind; intros; auto.
+ destruct x0 as (x',?,?).
+ elim H1 using in_set_ind; intros; auto.
+ Texists j; simpl.
+ apply eq_set_trans with (F x'); trivial.
+ apply eq_set_sym.
+ apply H.
+  Texists j; apply eq_set_refl.
+  apply eq_set_sym; trivial.
+Qed.
+
+End S.
+
+
+Hint Resolve S.isProp_eq_set S.isProp_incl_set S.isProp_in_set.
+
+Instance Tr_morph : Proper (iff ==> iff) Tr. 
+do 2 red; intros.
+split; apply TrMono; apply H.
+Qed.
+
+
+Module IZF_R <: IZF_R_sig TrSubThms.
+(*Module IZF_R <: IZF_R_Ex_sig CoqSublogicThms.*)
+
+Definition set := quo S.set S.eq_set.
+Definition eq_set := @eq set.
+
+Instance isRel_eqset : isRel S.eq_set.
+split; intros; auto.
+split; red; intros.
+ apply S.eq_set_refl.
+
+ apply S.eq_set_sym; trivial.  
+
+ apply S.eq_set_trans with y; trivial.  
+Qed.
+
+Lemma isSet_set : isSet set.
 apply isSet_quo; auto with *.
 Qed.
 
+Lemma isProp_eq x y : isProp (eq_set x y).
+red; intros; apply isSet_set.
+Qed.
+Global Hint Resolve isProp_eq.
 
-Definition qset_set (q:qset) (x:set) : Prop :=
+Definition qset_set (q:set) (x:S.set) : Prop :=
   q = quo_i _ x.
 
-Lemma qset_set_eq (x:set) :
-  qset_set (quo_i _ x) = eq_set x.
+Lemma qset_set_eq (x:S.set) :
+  qset_set (quo_i _ x) = S.eq_set x.
 unfold qset_set.
 apply pred_ext; intros; auto.
- red; intros; apply isSet_qset.
-
- apply quo_i_eq.
+apply quo_i_eq.
 Qed.
 
 (*
@@ -641,13 +925,18 @@ Definition mk_qset (P:set->Prop) (Ps:is_set P) : qset :=
   exist is_set P Ps.
 *)
 
-Definition in_qset (x y:qset) :=
-  tr { x' | x = quo_i _ x' /\ tr{ y' | y = quo_i _ y' /\ in_set x' y'}}.
+Definition in_set (x y:set) :=
+  tr { x' | x = quo_i _ x' /\ tr{ y' | y = quo_i _ y' /\ S.in_set x' y'}}.
 
-Lemma in_qset_ind P x y :
+Lemma isProp_in x y : isProp (in_set x y).
+apply tr_prop.
+Qed.
+Global Hint Resolve isProp_in.
+
+Lemma in_set_ind P x y :
   isProp P ->
-  (forall x' y', x = quo_i _ x' -> y = quo_i _ y' -> in_set x' y' -> P) ->
-  in_qset x y -> P.
+  (forall x' y', x = quo_i _ x' -> y = quo_i _ y' -> S.in_set x' y' -> P) ->
+  in_set x y -> P.
 intros.
 elim H0 using tr_ind; auto.
 clear H0.
@@ -659,23 +948,46 @@ eauto.
 Qed.
 
 Lemma in_set_eqv x y :
-  in_qset (quo_i _ x) (quo_i _ y) <-> in_set x y.
+  in_set (quo_i _ x) (quo_i _ y) <-> S.in_set x y.
 split; intros.
- elim H using in_qset_ind; intros; auto.
+ elim H using in_set_ind; intros; auto.
  apply quo_i_eq in H0.
  apply quo_i_eq in H1.
- apply eq_elim with y'; trivial.
-  apply in_reg with x'; trivial.
-  apply eq_set_sym; trivial.
-  apply eq_set_sym; trivial.
+ apply S.eq_elim with y'; trivial.
+  apply S.in_reg with x'; trivial.
+  apply S.eq_set_sym; trivial.
+  apply S.eq_set_sym; trivial.
 
  apply tr_i; exists x; split; trivial.
  apply tr_i; exists y; split; trivial.
 Qed.
 
 
-(* Set induction *)
+Lemma eq_set_ax : forall x y,
+  eq_set x y <-> (forall z, in_set z x <-> in_set z y).
+unfold eq_set.
+split; intros.
+ subst y; auto with *.
 
+ revert H.
+ elim x using (quo_ind _); auto.
+ clear x; intros x.
+ elim y using (quo_ind _); auto.
+ clear y; intros y.
+ intros.
+ apply quo_i_eq.
+ apply S.eq_set_ax; intros.
+ do 2 rewrite <- in_set_eqv.
+ apply H.
+Qed.
+
+Lemma in_reg : forall x x' y,
+  eq_set x x' -> in_set x y -> in_set x' y.
+unfold eq_set; intros; subst; trivial.
+Qed.
+
+(* Set induction *)
+(*
 Lemma isProp_Acc X (R:X->X->Prop) x : isProp (Acc R x).
 red; revert x; fix 2.
 intros x a a'.
@@ -712,116 +1024,87 @@ intros.
 elim (Acc_in_set x); intros.
 apply X; apply X0.
 Defined.
+*)
 
 
-Lemma wf_ax :
+  Lemma wf_ax0 :
   forall (P:set->Prop),
   (forall x, isProp (P x)) ->
   (forall x, (forall y, in_set y x -> P y) -> P x) -> forall x, P x.
 intros P Pp H x.
-cut (forall x', eq_set x x' -> P x');[auto using eq_set_refl|].
-induction x; intros.
-apply H; intros.
-assert (in_set y (sup X f)).
- apply eq_elim with x'; trivial.
- apply eq_set_sym; trivial.
-clear H1 H2.
-elim H3 using in_set_ind; intros; auto.
-apply eq_set_sym in H1; eauto.
+elim x using (quo_ind _); auto.
+clear x; intros x.
+elim x using S.wf_ax; auto.
+intros y Hy.
+apply H.
+intros z.
+elim z using (quo_ind _); auto.
+clear z; intros z ?.
+apply in_set_eqv in H0.
+auto.
 Qed.
 
+  Lemma wf_ax :
+  forall (P:set->Prop),
+  (forall x, (forall y, in_set y x -> #(P y)) -> #(P x)) -> forall x, #(P x).
+intros.
+apply wf_ax0 with (P:=fun x => #P x); auto.
+Qed.
+
+(*  Lemma wf_ax :
+  forall (P:set->Prop),
+  (forall x, isL (P x)) -> (* ! *)
+  (forall x, (forall y, in_set y x -> P y) -> P x) -> forall x, P x.
+Admitted.
+*)
 (* *)
 
-Definition empty :=
-  sup False (fun x => match x with end).
+Definition empty := quo_i _ S.empty.
 
-Lemma empty_ax : forall x, ~ in_set x empty.
+Lemma empty_ax0 : forall x, ~ in_set x empty.
 red; intros.
-elim H using in_set_ind; intros.
+elim H using in_set_ind; auto.
  apply isProp_False.
-contradiction.
+intros x' y' _ mtdef inmt.
+apply quo_i_eq in mtdef.
+apply S.eq_elim with (2:=S.eq_set_sym _ _ mtdef) in inmt.
+apply S.empty_ax in inmt; trivial.
 Qed.
 
-
-Definition qempty := quo_i _ empty.
-Lemma qempty_ax : forall x, ~ in_qset x qempty.
-red; intros.
-elim H using in_qset_ind.
- apply isProp_False.
-
- intros x' y' _ mtdef inmt.
- apply quo_i_eq in mtdef.
- apply eq_elim with (2:=eq_set_sym _ _ mtdef) in inmt.
- apply empty_ax in inmt; trivial.
+Lemma empty_ax : forall x, in_set x empty -> #False.
+intros.
+apply tr_i; apply empty_ax0 in H; trivial.
 Qed.
 
-Definition singl x := sup unit (fun _ => x).
-
-Definition pair_spec (a b:set->Prop) (x:set) : Prop :=
-  forall z, in_set z x <-> tr (a z \/ b z).
-
-Definition pair x y :=
-  sup bool (fun b => if b then x else y).
-
-Lemma pair_spec_intro a b :
-  pair_spec (fun a' => eq_set a' a) (fun b' => eq_set b' b) (pair a b).
-intros z.
-unfold pair; simpl.
-split; intros.
- elim H using in_set_ind; intros; auto.
- apply tr_i.
- destruct j; auto.
-
- elim H using tr_ind; intros; auto.
- destruct x.
-  apply tr_i; exists true; trivial.
-  apply tr_i; exists false; trivial.
-Qed.
-
-Lemma pair_ax : forall a b z,
-  in_set z (pair a b) <-> tr (eq_set z a \/ eq_set z b).
-Proof pair_spec_intro.
-
-
-Lemma pair_morph :
-  forall a a', eq_set a a' -> forall b b', eq_set b b' ->
-  eq_set (pair a b) (pair a' b').
-unfold pair.
-simpl; intros.
-split; intros.
- apply tr_i; exists i; destruct i; trivial.
- apply tr_i; exists j; destruct j; trivial.
-Qed.
-
-Definition qpair (a b:qset) : qset.
-pose (h := fun a b => quo_i _ (pair a b)).
-assert (forall a x y, eq_set x y -> h a x = h a y).
+Definition pair (a b:set) : set.
+pose (h := fun a b => quo_i _ (S.pair a b)).
+assert (forall a x y, S.eq_set x y -> h a x = h a y).
  intros.
  unfold h.
  apply quo_i_eq.
- apply pair_morph; trivial.
+ apply S.pair_morph; trivial.
  reflexivity.
-pose (qh := fun a => quo_ind_set_nodep _ isSet_qset (h a) (H a) b).
+pose (qh := fun a => quo_ind_set_nodep _ isSet_set (h a) (H a) b).
 apply quo_ind_set_nodep with (1:=_) (h0:=qh) (4:=a).
- exact isSet_qset.
+ exact isSet_set.
 intros.
 unfold qh.
 elim b using (quo_ind _).
  red; intros.
- apply isSet_qset.
+ apply isSet_set.
 intros.
 unfold quo_ind_set_nodep.
 rewrite quo_ind_set_eq.
 rewrite quo_ind_set_eq.
 unfold h.
 apply quo_i_eq.
-apply pair_morph; trivial.
-apply eq_set_refl.
+apply S.pair_morph; trivial.
+apply S.eq_set_refl.
 Defined.
 
-Lemma qpair_eq a b:
-  qpair (quo_i _ a) (quo_i _ b) = quo_i _ (pair a b).
-unfold qpair.
+Lemma pair_eq a b:
+  pair (quo_i _ a) (quo_i _ b) = quo_i _ (S.pair a b).
+unfold pair.
 unfold quo_ind_set_nodep.
 eapply transitivity.
 match goal with
@@ -834,27 +1117,236 @@ match goal with
 end.
 Qed.
 
-Lemma qpair_ax : forall a b z,
-  in_qset z (qpair a b) <-> tr (z=a \/ z=b).
+Lemma pair_ax : forall a b z,
+  in_set z (pair a b) <-> #(z=a \/ z=b).
 intros.
-assert (forall a b z, isProp (in_qset z (qpair a b) <-> tr (z=a\/z=b))).  
- intros.
- apply isProp_iff; auto.
- apply tr_prop.
 elim a using (quo_ind _); auto.
 clear a; intros a.
 elim b using (quo_ind _); auto.
 clear b; intros b.
 elim z using (quo_ind _); auto.
 clear z; intros z.
-rewrite qpair_eq.
+rewrite pair_eq.
 rewrite in_set_eqv.
-rewrite pair_ax.
+rewrite S.pair_ax.
 split; apply TrMono; (destruct 1;[left|right]); try apply quo_i_eq; trivial.
- apply quo_i_eq in H0; trivial.
- apply quo_i_eq in H0; trivial.
+ apply quo_i_eq in H; trivial.
+ apply quo_i_eq in H; trivial.
 Qed.
-Print Assumptions qpair_ax.
+Print Assumptions pair_ax.
+
+Definition union (a:set) : set.
+pose (h := fun a => quo_i _ (S.union a)).
+apply quo_ind_set_nodep with (1:=_) (h0:=h) (4:=a).
+ exact isSet_set.
+unfold h; intros.
+apply quo_i_eq.
+apply S.union_morph; trivial.
+Defined.
+
+Lemma union_eq a:
+  union (quo_i _ a) = quo_i _ (S.union a).
+unfold union.
+unfold quo_ind_set_nodep.
+rewrite quo_ind_set_eq.
+reflexivity.
+Qed.
+
+Lemma union_ax : forall a z,
+  in_set z (union a) <-> #exists2 b, in_set z b & in_set b a.
+intros.
+elim a using (quo_ind _); auto.
+clear a; intros a.
+elim z using (quo_ind _); auto.
+clear z; intros z.
+rewrite union_eq.
+rewrite in_set_eqv.
+rewrite S.union_ax.
+split.
+ apply TrMono.
+ destruct 1 as (b,?,?); exists (quo_i _ b).
+  apply in_set_eqv; trivial.
+  apply in_set_eqv; trivial.
+
+ intros h.
+ Tdestruct h as (b,?,?).
+ revert H H0.
+ elim b using (quo_ind _); auto.
+ clear b; intros b ? ?.
+ Texists b.
+  apply in_set_eqv; trivial.
+  apply in_set_eqv; trivial.
+Qed.
+
+Definition subset (a:set) (P:set->Prop) : set.
+pose (P' z := P (quo_i _ z)).
+pose (h := fun a => quo_i _ (S.subset a P')).
+apply quo_ind_set_nodep with (1:=_) (h0:=h) (4:=a).
+ exact isSet_set.
+intros.
+unfold h.
+apply quo_i_eq.
+assert (aux := S.subset_ax).
+red in aux.
+apply S.eq_set_ax; intros z.
+do 2 rewrite aux.
+apply and_iff_morphism; auto with *.
+split; intros.
+ apply S.eq_elim with x; trivial.
+ apply S.eq_elim with y; trivial.
+ apply S.eq_set_sym; trivial.
+Defined.
+
+Lemma subset_eq a P:
+  subset (quo_i _ a) P = quo_i _ (S.subset a (fun z => P (quo_i _ z))).
+unfold subset.
+unfold quo_ind_set_nodep.
+rewrite quo_ind_set_eq.
+reflexivity.
+Qed.
+
+Lemma subset_ax x P z :
+  in_set z (subset x P) <->
+  in_set z x /\ # (exists2 z', eq_set z z' & P z').
+elim x using (quo_ind _); auto.
+clear x; intros x.
+elim z using (quo_ind _); auto.
+clear z; intros z.
+rewrite subset_eq.
+rewrite in_set_eqv.
+assert (aux := S.subset_ax).
+red in aux.
+rewrite aux.
+rewrite in_set_eqv.
+apply and_iff_morphism; auto with *.
+split.
+ apply TrMono.
+ destruct 1 as (b,?,?); exists (quo_i _ b); trivial.
+ apply quo_i_eq; trivial.
+
+ intros h.
+ Tdestruct h as (b,?,?).
+ revert H H0.
+ elim b using (quo_ind _); auto.
+ clear b; intros b ? ?.
+ apply quo_i_eq in H.
+ Texists b; trivial.
+Qed.
+
+Definition infinite := quo_i _ S.infinity.
+
+Lemma infinity_ax1 : in_set empty infinite.
+apply in_set_eqv.
+apply S.infty_ax1.
+Qed.
+
+Lemma infinity_ax2 : forall x, in_set x infinite ->
+  in_set (union (pair x (pair x x))) infinite.
+intros x.
+elim x using (quo_ind _); auto.
+clear x; intros x tyx.
+apply in_set_eqv in tyx.
+rewrite !pair_eq, union_eq.
+apply in_set_eqv.
+apply S.infty_ax2; trivial.
+Qed.
+
+Definition power (a:set) : set.
+pose (h := fun a => quo_i _ (S.power a)).
+apply quo_ind_set_nodep with (1:=_) (h0:=h) (4:=a).
+ exact isSet_set.
+unfold h; intros.
+apply quo_i_eq.
+apply S.power_morph; trivial.
+Defined.
+
+Lemma power_eq a:
+  power (quo_i _ a) = quo_i _ (S.power a).
+unfold power.
+unfold quo_ind_set_nodep.
+rewrite quo_ind_set_eq.
+reflexivity.
+Qed.
+
+Lemma power_ax : forall x z,
+  in_set z (power x) <->
+  (forall y, in_set y z -> in_set y x).
+intros.
+elim x using (quo_ind _); auto.
+clear x; intros x.
+elim z using (quo_ind _); auto.
+clear z; intros z.
+rewrite power_eq.
+rewrite in_set_eqv.
+rewrite S.power_ax.
+split.
+ intros h y.
+ elim y using (quo_ind _); auto.
+ intros.
+ apply in_set_eqv.
+ apply in_set_eqv in H.
+ auto.
+
+ intros h y ?.
+ apply in_set_eqv.
+ apply in_set_eqv in H.
+ auto.
+Qed.
+(*
+Definition replf (x:set) (F:set->set) : set.
+assert (tr (S.set->S.set)).
+
+  sup _ (fun i => F (elts x i)).
+
+Lemma replf_ax : forall x F z,
+  (forall z z', in_set z x ->
+   eq_set z z' -> eq_set (F z) (F z')) ->
+  (in_set z (replf x F) <->
+   #exists2 y, in_set y x & eq_set z (F y)).
+unfold replf; simpl; intros.
+split; intros.
+ elim H0 using in_set_ind; intros; auto.
+ simpl in *.
+ Texists (elts x j); trivial.
+ Texists j; apply eq_set_refl.
+
+ elim H0 using tr_ind; intros; auto.
+ destruct x0 as (x',?,?).
+ elim H1 using in_set_ind; intros; auto.
+ Texists j; simpl.
+ apply eq_set_trans with (F x'); trivial.
+ apply eq_set_sym.
+ apply H.
+  Texists j; apply eq_set_refl.
+  apply eq_set_sym; trivial.
+Qed.
+
+*)
+
+Parameter repl : set -> (set -> set -> Prop) -> set.
+
+Lemma repl_ax:
+    forall a (R:set->set->Prop),
+    (forall x x' y y', in_set x a ->
+     eq_set x x' -> eq_set y y' -> R x y -> R x' y') ->
+    (forall x y y', in_set x a -> R x y -> R x y' -> eq_set y y') ->
+    forall z, in_set z (repl a R) <->
+     #(exists2 y, in_set y a & R y z).
+Admitted.
+
+Lemma repl_mono a a' :
+ (forall z, in_set z a -> in_set z a') ->
+ forall R R' : set -> set -> Prop,
+ (forall x x', eq_set x x' ->
+  forall y y', eq_set y y' -> (R x y <-> R' x' y')) ->
+ forall z,
+ in_set z (repl a R) ->
+ in_set z (repl a' R').
+Admitted.
+
+End IZF_R.
+Import IZF_R.
+
 (*
 
  Lemma pair_spec_is_set (a b:qset) :
@@ -968,51 +1460,29 @@ rewrite quo_ind_eq.
 Qed.
  *)
 
-Lemma quchoice :
-  forall (R:qset->Prop),
-  (forall q, isProp (R q)) ->
-  tr { x | R x } ->
-  (forall y y', R y -> R y' -> y = y') ->
-  qset.
-intros.
-exact (proj1_sig (descr H H1 H0)).  
+Lemma uchoice :
+  forall (P:set->Prop),
+  (forall q, isProp (P q)) ->
+  (#exists x, P x) ->
+  (forall y y', P y -> P y' -> y = y') ->
+  set.
+intros P Pp Pex Puniq.
+apply (proj1 (@tr_ex_sig _ P)) in Pex; trivial.
+exact (proj1_sig (descr Pp Puniq Pex)).  
 Defined.
 
-Lemma quchoice_ext : forall (P:qset->Prop) x
+Lemma uchoice_ext : forall (P:set->Prop) x
   (Pp : forall q, isProp (P q))
-  (w:tr { x | P x })
+  (w:#exists x, P x )
   (uniq:forall y y', P y -> P y' -> y = y'),
-  P x -> quchoice P Pp w uniq = x.
+  P x -> uchoice P Pp w uniq = x.
 intros.
-unfold quchoice.
+unfold uchoice.
 apply descr_eq; trivial.
 Qed.
-Print Assumptions quchoice_ext.
+Print Assumptions uchoice_ext.
 
-
-                          
-Definition uchoice (P : set -> Prop) : set :=
-  union (repl (singl empty) (fun _ => P)).
-
-  {q:qset | R q }.
-intros.
-apply descr; trivial.
-Defined.
-
-
-
-  Lemma quchoice_ax:
-    forall (R:qset->Prop),
-    (forall q, isProp (R q)) ->
-    tr { x | R x } ->
-    (forall y y', R y -> R y' -> y = y') ->
-    exists b, forall x, in_qset x b <-> R x.
-    intros.
-exists (quchoice R H H0).    
-intros.
-(exists2 y, in_qset y a & R y x).
-
-
+(*
   Lemma qrepl_ax:
     forall a (R:qset->qset->Prop),
     (forall x y y', in_qset x a -> R x y -> R x y' -> y = y') ->
@@ -1021,59 +1491,6 @@ intros.
   intros.
   
 
-  
- Definition union (x:set) :=
-  sup {i:idx x & idx (elts x i)}
-    (fun p => elts (elts x (projS1 p)) (projS2 p)).
-
-Lemma union_ax : forall a z,
-  in_set z (union a) <-> exists2 b, in_set z b & in_set b a.
-unfold in_set at 1, union; simpl; intros.
-split; intros.
- destruct H.
- exists (elts a (projT1 x)).
-  exists (projT2 x); trivial.
-  exists (projT1 x); apply eq_set_refl.
-
- destruct H.
- destruct H0.
- assert (in_set z (elts a x0)).
-  apply eq_elim with x; trivial.
- destruct H1.
- exists (existT (fun i=>idx(elts a i)) x0 x1); simpl.
- trivial.
-Qed.
-
-Lemma union_morph :
-  forall a a', eq_set a a' -> eq_set (union a) (union a').
-unfold union.
-simpl; intros.
-split; intros.
- destruct i; simpl.
- assert (in_set (elts a x) a').
-  apply eq_elim with a; trivial.
-  exists x; apply eq_set_refl.
- destruct H0.
- assert (in_set (elts (elts a x) i) (elts a' x0)).
-  apply eq_elim with (elts a x); trivial.
-  exists i; apply eq_set_refl. 
- destruct H1.
- exists (existT (fun i=>idx (elts a' i)) x0 x1); simpl.
- trivial.
-
- destruct j; simpl.
- generalize (eq_set_sym _ _ H); clear H; intro.
- assert (in_set (elts a' x) a).
-  apply eq_elim with a'; trivial.
-  exists x; apply eq_set_refl.
- destruct H0.
- assert (in_set (elts (elts a' x) i) (elts a x0)).
-  apply eq_elim with (elts a' x); trivial.
-  exists i; apply eq_set_refl. 
- destruct H1.
- exists (existT (fun i=>idx (elts a i)) x0 x1); simpl.
- apply eq_set_sym; trivial.
-Qed.
 
 (* Fixpoint *)
 Fixpoint wfrec (F:(set->set)->set->set) (x:set) : set :=
@@ -1148,198 +1565,7 @@ split; intros.
 Qed.
 End FixRec.
 
-Definition subset (x:set) (P:set->Prop) :=
-  sup {a|exists2 x', eq_set (elts x a) x' & P x'}
-    (fun y => elts x (proj1_sig y)).
 
-Lemma subset_ax : forall x P z,
-  in_set z (subset x P) <->
-  in_set z x /\ exists2 z', eq_set z z' & P z'.
-unfold in_set at 1, subset; simpl.
-split; intros.
- destruct H.
- destruct x0; simpl in H.
- split.
-  exists x0; trivial.
-  destruct e.
-  exists x1; trivial.
-
-  apply eq_set_trans with (elts x x0); trivial.
-
- destruct H.
- destruct H.
- destruct H0.
- assert (exists2 x', eq_set (elts x x0) x' & P x').
-  exists x1; trivial.
-  apply eq_set_trans with z; trivial.
-  apply eq_set_sym; trivial.
- exists
-  (@exist _ (fun a=>exists2 x',eq_set (elts x a) x' & P x')
-    x0 H2); simpl; trivial.
-Qed.
-
-Definition power (x:set) :=
-  sup (idx x->Prop)
-   (fun P => subset x (fun y => exists2 i, eq_set y (elts x i) & P i)).
-
-Lemma power_ax : forall x z,
-  in_set z (power x) <->
-  (forall y, in_set y z -> in_set y x).
-unfold in_set at 1, power; simpl; intros.
-split; intros.
- destruct H.
- specialize eq_elim with (1:=H0)(2:=H); intro.
- apply (proj1 (proj1 (subset_ax _ _ _) H1)).
-
- exists (fun i => in_set (elts x i) z).
- apply eq_intro; intros.
-  apply (fun x P z => proj2 (subset_ax x P z)).
-  split; auto.
-  exists z0.
-   apply eq_set_refl.
-
-   elim H with z0; trivial; intros.
-   exists x0; trivial.
-   apply in_reg with z0; trivial.
-
-  elim (proj2 (proj1 (subset_ax _ _ _) H0)); intros.
-  destruct H2.
-  apply in_reg with (elts x x1); trivial.
-  apply eq_set_sym;
-    apply eq_set_trans with x0; trivial.
-Qed.
-
-Lemma power_morph : forall x y,
-  eq_set x y -> eq_set (power x) (power y).
-intros.
-apply eq_intro; intros.
- rewrite power_ax in H0|-*; intros.
- apply eq_elim with x; auto.
-
- apply eq_set_sym in H.
- rewrite power_ax in H0|-*; intros.
- apply eq_elim with y; auto.
-Qed.
-
-Fixpoint num (n:nat) : set :=
-  match n with
-  | 0 => empty
-  | S k => union (pair (num k) (pair (num k) (num k)))
-  end.
-
-Definition infinity := sup _ num.
-
-Lemma infty_ax1 : in_set empty infinity.
- exists 0.
- unfold elts, infinity, num.
- apply eq_set_refl.
-Qed.
-
-Lemma infty_ax2 : forall x, in_set x infinity ->
-  in_set (union (pair x (pair x x))) infinity.
-intros.
-destruct H.
-exists (S x0).
-simpl elts.
-apply union_morph.
-apply pair_morph; trivial.
-apply pair_morph; trivial.
-Qed.
-
-Definition replf (x:set) (F:set->set) :=
-  sup _ (fun i => F (elts x i)).
-
-Lemma replf_ax : forall x F z,
-  (forall z z', in_set z x ->
-   eq_set z z' -> eq_set (F z) (F z')) ->
-  (in_set z (replf x F) <->
-   exists2 y, in_set y x & eq_set z (F y)).
-unfold in_set at 2, replf; simpl; intros.
-split; intros.
- destruct H0.
- exists (elts x x0); trivial.
- exists x0; apply eq_set_refl.
-
- destruct H0.
- destruct H0.
- exists x1.
- apply eq_set_trans with (F x0); trivial.
- apply eq_set_sym.
- apply H.
-  exists x1; apply eq_set_refl.
-  apply eq_set_sym; trivial.
-Qed.
-
-
-Definition repl1 (x:set) (F:{y|in_set y x}->set) :=
-  sup _ (fun i => F (elts' x i)).
-
-Lemma repl1_ax : forall x F z,
-  (forall z z', eq_set (proj1_sig z) (proj1_sig z') ->
-   eq_set (F z) (F z')) ->
-  (in_set z (repl1 x F) <->
-   exists y, eq_set z (F y)).
-unfold in_set at 6, repl1; simpl; intros.
-split; intros.
- destruct H0.
- exists (elts' x x0); trivial.
-
- destruct H0.
- destruct x0.
- elim i; intros.
- exists x1.
- apply eq_set_trans with (1:=H0).
- apply H; simpl; trivial.
-Qed.
-
-Lemma repl1_morph : forall x y F G,
-  eq_set x y ->
-  (forall x' y', eq_set (proj1_sig x') (proj1_sig y') ->
-   eq_set (F x') (G y')) ->
-  eq_set (repl1 x F) (repl1 y G).
-intros.
-assert (forall z z', eq_set (proj1_sig z) (proj1_sig z') ->
-        eq_set (F z) (F z')).
- intros.
- assert (in_set (proj1_sig z') y).
-  apply eq_elim with x; trivial.
-  apply (proj2_sig z').
- apply eq_set_trans with (G (exist _ (proj1_sig z') H2)).
-  apply H0; simpl; trivial.
-
-  apply eq_set_sym; apply H0; simpl; apply eq_set_refl.
-assert (forall z z', eq_set (proj1_sig z) (proj1_sig z') ->
-        eq_set (G z) (G z')).
- intros.
- apply eq_set_sym in H.
- assert (in_set (proj1_sig z') x).
-  apply eq_elim with y; trivial.
-  apply (proj2_sig z').
- apply eq_set_trans with (F (exist _ (proj1_sig z') H3)).
-  apply eq_set_sym; apply H0; simpl; apply eq_set_sym; trivial.
-
-  apply H0; simpl; apply eq_set_refl.
-apply eq_intro; intros.
- rewrite repl1_ax in H3|-*; trivial.
- destruct H3.
- assert (in_set (proj1_sig x0) y).
-  apply eq_elim with x; trivial.
-  apply (proj2_sig x0).
- exists (exist (fun y' => in_set y' y) (proj1_sig x0) H4). (* regression of unification *)
-(* exists (exist _ (proj1_sig x0) H4).*)
- apply eq_set_trans with (1:=H3).
- apply H0; simpl; apply eq_set_refl.
-
- rewrite repl1_ax in H3|-*; trivial.
- destruct H3.
- assert (in_set (proj1_sig x0) x).
-  apply eq_set_sym in H.
-  apply eq_elim with y; trivial.
-  apply (proj2_sig x0).
- exists (exist (fun y0 => in_set y0 _) (proj1_sig x0) H4). (* unif regression *)
- apply eq_set_trans with (1:=H3).
- apply eq_set_sym; apply H0; simpl; apply eq_set_refl.
-Qed.
 
 (* We only use the following instance of unique choice for
    replacement: *)
@@ -1468,41 +1694,47 @@ destruct repl_ax with
   apply eq_set_trans with (1:=H3).
   apply Runiq with (1:=H4); trivial.
 Qed.
+ *)
 
 Notation "x ∈ y" := (in_set x y).
 Notation "x == y" := (eq_set x y).
 
 (* Deriving the existentially quantified sets *)
 
-Lemma empty_ex: exists empty, forall x, ~ x ∈ empty.
+Lemma empty_ex: #exists empty, forall x, x ∈ empty -> #False.
+apply tr_i.
 exists empty.
 exact empty_ax.
 Qed.
 
-Lemma pair_ex: forall a b, exists c, forall x, x ∈ c <-> (x == a \/ x == b).
+Lemma pair_ex: forall a b, #exists c, forall x, x ∈ c <-> #(x == a \/ x == b).
 intros.
+apply tr_i.
 exists (pair a b).
 apply pair_ax.
 Qed.
 
-Lemma union_ex: forall a, exists b,
-    forall x, x ∈ b <-> (exists2 y, x ∈ y & y ∈ a).
+Lemma union_ex: forall a, #exists b,
+    forall x, x ∈ b <-> #(exists2 y, x ∈ y & y ∈ a).
 intros.
+apply tr_i.
 exists (union a).
 apply union_ax.
 Qed.
 
-Lemma subset_ex : forall x P, exists b,
+Lemma subset_ex : forall x P, #exists b,
   forall z, z ∈ b <->
-  (z ∈ x /\ exists2 z', z == z' & P z').
+  (z ∈ x /\ #exists2 z', z == z' & P z').
 intros.
+apply tr_i.
 exists (subset x P).
 apply subset_ax.
 Qed.
 
-Lemma power_ex: forall a, exists b,
+Lemma power_ex: forall a, #exists b,
      forall x, x ∈ b <-> (forall y, y ∈ x -> y ∈ a).
 intros.
+apply tr_i.
 exists (power a).
 apply power_ax.
 Qed.
@@ -1510,11 +1742,15 @@ Qed.
 Lemma repl_ex: forall a (R:set->set->Prop),
     (forall x x' y y', x ∈ a -> x == x' -> y == y' -> R x y -> R x' y') ->
     (forall x y y', x ∈ a -> R x y -> R x y' -> y == y') ->
-    exists b, forall x, x ∈ b <-> (exists2 y, y ∈ a & R y x).
-Proof repl_ax.
+    #exists b, forall x, x ∈ b <-> #(exists2 y, y ∈ a & R y x).
+intros.
+apply tr_i.
+exists (repl a R).
+apply repl_ax; trivial.
+Qed.
 
 (* Collection *)
-Section Collection.
+(*Section Collection.
 
 Section FromTTColl.
 
@@ -1613,542 +1849,41 @@ Qed.
 
 End FromChoice.
 
-Section FromReplClassic.
-
-Hypothesis EM : forall A:Prop, A \/ ~A.
-
-(* von Neumann cumulative hierarchy (applied to any set) *)
-Fixpoint V (x:set) := union (replf x (fun x' => power (V x'))).
-
-Lemma V_morph : forall x x', eq_set x x' -> eq_set (V x) (V x').
-induction x; destruct x'; intros.
-simpl V; unfold replf; simpl sup.
-apply union_morph.
-simpl in H0.
-destruct H0.
-apply eq_intro; intros.
- destruct H2.
- destruct (H0 x).
- exists x0.
- apply eq_set_trans with (1:=H2).
- simpl elts.
- apply power_morph.
- auto.
-
- destruct H2.
- destruct (H1 x).
- exists x0.
- apply eq_set_trans with (1:=H2).
- simpl elts.
- apply power_morph.
- apply eq_set_sym; auto.
-Qed.
-
-Lemma V_def : forall x z,
-  in_set z (V x) <-> exists y, in_set y x /\ incl_set z (V y).
-destruct x; simpl; intros.
-rewrite union_ax.
-unfold replf; simpl.
-split; intros.
- destruct H.
- destruct H0; simpl in *.
- exists (f x0); split.
-  exists x0; apply eq_set_refl.
-
-  red; rewrite <- power_ax.
-  apply eq_elim with x; trivial.
-
- destruct H.
- destruct H.
- exists (power (V x)).
-  rewrite power_ax; trivial.
-
-  destruct H; simpl in *.
-  exists x0.
-  apply power_morph.
-  apply V_morph; trivial.
-Qed.
-
-Lemma V_trans : forall x y z,
-  z ∈ y -> y ∈ V x -> z ∈ V x.
-intros x.
-pattern x; apply wf_ax; trivial; clear x; intros.
-rewrite V_def in H1|-*.
-destruct H1.
-destruct H1.
-exists x0; split; trivial.
-red; intros; eauto.
-Qed.
-
-Lemma V_pow : forall x, power (V x) == V (singl x).
-intros.
-apply eq_intro; intros.
- rewrite power_ax in H.
- rewrite V_def.
- exists x; split; trivial.
- exists tt; apply eq_set_refl.
-
- rewrite power_ax; intros.
- rewrite V_def in H; destruct H; destruct H.
- destruct H; simpl in *.
- apply eq_elim with (V x0); auto.
- apply V_morph; trivial.
-Qed.
-
-Lemma V_mono : forall x x',
-  in_set x x' -> in_set (V x) (V x').
-intros.
-rewrite (V_def x').
-exists x; split; trivial.
-red; trivial.
-Qed.
-
-Lemma V_sub : forall x y y',
-  in_set y (V x) -> incl_set y' y -> in_set y' (V x).
-intros x.
-pattern x; apply wf_ax; trivial; clear x; intros.
-rewrite V_def in H0|-*.
-destruct H0; destruct H0.
-exists x0; split; trivial.
-red; auto.
-Qed.
-
-
-Lemma V_compl : forall x z, in_set z (V x) -> in_set (V z) (V x). 
-intros x.
-pattern x; apply wf_ax; trivial; clear x; intros.
-rewrite V_def in *.
-destruct H0; destruct H0.
-exists x0; split; trivial.
-red; intros.
-rewrite V_def in H2; destruct H2; destruct H2.
-apply H1 in H2.
-apply V_sub with (V x1); eauto.
-Qed.
-
-Lemma V_intro : forall x, incl_set x (V x).
-intros x.
-pattern x; apply wf_ax; trivial; clear x; intros.
-red; intros.
-rewrite V_def.
-exists z; split; auto.
-Qed.
-
-Lemma V_idem : forall x, V (V x) == V x.
-intros.
-apply eq_intro; intros.
- rewrite V_def in H; destruct H; destruct H.
- apply V_sub with (V x0); trivial.
- apply V_compl; trivial.
-
- apply V_sub with (V z).
-  apply V_mono; trivial.
-  apply V_intro.
-Qed.
-
-Lemma rk_induc :
-  forall P:set->Prop,
-  (forall x, (forall y, y ∈ V x -> P y) -> P x) ->
-  forall x, P x.
-intros.
-cut (forall y, incl_set (V y) (V x) -> P y).
- intros.
- apply H0.
- red; trivial.
-induction x using wf_ax; trivial; intros.
-apply H; intros.
-apply H1 in H2.
-rewrite V_def in H2; destruct H2; destruct H2.
-apply H0 with x0; trivial.
-red; intros.
-rewrite V_def in H4; destruct H4; destruct H4.
-apply H3 in H4.
-apply V_sub with (V x1); trivial.
-apply V_compl; trivial.
-Qed.
-
-(* classical *)
-Lemma V_total : forall x y, in_set (V x) (V y) \/ incl_set (V y) (V x).
-intros x y.
-revert x.
-pattern y; apply wf_ax; trivial; clear y.
-intros y Hy x.
-destruct (EM (exists y', y' ∈ V y /\ incl_set (V x) y')).
-left.
-destruct H; destruct H.
-apply V_sub with x0; trivial.
-
-right; red; intros.
-rewrite V_def in H0; destruct H0; destruct H0.
-assert (exists w, w ∈ V x /\ ~ w ∈ V x0).
- destruct (EM (exists w, w ∈ V x /\ ~ w ∈ V x0)); trivial.
- assert (~ incl_set (V x) (V x0)).
-  red; intros; apply H.
-  exists (V x0); split; trivial.
-  apply V_mono; trivial.
- elim H3; red; intros.
- destruct (EM (z0 ∈ V x0)); trivial.
- elim H2.
- exists z0; split; trivial.
-destruct H2; destruct H2.
-destruct (Hy _ H0 x1).
- elim H3.
- apply V_sub with (V x1); trivial.
- apply V_intro.
-
- apply V_sub with (V x1).
-  apply V_compl; trivial.
-
-  red; auto.
-Qed.
-
-Definition lst_rk (P:set->Prop) (y:set) :=
-  P y /\
-  (exists w, y == V w) /\
-  (forall x, (exists w, x == V w) -> P x -> incl_set y (V x)).
-
-Lemma lst_rk_morph :
-  forall (P P':set->Prop), (forall x x', x == x' -> (P x <-> P' x')) ->
-  forall y y', y == y' -> lst_rk P y -> lst_rk P' y'.
-intros.
-destruct H1.
-destruct H2.
-split; [|split].
- revert H1; apply H; trivial.
-
- destruct H2.
- exists x.
- apply eq_set_trans with y; trivial.
- apply eq_set_sym; trivial.
-
- red; intros.
- apply (H3 x); trivial.
- revert H5; apply H; apply eq_set_refl.
-
- apply eq_elim with y'; trivial.
- apply eq_set_sym; trivial.
-Qed.
-
-Lemma lst_incl : forall P y, lst_rk P y -> P y. 
-destruct 1.
-trivial.
-Qed.
-
-Lemma lst_fun : forall P y y', lst_rk P y -> lst_rk P y' -> y == y'.
-destruct 1; destruct 1.
-destruct H0; destruct H2.
-apply H3 in H1; trivial; apply H4 in H; trivial.
-clear H3 H4.
-apply eq_intro; intros.
- apply H1 in H3.
- destruct H2.
- apply eq_elim with (V x).
- 2:apply eq_set_sym; trivial.
- apply eq_elim with (V (V x)).
- 2:apply V_idem.
- apply eq_elim with (V y'); trivial.
- apply V_morph; trivial.
-
- apply H in H3.
- destruct H0.
- apply eq_elim with (V y); trivial.
- apply eq_set_trans with (V (V x)).
-  apply V_morph; trivial.
- apply eq_set_trans with (V x).
-  apply V_idem.
- apply eq_set_sym; trivial.
-Qed.
-
-Lemma lst_ex : forall (P:set->Prop), (forall x x', eq_set x x' -> P x -> P x') ->
-  (exists x, P (V x)) -> exists y, lst_rk P y.
-intros P Pm.
-destruct 1.
-revert H.
-pattern x; apply rk_induc; clear x; intros.
-destruct (EM (exists z, z ∈ V x /\ P (V z))).
- destruct H1; destruct H1; eauto.
-
- exists (V x).
- split; [|split]; trivial.
-  exists x; apply eq_set_refl.
-
-  red; intros.
-  destruct (V_total x0 x); auto.
-  elim H1.
-  destruct H2.
-  exists x0; split.
-   apply V_sub with (V x0); trivial.
-   apply V_intro.
-
-   apply Pm with x0; trivial.
-   apply eq_set_trans with (V x1); trivial.
-   apply eq_set_trans with (V (V x1)).
-    apply eq_set_sym; apply V_idem.
-   apply eq_set_sym; apply V_morph; trivial.
-Qed.
-
-
-Lemma coll_ax : forall A (R:set->set->Prop), 
-    (forall x x' y y', in_set x A ->
-     eq_set x x' -> eq_set y y' -> R x y -> R x' y') ->
-    (forall x, in_set x A -> exists y, R x y) ->
-    exists B, forall x, in_set x A -> exists y, in_set y B /\ R x y.
-intros.
-pose (P := fun x y => x ∈ A /\ exists z, z ∈ y /\ R x z).
-assert (Pm : forall x x', x ∈ A -> x == x' -> forall y y', y == y' -> P x y -> P x' y').
- intros.
- destruct H4.
- destruct H5; destruct H5.
- split; [|exists x0;split].
-  apply in_reg with x; trivial.
-
-  apply eq_elim with y; trivial.
-
-  apply H with x x0; trivial.
-  apply eq_set_refl.
-assert (Pwit : forall x, x ∈ A -> exists y, P x (V y)). 
- intros.
- destruct (H0 x); trivial.
- exists (singl x0); split; trivial.
- exists x0; split; trivial.
- apply V_sub with (V x0).
-  apply V_mono; exists tt; apply eq_set_refl.
-  apply V_intro.
-destruct (@repl_ax A (fun x y => lst_rk (P x) y)); eauto using lst_fun, lst_ex.
- intros.
- apply lst_rk_morph with (P x) y; trivial.
- intros.
- split; intros; eauto.
-  apply Pm with x' x'0; trivial.
-   apply in_reg with x; trivial.
-   apply eq_set_sym; trivial.
-   apply eq_set_sym; trivial.
-
- exists (union x); intros.
- destruct lst_ex with (P x0); auto.
-  apply Pm; trivial; apply eq_set_refl.
-
-  specialize lst_incl with (1:=H3).
-  destruct 1 as (_,(?,(?,?))).
-  exists x2; split; trivial.
-  rewrite union_ax.
-  exists x1; trivial.
-  rewrite H1.
-  exists x0; auto.
-Qed.
-
-Lemma coll2_ax : forall A (R:set->set->Prop) x,
-    (forall x x' y y', in_set x A ->
-     eq_set x x' -> eq_set y y' -> R x y -> R x' y') ->
-    (exists y, R x y) ->
-    in_set x A ->
-    exists B, exists y, in_set y B /\ R x y.
-intros.
-assert (forall z, z ∈ singl x -> z ∈ A).
- intros.
- destruct H2; simpl in *.
- apply in_reg with x; trivial.
- apply eq_set_sym; trivial.
-destruct (coll_ax (singl x) R); intros; eauto.
- destruct H0.
- exists x1.
- apply H with x x1; trivial.
-  destruct H3; simpl in *.
-  apply eq_set_sym; trivial.
-
-  apply eq_set_refl.
-
- exists x0.
- apply H3.
- exists tt; apply eq_set_refl.
-Qed.
- 
-End FromReplClassic.
-
 End Collection.
-
+*)
 
 (* Infinity *)
 
-Lemma infinity_ex: exists2 infinite,
-    (exists2 empty, (forall x, ~ x ∈ empty) & empty ∈ infinite) &
+Lemma infinity_ex: #exists2 infinite,
+    #(exists2 empty, (forall x, x ∈ empty -> #False) & empty ∈ infinite) &
     (forall x, x ∈ infinite ->
-     exists2 y, (forall z, z ∈ y <-> (z == x \/ z ∈ x)) &
+     #exists2 y, (forall z, z ∈ y <-> #(z == x \/ z ∈ x)) &
        y ∈ infinite).
-exists infinity.
- exists empty.
+Texists infinite.
+ Texists empty.
   exact empty_ax.
-  exact infty_ax1.
+  exact infinity_ax1.
 
  intros.
- exists (union (pair x (pair x x))); intros.
+ Texists (union (pair x (pair x x))); intros.
   rewrite union_ax.
   split; intros.
-   destruct H0.
-   rewrite pair_ax in H1; destruct H1.
-    right.
-    unfold in_set.
-    apply eq_elim with x0; trivial.
+   Tdestruct H0.
+   rewrite pair_ax in H1; Tdestruct H1.
+    subst x; Tright; trivial.
 
-    left.
-    specialize eq_elim with (1:=H0) (2:=H1); intro.
-    rewrite pair_ax in H2; destruct H2; trivial.
+    subst x0.
+    rewrite pair_ax in H0; Tdestruct H0; apply tr_i; auto.
 
-   destruct H0.
-    exists (pair x x).
-     rewrite pair_ax; auto.
+   Tdestruct H0.
+    red in H0; subst z.
+    Texists (pair x x).
+     rewrite pair_ax; apply tr_i; auto.
+     rewrite pair_ax; apply tr_i; auto.
 
-     rewrite pair_ax; right; apply eq_set_refl.
+    Texists x; trivial.
+    rewrite pair_ax; Tleft; trivial.
 
-    exists x; trivial.
-    rewrite pair_ax; left; apply eq_set_refl.
-
-  apply infty_ax2; trivial.
+  apply infinity_ax2; trivial.
 Qed.
 
-
-(* Rk: decision of membership implies excluded-middle *)
-Lemma set_dec_EM :
-  (forall x y, in_set x y \/ ~ in_set x y) ->
-  (forall P, P \/ ~ P).
-intros.
-destruct (H empty (subset (power empty) (fun _ => P))).
- left.
- rewrite subset_ax in H0; destruct H0.
- destruct H1; trivial.
- right; red; intros; apply H0.
- rewrite subset_ax.
- split.
-  rewrite power_ax; intros.
-  elim empty_ax with y; trivial.
-
-  exists empty; trivial.
-  apply eq_set_refl.
-Qed.
-
-(* Failed attempt to build (set-theoretical) choice axiom. *)
-
-Section Choice.
-
-Hypothesis C : forall X:Type, X + (X->False).
-
-Lemma impl_choice_ax : forall A B, choice A B.
-red; intros.
-exists (fun x =>
-  match C ({y:B|R x y}) with
-  | inl y => proj1_sig y
-  | inr h =>
-    False_rect B (let (y,r) := H x in h (exist _ y r))
-  end).
-intros.
-destruct (C {y:B|R x y}).
- destruct s; trivial.
-
- destruct (H x).
- destruct (f (exist (fun y => R x y) x0 r)).
-Qed.
-
-Definition choose (x:set) :=
-  match C (idx x) with
-  | inl i => elts x i
-  | _ => empty
-  end.
-
-Lemma choose_ax : forall a, (exists x, x ∈ a) -> choose a ∈ a.
-intros.
-unfold choose.
-destruct (C (idx a)).
- exists i; apply eq_set_refl.
-
- destruct H.
- destruct H.
- elim (f x0).
-Qed.
-
-(* ... but choose is not a morphism! *)
-Lemma choose_not_morph : ~ forall x x', x == x' -> choose x == choose x'.
-unfold choose; red; intros.
-generalize (H (sup bool (fun b => if b then empty else singl empty))
-              (sup bool (fun b => if b then singl empty else empty))).
-simpl; intros.
-assert (singl empty == empty).
- refine (let H1 := H0 _ in _).
-  split; intros.
-   exists (negb i).
-   destruct i; apply eq_set_refl.
-
-   exists (negb j).
-   destruct j; apply eq_set_refl.
-
-  clear H0.
-  destruct (C bool).
-   destruct b; auto with *.
-   apply eq_set_sym; trivial.
-
-   destruct (f true).
-elim empty_ax with empty.
-apply eq_elim with (singl empty); trivial.
-exists tt; apply eq_set_refl.
-Qed.
-
-End Choice.
-
-(* Regularity is classical *)
-
-Section Regularity.
-
-Definition regularity :=
-  forall a a0, a0 ∈ a ->
-  exists2 b, b ∈ a & ~(exists2 c, c ∈ a & c ∈ b).
-
-Lemma regularity_ax (EM:forall P,P\/~P): regularity.
-red.
-induction a0; intros.
-destruct (EM (exists i:X, f i ∈ a)).
- destruct H1; eauto.
-
- exists (sup X f); trivial.
- red; intros; apply H1.
- destruct H2.
- destruct H3; simpl in *.
- exists x0.
- apply in_reg with x; trivial.
-Qed.
-
-Lemma regularity_is_classical (reg : regularity) : forall P, P \/ ~P.
-intros.
-destruct (reg (subset (pair empty (power empty))
-           (fun x => x == power empty \/ x == empty /\ P)) (power empty)).
- rewrite subset_ax.
- split.
-  rewrite pair_ax; right ;apply eq_set_refl.
-  exists (power empty).
-   apply eq_set_refl.
-   left; apply eq_set_refl.
-
- rewrite subset_ax in H; destruct H.
- destruct H1.
- destruct H2.
-  right ;red; intros.
-  apply H0.
-  exists empty.
-   rewrite subset_ax.
-   split.
-    rewrite pair_ax; left; apply eq_set_refl.
-    exists empty.
-     apply eq_set_refl.
-     right; split; trivial.
-     apply eq_set_refl.
-
-    apply eq_elim with x0.
-    2:apply eq_set_sym; trivial.
-    apply eq_elim with (power empty).
-    2:apply eq_set_sym; trivial.
-    rewrite power_ax; trivial.
-
-  destruct H2; auto.
-Qed.
-
-End Regularity.
-
-End IZF_R.
