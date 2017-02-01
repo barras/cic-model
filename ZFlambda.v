@@ -1,6 +1,7 @@
 Require Import Setoid Compare_dec Wf_nat.
 Require Import Lambda.
 Require Import ZF ZFpairs ZFnats ZFord ZFgrothendieck.
+Require Import ZFfix.
 Require Import Sat.
 
 (** * The set of lambda-terms with constants *)
@@ -27,45 +28,6 @@ Qed.
 Instance LAMf_morph : Proper (eq_set ==> eq_set) LAMf.
 apply Fmono_morph; apply LAMf_mono.
 Qed.
-
-(*
-  Definition LAMf (X:set) :=
-    replf N (fun n => couple zero n) ∪
-    replf A (fun x => couple (succ zero) x) ∪
-    (replf (prodcart X X) (fun p => couple (succ (succ zero)) p) ∪
-     replf X (fun x => couple (succ (succ (succ zero))) x)).
-
-Instance LAMf_mono : Proper (incl_set ==> incl_set) LAMf.
-do 2 red; intros.
-unfold LAMf.
-do 2 apply union2_mono.
- red; auto.
-
- red; auto.
-
- apply replf_mono2.
-  do 2 red; intros.
-  rewrite H1; reflexivity.
-
-  apply prodcart_mono; trivial.
-
- apply replf_mono2; trivial.
- do 2 red; intros.
- rewrite H1; reflexivity.
-Qed.
-
-Instance LAMf_morph : Proper (eq_set ==> eq_set) LAMf.
-do 2 red; intros.
-apply eq_intro; intros.
- apply (LAMf_mono x y); trivial. 
- red; intros.
- rewrite <- H; auto.
-
- apply (LAMf_mono y x); trivial. 
- red; intros.
- rewrite H; auto.
-Qed.
-*)
   Definition Var n := couple zero n.
   Definition Cst x := couple (succ zero) x.
   Definition App a b := couple (succ (succ zero)) (couple a b).
@@ -104,50 +66,7 @@ apply union2_elim in H4; destruct H4 as [H4|H4];
   apply H3.
   apply snd_typ in H4; trivial.
 Qed.
-(*
-  Lemma LAMf_ind : forall X (P : set -> Prop),
-    Proper (eq_set ==> iff) P ->
-    (forall n, n ∈ N -> P (Var n)) ->
-    (forall x, x ∈ A -> P (Cst x)) ->
-    (forall a b, a ∈ X -> b ∈ X -> P (App a b)) ->
-    (forall a, a ∈ X -> P (Abs a)) ->
-    forall a, a ∈ LAMf X -> P a.
-unfold LAMf; intros.
-apply union2_elim in H4; destruct H4 as [H4|H4];
- apply union2_elim in H4; destruct H4.
-  apply replf_elim in H4.
-   destruct H4.
-   rewrite H5; auto.
 
-   do 2 red; intros.
-   rewrite H6; reflexivity.
-
-  apply replf_elim in H4.
-   destruct H4.
-   rewrite H5; auto.
-
-   do 2 red; intros.
-   rewrite H6; reflexivity.
-
-  apply replf_elim in H4.
-   destruct H4.
-   specialize surj_pair with (1:=H4); intro.
-   rewrite H5; rewrite H6.
-   apply H2.
-    apply fst_typ with X; trivial.
-    apply snd_typ with X; trivial.
-
-   do 2 red; intros.
-   rewrite H6; reflexivity.
-
-  apply replf_elim in H4.
-   destruct H4.
-   rewrite H5; auto.
-
-   do 2 red; intros.
-   rewrite H6; reflexivity.
-Qed.
-*)
   Lemma Var_typ : forall X n,
     n ∈ N -> Var n ∈ LAMf X.
 intros.
@@ -182,7 +101,6 @@ apply couple_intro;[apply singl_intro|trivial].
 Qed.
 
 
-Require Import ZFrepl ZFfix.
 
   Definition Lamn n := TI LAMf (nat2ordset n).
 
@@ -453,31 +371,28 @@ Qed.
 
 
 Definition replSAT F :=
-  repl (power CCLam) (fun P y => y == F (sSAT P)).
+  replf (power CCLam) (fun P => F (sSAT P)).
 
 Lemma replSAT_ax : forall f z,
   Proper (eqSAT ==> eq_set) f ->
   (z ∈ replSAT f <-> exists A, z == f A).
 unfold replSAT.
 intros.
-rewrite repl_ax.
+rewrite replf_ax.
  split; intros.
   destruct H0 as (y,isSet,img).
   exists (sSAT y); trivial.
 
-  destruct H0.
-  exists (iSAT x).
+  destruct H0 as (S,eqz).
+  exists (iSAT S).
    apply power_intro; intros.
-   unfold iSAT in H1.
-   apply subset_elim1 in H1; trivial.
+   unfold iSAT in H0.
+   apply subset_elim1 in H0; trivial.
 
    rewrite iSAT_id; trivial.
 
- intros.
- rewrite <- H2; rewrite <- H1; trivial.
-
- intros.
- rewrite H1; rewrite H2; reflexivity.
+ do 2 red; intros.
+ rewrite <- H1; reflexivity.
 Qed.
 
 Lemma G_CCLam U :
