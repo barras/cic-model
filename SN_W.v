@@ -999,9 +999,9 @@ rewrite Real_prod; auto with *.
 2:intros ? ? ? h; rewrite h; reflexivity.
 unfold piSAT.
 eapply inSAT_morph;[reflexivity| |].
-2:apply WREC_sat with (7:=WREC_ok H)
+2:apply WREC_sat with (6:=WREC_ok H)
  (RA:=Real(int A i))(RB:=fun x =>Real(int B(V.cons x i)))
- (RF:= fun o => tm M (Lc.ilift (I.cons o j)))
+ (RF:= Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j))))
  (RU:= fun o w => Real (int U (V.cons w (V.cons o i)))); auto with *.
  apply piSAT0_morph.
   red; intros.
@@ -1036,8 +1036,6 @@ eapply inSAT_morph;[reflexivity| |].
  apply int_morph; auto with *.
  repeat apply V.cons_morph; auto with *.
 
- apply H1.
-
  (**)
  red; intros.
  apply fx_sub_U with (V.cons x (V.cons o' i))
@@ -1051,6 +1049,7 @@ eapply inSAT_morph;[reflexivity| |].
 
  (**)
  intros.
+ apply inSAT_exp;[right;apply sat_sn in H6;trivial|].
   replace (Lc.subst u (tm M (Lc.ilift (I.cons (tm O j) j)))) with
      (tm M (I.cons u (I.cons (tm O j) j))).
   2:unfold Lc.subst; rewrite <- tm_substitutive.

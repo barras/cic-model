@@ -780,33 +780,27 @@ ter2; trivial.
  admit.
 *)
 
-
-Lemma WREC_sat o (ot:Lc.term) F RF  U RU :
+Lemma WREC_sat o F RF  U RU :
   Proper (eq_set==>eq_set==>eq_set==>eqSAT) RU ->
   isOrd o ->
-  Lc.sn ot ->
   WREC_assumptions A B o F U ->
   (forall o' o'' x y y', isOrd o' -> isOrd o'' -> o' ⊆ o'' -> o'' ⊆ o ->
    x ∈ TI (W_F A B) o' ->
    y ∈ U o' x ->
    y == y' ->
    inclSAT (RU o' x y) (RU o'' x y')) ->
+  let FIX_ty o' f :=
+      piSAT0 (fun n => n ∈ cc_bot (TI (W_F A B) o'))
+             (rWi o')
+             (fun n => RU o' n (cc_app f n)) in
   (forall o' f u,
    isOrd o' ->
    o' ⊆ o ->
    f ∈ (Π w ∈ cc_bot (TI (W_F A B) o'), U o' w) ->
-   inSAT u
-         (piSAT0 (fun n => n ∈ cc_bot (TI (W_F A B) o'))
-            (rWi o')
-            (fun n => RU o' n (cc_app f n))) -> 
-   inSAT (Lambda.subst u (RF ot))
-     (piSAT0 (fun n => n ∈ cc_bot (TI (W_F A B) (osucc o')))
-        (rWi (osucc o'))
-        (fun n => RU (osucc o') n (cc_app (F o' f) n)))) ->
-  inSAT (WFIX (Lc.Abs (RF ot)))
-     (piSAT0 (fun x => x ∈ cc_bot (TI (W_F A B) o)) (rWi o)
-        (fun x => RU o x (cc_app (WREC F o) x))).
-intros RUm oo sno ty RUmono satF.
+   inSAT u (FIX_ty o' f) ->
+   inSAT (Lc.App RF u) (FIX_ty (osucc o') (F o' f))) ->
+  inSAT (WFIX RF) (FIX_ty o (WREC F o)).
+intros RUm oo ty RUmono FIX_ty satF.
 eapply WFIX_sat with (X:=fun o n => RU o n (cc_app (WREC F o) n)); trivial.
  intros.
  apply RUmono; auto.
@@ -821,7 +815,7 @@ eapply WFIX_sat with (X:=fun o n => RU o n (cc_app (WREC F o) n)); trivial.
  intros.
  assert (xo : isOrd x) by eauto using isOrd_inv.
  apply olts_le in H.
- apply inSAT_exp;[right;apply sat_sn in H0;trivial|].
+(* apply inSAT_exp;[right;apply sat_sn in H0;trivial|].*)
  assert (Wty : WREC F x ∈ Π w ∈ cc_bot (TI (W_F A B) x), U x w).
   apply WREC_typ with (1:=ty); trivial.
  specialize satF with (1:=xo)(2:=H)(3:=Wty)(4:=H0).
