@@ -24,6 +24,14 @@ apply singl_elim.
 apply power_elim with (1:=H); trivial.
 Qed.
 
+Lemma props_are_hprop P Q p q :
+  P ∈ props -> Q ∈ props -> p ∈ P -> q ∈ Q -> p==q.
+intros tyP tyQ typ tyq.
+apply props_proof_irrelevance in typ; trivial.
+apply props_proof_irrelevance in tyq; trivial.
+rewrite tyq; trivial.
+Qed.
+
 Lemma cc_impredicative_prod : forall dom F,
   (forall x, x ∈ dom -> F x ∈ props) ->
   cc_prod dom F ∈ props.
@@ -117,6 +125,17 @@ Instance p2P_morph : Proper (eq_set ==> iff) p2P.
 do 2 red; intros; apply in_set_morph; auto with *.
 Qed.
 
+Lemma P2p_ax P x :
+   x ∈ P2p P <-> x == empty /\ P.
+unfold P2p.
+rewrite cond_set_ax.
+apply and_iff_morphism; auto with *.
+split; intros.
+ apply singl_elim in H; auto with *.
+
+ apply singl_intro_eq; trivial.
+Qed.
+
 Lemma P2p_typ : forall P, P2p P ∈ props.
 unfold P2p; intros.
 apply power_intro; intros.
@@ -133,16 +152,14 @@ split; intros.
 Qed.
 
 Lemma p2P2p : forall p, p ∈ props -> P2p (p2P p) == p.
-unfold p2P, P2p; intros.
-apply eq_intro; intros.
- rewrite cond_set_ax in H0; destruct H0.
- apply singl_elim in H0.
+intros.
+apply eq_set_ax; intros.
+rewrite P2p_ax.
+split; intros.
+ destruct H0.
  rewrite H0; trivial.
 
- rewrite cond_set_ax; split.
-  apply power_elim with (1:=H); trivial.
-
-  rewrite props_proof_irrelevance with (1:=H) (2:=H0) in H0; trivial.
+ rewrite props_proof_irrelevance with (2:=H0) in H0|-*; auto with *.
 Qed.
 
 Lemma P2p_forall A (B:set->Prop) :
@@ -194,6 +211,61 @@ split; intros; eauto with *.
 destruct H1; eauto.
 Qed.
 
+Lemma predicate_ext P Q f g :
+  P ∈ props ->
+  Q ∈ props ->
+  f ∈ cc_arr P Q ->
+  g ∈ cc_arr Q P ->
+  P == Q.
+intros.
+rewrite <- (p2P2p P); trivial.  
+rewrite <- (p2P2p Q); trivial.  
+apply P2p_morph.
+split; intros.
+ specialize cc_prod_elim with (1:=H1) (2:=H3); intros.
+ rewrite props_proof_irrelevance with (2:=H4) in H4; trivial.
+
+ specialize cc_prod_elim with (1:=H2) (2:=H3); intros.
+ rewrite props_proof_irrelevance with (2:=H4) in H4; trivial.
+Qed.
+
+(** * Prop-Truncation *)
+
+Definition trunc (x:set) := P2p (exists w, w ∈ x).
+
+Instance trunc_morph : morph1 trunc.
+do 2 red; intros.
+apply P2p_morph.
+apply ex_morph; intros w.
+rewrite H; reflexivity.
+Qed.
+
+Lemma trunc_prop x : trunc x ∈ props.
+apply P2p_typ.
+Qed.
+
+Definition trunc_descr P : set := union P.
+
+Instance trunc_descr_morph : morph1 trunc_descr.
+Proof union_morph.
+
+Lemma trunc_ind X P F p :
+  (forall x y, x ∈ P -> y ∈ P -> x==y) ->
+  typ_fun F X P ->
+  p ∈ trunc X ->
+  trunc_descr P ∈ P.
+intros Pp tyF wit.
+apply P2p_ax in wit.
+destruct wit as (_,(x,tyx)).
+assert (witP : F x ∈ P) by auto.
+unfold trunc_descr.
+apply in_reg with (F x); auto.
+apply union_ext; intros.
+ rewrite (Pp (F x) y); trivial.  
+
+ exists (F x); trivial.
+Qed.
+  
 (** * Classical propositions: we also have a model for classical logic *)
 
 Definition cl_props := subset props (fun P => ~~p2P P -> p2P P).
