@@ -17,6 +17,15 @@ Import Sat Sat.SatSet.
 
 Require Import SN_ord.
 
+Definition infty := cst omega.
+
+Lemma typ_infty : forall e, typ_ord e infty.
+split; simpl; auto.
+exact Lc.sn_K.
+Qed.
+
+Hint Resolve typ_infty.
+
 (** Judgments with variance *)
 
 Require Import SN_variance.
@@ -42,8 +51,6 @@ Module Make (M:SizedNats).
 (** NAT *)
 
 Section NAT_typing.
-
-Variable e:env.
 
 Definition NatI (O:term) : term.
 (*begin show*)
@@ -120,7 +127,7 @@ intros.
 rewrite H1; reflexivity.
 Qed.
 
-Lemma typ_NatI O :
+Lemma typ_NatI e O :
   typ_ord e O ->
   typ e (NatI O) kind.
 intros tyO i j valok; simpl.
@@ -136,7 +143,7 @@ split;[|split].
  apply tyO.
 Qed.
 
-Lemma typ_NatI_type n O :
+Lemma typ_NatI_type e n O :
   typ_ord e O ->
   typ e (NatI O) (type n).
 intros tyO i j is_val; simpl.
@@ -163,17 +170,7 @@ apply and_split; intros.
  rewrite Real_sort_sn; trivial.
 Qed.
 
-
-Definition infty := cst omega.
-
-Lemma typ_infty : forall e, typ_ord e infty.
-split; simpl; auto.
-exact Lc.sn_K.
-Qed.
-
-Hint Resolve typ_infty.
-
-Lemma NatI_sub_infty O :
+Lemma NatI_sub_infty e O :
   typ_ord e O ->
   sub_typ e (NatI O) (NatI infty).
 red; intros.
@@ -193,7 +190,7 @@ apply and_split.
   intros; apply cNAT_morph; trivial.
 Qed.
 
-Lemma NatI_sub_osucc O :
+Lemma NatI_sub_osucc e O :
   typ_ord e O ->
   sub_typ e (NatI O) (NatI (OSucc O)).
 red; intros.
@@ -211,6 +208,26 @@ apply and_split.
  rewrite Real_def in H4|-*; trivial.
   intros; apply cNAT_morph; trivial.
   intros; apply cNAT_morph; trivial.
+Qed.
+
+  Lemma NatI_sub e O :
+    typ_ord (tenv e) O ->
+    fx_subval e O ->
+    fx_sub e (NatI O).
+unfold fx_sub, fx_subval.
+intros tyO subO i i' j j' val_m x t (xreal,xsat).
+destruct tyO with (1:=proj1 val_m).
+destruct tyO with (1:=proj1 (proj2 val_m)).
+specialize subO with (1:=val_m).
+red in xreal; simpl in xreal; rewrite El_def in xreal.
+rewrite Real_int_NatI in xsat; trivial.
+assert (cc_bot (TI NATf' (int O i)) ⊆ cc_bot (TI NATf' (int O i'))).
+ apply cc_bot_mono.
+ apply TI_mono; auto with *.
+split.
+ red; simpl; rewrite El_def; auto with *.
+
+ rewrite Real_int_NatI; auto.
 Qed.
 
 
@@ -233,7 +250,7 @@ left; exists (fun i => M.zero)
 Defined.
 
 
-Lemma typ_0 O :
+Lemma typ_0 e O :
   typ_ord e O ->
   typ e Zero (NatI (OSucc O)).
 red; intros.
@@ -278,7 +295,7 @@ left; exists (fun i => lam (mkTY (TI NATf' (int O i)) cNAT) succ)
 Defined.
 
 
-Lemma typ_S O :
+Lemma typ_S e O :
   typ_ord e O ->
   typ e (Succ O) (Prod (NatI O) (lift 1 (NatI (OSucc O)))).
 red; intros tyO i j valok.
@@ -354,6 +371,23 @@ apply and_split.
  apply succ_typ; trivial.
 Qed.
 
+Lemma ext_S e O :
+  typ_ord (tenv e) O ->
+  fx_subval e O ->
+  fx_extends e (NatI O) (Succ O).
+red; red; simpl; intros.
+rewrite beta_eq; trivial.
+2:red; intros; apply succ_morph; trivial.
+rewrite beta_eq; auto with *.
+ red; intros; apply succ_morph; trivial.
+red; rewrite El_def in H2|-*.
+revert H2; apply cc_bot_mono.
+destruct H with (1:=proj1 H1) as (?,_).
+destruct H with (1:=proj1 (proj2 H1)) as (?,_).
+apply TI_mono; auto.
+apply H0 with (1:=H1).
+Qed.
+
 (* Case analysis *)
 
 Definition NatCase (b0 bS n : term) : term.
@@ -418,7 +452,7 @@ split; red; simpl; intros.
 Qed.
 
 
-Lemma NatCase_iota_0 B0 BS :
+Lemma NatCase_iota_0 e B0 BS :
   eq_typ e (NatCase B0 BS Zero) B0.
 red; intros.
 simpl.
@@ -426,7 +460,7 @@ rewrite natcase_zero; reflexivity.
 Qed.
 
 
-Lemma NatCase_iota_S B0 BS O N :
+Lemma NatCase_iota_S e B0 BS O N :
   typ e N (NatI O) ->
   eq_typ e (NatCase B0 BS (App (Succ O) N)) (subst N BS).
 red; intros.
@@ -453,7 +487,7 @@ rewrite natcase_succ; trivial.
 apply int_subst_eq.
 Qed.
 
-Lemma typ_NatCase P O B0 BS n :
+Lemma typ_NatCase e P O B0 BS n :
   typ_ord e O ->
   typ e B0 (App P Zero) ->
   typ (NatI O::e) BS (App (lift 1 P) (App (lift 1 (Succ O)) (Ref 0))) ->
@@ -585,7 +619,7 @@ apply and_split; intros.
    exact satBS.
 Qed.
 
-Lemma typ_NatCase' P O B0 BS n T :
+Lemma typ_NatCase' e P O B0 BS n T :
   T <> kind ->
   typ_ord e O ->
   sub_typ e (App P n) T ->
@@ -598,28 +632,6 @@ apply typ_subsumption with (App P n); auto.
 2:discriminate.
 apply typ_NatCase with O; trivial.
 Qed.
-
-
-End NAT_typing.
-Hint Resolve typ_infty.
-
-Lemma ext_S e O :
-  typ_ord (tenv e) O ->
-  fx_subval e O ->
-  fx_extends e (NatI O) (Succ O).
-red; red; simpl; intros.
-rewrite beta_eq; trivial.
-2:red; intros; apply succ_morph; trivial.
-rewrite beta_eq; auto with *.
- red; intros; apply succ_morph; trivial.
-red; rewrite El_def in H2|-*.
-revert H2; apply cc_bot_mono.
-destruct H with (1:=proj1 H1) as (?,_).
-destruct H with (1:=proj1 (proj2 H1)) as (?,_).
-apply TI_mono; auto.
-apply H0 with (1:=H1).
-Qed.
-
 
 Lemma impl_NatCase e O b0 bS n P :
   typ_ord_mono e O ->
@@ -756,6 +768,7 @@ apply eq_term_intro.
  discriminate.
 Qed.
 
+End NAT_typing.
 
 (*****************************************************************************)
 (** Recursor (without case analysis) *)
@@ -1375,29 +1388,6 @@ apply typ_natfix; trivial.
 Qed.
 
 
-(** Variance results *)
-
-  Lemma NatI_sub : forall e O,
-    typ_ord (tenv e) O ->
-    fx_subval e O ->
-    fx_sub e (NatI O).
-unfold fx_sub, fx_subval.
-intros e O tyO subO i i' j j' val_m x t (xreal,xsat).
-destruct tyO with (1:=proj1 val_m).
-destruct tyO with (1:=proj1 (proj2 val_m)).
-specialize subO with (1:=val_m).
-red in xreal; simpl in xreal; rewrite El_def in xreal.
-rewrite Real_int_NatI in xsat; trivial.
-assert (cc_bot (TI NATf' (int O i)) ⊆ cc_bot (TI NATf' (int O i'))).
- apply cc_bot_mono.
- apply TI_mono; auto with *.
-split.
- red; simpl; rewrite El_def; auto with *.
-
- rewrite Real_int_NatI; auto.
-Qed.
-
-
 Lemma typ_natfix'' e O U M T :
        T <> kind ->
        sub_typ (tenv e) (Prod (NatI O) (subst_rec O 1 U)) T ->
@@ -1413,6 +1403,8 @@ apply typ_subsumption with (2:=H0); trivial.
 2:discriminate.
 apply typ_natfix; trivial.
 Qed.
+
+(** Variance results *)
 
   Lemma typ_ext_fix e O U M :
     typ_ord_mono e O ->
