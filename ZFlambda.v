@@ -369,6 +369,8 @@ split; intros.
  apply snSAT_intro; trivial.
 Qed.
 
+Definition SATset :=
+  subset (power CCLam) (fun S => iSAT(sSAT S)==S).
 
 Definition replSAT F :=
   replf (power CCLam) (fun P => F (sSAT P)).

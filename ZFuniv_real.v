@@ -81,43 +81,8 @@ Hint Resolve Elt_El empty_El.
       built from this data.
  *)
 Definition sn_sort K :=
-   mkTY (sup K (fun P =>
-         repl (cc_arr (cc_bot P) (power CCLam)) (fun R T => T == couple P R /\
-                   forall x, x ∈ cc_bot P -> iSAT (sSAT (cc_app R x)) == cc_app R x)))
+   mkTY (sup K (fun P => replf (cc_arr (cc_bot P) SATset) (fun R => couple P R)))
      (fun _ => snSAT).
-
-
-Lemma sort_repl_morph P :
-  ZFrepl.repl_rel (cc_arr (cc_bot P) (power CCLam))
-    (fun R T => T == couple P R /\
-           forall x, x ∈ cc_bot P -> iSAT (sSAT (cc_app R x)) == cc_app R x).
-split; intros.
- revert H2; apply iff_impl.
- apply and_iff_morphism.
-  rewrite H0; rewrite H1; reflexivity.
-
-  apply fa_morph; intro z.
-  rewrite H0; reflexivity.
-
- destruct H0; destruct H1.
- rewrite H0; rewrite H1; reflexivity.
-Qed.
-Lemma sort_repl_morph2 :
-  Proper (eq_set ==> eq_set) (fun P =>
-         repl (cc_arr (cc_bot P) (power CCLam)) (fun R T => T == couple P R /\
-                   forall x, x ∈ cc_bot P -> iSAT (sSAT (cc_app R x)) == cc_app R x)).
-do 2 red; intros.   
-apply ZFrepl.repl_morph_raw.
- rewrite H; reflexivity.
-
- do 3 red; intros.
- apply and_iff_morphism.
-  rewrite H; rewrite H0; rewrite H1; reflexivity.
-
-  apply fa_morph; intro z.
-  rewrite H; rewrite H0; reflexivity.
-Qed.
-Hint Resolve sort_repl_morph sort_repl_morph2.
 
 Lemma sn_sort_ax T K:
   T ∈ El (sn_sort K) <->
@@ -131,37 +96,45 @@ apply or_iff_morphism; [reflexivity|].
 rewrite sup_ax.
  apply ex2_morph; auto with *.
  intros P.
- rewrite repl_ax.
+ rewrite replf_ax.
   split; intros.
-   destruct H as (R,?,(?,?)).
+   destruct H as (R,tyR,eqT).
    exists (fun x => sSAT (cc_app R x)).
     intros.
     apply sSAT_morph.
     apply cc_app_morph; auto with *.
 
-    rewrite H0; apply couple_morph; auto with *.
-    rewrite cc_eta_eq with (1:=H).
+    rewrite eqT; apply couple_morph; auto with *.
+    rewrite cc_eta_eq with (1:=tyR).
     apply cc_lam_ext; auto with *.
     red; intros.
     symmetry.
-    rewrite <- H3; auto.
+    rewrite <- H0.
+    apply cc_arr_elim  with (2:=H) in tyR.
+    apply subset_elim2 in tyR.
+    destruct tyR as (S,eqS,is_sat).
+    rewrite eqS; trivial.
 
    destruct H as (R,?,?).
    assert (ext_fun (cc_bot P) (fun x : set => iSAT (R x))).
     do 2 red; intros; apply iSAT_morph; auto.
-   exists (cc_lam (cc_bot P) (fun x => iSAT (R x))).
-    apply cc_prod_intro; intros; auto.
+   exists (cc_lam (cc_bot P) (fun x => iSAT (R x))); trivial.
+   apply cc_prod_intro; intros; auto.
+   apply subset_intro.
     apply power_intro; intros.
     apply subset_elim1 in H3; trivial.
 
-    split; intros; trivial.
-    rewrite cc_beta_eq; trivial.
     rewrite iSAT_id; reflexivity.
 
-  apply sort_repl_morph.
-  apply sort_repl_morph.
+ do 2 red; intros.
+ rewrite H0; reflexivity.
 
- do 2 red; intros; auto.
+ do 2 red; intros.
+ apply replf_morph.
+  rewrite H0; reflexivity.
+
+  red; intros.
+  apply couple_morph; trivial.
 Qed.
 
 
@@ -211,21 +184,29 @@ intros.
 apply sn_sort_intro.
  reflexivity.
 apply G_sup; intros; auto.
-assert (cc_arr (cc_bot x) (power CCLam) ∈ K2).
+ do 2 red; intros.
+ apply replf_morph.
+  rewrite H3; reflexivity.
+
+  red; intros.
+  apply couple_morph; auto.
+assert (cc_arr (cc_bot x) SATset ∈ K2).
  apply G_cc_prod; intros; auto.
   apply G_union2; auto.
    apply G_singl; trivial; apply G_inf_nontriv; trivial.
    apply G_trans with K1; trivial.
-
+   
+  apply G_subset; auto.
   apply G_power; auto.
-apply G_repl; auto.
-intros.
-destruct H5.
-rewrite H5.
-apply G_couple; trivial.
- apply G_trans with K1; trivial.
+apply G_replf; auto with *.
+ do 2 red; intros.  
+ apply couple_morph; auto with *.
 
- apply G_trans with (2:=H4); trivial.
+ intros.
+ apply G_couple; trivial.
+  apply G_trans with K1; trivial.
+
+  apply G_trans with (2:=H4); trivial.
 Qed.
 
 Lemma El_in_grot K T :
