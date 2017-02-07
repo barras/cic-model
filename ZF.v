@@ -796,6 +796,20 @@ intros.
 unfold union2; rewrite pair_commut; reflexivity.
 Qed.
 
+Lemma union2_mt_l x : empty ∪ x == x.
+apply eq_set_ax; intros z; rewrite union2_ax. 
+split; auto.
+destruct 1; trivial.
+elim empty_ax with (1:=H).
+Qed.
+
+Lemma union2_mt_r x : x ∪ empty == x.
+apply eq_set_ax; intros z; rewrite union2_ax. 
+split; auto.
+destruct 1; trivial.
+elim empty_ax with (1:=H).
+Qed.
+
 
 (** subtraction *)
 Definition minus2 x y := subset x (fun x' => ~ (x' ∈ y)).
