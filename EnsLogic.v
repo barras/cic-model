@@ -469,8 +469,8 @@ destruct (choice_axiom {i:X|exists w, R i w} set (fun i y => R (proj1_sig i) y))
  exists {i:X|exists w, R i w}.
  exists f.
  intros.
- exists (existT _ i H).
- apply (Hf (existT _ i H)).
+ exists (exist _ i H).
+ apply (Hf (exist _ i H)).
 Qed.
 
 (* ttcoll rephrased on sets: *)
@@ -716,7 +716,7 @@ Fixpoint V (x:set) := union (replf x (fun x' => power (V x'))).
 
 Lemma V_morph : forall x x', x == x' -> V x == V x'.
 induction x; destruct x'; intros.
-simpl V; unfold replf; simpl sup.
+simpl V; unfold replf.
 apply union_morph.
 rewrite eq_set_def in H0; simpl in H0.
 destruct H0.

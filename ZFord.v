@@ -1204,7 +1204,7 @@ Qed.
     forall x y, TR_rel x y -> forall y', TR_rel x y' -> y == y'.
 intros x y (xo,H).
 apply H; intros.
- apply morph_impl_iff2; auto with *.
+ apply morph_impl_iff2; only 1-2: auto with *. (* Conversion test raised an anomaly *)
  do 4 red; intros.
  rewrite <- H1; rewrite <- H0 in H3; auto.
 apply TR_rel_inv in H4; destruct H4.

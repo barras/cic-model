@@ -17,43 +17,43 @@ Definition Df_Add := Df_Add'.
 
 Fixpoint lift_term_rec t n k:=
   match t with
-    | Var i => 
+    | Var' i =>
       match le_gt_dec k i with
         | left _ => Var (i+n)
         | right _ => Var i
       end
-    | Cst_0 => Cst_0
-    | Cst_1 => Cst_1
-    | Df_Add u v => Df_Add (lift_term_rec u n k) (lift_term_rec v n k)
+    | Cst_0' => Cst_0
+    | Cst_1' => Cst_1
+    | Df_Add' u v => Df_Add (lift_term_rec u n k) (lift_term_rec v n k)
   end.
 
 Definition lift_term t n := lift_term_rec t n 0.
 
 Fixpoint subst_term_rec M N n:= 
   match M with
-    | Var i =>
+    | Var' i =>
       match lt_eq_lt_dec n i with
         | inleft (left _) => Var (pred i)
         | inleft (right _) => lift_term N n
         | inright _ => Var i
       end
-    | Cst_0 => Cst_0
-    | Cst_1 => Cst_1
-    | Df_Add M1 M2 => Df_Add (subst_term_rec M1 N n) (subst_term_rec M2 N n)
+    | Cst_0' => Cst_0
+    | Cst_1' => Cst_1
+    | Df_Add' M1 M2 => Df_Add (subst_term_rec M1 N n) (subst_term_rec M2 N n)
   end.
 
 Definition subst_term M N := subst_term_rec M N 0.
 
 Fixpoint fv_term_rec t k : list nat :=
   match t with
-    | Var n => 
+    | Var' n =>
       match le_gt_dec k n with
         | left _ => (n-k)::nil
         | right _ => nil
       end
-    | Cst_0 => nil
-    | Cst_1 => nil
-    | Df_Add M N => (fv_term_rec M k) ++ (fv_term_rec N k)
+    | Cst_0' => nil
+    | Cst_1' => nil
+    | Df_Add' M N => (fv_term_rec M k) ++ (fv_term_rec N k)
   end.
 
 Definition fv_term t := fv_term_rec t 0.
@@ -82,45 +82,45 @@ Definition exst := exst'.
 
 Fixpoint lift_fml_rec f n k:=
   match f with
-    | eq_foterm x y => eq_foterm (lift_term_rec x n k) (lift_term_rec y n k)
-    | TF => TF
-    | BF => BF
-    | neg f' => neg (lift_fml_rec f' n k)
-    | conj A B => conj (lift_fml_rec A n k) (lift_fml_rec B n k)
-    | disj A B => disj (lift_fml_rec A n k) (lift_fml_rec B n k)
-    | implf A B => implf (lift_fml_rec A n k) (lift_fml_rec B n k)
-    | fall A => fall (lift_fml_rec A n (S k))
-    | exst A => exst (lift_fml_rec A n (S k))
+    | eq_foterm' x y => eq_foterm (lift_term_rec x n k) (lift_term_rec y n k)
+    | TF' => TF
+    | BF' => BF
+    | neg' f' => neg (lift_fml_rec f' n k)
+    | conj' A B => conj (lift_fml_rec A n k) (lift_fml_rec B n k)
+    | disj' A B => disj (lift_fml_rec A n k) (lift_fml_rec B n k)
+    | implf' A B => implf (lift_fml_rec A n k) (lift_fml_rec B n k)
+    | fall' A => fall (lift_fml_rec A n (S k))
+    | exst' A => exst (lift_fml_rec A n (S k))
   end.
 
 Definition lift_fml t n := lift_fml_rec t n 0.
 
 Fixpoint subst_fml_rec f N n :=
   match f with
-    | eq_foterm x y => eq_foterm (subst_term_rec x N n) (subst_term_rec y N n)
-    | TF => TF
-    | BF => BF
-    | neg f => neg (subst_fml_rec f N n)
-    | conj f1 f2 => conj (subst_fml_rec f1 N n) (subst_fml_rec f2 N n)
-    | disj f1 f2 => disj (subst_fml_rec f1 N n) (subst_fml_rec f2 N n)
-    | implf f1 f2 => implf (subst_fml_rec f1 N n) (subst_fml_rec f2 N n)
-    | fall f => fall (subst_fml_rec f N (S n))
-    | exst f => exst (subst_fml_rec f N (S n))
+    | eq_foterm' x y => eq_foterm (subst_term_rec x N n) (subst_term_rec y N n)
+    | TF' => TF
+    | BF' => BF
+    | neg' f => neg (subst_fml_rec f N n)
+    | conj' f1 f2 => conj (subst_fml_rec f1 N n) (subst_fml_rec f2 N n)
+    | disj' f1 f2 => disj (subst_fml_rec f1 N n) (subst_fml_rec f2 N n)
+    | implf' f1 f2 => implf (subst_fml_rec f1 N n) (subst_fml_rec f2 N n)
+    | fall' f => fall (subst_fml_rec f N (S n))
+    | exst' f => exst (subst_fml_rec f N (S n))
   end.
 
 Definition subst_fml f N := subst_fml_rec f N 0.
 
 Fixpoint fv_fml_rec f k : list nat :=
   match f with
-    | eq_foterm t1 t2 => (fv_term_rec t1 k) ++ (fv_term_rec t2 k)
-    | TF => nil
-    | BF => nil
-    | neg f0 => fv_fml_rec f0 k
-    | conj f1 f2 => (fv_fml_rec f1 k) ++ (fv_fml_rec f2 k)
-    | disj f1 f2 => (fv_fml_rec f1 k) ++ (fv_fml_rec f2 k)
-    | implf f1 f2 => (fv_fml_rec f1 k) ++ (fv_fml_rec f2 k)
-    | fall f0 => (fv_fml_rec f0 (S k))
-    | exst f0 => (fv_fml_rec f0 (S k))
+    | eq_foterm' t1 t2 => (fv_term_rec t1 k) ++ (fv_term_rec t2 k)
+    | TF' => nil
+    | BF' => nil
+    | neg' f0 => fv_fml_rec f0 k
+    | conj' f1 f2 => (fv_fml_rec f1 k) ++ (fv_fml_rec f2 k)
+    | disj' f1 f2 => (fv_fml_rec f1 k) ++ (fv_fml_rec f2 k)
+    | implf' f1 f2 => (fv_fml_rec f1 k) ++ (fv_fml_rec f2 k)
+    | fall' f0 => (fv_fml_rec f0 (S k))
+    | exst' f0 => (fv_fml_rec f0 (S k))
   end.
 
 Definition fv_fml f := fv_fml_rec f 0.

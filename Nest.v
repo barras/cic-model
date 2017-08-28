@@ -1,4 +1,4 @@
-
+Require Export CoqCompat.
 (** Showing a nested inductive type operator is isomorphic to
     a W-type.
 *)

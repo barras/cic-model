@@ -348,12 +348,3 @@ apply fa_morph; intros P.
 apply fa_morph; intros Pm.
 rewrite H1; rewrite H; reflexivity.
 Qed.
-
-red in H; specialize H with (1:=H0); simpl in H.
-rewrite cc_beta_eq; auto with *.
-rewrite NATREC_S; auto.
- reflexivity.
-
- do 2 red; intros; apply cc_app_morph; auto with *.
- apply cc_app_morph; auto with *.
-Qed.

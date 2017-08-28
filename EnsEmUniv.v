@@ -322,6 +322,7 @@ refine (let (b,Hb) := S.intuit_repl_ax intuit
   apply U_intro.
 
   apply U_intro.
+  simpl in Hb.
 
  Texists (injU b).
   apply U_intro.
@@ -377,7 +378,7 @@ destruct S.collection_ax with a' (fun x y => R (injU x) (injU y)) as (B,HB).
  Tdestruct (H1 _ H2).
  apply down_in_ex with (1:=H0) in H2.
  Tdestruct H2.
- refine (let h := HB _ H5 _ in _).
+ simple refine (let h := HB _ H5 _ in _).
   apply U_elim in H3; Tdestruct H3.
   Texists x2.
   revert H4; apply H; apply B.eq_set_sym; trivial.

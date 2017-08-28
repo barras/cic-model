@@ -1146,7 +1146,7 @@ case_eq (nth_error e n); intros.
  apply typ_subsumption with (lift (S n) t); auto.
   apply typ_var; trivial.
 
-  destruct t as [(t,tm)|]; simpl; try discriminate.
+  destruct t as [(t,tm,?,?,?,?)|]; simpl; try discriminate.
   elim H; trivial.
 
   discriminate.

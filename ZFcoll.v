@@ -551,7 +551,7 @@ assert (Pwit : forall x, exists y, P x (rk y)).
  destruct (H1 x).
  exists (singl x0); exists x0; split; trivial.
  rewrite <- rk_pow; apply rk_intro.
-destruct (@H A (fun x y => lst_rk (P x) y)); eauto using lst_fun, lst_ex.
+destruct (@H A (fun x y => lst_rk (P x) y)); simpl; eauto using lst_fun, lst_ex.
  apply morph_impl_iff2; auto with *.
  do 4 red; intros.
  apply lst_rk_morph with (P x) x0; auto with *.
@@ -591,7 +591,7 @@ assert (Pwit : forall x, x ∈ A -> exists y, P x (rk y)).
  destruct (H1 x H2).
  exists (singl x0); exists x0; split; trivial.
  rewrite <- rk_pow; apply rk_intro.
-destruct (@H A (fun x y => lst_rk (P x) y)); eauto using lst_fun, lst_ex.
+destruct (@H A (fun x y => lst_rk (P x) y)); simpl; eauto using lst_fun, lst_ex.
  apply morph_impl_iff2; auto with *.
  do 4 red; intros.
  apply lst_rk_morph with (P x) x0; auto with *.

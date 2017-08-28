@@ -18,14 +18,14 @@ Definition Df_Add := Df_Add'.
 
 Fixpoint lift_term_rec t n k:=
   match t with
-    | Var i => 
+    | Var' i =>
       match le_gt_dec k i with
         | left _ => Var (i+n)
         | right _ => Var i
       end
-    | Cst_0 => Cst_0
-    | Cst_1 => Cst_1
-    | Df_Add u v => Df_Add (lift_term_rec u n k) (lift_term_rec v n k)
+    | Cst_0' => Cst_0
+    | Cst_1' => Cst_1
+    | Df_Add' u v => Df_Add (lift_term_rec u n k) (lift_term_rec v n k)
   end.
 
 Definition lift_term t n := lift_term_rec t n 0.
@@ -50,29 +50,29 @@ Qed.
 
 Fixpoint subst_term_rec M N n:= 
   match M with
-    | Var i =>
+    | Var' i =>
       match lt_eq_lt_dec n i with
         | inleft (left _) => Var (pred i)
         | inleft (right _) => lift_term N n
         | inright _ => Var i
       end
-    | Cst_0 => Cst_0
-    | Cst_1 => Cst_1
-    | Df_Add M1 M2 => Df_Add (subst_term_rec M1 N n) (subst_term_rec M2 N n)
+    | Cst_0' => Cst_0
+    | Cst_1' => Cst_1
+    | Df_Add' M1 M2 => Df_Add (subst_term_rec M1 N n) (subst_term_rec M2 N n)
   end.
 
 Definition subst_term M N := subst_term_rec M N 0.
 
 Fixpoint fv_term_rec t k : list nat :=
   match t with
-    | Var n => 
+    | Var' n =>
       match le_gt_dec k n with
         | left _ => (n-k)::nil
         | right _ => nil
       end
-    | Cst_0 => nil
-    | Cst_1 => nil
-    | Df_Add M N => (fv_term_rec M k) ++ (fv_term_rec N k)
+    | Cst_0' => nil
+    | Cst_1' => nil
+    | Df_Add' M N => (fv_term_rec M k) ++ (fv_term_rec N k)
   end.
 
 Definition fv_term t := fv_term_rec t 0.

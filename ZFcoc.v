@@ -592,9 +592,9 @@ Lemma cc_ttcoll A R :
     forall x, x ∈ A ->
     (exists2 w, w ∈ sets & R x w) -> exists2 i, i ∈ X & R x (cc_app f i).
 intros.
-destruct coll_axU with (A:=A) (R:=fun x y => y ∈ sets /\ R x y) as (B,HB);
+destruct coll_axU with (A:=A) (R:=fun x y => y ∈ sets /\ R x y) as (B,HB,?);
   trivial.
- intros.
+ intros. simpl.
  rewrite <- H2; rewrite <- H3; trivial.
 
  pose (B':= B ∩ sets).
@@ -752,7 +752,7 @@ apply sup_ax in H.
  destruct H0; trivial.
 
  do 2 red; intros.
- rewrite H1; reflexivity.
+ rewrite H2; reflexivity.
 Qed.
 
 End ChoicesImpliesDescription.

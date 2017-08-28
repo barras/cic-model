@@ -205,7 +205,7 @@ assert (val_ok (A::e) (V.cons (int D i) i) (I.cons (tm D j) j)) by
   (apply vcons_add_var; trivial).
 apply red_typ with (1:=H) in HB; 
   [destruct HB as (HSB, HB)|destruct C; [discriminate|trivial]].
-apply in_int_intro; [destruct B; [discriminate|]| |]; trivial.
+apply SN.in_int_intro; [destruct B; [discriminate|]| |]; trivial.
 revert HB; apply real_morph.
  rewrite int_subst_eq; reflexivity.
 

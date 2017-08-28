@@ -493,7 +493,6 @@ constructor; intros.
   do 2 red; intros.
   rewrite H4; reflexivity.
 
-  specialize ty2 with (1:=H2).
   apply (iso_typ (H1 _ (ftyp _ _ _ tya tyx H3))).
   apply subset_intro; auto.
   rewrite inst in H3,tyx|-*.

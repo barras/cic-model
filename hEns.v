@@ -336,7 +336,7 @@ Qed.
 
 
 Definition quo_i {X} {R:X->X->Prop} (Rr:isRel R) (x:X) : quo X R :=
-  existT (fun P => tr(isClass R P))
+  exist (fun P => tr(isClass R P))
     (fun y => R x y)
     (tr_i (isClass_eq Rr x)).
 

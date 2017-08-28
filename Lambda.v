@@ -518,7 +518,7 @@ split; intros.
     destruct n; simpl; trivial.
     inversion l.
 
-    apply NPeano.Nat.lt_pred_le in g.
+    apply Nat.lt_pred_le in g.
     elim (Lt.lt_irrefl n).
     apply Lt.le_lt_trans with k; trivial.
 
@@ -1137,7 +1137,7 @@ induction M; simpl; intros.
  rewrite <- plus_n_Sm in H0.
  split; auto with arith.
  constructor.
- rewrite <- NPeano.Nat.sub_succ_l; trivial.
+ rewrite <- Nat.sub_succ_l; trivial.
  apply Le.le_trans with (m+k); auto with arith.
 
  inversion_clear H0.
