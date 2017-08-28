@@ -1,7 +1,7 @@
 AbsSNT.vo AbsSNT.glob AbsSNT.v.beautified: AbsSNT.v GenLemmas.vo AbsTheoryIntp.vo
 AbsTheoryIntp.vo AbsTheoryIntp.glob AbsTheoryIntp.v.beautified: AbsTheoryIntp.v GenLemmas.vo AbsTheorySyn.vo AbsTheorySem.vo
 AbsTheorySem.vo AbsTheorySem.glob AbsTheorySem.v.beautified: AbsTheorySem.v GenLemmas.vo
-AbsTheorySyn.vo AbsTheorySyn.glob AbsTheorySyn.v.beautified: AbsTheorySyn.v
+AbsTheorySyn.vo AbsTheorySyn.glob AbsTheorySyn.v.beautified: AbsTheorySyn.v CoqCompat.vo
 CCTnat.vo CCTnat.glob CCTnat.v.beautified: CCTnat.v Explicit_sub.vo FOTheory.vo basic.vo
 CCUT.vo CCUT.glob CCUT.v.beautified: CCUT.v Models.vo GenModelSN.vo ZF.vo ZFind_nat.vo SN_CC.vo
 Can.vo Can.glob Can.v.beautified: Can.v Lambda.vo
@@ -144,3 +144,4 @@ ZFwpaths.vo ZFwpaths.glob ZFwpaths.v.beautified: ZFwpaths.v ZF.vo ZFpairs.vo ZFs
 CoqCompat.vo CoqCompat.glob CoqCompat.v.beautified: CoqCompat.v
 basic.vo basic.glob basic.v.beautified: basic.v CoqCompat.vo
 test.vo test.glob test.v.beautified: test.v Lambda.vo
+hEns.vo hEns.global hEns.v.beautified: hEns.v ZFskol.vo Sublogic.vo
