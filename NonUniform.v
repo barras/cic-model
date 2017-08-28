@@ -1,3 +1,4 @@
+Require Export CoqCompat.
 (** This file shows how big non-uniform parameters can be encoded
     as an index without changing the universe of the definition.
  *)

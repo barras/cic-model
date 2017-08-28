@@ -80,7 +80,7 @@ elim H using N_ind; intros.
  rewrite NATREC_0. apply H1.
  
  rewrite NATREC_Succ; auto.
-  refine (let H6 := prod_elim _ _ _ _ _ H2 H4 in _).
+  simple refine (let H6 := prod_elim _ _ _ _ _ H2 H4 in _).
    red; intros. apply prod_ext.
     apply app_ext; try assumption.
      apply int_morph; try reflexivity.
@@ -93,17 +93,18 @@ elim H using N_ind; intros.
 
      rewrite H7; reflexivity.
 
-  simpl in H6. clear H2. 
+  simpl in H6. clearbody H6. clear H2.
   replace (fun k : nat => V.cons n0 i k) with (V.cons n0 i) in *; 
     trivial.
-  refine (let H7 := prod_elim _ _ _ _ _ H6 _ in _).
+  simple refine (let H7 := prod_elim _ _ _ _ _ H6 _ in _).
+   shelve.
    do 2 red; intros. apply app_ext; try reflexivity.
     apply int_morph; try reflexivity.
      do 2 red; intros. rewrite H7; reflexivity.
    
    rewrite simpl_int_lift1. apply H5.
 
-  simpl in H7. revert H7. apply in_set_morph; try reflexivity.
+  simpl in H7. clearbody H7. revert H7. apply in_set_morph; try reflexivity.
   set (fS' := fun n y => app (app fS n) y) in |-*.
    apply app_ext; try reflexivity.
     replace (fun k : nat => V.cons (NATREC f0 fS' n0) 
@@ -864,7 +865,7 @@ apply Impl_intro.
           prod (int P (V.cons z (V.shift 3 i)))
           (fun _ : X => int P (V.cons (succ z) (V.shift 3 i))))) as H'.
       red; intros. apply prod_ext; [|do 2 red; intros]; rewrite H2; reflexivity.
-      specialize Haux with (1:=H') (2:=Hsucc) (3:=H). clear H' Hsucc.
+      specialize Haux with (1:=H'). clear H' Hsucc.
       generalize prod_elim; intro Haux1.
       assert ( eq_fun (int P (V.cons n (V.shift 3 i)))
         (fun _ : X => int P (V.cons (succ n) (V.shift 3 i)))

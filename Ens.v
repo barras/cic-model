@@ -813,7 +813,7 @@ Fixpoint V (x:set) := union (replf x (fun x' => power (V x'))).
 
 Lemma V_morph : forall x x', eq_set x x' -> eq_set (V x) (V x').
 induction x; destruct x'; intros.
-simpl V; unfold replf; simpl sup.
+simpl V; unfold replf.
 apply union_morph.
 simpl in H0.
 destruct H0.
@@ -1105,7 +1105,7 @@ assert (Pwit : forall x, x ∈ A -> exists y, P x (V y)).
  apply V_sub with (V x0).
   apply V_mono; exists tt; apply eq_set_refl.
   apply V_intro.
-destruct (@repl_ax A (fun x y => lst_rk (P x) y)); eauto using lst_fun, lst_ex.
+destruct (@repl_ax A (fun x y => lst_rk (P x) y)); simpl; eauto using lst_fun, lst_ex.
  intros.
  apply lst_rk_morph with (P x) y; trivial.
  intros.
@@ -1263,7 +1263,7 @@ generalize (H (sup bool (fun b => if b then empty else singl empty))
               (sup bool (fun b => if b then singl empty else empty))).
 simpl; intros.
 assert (singl empty == empty).
- refine (let H1 := H0 _ in _).
+ simple refine ((fun H1 => _) (H0 _)); swap 1 2.
   split; intros.
    exists (negb i).
    destruct i; apply eq_set_refl.

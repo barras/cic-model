@@ -329,7 +329,7 @@ Lemma isDPos_consrec F G :
   isDPositive F ->
   isDPositive G ->
   isDPositive (dpos_consrec F G).
-intros (Fp,Fdm,Fdmo,F3m,F4m,Fty) (Gp,Gdm,Gdmo,G3m,G4m,Gty).
+intros (Fp,Fdm,Fdmo,F3m,F4m,Fty,?) (Gp,Gdm,Gdmo,G3m,G4m,Gty,?).
 constructor; simpl; intros.
  apply isPos_consrec; trivial.
 

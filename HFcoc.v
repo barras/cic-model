@@ -75,6 +75,7 @@ apply repl_ext; intros.
  rewrite H4 in H2.
  clear H4 x0.
  elim repl_elim with (1:=Pm'') (2 := H2); intros; clear H2.
+ cbv beta in H1.
  rewrite H5 in H1 |- *; rewrite snd_def; rewrite fst_def in H1.
  apply in_hf_reg_r with (F x1); auto.
 

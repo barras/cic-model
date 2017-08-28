@@ -1245,7 +1245,7 @@ assert (eq_term (lift_rec 1 0 Add) Add) as Hadd_lift.
       |unfold V.lams, V.shift; simpl; apply H].
      do 3 red; intros. apply app_ext; [apply app_ext; [reflexivity|]|]; trivial.
 
-    unfold I.lams, I.shift; simpl; do 2 rewrite H; trivial.
+    unfold I.lams, I.shift; simpl; rewrite H; trivial.
 
 rewrite Hadd_lift. do 2 (rewrite eq_term_lift_ref_fv; [simpl plus|omega]).
 setoid_replace (lift_rec 1 0 Succ) with Succ using relation eq_term by 

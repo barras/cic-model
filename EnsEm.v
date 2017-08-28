@@ -1115,7 +1115,7 @@ Fixpoint V (x:set) := union (replf x (fun x' => power (V x'))).
 
 Lemma V_morph : forall x x', x == x' -> V x == V x'.
 induction x; destruct x'; intros.
-simpl V; unfold replf; simpl sup.
+simpl V; unfold replf.
 apply union_morph.
 rewrite eq_set_def in H0; simpl in H0.
 destruct H0.

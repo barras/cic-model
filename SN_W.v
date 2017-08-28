@@ -1024,8 +1024,6 @@ eapply inSAT_morph;[reflexivity| |].
    apply V.cons_morph.
    reflexivity.
 
- reflexivity.
-
  apply Bwi_morph.
 
  apply RAwi_morph.

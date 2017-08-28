@@ -3,6 +3,8 @@ Require Import Arith.
 Require Export Compare_dec.
 Require Export Relations.
 
+Require Export CoqCompat.
+
 Hint Resolve t_step rt_step rt_refl: core.
 Hint Unfold transp: core.
 

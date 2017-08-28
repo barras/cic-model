@@ -11,6 +11,9 @@ Require Export Coq.Program.Basics.
 Require Export Setoid Morphisms Morphisms_Prop.
 Export ProperNotations.
 
+(* Compatibility file. *)
+Require Export CoqCompat.
+
 Hint Resolve t_step rt_step rt_refl: core.
 Hint Unfold transp: core.
 

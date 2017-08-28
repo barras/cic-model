@@ -277,7 +277,7 @@ apply prodSAT_intro; intros.
 unfold subst; simpl subst_rec.
 unfold subst; repeat rewrite simpl_subst; auto.
 repeat rewrite lift0.
-apply piSAT0_elim with (x:=x) (u:=t) in H1; auto with *.
+pose proof (piSAT0_elim x t H1); auto with *.
 Qed.
 
 Lemma Real_inr RX RY x t :
@@ -294,7 +294,7 @@ apply prodSAT_intro; intros.
 unfold subst; simpl subst_rec.
 unfold subst; repeat rewrite simpl_subst; auto.
 repeat rewrite lift0.
-apply piSAT0_elim with (x:=x) (u:=t) in H2; auto with *.
+pose proof (piSAT0_elim x t H2); auto with *.
 Qed.
 
 Lemma Real_sum_case a RX RY C t b1 b2 :
@@ -1405,7 +1405,7 @@ Lemma fixSAT_lower_bound FX A X :
 red; intros.
 red; intros.
 apply interSAT_elim with
-  (x:=existT (fun X=>Proper (eq_set==>eqSAT) X /\inclFam FX (A X) X)
+  (x:=exist (fun X=>Proper (eq_set==>eqSAT) X /\inclFam FX (A X) X)
          X (conj H H0)) in H2; simpl in H2.
 trivial.
 Qed.
@@ -1503,7 +1503,7 @@ assert (Xpost : inclFam FX (A X) X).
  red; intros.
  apply condSAT_smaller.
 apply interSAT_elim with
-  (x:=existT (fun X=>Proper (eq_set==>eqSAT) X /\inclFam FX (A X) X)
+  (x:=exist (fun X=>Proper (eq_set==>eqSAT) X /\inclFam FX (A X) X)
          X (conj Xm Xpost)) in H0; simpl in H0.
 revert H0; apply condSAT_neutral; trivial.
 Qed.

@@ -15,10 +15,10 @@ Import PresburgerSem.
 
 Fixpoint intp_foterm t : term :=
   match t with
-  | Var i => Ref i
-  | Cst_0 => Zero
-  | Cst_1 => App Succ Zero
-  | Df_Add u v => App (App Add (intp_foterm u)) (intp_foterm v)
+  | Var' i => Ref i
+  | Cst_0' => Zero
+  | Cst_1' => App Succ Zero
+  | Df_Add' u v => App (App Add (intp_foterm u)) (intp_foterm v)
   end.
 
 Lemma intp_foterm_not_kind : forall t, intp_foterm t <> None.

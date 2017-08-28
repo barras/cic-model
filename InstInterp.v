@@ -10,23 +10,23 @@ Import SN_nat.
 
 Fixpoint intp_foterm t:=
   match t with
-  | Var i => Ref i
-  | Cst_0 => Zero
-  | Cst_1 => App Succ Zero
-  | Df_Add u v => App (App Add (intp_foterm u)) (intp_foterm v)
+  | Var' i => Ref i
+  | Cst_0' => Zero
+  | Cst_1' => App Succ Zero
+  | Df_Add' u v => App (App Add (intp_foterm u)) (intp_foterm v)
   end.
 
 Fixpoint intp_fofml f:=
   match f with
-  | eq_foterm x y => EQ_term (intp_foterm x) (intp_foterm y)
-  | TF => True_symb
-  | BF => False_symb
-  | neg f => Neg (intp_fofml f)
-  | conj f1 f2 => Conj (intp_fofml f1) (intp_fofml f2)
-  | disj f1 f2 => Disj (intp_fofml f1) (intp_fofml f2)
-  | implf f1 f2 => Impl (intp_fofml f1) (intp_fofml f2)
-  | fall f => Fall (intp_fofml f)
-  | exst f => Exst (intp_fofml f)
+  | eq_foterm' x y => EQ_term (intp_foterm x) (intp_foterm y)
+  | TF' => True_symb
+  | BF' => False_symb
+  | neg' f => Neg (intp_fofml f)
+  | conj' f1 f2 => Conj (intp_fofml f1) (intp_fofml f2)
+  | disj' f1 f2 => Disj (intp_fofml f1) (intp_fofml f2)
+  | implf' f1 f2 => Impl (intp_fofml f1) (intp_fofml f2)
+  | fall' f => Fall (intp_fofml f)
+  | exst' f => Exst (intp_fofml f)
   end.
 
 Lemma intp_eq_fml : forall x y, 

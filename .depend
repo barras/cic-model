@@ -46,8 +46,8 @@ ModelZF.vo ModelZF.glob ModelZF.v.beautified: ModelZF.v basic.vo Sublogic.vo Mod
 Model_variance.vo Model_variance.glob Model_variance.v.beautified: Model_variance.v ZF.vo ZFcoc.vo ZFfunext.vo ModelZF.vo
 Models.vo Models.glob Models.v.beautified: Models.v basic.vo
 MyList.vo MyList.glob MyList.v.beautified: MyList.v
-Nest.vo Nest.glob Nest.v.beautified: Nest.v
-NonUniform.vo NonUniform.glob NonUniform.v.beautified: NonUniform.v
+Nest.vo Nest.glob Nest.v.beautified: Nest.v CoqCompat.vo
+NonUniform.vo NonUniform.glob NonUniform.v.beautified: NonUniform.v CoqCompat.vo
 ObjectSN.vo ObjectSN.glob ObjectSN.v.beautified: ObjectSN.v basic.vo Models.vo VarMap.vo Lambda.vo
 ObjectSN2.vo ObjectSN2.glob ObjectSN2.v.beautified: ObjectSN2.v basic.vo Models.vo VarMap.vo Lambda.vo
 PIntp.vo PIntp.glob PIntp.v.beautified: PIntp.v GenLemmas.vo AbsTheoryIntp.vo PSyn.vo PSem.vo
@@ -76,7 +76,7 @@ Sat.vo Sat.glob Sat.v.beautified: Sat.v Lambda.vo Can.vo
 SnModels.vo SnModels.glob SnModels.v.beautified: SnModels.v basic.vo Models.vo Sat.vo
 StrengthenECC.vo StrengthenECC.glob StrengthenECC.v.beautified: StrengthenECC.v TypeECC.vo
 Sublogic.vo Sublogic.glob Sublogic.v.beautified: Sublogic.v basic.vo Logics.vo
-Term.vo Term.glob Term.v.beautified: Term.v
+Term.vo Term.glob Term.v.beautified: Term.v CoqCompat.vo
 TermECC.vo TermECC.glob TermECC.v.beautified: TermECC.v
 TheoryInTerm.vo TheoryInTerm.glob TheoryInTerm.v.beautified: TheoryInTerm.v ZFtheory.vo GenModel.vo ZFcoc.vo ModelZF.vo
 TypModels.vo TypModels.glob TypModels.v.beautified: TypModels.v Models.vo
@@ -141,5 +141,6 @@ ZFuniv.vo ZFuniv.glob ZFuniv.v.beautified: ZFuniv.v Sat.vo ZF.vo ZFcoc.vo ZFord.
 ZFuniv_real.vo ZFuniv_real.glob ZFuniv_real.v.beautified: ZFuniv_real.v Sat.vo ZF.vo ZFcoc.vo ZFord.vo ZFgrothendieck.vo ZFlambda.vo Models.vo SnModels.vo
 ZFwf.vo ZFwf.glob ZFwf.v.beautified: ZFwf.v basic.vo ZF.vo ZFrepl.vo ZFpairs.vo ZFrelations.vo
 ZFwpaths.vo ZFwpaths.glob ZFwpaths.v.beautified: ZFwpaths.v ZF.vo ZFpairs.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFtarski.vo ZFstable.vo ZFgrothendieck.vo ZFlist.vo
-basic.vo basic.glob basic.v.beautified: basic.v
+CoqCompat.vo CoqCompat.glob CoqCompat.v.beautified: CoqCompat.v
+basic.vo basic.glob basic.v.beautified: basic.v CoqCompat.vo
 test.vo test.glob test.v.beautified: test.v Lambda.vo

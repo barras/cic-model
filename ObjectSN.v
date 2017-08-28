@@ -57,21 +57,21 @@ Definition eq_term (x y:term) :=
 
 Instance eq_term_refl : Reflexive eq_term.
 red; intros.
-destruct x as [(f,mf,g,mg,sg)|]; simpl; auto.
+destruct x as [(f,mf,g,mg,lg,sg)|]; simpl; auto.
 Qed.
 
 Instance eq_term_sym : Symmetric eq_term.
 red; intros.
-destruct x as [(fx,mfx,gx,mgx,sgx)|];
-destruct y as [(fy,mfy,gy,mgy,sgy)|]; simpl in *; auto.
+destruct x as [(fx,mfx,gx,mgx,lgx,sgx)|];
+destruct y as [(fy,mfy,gy,mgy,lgy,sgy)|]; simpl in *; auto.
 destruct H; split; symmetry; trivial.
 Qed.
 
 Instance eq_term_trans : Transitive eq_term.
 red; intros.
-destruct x as [(fx,mfx,gx,mgx,sgx)|];
-destruct y as [(fy,mfy,gy,mgy,sgy)|];
-destruct z as [(fz,mfz,gz,mgz,sgz)|];
+destruct x as [(fx,mfx,gx,mgx,lgx,sgx)|];
+destruct y as [(fy,mfy,gy,mgy,lgy,sgy)|];
+destruct z as [(fz,mfz,gz,mgz,lgz,sgz)|];
  try contradiction; simpl in *; auto.
 destruct H; destruct H0; split.
  transitivity fy; trivial.

@@ -608,7 +608,7 @@ constructor; intros.
  apply F_elim in H2; destruct H2 as (ty1',(ty2',(ty3',et'))).
  destruct WFi_inv with (1:=H3); clear H3; intros; auto with *.
   apply B'm; trivial.
- destruct WFi_inv with (1:=H1); clear H1; intros; auto with *.
+ destruct WFi_inv with (1:=H1); clear H1; intros; simpl; auto with *.
  rewrite et; rewrite et'.
  assert (tya' : a'of (fst x) (fun i => f (cc_app (snd (snd x)) i)) ∈ TI (W_F A C) (osucc o)).
   apply a'of_typ with X; auto.

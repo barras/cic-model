@@ -41,8 +41,7 @@ Lemma set_intro : forall (f:Z.set->Prop) (P:set->Prop),
   (forall Hex Huniq, P (exist _ f (conj Hex Huniq))) ->
   sig P.
 intros.
-exists (exist (fun _ => _ /\ _) f (conj H H0)); trivial. (* regression of unification *)
-(*exists (exist _ f (conj H H0)); trivial.*)
+exists (exist _ f (conj H H0)); trivial.
 Qed.
 
 Inductive in_set_ (x y:set) : Prop :=

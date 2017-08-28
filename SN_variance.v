@@ -441,7 +441,7 @@ split.
  apply typ_subsumption with (lift (S n) t); trivial.
   apply typ_var; trivial.
 
-  destruct t as [(t,tm)|]; simpl in *; auto.
+  destruct t as [(t,tm,?,?,?,?)|]; simpl in *; auto.
   discriminate.
 Qed.
 
@@ -487,7 +487,7 @@ split.
  apply typ_subsumption with (subst v Ur); trivial.
   apply typ_app with V; auto.
 
-  destruct Ur as [(Ur,Urm)|]; simpl; trivial.
+  destruct Ur as [(Ur,Urm,?,?,?,?)|]; simpl; trivial.
   discriminate.
 Qed.
 
@@ -506,7 +506,7 @@ split.
  apply typ_subsumption with (lift (S n) t); trivial.
   apply typ_var; trivial.
 
-  destruct t as [(t,tm)|]; simpl in *; auto.
+  destruct t as [(t,tm,?,?,?,?)|]; simpl in *; auto.
   discriminate.
 Qed.
 
@@ -547,12 +547,12 @@ split.
  apply fx_eq_rec_call with t (lift_rec (S n) 1 u); trivial.
 
  apply typ_subsumption with (subst x (lift_rec (S n) 1 u)); auto.
- 2:destruct u as [(u,um)|]; trivial.
+ 2:destruct u as [(u,um,?,?,?,?)|]; trivial.
  2:discriminate.
  apply typ_app with (lift (S n) t); trivial.
- destruct t as [(t,tm)|]; trivial.
+ destruct t as [(t,tm,?,?,?,?)|]; trivial.
  discriminate.
- destruct u as [(u,um)|]; trivial.
+ destruct u as [(u,um,?,?,?,?)|]; trivial.
  discriminate.
 Qed.
 

@@ -509,6 +509,7 @@ split; intros.
  revert H5; apply sigma_mono; auto with *.
  intros.
  rewrite <- H8.
+ clearbody Q. (* See BZ#5156. *)
  apply TIF_mono; auto with *.
   apply W0.W_Fd_morph; auto.
   apply W0.W_Fd_mono; auto.
