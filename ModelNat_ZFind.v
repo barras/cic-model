@@ -54,193 +54,114 @@ Qed.
 
 (** * The recursor *)
 
-
-Definition NREC f g n y :=
-  forall P,
-  Proper (eq_set ==> eq_set ==> iff) P -> 
-  P ZERO f -> (forall m x, P m x -> P (SUCC m) (g m x)) -> P n y.
-
-Lemma NREC_inv : forall f g n y,
-  morph2 g ->
-  NREC f g n y ->
-  NREC f g n y /\
-  (n == ZERO -> y == f) /\
-  (forall m, n == SUCC m -> exists2 z, NREC f g m z & y == g m z).
-intros f g n y gm h; pattern n, y; apply h.
- do 3 red; intros.
- apply and_iff_morphism.
-  split; red; intros.
-   rewrite <- H; rewrite <- H0; apply H1; trivial. 
-   rewrite H; rewrite H0; apply H1; trivial. 
-  apply and_iff_morphism.
-   rewrite H; rewrite H0; reflexivity.
-
-   apply fa_morph; intro m.
-   rewrite H.
-   apply fa_morph; intros _.
-   apply ex2_morph.
-    red; reflexivity.
-
-    red; intros.
-    rewrite H0; reflexivity.
-
- split; [|split]; intros.
-  red; auto.
-
-  reflexivity.
-
-  apply NATf_discr in H; contradiction.
-
- intros ? ? (?,(?,?)).
- split; [|split]; intros.
-  red; intros.
-  apply H4; apply H; auto.
-
-  symmetry in H2; apply NATf_discr in H2; contradiction.
-
-  apply SUCC_inj in H2.
-  exists x.
-   red; intros.
-   rewrite <- H2; apply H; auto.
-
-   rewrite H2; reflexivity.
-Qed.
-
-Require Import ZFrepl.
-
-Lemma NREC_choice_0 : forall f g, uchoice_pred (NREC f g ZERO).
-split; [|split]; intros.
- unfold NREC in *; intros.
- rewrite <- H.
- apply H0; auto.
-
- exists f.
- red; auto.
-
- cut (ZERO==ZERO); auto with *.
- pattern ZERO at 2, x; apply H; intros.
-  do 3 red; intros.
-  rewrite H1; rewrite H2; reflexivity.
-
-  revert H1; pattern ZERO at 2, x'; apply H0; intros.
-   do 3 red; intros.
-   rewrite H1; rewrite H2; reflexivity.
-
-   reflexivity.
-
-   apply NATf_discr in H2; contradiction.
-
-  apply NATf_discr in H2; contradiction.
-Qed.
-
-
-Lemma NREC_choice : forall f g n,
-  n ∈ NAT ->
-  morph2 g ->
-  uchoice_pred (NREC f g n).
-intros f g n H gm.
-split; intros.
- unfold NREC; intros.
- rewrite <- H0.
- apply H1; auto.
-
- split; intros.
-  elim H using NAT_ind; intros.
-   destruct H2.
-   exists x0; red; intros.
-   rewrite <- H1.
-   apply H2; auto.
-
-   exists f; red; auto.
-
-   destruct H1.
-   exists (g n0 x); red; intros.
-   apply H4.
-   apply H1; auto.
-
-  revert x x' H0 H1.
-  elim H using NAT_ind; intros.
-   apply H2.
-    red; intros; rewrite H1; apply H3; trivial.
-    red; intros; rewrite H1; apply H4; trivial.
-
-   apply NREC_inv in H0; trivial; apply NREC_inv in H1; trivial;
-   destruct H0 as (_,(?,_)); destruct H1 as (_,(?,_)).
-   rewrite H0; auto with *.
-   rewrite H1; auto with *.
-
-   apply NREC_inv in H2; trivial; apply NREC_inv in H3; trivial;
-   destruct H2 as (_,(_,?)); destruct H3 as (_,(_,?)).
-   destruct (H2 n0); auto with *.
-   destruct (H3 n0); auto with *.
-   rewrite H5; rewrite H7.
-   apply gm; auto with *.
-Qed.
-
-(** Recursor at the level of sets *)
-Definition NATREC f g n := uchoice (NREC f g n).
+(*Import ZFwf ZFord.*)
+Import ZFwf.WellFoundedRecursion.
+Definition NAT_REC f g n :=
+  WFR (fun x => x ∈ NAT) (fun n m => n ∈ NAT /\ m == SUCC n)
+      (fun F n => NATCASE f (fun m => g m (F m)) n) n.
 
 Instance NATREC_morph :
-  Proper (eq_set ==> (eq_set ==> eq_set ==> eq_set) ==> eq_set ==> eq_set) NATREC.
+  Proper (eq_set ==> (eq_set ==> eq_set ==> eq_set) ==> eq_set ==> eq_set) NAT_REC.
 do 4 red; intros.
-unfold NATREC, NREC.
-apply uchoice_morph_raw.
-red; intros.
-apply fa_morph; intro P.
-apply fa_morph; intro Pm.
-rewrite H.
-apply fa_morph; intros _.
-split; intros.
- rewrite <- H1; rewrite <- H2; apply H3; intros.
- setoid_replace (x0 m x3) with (y0 m x3); auto.
- apply H0; reflexivity.
+unfold NAT_REC.
+apply WFR_morph; trivial.
+ red; intros.
+ rewrite H2; reflexivity.
 
- rewrite H1; rewrite H2; apply H3; intros.
- setoid_replace (y0 m x3) with (x0 m x3); auto.
- symmetry; apply H0; reflexivity.
+ do 2 red; intros.
+ rewrite H2,H3; reflexivity.
+
+ do 2 red; intros.
+ apply NATCASE_morph; trivial.
+ red; intros.
+ apply H0; auto.
 Qed.
 
-Lemma NATREC_def : forall f g n,
-  morph2 g -> n ∈ NAT -> NREC f g n (NATREC f g n).
+  Lemma Acc_morph :
+    Proper ((eq_set ==> eq_set ==> iff) ==> eq_set ==> iff) (Acc (A:=set)).
+apply morph_impl_iff2; auto with *.
+do 4 red; intros.    
+revert y0 H0; induction H1.
+constructor; intros.
+apply H1 with y1; auto with *.
+eapply H with (3:=H3); auto with *.
+Qed.
+
+Section NatrecProperties.
+
+  Let Rm : Proper (eq_set ==> eq_set ==> iff) (fun n m : set => n ∈ NAT /\ m == SUCC n).
+do 3 red; intros.
+rewrite H,H0; reflexivity.
+Qed.
+
+  Let AccN x : x ∈ NAT -> Acc (fun n m : set => n ∈ NAT /\ m == SUCC n) x.
 intros.
-unfold NATREC; apply uchoice_def.
-apply NREC_choice; trivial.
+apply NAT_ind with (4:=H). 
+ intros.
+ eapply Acc_morph with (3:=H2); auto with *.
+
+ constructor; intros.
+ destruct H0.
+ apply NATf_discr in H1; contradiction.
+
+ intros.
+ constructor; intros.
+ destruct H2.
+ apply SUCC_inj in H3.
+ apply Acc_morph with (3:=H1); auto with *.
 Qed.
 
+  Let invN x y : x ∈ NAT /\ y == SUCC x -> y ∈ NAT -> x ∈ NAT.
+destruct 1; trivial.
+Qed.
 
-Lemma NATREC_0 : forall f g, NATREC f g ZERO == f.
-unfold NATREC; intros.
-symmetry; apply uchoice_ext; trivial.
- apply NREC_choice_0.
+  Let casem f' g' : morph2 g' -> Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set)
+                (fun F n => NATCASE f' (fun m => g' m (F m)) n).
+do 3 red; intros.
+apply NATCASE_morph; auto with *.
+red; intros.
+apply H; auto.
+Qed.
 
- red; auto.
+  Let caseext f g :
+    morph2 g ->
+    forall x F F', x ∈ NAT ->
+    (forall y y' : set, y ∈ NAT /\ x == SUCC y -> y == y' -> F y == F' y') ->
+    NATCASE f (fun m : set => g m (F m)) x ==
+    NATCASE f (fun m : set => g m (F' m)) x.
+intros.
+apply NATCASE_morph_gen; intros; auto with *.
+apply H; trivial; apply H1; trivial; split; trivial.
+rewrite NAT_eq in H0.
+apply SUCC_inv_typ_gen.
+rewrite <- H2; trivial.
+Qed.
+
+  Lemma NATREC_0 f g : morph2 g -> NAT_REC f g ZERO == f.
+unfold NAT_REC; intros.
+rewrite WFR_eqn; auto.
+ apply NATCASE_ZERO.
+
+ apply caseext; trivial.
+
+ apply ZERO_typ.
 Qed.
 
 Lemma NATREC_S : forall f g n, morph2 g -> n ∈ NAT ->
-   NATREC f g (SUCC n) == g n (NATREC f g n).
-intros.
-elim H0 using NAT_ind; intros.
- rewrite <- H2; trivial.
+   NAT_REC f g (SUCC n) == g n (NAT_REC f g n).
+unfold NAT_REC; intros.
+rewrite WFR_eqn; auto.
+ rewrite NATCASE_SUCC.
+  reflexivity.
 
- symmetry; apply uchoice_ext.
-  apply NREC_choice; trivial.
-  apply SUCC_typ; apply ZERO_typ.
- red; intros.
- apply H3.
- rewrite NATREC_0; auto.
+  intros; apply H; trivial.
+  apply WFR_morph0; trivial.
 
- unfold NATREC at 1; symmetry; apply uchoice_ext; auto.
-  apply NREC_choice; trivial.
-  do 2 apply SUCC_typ; trivial.
+ apply caseext; trivial.
 
-  red; intros.
-  apply H5.
-  rewrite H2.
-  apply H5.
-  revert P H3 H4 H5; change (NREC f g n0 (NATREC f g n0)).
-  unfold NATREC; apply uchoice_def.
-  apply NREC_choice; trivial.
+ apply SUCC_typ; trivial.
 Qed.
+End NatrecProperties.
 
 Lemma NATREC_typ P f g n :
   morph1 P ->
@@ -248,7 +169,7 @@ Lemma NATREC_typ P f g n :
   n ∈ NAT ->
   f ∈ P ZERO ->
   (forall k h, k ∈ NAT -> h ∈ P k -> g k h ∈ P (SUCC k)) ->
-  NATREC f g n ∈ P n.
+  NAT_REC f g n ∈ P n.
 intros.
 elim H1 using NAT_ind; intros.
  rewrite <- H5; trivial.
@@ -261,7 +182,7 @@ Qed.
 (** Recursor *)
 Definition NatRec (f g n:term) : term.
 (*begin show*)
-left; exists (fun i => NATREC (int f i) (fun n y => app (app (int g i) n) y) (int n i)).
+left; exists (fun i => NAT_REC (int f i) (fun n y => app (app (int g i) n) y) (int n i)).
 (*end show*)
  do 2 red; intros.
  apply NATREC_morph.
@@ -329,31 +250,37 @@ Qed.
 Lemma NatRec_eq_0 e f g :
   eq_typ e (NatRec f g Zero) f.
 red; simpl; intros.
-rewrite NATREC_0; reflexivity.
+rewrite NATREC_0.
+ reflexivity.
+
+ do 3 red; intros.
+ apply cc_app_morph;[|exact H1].
+ apply cc_app_morph;[|exact H0].
+ reflexivity.
 Qed.
 
 Lemma NatRec_eq_S e f g n :
   typ e n Nat ->
   eq_typ e (NatRec f g (App Succ n)) (App (App g n) (NatRec f g n)).
 red; simpl; intros.
-Instance NATREC_morph' :
-  Proper (eq ==> eq ==> eq_set ==> eq_set) NATREC.
-do 4 red; intros.
-subst y y0.
-unfold NATREC.
-apply uchoice_morph_raw.
-red; intros.
-unfold NREC.
-apply fa_morph; intros P.
-apply fa_morph; intros Pm.
-rewrite H1; rewrite H; reflexivity.
-Qed.
+eapply transitivity.
+ apply NATREC_morph.
+  reflexivity.
 
-red in H; specialize H with (1:=H0); simpl in H.
-rewrite cc_beta_eq; auto with *.
+  do 2 red; intros.
+  apply cc_app_morph;[|exact H2].
+  apply cc_app_morph;[|exact H1].
+  reflexivity.
+  
+  apply beta_eq.
+   red; intros; apply ZFsum.inr_morph; trivial.
+
+   apply H in H0; trivial.
 rewrite NATREC_S; auto.
  reflexivity.
 
  do 2 red; intros; apply cc_app_morph; auto with *.
  apply cc_app_morph; auto with *.
+
+ apply H; trivial.
 Qed.
