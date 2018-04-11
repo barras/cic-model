@@ -8,5 +8,6 @@ SN_nat.html
 SN_P.html
 SN_CC_Real_syntax.html
 SN_ECC_Real_syntax.html
+SN_ECC_Real.html
 SN_CC.html
 SN_ECC.html
