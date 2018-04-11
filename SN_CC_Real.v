@@ -174,6 +174,246 @@ rewrite El_prod in H3; trivial.
 apply cc_eta_eq in H3; trivial.
 Qed.
 
+(** ** Choice *)
+(*Require Import ZFcoc SATtypes.
+Module Lc:=Lambda.
+
+Definition Ch (X:term) : term.
+(* begin show *)
+left;
+exists (fun i => mkTY (trunc (El(int X i)))
+                      (fun _ => depSAT(fun Y=>forall x,x ∈El(int X i)->
+                                 inclSAT(cartSAT(Real (int X i) x)unitSAT) Y)
+                                      (fun Y=>Y)))
+       (fun j => tm X j).
+(* end show *)
+do 2 red; intros.
+apply mkTY_ext; intros.
+ rewrite H; auto with *.
+
+ apply interSAT_morph_subset; simpl; intros; auto with *.
+ apply fa_morph; intros z.
+ rewrite H; reflexivity.
+
+do 2 red; intros; apply tm_morph; auto with *.
+
+red; intros; apply tm_liftable.
+red; intros; apply tm_substitutive.
+Defined.
+
+
+Definition ChI (W:term) : term.
+(* begin show *)
+left; exists (fun i => empty) (fun j => COUPLE (tm W j) ID).
+(* end show *)
+do 2 red; intros; reflexivity.
+
+do 2 red; intros.
+f_equal; trivial.
+apply tm_morph; auto with *.
+
+ (**)
+ red; intros.
+ unfold COUPLE; simpl.
+ rewrite tm_liftable.
+ rewrite Lc.permute_lift; reflexivity.
+ (**)
+ red; intros.
+ unfold COUPLE; simpl.
+ rewrite tm_substitutive.
+ rewrite Lc.commut_lift_subst; reflexivity.
+Defined.
+
+Lemma ChI_typ e X W :
+  X <> kind ->
+  typ e W X ->
+  typ e (ChI W) (Ch X).
+unfold typ.
+intros Xnk tyW; intros.
+apply in_int_intro; try discriminate.
+apply and_split; simpl; intros.
+ red; auto.
+
+ red in H0; rewrite El_def in H0.
+ specialize tyW with (1:=H).
+ apply in_int_not_kind in tyW; trivial.
+ destruct tyW.
+ rewrite Real_def; intros; auto.
+ 2:apply interSAT_morph_subset; simpl; auto with *.
+ apply interSAT_intro.
+  exists snSAT; intros.
+  red; intros; apply snSAT_intro.
+  apply sat_sn in H4; trivial.
+
+  intros (Y,?); simpl.
+  apply i0 with (int W i); trivial.
+  apply cartSAT_intro; trivial.
+  apply ID_intro.
+Qed.
+
+Definition ChE (X C:term) : term.
+  left; exists (fun i => ZFrepl.uchoice (fun x => x ∈ Elt (int X i)))
+               (fun j => Lc.App (tm C j) (Lc.Abs (Lc.Abs (Lc.Ref 1)))).
+  admit.
+  admit.
+  admit.
+  admit.
+Defined.
+
+Lemma ChE_typ e W X :
+  X <> kind ->
+  typ e W (Ch X) ->
+  typ e (ChE X W) X.
+unfold typ; intros Xnk tyW i j valok.
+specialize tyW with (1:=valok).
+apply in_int_not_kind in tyW;[|discriminate].                     
+destruct tyW as (tyW,satW).
+red in tyW; simpl in tyW; rewrite El_def in tyW.
+simpl in satW; rewrite Real_def in satW; trivial.
+apply in_int_intro; trivial; try discriminate.
+apply and_split; intros.
+ red; simpl.
+ apply cc_bot_intro.
+ apply ZFrepl.uchoice_def.
+ split.
+  intros.
+  rewrite <- H; trivial.
+ split; intros.
+  admit.
+  admit.
+
+ simpl.
+ red in H; simpl in H.
+ set (w:=ZFrepl.uchoice (fun x => x ∈ Elt(int X i))) in *.
+ clearbody w.
+ apply depSAT_elim' in satW.
+ red in satW.
+ eapply cartSAT_case with (X:=Real(int X i) w) (Y:=unitSAT).
+ apply satW; intros.
+ intros ? h; apply h.
+ reflexivity.
+ 
+ eexact (fun _ h => h). 
+ assert (inSAT (tm W j) ; rewrite El_def in H.
+split.
+
+(** ** Unique choice *)
+
+Definition Tr (X:term) : term.
+(* begin show *)
+left;
+exists (fun i => mkTY (ZFcoc.trunc (El(int X i)))
+                      (fun _ => interSAT(fun Y:{Y|forall x,x ∈El(int X i)->
+                                           inclSAT(Real (int X i) x) Y}=>proj1_sig Y)))
+       (fun j => tm X j).
+(* end show *)
+do 2 red; intros.
+apply mkTY_ext; intros.
+ rewrite H; auto with *.
+
+ apply interSAT_morph_subset; simpl; intros; auto with *.
+ apply fa_morph; intros z.
+ rewrite H; reflexivity.
+
+do 2 red; intros; apply tm_morph; auto with *.
+
+red; intros; apply tm_liftable.
+red; intros; apply tm_substitutive.
+Defined.
+
+Definition TrI (W:term) : term.
+(* begin show *)
+left; exists (fun i => empty) (fun j => tm W j).
+(* end show *)
+do 2 red; intros; reflexivity.
+
+do 2 red; intros; apply tm_morph; auto with *.
+
+red; intros; apply tm_liftable.
+red; intros; apply tm_substitutive.
+Defined.
+
+Lemma TrI_typ e X W :
+  X <> kind ->
+  typ e W X ->
+  typ e (TrI W) (Tr X).
+unfold typ.
+intros Xnk tyW; intros.
+apply in_int_intro; try discriminate.
+apply and_split; simpl; intros.
+ red; auto.
+
+ red in H0; rewrite El_def in H0.
+ specialize tyW with (1:=H).
+ apply in_int_not_kind in tyW; trivial.
+ destruct tyW.
+ rewrite Real_def; intros; auto.
+  apply interSAT_intro' with (F:=fun X=>X); intros.
+   apply sat_sn in H2; trivial.
+
+   apply (H3 (int W i)); trivial.
+
+  apply interSAT_morph_subset; simpl; auto with *.
+Qed.
+
+Definition TrE (X P F W:term) : term.
+(* begin show *)
+  left; exists (fun i => cond_set (int W i ∈ Elt (int (Tr X) i))
+                                  (trunc_descr (El(int P i))))
+               (fun j => Lambda.App (tm F j) (tm W j)).
+(* end show *)
+do 2 red; intros; rewrite H; reflexivity.
+
+do 2 red; intros; rewrite H; reflexivity.
+
+red; intros.
+do 2 rewrite tm_liftable.
+reflexivity.
+
+red; intros.
+do 2 rewrite tm_substitutive.
+reflexivity.
+Defined.
+
+Definition EQ A t1 t2 :=
+  Prod (Prod A prop) (Prod (App (Ref 0) (lift 1 t1)) (App (Ref 1) (lift 2 t2))).
+
+Definition IsProp X :=
+  Prod X (Prod (lift 1 X) (EQ (lift 2 X) (Ref 1) (Ref 0))).
+
+Lemma TrE_typ e X P Pp F W :
+  P <> kind ->
+  typ e Pp (IsProp P) ->
+  typ e F (Prod X (lift 1 P)) ->
+  typ e W (Tr X) ->
+  typ e (TrE X P F W) P.
+unfold typ; intros Pnk tyPp tyF tyW i j valok.
+specialize tyPp with (1:=valok); apply in_int_not_kind in tyPp;[|discriminate].
+specialize tyF with (1:=valok); apply in_int_not_kind in tyF;[|discriminate].
+specialize tyW with (1:=valok); apply in_int_not_kind in tyW;[|discriminate].
+clear valok.
+destruct tyPp as (isPp,_).
+destruct tyF as (tyF,satF).
+destruct tyW as (tyW,satW).  
+apply in_int_intro; trivial; try discriminate.
+split; simpl.
+ red.
+ rewrite Elt_def.
+ red in tyW; simpl in tyW; rewrite El_def in tyW.
+ apply cc_bot_ax in tyW; destruct tyW.
+  admit.
+ rewrite cond_set_ok; trivial.
+ apply trunc_ind with (El(int X i)) (fun x => cc_app (int F i) x) (int W i); trivial.
+  admit. (*!*)
+
+  red; intros.
+  admit.
+
+ rewrite Elt_def.
+  red; intros.
+
+*)
+
 (***********************************************************************************************)
 
 (** * Consistency out of the strong normalization model *)

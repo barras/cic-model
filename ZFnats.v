@@ -351,7 +351,8 @@ elim H using N_ind; intros.
 Qed.
 
 (** Recursor (as in G""odel's T) *)
-
+Module UsingUChoice.
+  
 Definition NREC f g n y :=
   forall P,
   Proper (eq_set ==> eq_set ==> iff) P -> 
@@ -571,8 +572,9 @@ elim H1 using N_ind; intros.
 
  rewrite natrec_S; auto.
 Qed.
+End UsingUChoice.
 
-(** * Well-foundation results *)
+ (** * Well-foundation results *)
 
 Require Import ZFwf.
 
@@ -592,4 +594,158 @@ elim H using N_ind; intros.
  apply isWf_ext with n; trivial.
  apply isWf_zero.
  apply isWf_succ; trivial.
+Qed.
+
+(** Recursor *)
+
+Require Import ZFwf.
+Import WellFoundedRecursion.
+
+Section Natrec.
+Let natrec_body f g (F:set->set) n :=
+  cond_set (n==zero) f ∪
+  cond_set (exists2 k, k ∈ N & n==succ k) (g (pred n) (F (pred n))).
+
+Definition natrec (f:set) (g:set->set->set) (n:set) : set :=
+  WFR (fun n => n ∈ N) in_set (natrec_body f g) n.
+
+Lemma N_trans x y : x ∈ y -> y ∈ N -> x ∈ N.
+ intros.
+ revert H; elim H0 using N_ind; intros. 
+  rewrite <- H1 in H3; auto.
+
+  apply empty_ax in H; contradiction.
+  apply union2_elim in H2; destruct H2; auto.
+  apply singl_elim in H2.
+  rewrite H2; trivial.
+Qed.
+
+Instance natrec_body_morph :
+  Proper (eq_set==>(eq_set==>eq_set==>eq_set)==>
+                (eq_set==>eq_set)==>eq_set==>eq_set) natrec_body.
+do 5 red; intros.
+apply union2_morph.
+ rewrite H,H2; reflexivity.
+
+ apply cond_set_morph; auto with *.
+  apply ex2_morph; auto with *.
+  red; intros.
+  rewrite H2; reflexivity.
+
+  apply H0.
+   rewrite H2; reflexivity.
+
+   apply H1.
+   rewrite H2; reflexivity.
+Qed.
+
+Lemma natrec_body_ext f g x F F' :
+   morph2 g ->
+   x ∈ N ->
+   (forall y y', y ∈ x -> y == y' -> F y == F' y') ->
+   natrec_body f g F x == natrec_body f g F' x.
+intros gm tyx Feq.
+apply union2_morph; auto with *.
+apply cond_set_morph2; auto with *.
+intros (k,tyk,eqx).
+apply gm; auto with *.
+apply Feq; auto with *.
+rewrite eqx.
+rewrite pred_succ_eq; auto.
+apply succ_intro1.
+reflexivity.
+Qed.
+
+Lemma natrec_body0 f g F n :
+  n==zero -> natrec_body f g F n == f.
+unfold natrec_body.
+intros eqn.
+rewrite cond_set_ok; auto with *.
+rewrite cond_set_mt.
+ apply union2_mt_r.
+
+ intros (k,_,e).
+ rewrite e in eqn; apply discr in eqn; trivial.
+Qed.
+
+Lemma natrec_0 f g :
+  natrec f g zero == f.
+unfold natrec.
+rewrite WFR_eqn_bot; intros.
+ apply natrec_body0; auto with *.
+
+ apply zero_typ.
+
+ rewrite natrec_body0; auto with *.
+ rewrite natrec_body0; auto with *.
+
+ red; intros. 
+ elim empty_ax with (1:=H).
+Qed.
+
+Lemma natrec_S f g n :
+  morph2 g ->
+  n ∈ N ->
+  natrec f g (succ n) == g n (natrec f g n).
+intros.
+unfold natrec.
+rewrite WFR_eqn.
+ unfold natrec_body at 1.
+ rewrite cond_set_mt.
+ rewrite cond_set_ok.
+ rewrite union2_mt_l.
+ apply H.
+  apply pred_succ_eq; trivial.
+
+  apply WFR_morph0.
+  apply pred_succ_eq; trivial.
+
+  exists n; auto with *.
+  apply discr.
+
+ apply in_set_morph.
+ 
+ intros.
+ apply -> isWf_acc.
+ apply isWf_inv with N; trivial.
+ apply isWf_N.
+
+ apply N_trans.
+ apply natrec_body_morph; auto with *.
+
+ intros.
+ apply natrec_body_ext; trivial.
+
+ apply succ_typ; trivial.
+Qed.
+
+Lemma natrec_typ P f g n :
+  morph1 P ->
+  morph2 g ->
+  n ∈ N ->
+  f ∈ P zero ->
+  (forall k h, k ∈ N -> h ∈ P k -> g k h ∈ P (succ k)) ->
+  natrec f g n ∈ P n.
+intros.
+elim H1 using N_ind; intros.
+ rewrite <- H5.
+ trivial.
+
+ rewrite natrec_0; trivial.
+ rewrite natrec_S; auto.
+Qed.
+
+End Natrec.
+
+Instance natrec_morph :
+  Proper (eq_set ==> (eq_set ==> eq_set ==> eq_set) ==> eq_set ==> eq_set) natrec.
+do 4 red; intros.
+apply WFR_morph; auto with *.
+ red; intros.
+ rewrite H2; reflexivity.
+
+ apply in_set_morph.
+
+ do 2 red; intros.
+ apply natrec_body_morph; trivial.
 Qed.

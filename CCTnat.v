@@ -84,15 +84,15 @@ unfold hyp_ok; unfold val_ok; induction t; simpl in *; intros.
    apply H. apply in_or_app. right; trivial.
  elim H1 using N_ind; intros.
   revert H4; apply in_set_morph; try reflexivity.
-   apply NATREC_morph; try reflexivity.
+   apply natrec_morph; try reflexivity.
     do 2 red; intros. rewrite H5; reflexivity.
 
     symmetry; trivial.
 
-  rewrite NATREC_0. apply IHt1; trivial; intros.
+  rewrite natrec_0. apply IHt1; trivial; intros.
    apply H. apply in_or_app; left; trivial.
 
-  rewrite NATREC_Succ;trivial. 
+  rewrite natrec_S;trivial. 
    apply succ_typ; trivial.
 
    do 3 red; intros. rewrite H5; reflexivity.
@@ -114,7 +114,7 @@ induction t; simpl; intros.
 
  red; intros. apply succ_morph. reflexivity.
 
- red; intros. apply NATREC_morph; try rewrite H.
+ red; intros. apply natrec_morph; try rewrite H.
   rewrite <- IHt1. rewrite int_lift_rec_eq. reflexivity.
 
   do 2 red. intros x0 y0 H' x1 y1 HE; rewrite HE; reflexivity.
@@ -210,7 +210,7 @@ induction t; intros.
  do 2 red; simpl; intros. do 2 red. intros. 
  apply succ_morph. reflexivity.
 
- do 2 red; simpl; intros. do 2 red; intros. apply NATREC_morph.
+ do 2 red; simpl; intros. do 2 red; intros. apply natrec_morph.
   rewrite <- IHt1. rewrite H. 
   rewrite int_subst_rec_eq; reflexivity.
 
@@ -548,7 +548,7 @@ induction t2; simpl; try reflexivity.
   rewrite succ_max_distr. apply max_split2. unfold max_var; simpl; omega.
   do 2 red in H; simpl in H; apply H; trivial.
 
- apply NATREC_morph.
+ apply natrec_morph.
   apply IHt2_1. intros. apply H0.
   rewrite succ_max_distr. rewrite succ_max_distr in H. 
   apply max_comb in H. destruct H.
