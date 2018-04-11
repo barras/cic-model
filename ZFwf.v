@@ -3,9 +3,8 @@ Require Import ZF.
 
 (** Theory about well-founded sets *)
 
-Section WellFoundedSets.
-
 (** Definition of well-founded sets. Could be Acc in_set... *)
+(** Note: uses higher-order logic, although it could be done in first-order *)
 Definition isWf x :=
   forall P : set -> Prop,
   (forall a,(forall b, b ∈ a -> P b)-> P a) -> P x.
@@ -133,6 +132,8 @@ apply H0 with a; trivial.
 Qed.
 
 (** * Defining well-founded sets without resorting to higher-order *)
+
+Module FirstOrder.
 
 (** Transitive closure *)
 
@@ -373,8 +374,983 @@ generalize (trClos_intro1 _ H0).
 pattern x at 1 3; elim H0 using isWf_ind; intros; eauto.
 Qed.
 
+End FirstOrder.
+
+Module WellFoundedRecursion.
+(** Well-founded recursion *)
+(*
+Section WellFoundedRecursion.
+
+
+  (** Note: although we do not require {y|yRx} to be a set for all x,
+      we cannot exploit relations with ordinal too big to fit in the isOrd class,
+      because F(f) can only use f on inputs that form a set...
+   *)
+  Variable R : set -> set -> Prop.
+  Hypothesis Rm : Proper (eq_set ==> eq_set ==> iff) R.
+  
+  Variable F : (set -> set) -> set -> set.
+  Hypothesis Fm : Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) F.
+Section Bounded.
+  Variable xo : set.
+  Hypothesis Fext : forall x f f', clos_refl_trans _ R x xo ->
+    (forall y y', R y x -> y==y' -> f y == f' y') -> F f x == F f' x.
+
+  Definition WFR_rel o y :=
+    forall (P:set->set->Prop),
+    Proper (eq_set ==> eq_set ==> iff) P ->
+    (forall o' f, clos_refl_trans _ R o' xo -> morph1 f -> (forall n, R n o' -> P n (f n)) ->
+     P o' (F f o')) ->
+    P o y.
+
+  Instance WFR_rel_morph : Proper (eq_set ==> eq_set ==> iff) WFR_rel.
+apply morph_impl_iff2; auto with *.
+do 4 red; unfold WFR_rel; intros.
+rewrite <- H, <-H0; auto.
+apply H1; auto.
+Qed.
+
+  Lemma WFR_rel_intro : forall x f,
+    clos_refl_trans _ R x xo ->
+    morph1 f ->
+    (forall y, R y x -> WFR_rel y (f y)) ->
+    WFR_rel x (F f x).
+red; intros.
+apply H3; trivial.
+intros.
+apply H1; trivial.
+Qed.
+
+  Lemma WFR_rel_inv : forall x y,
+    WFR_rel x y ->
+    exists2 f, morph1 f &
+      (forall y, R y x -> WFR_rel y (f y)) /\
+      y == F f x.
+intros.
+apply (@proj2 (WFR_rel x y)).
+apply H; intros.
+ do 3 red; intros.
+ apply and_iff_morphism.
+  apply WFR_rel_morph; auto with *.
+
+  apply ex2_morph'; intros; auto with *.
+  apply and_iff_morphism.
+   apply fa_morph; intros y2.
+   rewrite H0; reflexivity.
+
+   rewrite H0,H1; reflexivity.
+assert (WFR_relsub := fun n h => proj1 (H2 n h)); clear H2.
+split.
+ apply WFR_rel_intro; trivial.
+
+ exists f; auto with *.
+Qed.
+
+
+  Lemma WFR_rel_fun :
+    forall x y, WFR_rel x y -> forall y', WFR_rel x y' -> y == y'.
+intros x y H.
+apply H; intros.
+ apply morph_impl_iff2; auto with *.
+ do 4 red; intros.
+ rewrite <- H1; rewrite <- H0 in H3; auto.
+apply WFR_rel_inv in H3; destruct H3.
+destruct H4.
+rewrite H5; clear y' H5.
+apply Fext; intros; auto with *.
+apply H2; trivial.
+rewrite H6 in H5|-*; auto.
+Qed.
+
+  Lemma WFR_rel_repl_rel :
+    forall x, repl_rel x WFR_rel.
+split; intros.
+ rewrite <- H0; rewrite <- H1; trivial.
+
+ apply WFR_rel_fun with x0; trivial.
+Qed.
+
+  Lemma WFR_rel_def : forall o, Acc R o -> clos_refl_trans _ R o xo -> exists y, WFR_rel o y.
+induction 1; intros.
+assert (forall z, R z x -> uchoice_pred (fun y => WFR_rel z y)).
+ intros.
+ destruct H0 with z; trivial.
+  apply rt_trans with x; auto with *.
+ split; intros.
+  rewrite <- H4; trivial.
+ split; intros.
+  exists x0; trivial.
+ apply WFR_rel_fun with z; trivial.
+exists (F (fun z => uchoice (fun y => WFR_rel z y)) x).
+apply WFR_rel_intro; intros; trivial.
+ do 2 red; intros.
+ apply uchoice_morph_raw; red; intros.
+ apply WFR_rel_morph; trivial.
+apply uchoice_def; auto.
+Qed.
+
+  Lemma WFR_rel_choice_pred : forall o, Acc R o -> clos_refl_trans _ R o xo ->
+    uchoice_pred (fun y => WFR_rel o y).
+split; intros.
+ rewrite <- H1; trivial.
+split; intros.
+ apply WFR_rel_def; trivial.
+ apply WFR_rel_fun with o; trivial.
+Qed.
+
+End Bounded.
+  Definition WFR x := uchoice (fun y => WFR_rel x x y).
+
+  Lemma WFR_eqn : forall o, Acc R o ->
+     WFR o == F WFR o.
+intros.
+specialize WFR_rel_choice_pred with (1:=H); intro.
+apply uchoice_def in H0.
+apply WFR_rel_inv in H0.
+destruct H0 as (f,fm,(?,?)).
+unfold WFR at 1; rewrite H1.
+apply Fext; intros; auto with *.
+apply WFR_rel_fun with y; auto.
+rewrite H3.
+unfold WFR.
+apply uchoice_def.
+apply WFR_rel_choice_pred.
+apply Acc_inv with o; trivial.
+rewrite <- H3; trivial.
+Qed.
+
+  Lemma WFR_ind : forall x (P:set->set->Prop),
+    Proper (eq_set ==> eq_set ==> iff) P ->
+    Acc R x ->
+    (forall y, clos_refl_trans _ R y x ->
+     (forall x, R x y -> P x (WFR x)) ->
+     P y (F WFR y)) ->
+    P x (WFR x).
+intros x P Pm wfx Hrec.
+induction wfx; intros.
+apply Acc_intro in H.
+rewrite WFR_eqn; trivial.
+apply Hrec; auto with *; intros.
+Qed.
+
+  Global Instance WFR_morph0 : morph1 WFR.
+do 2 red; intros.
+unfold WFR.
+apply uchoice_morph_raw.
+red; intros.
+rewrite H; rewrite H0; reflexivity.
+Qed.
+
+
+End WellFoundedRecursion.
+*)
+Section WellFoundedRecursion.
+(*Section WFR.*)
+  Variable K : set -> Prop.
+  Hypothesis Km : Proper (eq_set==>iff) K.
+  
+  Variable R : set -> set -> Prop.
+  Hypothesis Rm : Proper (eq_set ==> eq_set ==> iff) R.
+
+  Hypothesis Kacc : forall x, K x -> Acc R x.
+  Hypothesis Ksub : forall x y, R x y -> K y -> K x.
+  
+  Variable F : (set -> set) -> set -> set.
+  Hypothesis Fm : Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) F.
+  Hypothesis Fext : forall x f f', K x ->
+    (forall y y', R y x -> y==y' -> f y == f' y') -> F f x == F f' x.
+
+  Definition WFR_rel o y :=
+    forall (P:set->set->Prop),
+    Proper (eq_set ==> eq_set ==> iff) P ->
+    (forall o' f, K o' -> morph1 f -> (forall n, R n o' -> P n (f n)) ->
+     P o' (F f o')) ->
+    P o y.
+
+  Instance WFR_rel_morph : Proper (eq_set ==> eq_set ==> iff) WFR_rel.
+apply morph_impl_iff2; auto with *.
+do 4 red; unfold WFR_rel; intros.
+rewrite <- H, <-H0; auto.
+apply H1; auto.
+Qed.
+
+  Lemma WFR_rel_intro x f :
+    K x ->
+    morph1 f ->
+    (forall y, R y x -> WFR_rel y (f y)) ->
+    WFR_rel x (F f x).
+red; intros.
+apply H3; trivial.
+intros.
+apply H1; trivial.
+Qed.
+
+  Lemma WFR_rel_inv x y :
+    WFR_rel x y ->
+    exists2 f, morph1 f &
+      (forall y, R y x -> WFR_rel y (f y)) /\
+      y == F f x.
+clear Fext.
+intros.
+apply (@proj2 (WFR_rel x y)).
+apply H; intros.
+ do 3 red; intros.
+ apply and_iff_morphism.
+  apply WFR_rel_morph; auto with *.
+
+  apply ex2_morph'; intros; auto with *.
+  apply and_iff_morphism.
+   apply fa_morph; intros y2.
+   rewrite H0; reflexivity.
+
+   rewrite H0,H1; reflexivity.
+assert (WFR_relsub := fun n h => proj1 (H2 n h)); clear H2.
+split.
+ apply WFR_rel_intro; trivial.
+
+ exists f; auto with *.
+Qed.
+
+  (** Particular case of bottom values: needs less assumptions... *)
+  Lemma WFR_rel_inv_bot x y :
+    (forall f f' x', x==x' -> F f x == F f' x') ->
+    WFR_rel x y ->
+    (forall y, ~ R y x) ->
+    y == F (fun x => x) x.
+clear Fm Fext.
+intros Fm r bot.
+generalize (@reflexivity _ eq_set _ x).
+pattern x at 1 3, y.
+apply r; intros.
+ do 3 red; intros.
+ apply impl_morph.
+  rewrite H; reflexivity.
+  intros eqx.
+  apply eq_set_morph; trivial.
+  transitivity (F (fun x => x) x);[symmetry|].
+   apply Fm; auto with *.
+   apply Fm; auto with *.
+   rewrite <- eqx; trivial.
+transitivity (F f x);[symmetry|].
+ apply Fm; auto with *.
+ apply Fm; auto with *.
+Qed.
+
+  Lemma WFR_rel_fun :
+    forall x y, WFR_rel x y -> forall y', WFR_rel x y' -> y == y'.
+intros x y H.
+apply H; intros.
+ apply morph_impl_iff2; auto with *.
+ do 4 red; intros.
+ rewrite <- H1; rewrite <- H0 in H3; auto.
+apply WFR_rel_inv in H3; destruct H3.
+destruct H4.
+rewrite H5; clear y' H5.
+apply Fext; intros; auto with *.
+apply H2; trivial.
+rewrite H6 in H5|-*; auto.
+Qed.
+
+  Lemma WFR_rel_repl_rel :
+    forall x, repl_rel x WFR_rel.
+split; intros.
+ rewrite <- H0; rewrite <- H1; trivial.
+
+ apply WFR_rel_fun with x0; trivial.
+Qed.
+
+  Lemma WFR_rel_def : forall o, K o -> exists y, WFR_rel o y.
+intros o ko; generalize ko.
+apply Kacc in ko.
+induction ko; intros.
+assert (forall z, R z x -> uchoice_pred (fun y => WFR_rel z y)).
+ intros.
+ destruct H0 with z; eauto.
+ split; intros.
+  rewrite <- H3; trivial.
+ split; intros.
+  exists x0; trivial.
+ apply WFR_rel_fun with z; trivial.
+exists (F (fun z => uchoice (fun y => WFR_rel z y)) x).
+apply WFR_rel_intro; intros; trivial.
+ do 2 red; intros.
+ apply uchoice_morph_raw; red; intros.
+ apply WFR_rel_morph; trivial.
+apply uchoice_def; auto.
+Qed.
+
+  Lemma WFR_rel_choice_pred : forall o, K o ->
+    uchoice_pred (fun y => WFR_rel o y).
+split; intros.
+ rewrite <- H0; trivial.
+split; intros.
+apply WFR_rel_def; trivial.
+apply WFR_rel_fun with o; trivial.
+Qed.
+
+  Definition WFR x := uchoice (fun y => WFR_rel x y).
+
+  (** Particular case of bottom values: needs less assumptions... *)
+  Lemma WFR_eqn_bot o :
+    K o ->
+    (forall f f' x', o==x' -> F f o == F f' x') ->
+    (forall o', ~ R o' o) ->
+    WFR o == F (fun x => x) o.
+clear Rm Fm Fext Kacc Ksub.
+intros Ko Fm bot.
+assert (WFR_rel o (F (fun x => x) o)).
+ red; intros.
+ apply H0; trivial.
+  do 2 red; trivial.
+
+  intros.
+  elim bot with (1:=H1).
+assert (u: forall x x', WFR_rel o x -> WFR_rel o x' -> x==x').
+ intros.
+ transitivity (F (fun x => x) o).
+  apply WFR_rel_inv_bot with (2:=H0); trivial.
+  symmetry; apply WFR_rel_inv_bot with (2:=H1); trivial.
+symmetry; apply ZFrepl.uchoice_ext.
+ split; intros.
+  revert H1; apply iff_impl; apply WFR_rel_morph; auto with *.
+ split; intros.
+  exists (F (fun x => x) o); trivial.
+ apply u; trivial.
+
+ trivial.
+Qed.
+  
+Lemma WFR_eqn : forall o, K o ->
+     WFR o == F WFR o.
+intros.
+specialize WFR_rel_choice_pred with (1:=H); intro.
+apply uchoice_def in H0.
+apply WFR_rel_inv in H0.
+destruct H0 as (f,fm,(?,?)).
+unfold WFR at 1; rewrite H1.
+apply Fext; intros; auto with *.
+apply WFR_rel_fun with y; auto.
+rewrite H3.
+unfold WFR.
+apply uchoice_def.
+apply WFR_rel_choice_pred.
+apply Ksub with o; trivial.
+rewrite <- H3; trivial.
+Qed.
+
+  Lemma WFR_ind : forall x (P:set->set->Prop),
+    Proper (eq_set ==> eq_set ==> iff) P ->
+    K x ->
+    (forall y, K y ->
+     (forall x, R x y -> P x (WFR x)) ->
+     P y (F WFR y)) ->
+    P x (WFR x).
+intros x P Pm wfx Hrec.
+generalize wfx.
+apply Kacc in wfx.
+induction wfx; intros.
+(*apply Acc_intro in H.*)
+rewrite WFR_eqn; trivial.
+apply Hrec; auto with *; intros.
+apply H0; eauto.
+Qed.
+
+  Global Instance WFR_morph0 : morph1 WFR.
+do 2 red; intros.
+unfold WFR.
+apply uchoice_morph_raw.
+red; intros.
+rewrite H; rewrite H0; reflexivity.
+Qed.
+
+End WellFoundedRecursion.
+
+Global Instance WFR_morph :
+    Proper ((eq_set==>iff)==>(eq_set==>eq_set==>iff)==>((eq_set ==> eq_set) ==> eq_set ==> eq_set) ==> eq_set ==> eq_set) WFR.
+do 5 red; intros.
+apply uchoice_morph_raw.
+red; intros.
+unfold WFR_rel.
+apply fa_morph; intros P.
+apply fa_morph; intros Pm.
+apply impl_morph.
+2:intros; apply Pm; trivial.
+apply fa_morph; intros o'.
+apply fa_morph; intros f.
+apply impl_morph.
+ apply H; reflexivity.
+intros _.
+apply fa_morph; intros fm.
+apply impl_morph.
+ apply fa_morph; intros n.
+ apply impl_morph; auto with *.
+ apply H0; auto with *.
+intros _.
+apply Pm; auto with *.
+apply H1; auto with *.
+Qed.
+
+(*  
+  (** Note: although we do not require {y|yRx} to be a set for all x,
+      we cannot exploit relations with ordinal too big to fit in the isOrd class,
+      because F(f) can only use f on inputs that form a set...
+   *)
+  Variable R : set -> set -> Prop.
+  Hypothesis Rm : Proper (eq_set ==> eq_set ==> iff) R.
+  
+  Variable F : (set -> set) -> set -> set.
+  Hypothesis Fm : Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) F.
+  Hypothesis Fext : forall x f f', Acc R x ->
+    (forall y y', R y x -> y==y' -> f y == f' y') -> F f x == F f' x.
+
+  Definition WFR_rel o y :=
+    forall (P:set->set->Prop),
+    Proper (eq_set ==> eq_set ==> iff) P ->
+    (forall o' f, Acc R o' -> morph1 f -> (forall n, R n o' -> P n (f n)) ->
+     P o' (F f o')) ->
+    P o y.
+
+  Instance WFR_rel_morph : Proper (eq_set ==> eq_set ==> iff) WFR_rel.
+apply morph_impl_iff2; auto with *.
+do 4 red; unfold WFR_rel; intros.
+rewrite <- H, <-H0; auto.
+apply H1; auto.
+Qed.
+
+  Lemma WFR_rel_intro : forall x f,
+    Acc R x ->
+    morph1 f ->
+    (forall y, R y x -> WFR_rel y (f y)) ->
+    WFR_rel x (F f x).
+red; intros.
+apply H3; trivial.
+intros.
+apply H1; trivial.
+Qed.
+
+  Lemma WFR_rel_inv : forall x y,
+    WFR_rel x y ->
+    exists2 f, morph1 f &
+      (forall y, R y x -> WFR_rel y (f y)) /\
+      y == F f x.
+intros.
+apply (@proj2 (WFR_rel x y)).
+apply H; intros.
+ do 3 red; intros.
+ apply and_iff_morphism.
+  apply WFR_rel_morph; auto with *.
+
+  apply ex2_morph'; intros; auto with *.
+  apply and_iff_morphism.
+   apply fa_morph; intros y2.
+   rewrite H0; reflexivity.
+
+   rewrite H0,H1; reflexivity.
+assert (WFR_relsub := fun n h => proj1 (H2 n h)); clear H2.
+split.
+ apply WFR_rel_intro; trivial.
+
+ exists f; auto with *.
+Qed.
+
+
+  Lemma WFR_rel_fun :
+    forall x y, WFR_rel x y -> forall y', WFR_rel x y' -> y == y'.
+intros x y H.
+apply H; intros.
+ apply morph_impl_iff2; auto with *.
+ do 4 red; intros.
+ rewrite <- H1; rewrite <- H0 in H3; auto.
+apply WFR_rel_inv in H3; destruct H3.
+destruct H4.
+rewrite H5; clear y' H5.
+apply Fext; intros; auto with *.
+apply H2; trivial.
+rewrite H6 in H5|-*; auto.
+Qed.
+
+  Lemma WFR_rel_repl_rel :
+    forall x, repl_rel x WFR_rel.
+split; intros.
+ rewrite <- H0; rewrite <- H1; trivial.
+
+ apply WFR_rel_fun with x0; trivial.
+Qed.
+
+  Lemma WFR_rel_def : forall o, Acc R o -> exists y, WFR_rel o y.
+induction 1; intros.
+assert (forall z, R z x -> uchoice_pred (fun y => WFR_rel z y)).
+ intros.
+ destruct H0 with z; trivial.
+ split; intros.
+  rewrite <- H3; trivial.
+ split; intros.
+  exists x0; trivial.
+ apply WFR_rel_fun with z; trivial.
+exists (F (fun z => uchoice (fun y => WFR_rel z y)) x).
+apply WFR_rel_intro; intros; trivial.
+ constructor; trivial.
+
+ do 2 red; intros.
+ apply uchoice_morph_raw; red; intros.
+ apply WFR_rel_morph; trivial.
+apply uchoice_def; auto.
+Qed.
+
+  Lemma WFR_rel_choice_pred : forall o, Acc R o ->
+    uchoice_pred (fun y => WFR_rel o y).
+split; intros.
+ rewrite <- H0; trivial.
+split; intros.
+apply WFR_rel_def; trivial.
+apply WFR_rel_fun with o; trivial.
+Qed.
+
+  Definition WFR x := uchoice (fun y => WFR_rel x y).
+
+  Lemma WFR_eqn : forall o, Acc R o ->
+     WFR o == F WFR o.
+intros.
+specialize WFR_rel_choice_pred with (1:=H); intro.
+apply uchoice_def in H0.
+apply WFR_rel_inv in H0.
+destruct H0 as (f,fm,(?,?)).
+unfold WFR at 1; rewrite H1.
+apply Fext; intros; auto with *.
+apply WFR_rel_fun with y; auto.
+rewrite H3.
+unfold WFR.
+apply uchoice_def.
+apply WFR_rel_choice_pred.
+apply Acc_inv with o; trivial.
+rewrite <- H3; trivial.
+Qed.
+
+  Lemma WFR_ind : forall x (P:set->set->Prop),
+    Proper (eq_set ==> eq_set ==> iff) P ->
+    Acc R x ->
+    (forall y, Acc R y ->
+     (forall x, R x y -> P x (WFR x)) ->
+     P y (F WFR y)) ->
+    P x (WFR x).
+intros x P Pm wfx Hrec.
+induction wfx; intros.
+apply Acc_intro in H.
+rewrite WFR_eqn; trivial.
+apply Hrec; auto with *; intros.
+Qed.
+
+  Global Instance WFR_morph0 : morph1 WFR.
+do 2 red; intros.
+unfold WFR.
+apply uchoice_morph_raw.
+red; intros.
+rewrite H; rewrite H0; reflexivity.
+Qed.
+
+
+End WellFoundedRecursion.
+
+  Global Instance WFR_morph :
+    Proper ((eq_set==>eq_set==>iff)==>((eq_set ==> eq_set) ==> eq_set ==> eq_set) ==> eq_set ==> eq_set) WFR.
+do 4 red; intros.
+unfold WFR.
+apply uchoice_morph_raw; red; intros.
+unfold WFR_rel.
+apply fa_morph; intros P.
+apply fa_morph; intros Pm.
+apply impl_morph.
+ apply fa_morph; intros o'.
+ apply fa_morph; intros f.
+ apply impl_morph.
+  split; induction 1; constructor; intros.
+   apply H4.
+   revert H5; apply H; reflexivity.
+   apply H4.
+   revert H5; apply H; reflexivity.
+ intros _.
+ apply fa_morph; intros fm.
+ apply impl_morph.
+  apply fa_morph; intros n.
+  apply impl_morph; auto with *.
+  apply H; reflexivity.
+ intros; apply Pm; auto with *.
+ apply H0; auto with *.
+intros _.
+apply Pm; trivial.
+Qed.
+
+End WellFoundedRecursion.
+*)
+Module Example.
+(*Import WellFoundedRecursion.*)
+(** Example of relation with ordinal too big to belong to isOrd: *)
+Parameter isOrd : set -> Prop.
+Parameter isOrd_trans : forall x y z,
+   isOrd x -> z ∈ y -> y ∈ x -> z ∈ x.
+Parameter isOrd_inv : forall x y,
+  isOrd x -> y ∈ x -> isOrd y.
+Parameter isOrd_ind : forall x (P:set->Prop),
+  (forall y, isOrd y ->
+   y ⊆ x ->
+   (forall z, z ∈ y -> P z) -> P y) ->
+  isOrd x -> P x.
+
+(*Require Import ZFord.*)
+Definition AR x y :=
+  (isOrd x /\ y = singl (singl empty)) \/
+  (isOrd y /\ x ∈ y).
+Lemma ssmt_not_ord :
+  ~ isOrd (singl (singl empty)).
+intro.
+assert (empty ∈ singl (singl empty)).
+ apply isOrd_trans with (singl empty); trivial.
+ apply singl_intro.
+ apply singl_intro.
+apply singl_elim in H0.
+apply empty_ax with empty.
+apply eq_elim with (singl empty); auto with *.
+apply singl_intro.
+Qed.
+Lemma wfARo o : isOrd o -> Acc AR o.
+induction 1 using isOrd_ind.
+constructor; intros.
+destruct H2.
+destruct H2.
+rewrite H3 in H.
+apply ssmt_not_ord in H; contradiction.
+destruct H2.
+auto.
+Qed.
+Lemma wfAR x : Acc AR x.
+constructor; intros.
+destruct H.
+ destruct H.
+ apply wfARo; trivial.
+ destruct H.
+ apply wfARo; trivial.
+ apply isOrd_inv with x; trivial.
+Qed.
+
+(*Lemma not_an_ord :
+  ~ exists2 f: set->set,
+        (forall x, isOrd (f x)) &
+        (forall x y, AR x y -> f x ∈ f y).
+intros (f,fo,felt).
+Parameter osucc : set -> set.  
+assert (rk : forall o, isOrd o -> o ∈ osucc (f o)).
+ admit.
+assert (exists o, forall o', isOrd o' -> o' ∈ o).
+ exists (subset (f (singl (singl empty))) (fun o' => exists2 x, isOrd x & f x == o')). 
+ intros.
+ apply subset_intro.
+ generalize H.
+ elim wfARo with (o:=o'); trivial; intros.
+ 
+ assert 
+Lemma not_an_ord :
+  ~ exists2 o, isOrd o &
+      exists2 f: set->set,
+        (forall x, isOrd (f x)) &
+        (forall x y, AR x y -> f x ∈ f y).
+intros (o,
+  *)
+
+End Example.
+
+(*Import WellFoundedRecursion.*)
+(*
+  Definition WFR' x := WFR R (fun f x => cond_set (K x) (F f x)) x.
+
+  Lemma WFR'_eqn : forall o, K o ->
+     WFR' o == F WFR' o.
+intros.
+unfold WFR' at 1.
+rewrite WFR_eqn; trivial.
+ rewrite cond_set_ok; trivial.
+ reflexivity.
+
+ do 3 red; intros.
+ apply cond_set_morph; auto with *.
+ apply Fm; auto with *.
+
+ intros.
+ apply cond_set_morph2;[reflexivity|].
+ intros; auto.
+
+ auto.
+Qed.
+
+  Lemma WFR'_ind : forall x (P:set->set->Prop),
+    Proper (eq_set ==> eq_set ==> iff) P ->
+    K x ->
+    (forall y, K y ->
+     (forall x, R x y -> P x (WFR' x)) ->
+     P y (F WFR' y)) ->
+    P x (WFR' x).
+intros.
+unfold WFR'.
+apply WFR_ind; intros; auto.
+ do 3 red; intros.
+ apply cond_set_morph; auto with *.
+ apply Fm; auto with *.
+
+ intros.
+ apply cond_set_morph2;[reflexivity|].
+ intros; auto.
+*)
+(*                                         
+Section WellFoundedRecursion.
+
+  Variable R : set -> set -> Prop.
+  Hypothesis Rm : Proper (eq_set ==> eq_set ==> iff) R.
+  
+  Variable F : (set -> set) -> set -> set.
+  Hypothesis Fm : Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) F.
+  Hypothesis Fext : forall x f f',
+    (forall y y', R y x -> y==y' -> f y == f' y') -> F f x == F f' x.
+
+Require Import ZFpairs ZFrelations.
+
+
+  Definition isTR_rel F P :=
+    forall o y,
+    couple o y ∈ P ->
+    exists2 f, (forall n, R n o -> couple n (cc_app f n) ∈ P) &
+      y == F (cc_app f) o.
+
+  Lemma isTR_rel_fun P P' o y y':
+    Acc R o ->
+    isTR_rel F P ->
+    isTR_rel F P' -> 
+    couple o y ∈ P ->
+    couple o y' ∈ P' ->
+    y == y'.
+intros wfo istr istr' inP inP'; revert y y' inP inP'; elim wfo; intros.
+destruct istr with (1:=inP) as (f,?,?).
+destruct istr' with (1:=inP') as (f',?,?).
+rewrite H2; rewrite H4; apply Fext; auto.
+intros.
+rewrite <- H6; clear y'0 H6.
+apply H0 with y0; auto.
+Qed.
+
+  Instance isTR_rel_morph_gen :
+    Proper (((eq_set ==> eq_set) ==> eq_set ==> eq_set) ==> eq_set ==> iff) isTR_rel.
+do 3 red; intros.
+unfold isTR_rel.
+apply fa_morph; intro o.
+apply fa_morph; intro y'.
+rewrite H0.
+apply fa_morph; intros ?.
+apply ex2_morph; red; intros; auto with *.
+ apply fa_morph; intros n.
+ rewrite H0; reflexivity.
+
+ split; intros h;rewrite h;[|symmetry]; (apply H; [apply cc_app_morph|];auto with * ).
+Qed.
+
+  Instance isTR_rel_morph : Proper (eq_set==>iff) (isTR_rel F).
+apply isTR_rel_morph_gen; trivial.
+Qed.
+
+  Definition TRP_rel F o P :=
+    isTR_rel F P /\
+    (exists y, couple o y ∈ P) /\
+    forall P' y, isTR_rel F P' -> couple o y ∈ P' -> P ⊆ P'.
+
+  Instance TRP_rel_morph_gen :
+    Proper (((eq_set ==> eq_set) ==> eq_set ==> eq_set) ==> eq_set ==> eq_set ==> iff) TRP_rel.
+do 4 red; intros.
+unfold TRP_rel.
+apply and_iff_morphism.
+ apply isTR_rel_morph_gen; trivial.
+apply and_iff_morphism.
+ apply ex_morph; red; intros; rewrite H0; rewrite H1; reflexivity.
+
+ apply fa_morph; intros P'.
+ apply fa_morph; intros w.
+ apply impl_morph.
+  apply isTR_rel_morph_gen; auto with *.
+
+  intros; rewrite H0; rewrite H1; reflexivity.
+Qed.
+
+  Instance TRP_rel_morph : Proper (eq_set==>eq_set==>iff) (TRP_rel F).
+apply TRP_rel_morph_gen; trivial.
+Qed.
+
+  Lemma TR_img_ex x P : Acc R x ->
+    TRP_rel F x P ->
+    uchoice_pred (fun y => couple x y ∈ P).
+intros.
+split;[|split]; intros.
+ rewrite <- H1; trivial.
+
+ destruct H0 as (_,(?,_)); trivial.
+
+ destruct H0 as (?,(?,?)).
+ apply isTR_rel_fun with (2:=H0)(3:=H0)(4:=H1)(5:=H2); trivial.
+Qed.
+
+
+  Lemma TR_rel_ex o :
+    Acc R o -> uchoice_pred (TRP_rel F o).
+intro wfo; elim wfo; clear o wfo; intros.
+split;[|split]; intros.
+ revert H2; apply TRP_rel_morph; auto with *.
+ assert ({y:set | forall z, z ∈ y <-> R z x}).
+ admit.
+ destruct X as (xs,xsdef).
+ pose (P:=singl(couple x (F (fun b=> uchoice(fun y => couple b y ∈ uchoice(TRP_rel F b))) x)) ∪
+          sup xs (fun b => uchoice(TRP_rel F b))).
+ assert (Pax:forall z, z ∈ P <->
+     z == couple x (F (fun b=> uchoice(fun y => couple b y ∈ uchoice(TRP_rel F b))) x) \/
+     exists2 b, R b x & z ∈ uchoice(TRP_rel F b)).
+  intros; unfold P; rewrite union2_ax; apply or_iff_morphism.
+   split; intros.
+    apply singl_elim in H1; trivial.
+    rewrite H1; apply singl_intro.
+
+   rewrite sup_ax.
+    apply ex2_morph; auto with *.
+
+    do 2 red; intros; apply uchoice_morph_raw.
+    apply TRP_rel_morph; trivial.
+ assert (ychm : morph1 (fun b =>
+      uchoice (fun y0 => couple b y0 ∈ uchoice (TRP_rel F b)))).
+  do 2 red; intros.
+  apply uchoice_morph_raw.
+  red; intros.
+  rewrite H1; rewrite H2; reflexivity.
+ exists P.
+ split;[|split]; intros.
+  red; intros.
+  rewrite Pax in H1; destruct H1 as [?|(b,?,?)].
+   apply couple_injection in H1; destruct H1.
+   exists (cc_lam xs (fun b=> uchoice
+            (fun y : set => couple b y ∈ uchoice(TRP_rel F b)))); intros.
+    rewrite cc_beta_eq; trivial.
+     rewrite Pax; right.
+     rewrite H1 in H3; exists n; trivial.
+     apply uchoice_def.
+     apply TR_img_ex; auto.
+     apply uchoice_def; auto.
+
+     do 2 red; intros; apply uchoice_morph_raw; red; intros.
+     rewrite H5; rewrite H6; reflexivity.
+
+     apply xsdef; rewrite <- H1; trivial.
+    rewrite H1; rewrite H2; apply Fext.
+    intros.
+    rewrite <- H4.
+    rewrite cc_beta_eq; auto with *.
+    rewrite xsdef; trivial.
+    
+   destruct (uchoice_def _ (H0 _ H1)) as (?,trp').
+   destruct H3 with (1:=H2) as (f,?,?).
+   exists f; trivial; intros.
+   rewrite Pax; right.
+   exists b; auto.
+
+  exists (F (fun b => uchoice (fun y => couple b y ∈ uchoice (TRP_rel F b))) x).
+  rewrite Pax; left; reflexivity.
+
+  red; intros.
+  rewrite Pax in H3; destruct H3 as [?|(y',?,?)].
+   destruct H1 with (1:=H2) as (f,?,?).
+   rewrite H5 in H2; rewrite H3; revert H2; apply in_reg.
+   apply couple_morph; auto with *.
+   apply Fext; red; intros.
+   apply uchoice_ext; auto.
+    rewrite H6 in H2; auto.
+    apply TR_img_ex; auto.
+    apply uchoice_def; auto.
+
+    rewrite <- H6; clear y' H6.
+    specialize H0 with (1:=H2).
+    apply uchoice_def in H0.
+    destruct H0 as (?,((yx,?),_)).
+    specialize H4 with (1:=H2).
+    rewrite isTR_rel_fun with (2:=H1) (3:=H0) (4:=H4) (5:=H6); auto.
+
+  specialize H0 with (1:=H3).
+  apply uchoice_def in H0; destruct H0 as (?,((w,?),?)).
+  assert (z == couple (fst z) (snd z)).
+   assert (z ∈ subset (uchoice(TRP_rel F y')) (fun z => z == couple (fst z) (snd z))).
+    apply H6 with w; trivial.
+     red; intros.
+     apply subset_elim1 in H7.
+     destruct H0 with (1:=H7) as (f',?,?).
+     exists f'; intros; trivial.
+     apply subset_intro; auto.
+     rewrite fst_def; rewrite snd_def; reflexivity.
+
+     apply subset_intro; trivial.
+     rewrite fst_def; rewrite snd_def; reflexivity.
+   apply subset_elim2 in H7; destruct H7.
+   rewrite H7; trivial.
+  rewrite H7 in H4|-*.
+  destruct H1 with (1:=H2) as (f0,?,_).
+  specialize H8 with (1:=H3).
+  apply H6 with (cc_app f0 y'); trivial.
+
+ destruct H1 as (?,((y,?),?)).
+ destruct H2 as (?,((y',?),?)).
+ apply incl_eq; eauto.
+Qed.
+
+  Definition ACCR x := uchoice (fun y => couple x y ∈ uchoice(TRP_rel F x)).
+
+  Lemma ACCR_eqn x : Acc R x -> ACCR x == F ACCR x.
+unfold ACCR; intros.
+specialize TR_rel_ex with (1:=H); intro.
+apply uchoice_def in H0.
+generalize H0; intros (?,_).
+apply TR_img_ex in H0; trivial.
+apply uchoice_def in H0.
+destruct H1 with (1:=H0) as (f,?,?).
+rewrite H3; apply Fext; red; intros.
+rewrite H5 in H4|-*; clear y H5.
+assert (Acc R y') by eauto using Acc_inv.
+specialize H2 with (1:=H4).
+specialize TR_rel_ex with (1:=H5); intro.
+apply uchoice_def in H6.
+generalize H6; intros (?,_).
+apply TR_img_ex in H6; trivial.
+apply uchoice_def in H6.
+apply isTR_rel_fun with (4:=H2) (5:=H6); trivial.
+Qed.
+
+  Lemma ACCR_ind : forall x (P:set->set->Prop),
+    Proper (eq_set ==> eq_set ==> iff) P ->
+    Acc R x ->
+    (forall y, Acc R y ->
+     (forall x, R x y -> P x (ACCR x)) ->
+     P y (F ACCR y)) ->
+    P x (ACCR x).
+intros x P Pm wfx Hrec.
+induction wfx; intros.
+apply Acc_intro in H.
+rewrite ACCR_eqn; auto.
+Qed.
+
+  Global Instance ACCR_morph0 : morph1 ACCR.
+do 2 red; intros.
+unfold ACCR.
+apply uchoice_morph_raw.
+red; intros.
+rewrite H; rewrite H0; reflexivity.
+Qed.
+*)
+End WellFoundedRecursion.
+
+
 (** Transfinite iteration on a well-founded set (not using higher-order) *)
 (** #<a name="WithoutHigherOrder"></a># *)
+
+Require Import ZFpairs ZFrelations.
+Module MembershipInduction.
 
 Section TransfiniteRecursion.
 
@@ -382,7 +1358,6 @@ Section TransfiniteRecursion.
   Hypothesis Fm : Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) F.
   Hypothesis Fext : forall x f f', eq_fun x f f' -> F f x == F f' x.
 
-Require Import ZFpairs ZFrelations.
 
 (*
 Attempt to prove directly that the relation characterizing the result of the
@@ -537,7 +1512,7 @@ apply ex2_morph; red; intros; auto with *.
  apply fa_morph; intros n.
  rewrite H0; reflexivity.
 
- split; intros h;rewrite h;[|symmetry]; (apply H; [apply cc_app_morph|];auto with *).
+ split; intros h;rewrite h;[|symmetry]; (apply H; [apply cc_app_morph|];auto with * ).
 Qed.
 
   Instance isTR_rel_morph : Proper (eq_set==>iff) (isTR_rel F).
@@ -763,9 +1738,109 @@ split; apply eq_elim; [|symmetry]; apply uchoice_morph_raw; red; intros.
  apply TRP_rel_morph_gen; trivial.
 Qed.
 
-End WellFoundedSets.
+
+End MembershipInduction.
+
+(*End WellFoundedSets.*)
 
 Hint Resolve isWf_morph.
+
+(** Recursion over a well-founded relation *)
+(*
+Section WellFoundedRecursion.
+
+  Variable F : (set -> set) -> set -> set.
+  Hypothesis Fm : Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) F.
+  Hypothesis Fext : forall x f f', eq_fun x f f' -> F f x == F f' x.
+
+Parameter ACCR : ((set->set)->set->set)->set->set.
+Parameter ACCR_ind : forall (R:set->set->Prop) (*(wfR : forall x, Acc R x)*)
+       (F : (set -> set) -> set -> set),
+       Proper (eq_set==>eq_set==>iff) R ->
+       Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) F ->
+       (forall x (f f' : set -> set),
+        (forall y y', R y x -> y==y' -> f y == f' y') -> F f x == F f' x) ->
+       forall x P,
+       Proper (eq_set ==> eq_set ==> iff) P ->
+       Acc R x ->
+       (forall y, Acc R y -> (forall z, R z y -> P z (ACCR F z)) -> P y (F (ACCR F) y)) ->
+       P x (ACCR F x).
+
+Definition ACCR' R F x := 
+  ACCR (fun f x => F (fun y => cond_set (R y x) (f y)) x) x.
+
+Lemma ACCR_ind' : forall (R:set->set->Prop) (*(wfR : forall x, Acc R x)*)
+       (F : (set -> set) -> set -> set),
+       Proper (eq_set==>eq_set==>iff) R ->
+       Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) F ->
+       forall x P,
+       Proper (eq_set ==> eq_set ==> iff) P ->
+       Acc R x ->
+       (forall y, Acc R y -> (forall z, R z y -> P z (ACCR' R F z)) -> P y (F (ACCR' R F) y)) ->
+       P x (ACCR' R F x).
+intros R F Rm Fm x P Pm accx Hrec.
+pose (F' f x := F (fun y => cond_set (R y x) (f y)) x).   
+(*pose (F' f x := F (fun y => cond_set (clos_trans _ R y x) (f y)) x).   *)
+assert (F'ext : forall x (f f' : set -> set),
+                  (forall y y', R y x -> y==y' -> f y == f' y') -> F' f x == F' f' x).
+ intros.
+ apply Fm; auto with *.
+ red; intros. 
+ apply eq_set_ax; intros z.
+ do 2 rewrite cond_set_ax.
+ split; destruct 1; split.
+  rewrite <- H with (2:=H0); trivial.
+  rewrite <- H0; trivial.
+  rewrite H with (2:=H0); trivial.
+  rewrite <- H0 in H2; trivial.
+  rewrite <- H0 in H2; trivial.
+unfold ACCR'.
+apply ACCR_ind with (R:=R); trivial.
+ admit.
+
+ intros.
+ change (P y (F' (ACCR' R F) y)).
+(* change (P y (F' (ACCR F') y)).*)
+ assert (F' (ACCR' R F) y == F (ACCR' R F) y).
+  unfold F'.
+  apply Fm; auto with *.
+  red; intros.
+  apply eq_set_ax; intros z.
+  rewrite cond_set_ax.
+  rewrte  admit.
+ rewrite H1; auto.
+auto.
+ unfold
+
+   apply Hrec.
+ auto.
+ assert (P x (ACCR F x) /\ ACCR F x == ACCR F' x).
+ apply ACCR_ind with (R:=R); trivial.
+ Focus 3.
+ intros.
+ split.
+ apply Hrec; trivial.
+ apply H0.
+ 
+
+ induction 1.
+ split.
+  apply Hrec. 
+ assert (P x (ACCR F' x)).
+ apply ACCR_ind with (R:=R); trivial.
+  do 3 red; intros; apply Fm; trivial.
+  red; intros; apply cond_set_morph.
+  apply Rm; trivial.  
+  apply H; trivial.
+
+  intros.
+  setoid_replace (F' (ACCR F') y) with (F (ACCR F') y).
+apply   auto.
+  unfold F'.
+  
+  assert (forall x, Acc R x -> ACCR F x == ACCR F' x).
+ clear x P Pm accx Hrec.
+ *)
 
 (*
 (** Transfinite iteration on well-founded sets (higher-order version) *)

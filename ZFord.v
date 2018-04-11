@@ -53,7 +53,8 @@ Let plump_set f ub :=
       (forall z y, y ∈ ub -> z ∈ f y -> z ⊆ y -> y ∈ x -> z ∈ x) /\
       Q x).
 
-Definition plumps := WFR plump_set.
+Import WellFoundedRecursion.
+Definition plumps := WFR isWf in_set plump_set.
 
 Let plumps_m :
   Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) plump_set.
@@ -92,6 +93,10 @@ unfold plumps at 1; rewrite WFR_eqn; fold plumps; trivial.
 
   exists x; auto with *.
 
+ apply in_set_morph.
+ intros; apply -> isWf_acc; trivial.
+ intros; apply isWf_inv with y; trivial.
+ 
  apply plumps_m.
 
  intros; apply subset_morph; auto with *.
@@ -99,18 +104,20 @@ unfold plumps at 1; rewrite WFR_eqn; fold plumps; trivial.
   apply and_iff_morphism.
    apply fa_morph; intros y.
    apply fa_morph; intros h.
-   rewrite (H1 _ _ h (reflexivity _)); reflexivity.
+   rewrite (H2 _ _ h (reflexivity _)); reflexivity.
 
    apply and_iff_morphism; auto with *.
    apply fa_morph; intros z.
    apply fa_morph; intros y.
    apply fa_morph; intros h.
-   rewrite (H1 _ _ h (reflexivity _)); reflexivity.
+   rewrite (H2 _ _ h (reflexivity _)); reflexivity.
 Qed.
 
 Instance plumps_morph : morph1 plumps.
 do 2 red; intros; unfold plumps.
 apply WFR_morph; trivial.
+apply isWf_morph.
+apply in_set_morph.
 apply plumps_m.
 Qed.
 

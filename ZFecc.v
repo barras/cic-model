@@ -35,8 +35,13 @@ Qed.
 
 (** Statement that there exists a set containing infinitely many Grothendieck universes *)
 
-Definition infinitely_many_universes :=
-  { U:set | empty ∈ U /\ forall x, x ∈ U -> exists V, V ∈ U /\ grot_univ V /\ x ∈ V }.
+(** Actually, we should not need the existence of a set containing
+    infinitely many Grothendieck universes, but only the existence of a meta-function
+    ecc : nat -> set which is equivalent to introducing infinitely many symbols (one
+    for each universe).
+*)
+Definition infinitely_many_universes := { U:set | empty ∈ U /\ forall
+x, x ∈ U -> exists V, V ∈ U /\ grot_univ V /\ x ∈ V }.
 
 
 (** In Tarski-Grothendieck set theory, there exists an infinite sequence of universes *)
