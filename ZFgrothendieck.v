@@ -484,13 +484,13 @@ Qed.
     A ∈ U ->
     Ffix_ord F A ∈ U.
 intros.
+assert (Fm := Fmono_morph _ H).
 unfold Ffix_ord.
 apply G_osup; intros; trivial.
  do 2 red; intros; apply osucc_morph.
- unfold Fix_rec.
- apply uchoice_morph_raw.
- red; intros.
- apply Ffix_rel_morph; trivial.
+ apply Fix_rec_morph; auto with *.
+ do 2 red; intros.
+ apply F_a_morph_gen; auto with *.
 
  apply isOrd_succ.
  apply F_a_ord; auto.
