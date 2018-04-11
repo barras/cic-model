@@ -386,6 +386,21 @@ apply prodSAT_elim with snSAT; auto.
 apply varSAT.
 Qed.
 
+  Lemma omega_sn_when_A_is_A_to_B A B :
+    let delta := Abs (App (Ref 0) (Ref 0)) in
+    eqSAT A (prodSAT A B) -> inSAT (App delta delta) B.
+intros.
+assert (inSAT delta A).
+ rewrite H.
+ apply prodSAT_intro; intros.
+ unfold subst; simpl.
+ rewrite lift0.
+ apply prodSAT_elim with A; trivial.
+ rewrite <- H; trivial.
+apply prodSAT_elim with A; trivial.
+rewrite <- H; trivial.
+Qed.
+
 (** Dealing with type dependencies *)
 
 Definition depSAT A (P:A->Prop) F :=

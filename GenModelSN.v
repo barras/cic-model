@@ -251,8 +251,23 @@ inversion_clear H0.
  inversion H0.
 Qed.
 
+(** In a consistency model, we cannot have A=(A->B),
+    which contradicts (definitional) propositional extensionality. *)
 
-(* Well-formed types: terms typed by a sort *)
+Theorem sn_model_A_not_A_to_B e A B :
+  wf e ->
+  ~ eq_typ e A (Prod A B).
+intros (i,(j,vok)) H.
+red in H; specialize H with (1:=vok).
+apply Real_morph in H.
+simpl in H.
+rewrite Real_prod in H.
+apply omega_sn_when_A_is_A_to_B in H.
+apply sat_sn in H.
+apply Lc.omega_not_sn in H; trivial.
+Qed.
+
+ (* Well-formed types: terms typed by a sort *)
 
 Definition typs e T :=
   typ e T kind \/ typ e T prop.

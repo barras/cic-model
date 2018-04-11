@@ -1055,6 +1055,22 @@ Qed.
 
 Hint Resolve sn_abs sn_var sn_lift.
 
+Lemma omega_not_sn :
+  let delta := Abs (App (Ref 0) (Ref 0)) in
+  ~ sn (App delta delta).
+intros delta.
+red; fix 1.
+destruct 1.
+apply omega_not_sn; apply H.
+red.
+unfold delta at 1.
+replace (App delta delta) with (subst delta (App (Ref 0) (Ref 0))).
+ constructor.
+
+ unfold subst; simpl.
+ rewrite lift0; trivial.
+Qed.
+
 (* Normalization function *)
 
 Definition neutral t :=
