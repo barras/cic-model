@@ -1,4 +1,4 @@
-Require Import ZF ZFrelations ZFnats ZFord ZFstable.
+Require Import ZF ZFrelations ZFwfr ZFnats ZFord ZFstable.
 
 (** Transfinite iteration of a monotonic operator
  *)
@@ -381,187 +381,6 @@ Qed.
 End FixColl.
 *)
 
-(***)
-(*
-Definition frules a :=
-  subset (power Ffix)
-   (fun X => a ∈ F X /\ forall Y, Y ⊆ X -> a ∈ F Y -> X ⊆ Y).
-
-Instance frules_morph : morph1 frules.
-Admitted.
-
-(*
-Lemma fsub_elim : forall x y o,
-  isOrd o ->
-  y ∈ TI F o ->
-  x ∈ frules y ->
-  exists2 o', lt o' o & x ⊆ TI F o'.
-intros.
-unfold frules in H1; rewrite subset_ax in H1.
-destruct H1 as (?,(x',?,?)).
-apply TI_elim in H0; trivial.
-destruct H0.
-exists x0; trivial.
-destruct H3.
-rewrite H2 in H1|-*;clear x H2; rename x' into x.
-transitivity (inter2 x (TI F x0)).
-2:apply inter2_incl2.
-apply H5.
- apply inter2_incl1.
-
- 
-
-rewrite H2; apply H5; trivial.
-red; intros.
-
-
-rewrite H2; apply H3; trivial.
-apply TI_Ffix.
-apply isOrd_inv with o; trivial.
-Qed.
-*)
-
-Section Iter.
-
-Variable G : (set -> set) -> set -> set.
-Hypothesis Gm : forall x x' g g',
-  x ∈ Ffix ->
-  eq_fun (frules x) g g' ->
-  x == x' -> G g x == G g' x'.
-
-Definition Ffix_rel a y :=
-  forall R:set->set->Prop,
-  Proper (eq_set ==> eq_set ==> iff) R ->
-  (forall x g,
-   ext_fun (frules x) g ->
-   (forall y, y ∈ frules x -> R y (g y)) ->
-   R x (G g x)) ->
-  R a y.
-
-  Instance Ffix_rel_morph :
-    Proper (eq_set ==> eq_set ==> iff) Ffix_rel.
-apply morph_impl_iff2; auto with *.
-do 5 red; intros.
-rewrite <- H; rewrite <- H0; apply H1; trivial.
-Qed.
-
-
-  Lemma Ffix_rel_intro : forall x g,
-    ext_fun (frules x) g ->
-    (forall y, y ∈ frules x -> Ffix_rel y (g y)) ->
-    Ffix_rel x (G g x).
-red; intros.
-apply H2; trivial; intros.
-apply H0; trivial.
-Qed.
-
-  Lemma Ffix_rel_inv : forall x o,
-    x ∈ Ffix ->
-    Ffix_rel x o ->
-    exists2 g,
-      ext_fun (frules x) g /\
-      (forall y, y ∈ frules x -> Ffix_rel y (g y)) &
-      o == G g x.
-intros x o xA Fr.
-apply (@proj2 (Ffix_rel x o)).
-revert xA.
-apply Fr; intros.
- apply morph_impl_iff2; auto with *.
- do 4 red; intros.
- rewrite <- H in xA.
- destruct (H1 xA) as (?,(g,(?,?),?)); clear H1.
- split;[|exists g].
-  rewrite <- H; rewrite <- H0; trivial.
-
-  split; intros.
-   red; red; intros; apply H3; trivial.
-   rewrite H; trivial.
-
-   rewrite <- H in H1; auto.
-
-  rewrite <- H0; rewrite H5.
-  apply Gm; auto with *.
-
- split.
-  apply Ffix_rel_intro; auto.
-  intros.
-  apply H0; trivial.
-  apply Ffix_fsub_inv with x0; trivial.
-
-  exists g.
-   split; intros; trivial.
-   apply H0; trivial.
-   apply Ffix_fsub_inv with x0; trivial.
-
-  apply Gm; auto with *.
-Qed.
-
-  Lemma Ffix_rel_fun :
-    forall x y, Ffix_rel x y ->
-    forall y', Ffix_rel x y' -> x ∈ Ffix -> y == y'.
-intros x y H.
-apply H; intros.
- apply morph_impl_iff2; auto with *.
- do 4 red; intros.
- rewrite <- H1; rewrite <- H0 in H3,H4; auto.
-apply Ffix_rel_inv in H2; trivial.
-destruct H2 as (g',(eg',Hg),eqy').
-rewrite eqy'; clear y' eqy'.
-apply Gm; auto with *.
-red; intros.
-rewrite <- (eg' _ _ H2 H4); auto.
-apply H1; auto.
-apply Ffix_fsub_inv with x0; trivial.
-Qed.
-
-Require Import ZFrepl.
-
-  Lemma Ffix_rel_def : forall o a, isOrd o -> a ∈ TI F o -> exists y, Ffix_rel a y.
-intros o a oo; revert a; apply isOrd_ind with (2:=oo); intros.
-clear o oo H0.
-apply TI_elim in H2; trivial.
-destruct H2.
-assert (xo : isOrd x).
- apply isOrd_inv with y; trivial.
-assert (forall z, z ∈ fsub a -> uchoice_pred (fun o => Ffix_rel z o)).
- intros.
- destruct H1 with x z; auto.
-  apply subset_elim2 in H3; destruct H3.
-  rewrite H3; apply H4; trivial.
-  apply TI_Ffix; trivial.
-
-  split; intros.
-   rewrite <- H5; trivial.
-  split; intros.
-   exists x0; trivial.
-  apply Ffix_rel_fun with z; trivial.
-  apply Ffix_fsub_inv with a; trivial.
-  apply TI_Ffix with (o:=y); trivial.
-  apply TI_intro with x; trivial.
-exists (G (fun b => uchoice (fun o => Ffix_rel b o)) a).
-apply Ffix_rel_intro; trivial.
- red; red; intros.
- apply uchoice_morph_raw.
- apply Ffix_rel_morph; trivial.
-intros.
-apply uchoice_def; auto.
-Qed.
-
-  Lemma Ffix_rel_choice_pred : forall o a, isOrd o -> a ∈ TI F o ->
-    uchoice_pred (fun o => Ffix_rel a o).
-split; intros.
- rewrite <- H1; trivial.
-split; intros.
- apply Ffix_rel_def with o; trivial.
-apply Ffix_rel_fun with a; trivial.
-revert H0; apply TI_Ffix; trivial.
-Qed.
-
-  Definition Fix_rec a := uchoice (fun o => Ffix_rel a o).
-*)
-
-(***)
-
 (** Subterms of [a] *)
 Definition fsub a :=
   subset Ffix (fun b => forall X, X ⊆ Ffix -> a ∈ F X -> b ∈ X).
@@ -632,15 +451,13 @@ apply cond_set_morph.
  apply Gm; trivial.
 Qed.
 
-Require Import ZFwf.
-Import WellFoundedRecursion.
 
 Definition Fix_rec :=
-  WFR (fun z => z ∈ Ffix) (fun b a => b ∈ fsub a) G'.
+  WFRK (fun z => z ∈ Ffix) (fun b a => b ∈ fsub a) G'.
 
 Instance Fix_rec_morph0 : morph1 Fix_rec.
 do 2 red; intros.
-apply WFR_morph; auto with *.
+apply WFRK_morph; auto with *.
  red; intros.
  rewrite H0; reflexivity.
 
@@ -670,16 +487,15 @@ Lemma Fr_eqn : forall a o,
 intros.
 transitivity (G' Fix_rec a).
  unfold Fix_rec.
- apply WFR_eqn; intros.
-  do 3 red; intros.
-  rewrite H1,H2; reflexivity. 
+ apply WFRK_eqn; intros.
+  clear; do 2 red; intros; rewrite H; reflexivity. 
+
+  clear; do 3 red; intros; rewrite H,H0; reflexivity. 
 
   apply Ffix_def in H1; destruct H1 as (o',oo',tyx).
   revert x tyx; elim oo' using isOrd_ind; intros.
   constructor; intros. 
   destruct fsub_elim with (2:=tyx) (3:=H4) as (z,ltx,tyy0); eauto.
-
-  apply Ffix_fsub_inv with y; trivial.
 
   apply G'm.
 
@@ -896,6 +712,230 @@ rewrite Ffix_closure.
 apply TI_clos_fix_eqn.
 Qed.
 
+(*BEGIN alt*)
+(** Functions defined by recursion on subterms *)
+Section Iter2.
+
+Variable G : (set -> set) -> set -> set.
+Hypothesis Gm : forall x x' g g',
+  x ∈ Ffix ->
+  eq_fun (fsub x) g g' ->
+  x == x' -> G g x == G g' x'.
+
+Definition G'' F a :=
+  cond_set (a ∈ Ffix) (G F a).
+
+Lemma G''m : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) G''.
+do 3 red; intros.
+apply cond_set_morph2.
+ rewrite H0; reflexivity.
+
+ intros.
+ apply Gm; trivial.
+ red; intros. 
+ apply H; trivial.
+Qed.
+
+Lemma G''ext : forall x x' g g',
+  (x ∈ Ffix -> eq_fun (fsub x) g g') ->
+  x == x' -> G'' g x == G'' g' x'.
+intros.
+apply cond_set_morph2.
+ rewrite H0; reflexivity.
+
+ intros.
+ apply Gm; auto.
+Qed.
+(*
+Lemma G''ext : forall x x' g g',
+  x ∈ Ffix ->
+  eq_fun (fsub x) g g' ->
+  x == x' -> G'' g x == G'' g' x'.
+intros.
+apply cond_set_morph.
+ rewrite H1; reflexivity.
+
+ apply Gm; trivial.
+Qed.
+*)
+
+Definition Fix_rec' :=
+  WFR (fun b a => b ∈ Ffix /\ b ∈ fsub a) G''.
+
+Instance Fix_rec_morph0' : morph1 Fix_rec'.
+do 2 red; intros.
+apply WFR_morph; auto with *.
+ do 2 red; intros.
+ rewrite H0,H1; reflexivity.
+
+ apply G''m.
+Qed.
+
+(*
+Lemma fsub_acc o x:
+  isOrd o ->
+  x ∈ TI F o ->
+  Acc (fun b a => b ∈ fsub a) x.
+ apply Ffix_def in H1; destruct H1 as (o',oo',tyx).
+intros oo; revert x; elim oo using isOrd_ind; intros.
+constructor; intros.
+destruct fsub_elim with (2:=H2) (3:=H3) as (z,lty,tyy0); trivial.
+eauto.
+Qed.
+*)
+
+Lemma Fr_eqn' : forall a o,
+    isOrd o ->
+    a ∈ TI F o ->
+    Fix_rec' a == G Fix_rec' a.
+intros.
+transitivity (G'' Fix_rec' a).
+ unfold Fix_rec'.
+ apply WFR_eqn; intros.
+  do 3 red; intros.
+  rewrite H1,H2; reflexivity. 
+  apply G''m.
+
+  apply G''ext; auto with *.
+  clear H1; red; intros.
+  apply H2; auto.  
+  split; trivial.
+  apply Ffix_fsub_inv with x; trivial.
+
+  revert a H0.
+  elim H using isOrd_ind; intros.  
+  constructor.
+  destruct 1; trivial.
+  destruct fsub_elim with (2:=H3) (3:=H5) as (z,ltx,tyy0); eauto.
+
+ unfold G''; apply cond_set_ok.
+ apply TI_Ffix in H0; trivial.  
+Qed.
+
+  Lemma Fix_rec_typ' U2 a :
+    (forall x g, ext_fun (fsub x) g -> x ∈ Ffix ->
+        (forall y, y ∈ fsub x -> g y ∈ U2) -> G g x ∈ U2) ->
+    a ∈ Ffix ->
+    Fix_rec' a ∈ U2.
+intros.
+rewrite Ffix_def in H0; destruct H0.
+revert a H1.
+induction H0 using isOrd_ind; intros.
+rewrite Fr_eqn' with (2:=H3); trivial.
+apply H.
+ do 2 red; intros.
+ apply Fix_rec_morph0'; trivial.
+
+ apply TI_Ffix with y; trivial.
+
+ intros.
+ apply fsub_elim with (o:=y) in H4; trivial.
+ destruct H4.
+ apply H2 with x0; trivial.
+Qed.
+
+End Iter2.
+
+  Lemma Fe1' : forall X, ext_fun X (fun b => osucc (Fix_rec' F_a b)).
+red; red; intros.
+rewrite H0; reflexivity.
+Qed.
+Hint Resolve Fe1'.
+
+  Lemma F_a_ord' : forall a, a ∈ Ffix -> isOrd (Fix_rec' F_a a).
+intros.
+rewrite Ffix_def in H; destruct H.
+revert a H0; apply isOrd_ind with (2:=H); intros.
+rewrite Fr_eqn' with (o:=y); auto.
+apply isOrd_osup; trivial.
+intros.
+apply isOrd_succ.
+destruct fsub_elim with (2:=H3) (3:=H4); trivial.
+eauto.
+Qed.
+
+Hint Resolve F_a_ord'.
+
+  Lemma F_a_tot' : forall a,
+   a ∈ Ffix ->
+   a ∈ TI F (osucc (Fix_rec' F_a a)).
+intros.
+rewrite Ffix_def in H; destruct H.
+revert a H0; apply isOrd_ind with (2:=H); intros.
+assert (ao : isOrd (Fix_rec' F_a a)).
+ apply F_a_ord'; rewrite Ffix_def; exists y; trivial.
+rewrite TI_mono_succ; auto.
+assert (fsub a ⊆ TI F (Fix_rec' F_a a)).
+ red; intros.
+ destruct fsub_elim with (2:=H3) (3:=H4); trivial.
+ assert (xo : isOrd x0).
+  apply isOrd_inv with y; trivial.
+ assert (z ∈ TI F (osucc (Fix_rec' F_a z))).
+  apply H2 with x0; trivial.
+ revert H7; apply TI_mono; auto.
+  apply isOrd_succ; apply F_a_ord'; rewrite Ffix_def; exists x0; trivial.
+
+  red; intros.
+  rewrite Fr_eqn' with (o:=y); auto.
+  unfold F_a.
+  apply osup_intro with (x:=z); trivial.
+apply Fmono in H4.
+apply H4.
+apply F_intro with y; trivial.
+Qed.
+(** The closure ordinal *)
+  Definition Ffix_ord' :=
+    osup Ffix (fun a => osucc (Fix_rec' F_a a)).
+
+  Lemma Ffix_o_o' : isOrd Ffix_ord'.
+apply isOrd_osup; auto.
+Qed.
+Hint Resolve Ffix_o_o'.
+
+  Lemma Ffix_post' : forall a,
+   a ∈ Ffix ->
+   a ∈ TI F Ffix_ord'.
+intros.
+apply TI_intro with (Fix_rec' F_a a); auto.
+ apply osup_intro with (x:=a); trivial.
+ apply lt_osucc; auto.
+
+ rewrite <- TI_mono_succ; auto.
+ apply F_a_tot'; trivial.
+Qed.
+
+  Lemma TI_clos_stages' o : isOrd o -> TI F o ⊆ TI F Ffix_ord'.
+intros.
+transitivity Ffix.
+ apply TI_Ffix; trivial.
+
+ red; intros; apply Ffix_post'; trivial.
+Qed.
+
+  Lemma TI_clos_fix_eqn' : TI F Ffix_ord' == F (TI F Ffix_ord').
+apply eq_set_ax; intros z.
+rewrite <- TI_mono_succ; trivial.
+split; intros.
+ revert H; apply TI_incl; auto.
+
+ apply TI_clos_stages' in H; auto.
+Qed.
+ 
+
+  Lemma Ffix_closure' : Ffix == TI F Ffix_ord'.
+apply incl_eq.
+ red; intros; apply Ffix_post'; trivial.
+
+ apply TI_Ffix; trivial.
+Qed.
+
+(** We prove Ffix is a fixpoint *)
+  Lemma Ffix_eqn' : Ffix == F Ffix.
+rewrite Ffix_closure'.
+apply TI_clos_fix_eqn'.
+Qed.
+
+(*END*)  
 End BoundedOperator.
 
 
@@ -959,8 +999,7 @@ Instance Fix_rec_morph :
   Proper ((E==>E)==>E==>((E==>E)==>E==>E)==>E==>E) Fix_rec. 
 do 5 red; intros.
 unfold Fix_rec.
-Import WellFoundedRecursion.
-apply WFR_morph; trivial.
+apply WFRK_morph; trivial.
  red; intros.
  apply in_set_morph; trivial.
  apply Ffix_morph; trivial.
@@ -1055,8 +1094,7 @@ apply osup_morph.
 
  red; intros.
  apply osucc_morph.
-(* Import WellFoundedRecursion.*)
- apply WFR_morph; trivial.
+ apply WFRK_morph; trivial.
   red; intros.
   rewrite H1,Ffix_indep; reflexivity.
 

@@ -75,7 +75,8 @@ apply isOrd_intro; intros.
  exists (x ⊔ y). 
   apply subset_intro.
    apply G_osup2; auto.
-
+   apply H1.
+   
    apply isOrd_osup2; trivial.
 
   split; [apply osup2_incl1|apply osup2_incl2]; auto.

@@ -123,7 +123,7 @@ Qed.
 Lemma NatRec_eq_0 e f g :
   eq_typ e (NatRec f g Zero) f.
 red; simpl; intros.
-rewrite natrec_0; reflexivity.
+rewrite natrec_0; auto with *; try reflexivity.
 Qed.
 
 Lemma NatRec_eq_S e f g n :

@@ -194,6 +194,7 @@ Qed.
 Lemma isOrd_acc o : isOrd o -> Acc in_set o.
 intros.
 rewrite <- ZFwf.isWf_acc; auto.
+apply H.
 Qed.
 
 Definition TR o x := ZFrepl.uchoice (fun y => exists h:isOrd o, y == TR_acc o (isOrd_acc _ h) h x).

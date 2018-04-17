@@ -12,6 +12,12 @@ Import ZFind_basic.
 Import ZFnats.
 
 
+Lemma app2_m2 m : morph2 (fun n x => app (app m n) x).
+do 3 red; intros.
+rewrite H,H0; reflexivity.
+Qed.
+Hint Resolve app2_m2.
+
 Definition prf_term : term.
 left; exists (fun _ => empty); do 2 red; reflexivity.
 Defined.
@@ -110,13 +116,11 @@ elim H using N_ind; intros.
                                        (V.cons n0 i) k) 
     with (V.cons (natrec f0 fS' n0) (V.cons n0 i)); trivial.
     rewrite simpl_int_lift. symmetry; apply simpl_int_lift1.
-
-  do 3 red; intros. rewrite H6, H7; reflexivity.
 Qed. 
 
 Definition Add : term -> term -> term.
 intros m n; left; 
-exists (fun i => natrec (int m i) (fun _ => succ) (int n i)).
+exists (fun i => add (int m i) (int n i)).
 do 2 red; intros. 
 apply natrec_morph; try rewrite H; try reflexivity.
  do 2 red; intros. rewrite H1; reflexivity.
@@ -128,24 +132,14 @@ do 2 red; simpl; intros.
 replace (fun k : nat => i k) with i; trivial.
 do 2 red in H0; simpl in H0; specialize H0 with (1:=H1).
 do 2 red in H; simpl in H; specialize H with (1:=H1).
-elim H0 using N_ind; intros.
- revert H4; apply in_set_morph; try reflexivity.
-  apply natrec_morph; try reflexivity; try symmetry; trivial.
-   do 2 red; intros; rewrite H5; reflexivity.
-   
- rewrite natrec_0; trivial.
-
- rewrite natrec_S; trivial.
-  apply succ_typ; trivial.
-    
-  do 3 red; intros. rewrite H5; reflexivity.
+apply add_typ; trivial.
 Qed.
 
 Definition ind_schema_term : term.
 left; exists (fun i => natrec (i 2) (fun n x => app (app (i 1) n) x) (i 0)).
 do 2 red; intros.
 apply natrec_morph; try apply H.
- do 2 red; intros; simpl. apply app_ext; trivial.
+do 2 red; intros; simpl. apply app_ext; trivial.
   apply app_ext; trivial.
 Defined.
 
@@ -155,12 +149,8 @@ Lemma discr_term : forall e n i, val_ok e i ->
   ~ eq_typ e Zero (Add n (Succ Zero)).
 red; intros. red in H0; simpl in *.
 specialize H0 with (1 := H).
- rewrite natrec_S in H0. rewrite natrec_0 in H0.
+ rewrite add1 in H0.
  symmetry in H0; apply discr in H0. trivial.
-
- do 3 red; intros. rewrite H2; reflexivity.
-
- apply zero_typ.
 Qed.
 
 Lemma Succ_inj : forall e x y, typ e x T -> typ e y T ->
@@ -170,15 +160,12 @@ red; intros. red in H, H0, H1; simpl in *.
 specialize H with (1:=H2).
 specialize H0 with (1:=H2).
 specialize H1 with (1:=H2).
-assert (morph2 (fun _ => succ)).
- do 3 red; intros x0 y0 H3 x1 y1 H4; rewrite H4; reflexivity.
-do 2 rewrite natrec_S in H1; try apply zero_typ; try apply H3.
-do 2 rewrite natrec_0 in H1.
+do 2 rewrite add1 in H1.
 apply succ_inj; trivial.
 Qed.
  
 Lemma Add_0 : forall e n, typ e n T -> eq_typ e (Add n Zero) n.
-destruct n; red; intros; simpl; rewrite natrec_0; reflexivity.
+destruct n; red; intros; simpl; rewrite add0; auto with *.
 Qed.
 
 Lemma Add_ass : forall e x y, typ e y T ->
@@ -187,10 +174,10 @@ assert (morph2 (fun _ => succ)).
  do 3 red; intros x y H0 x1 y1 H1; rewrite H1; reflexivity.
 do 2 red; intros; simpl.
 replace (fun k : nat => i k) with i; trivial.
-do 2 rewrite (natrec_S _ _ _ H zero_typ).
 red in H0; simpl in H0; specialize H0 with (1:=H1).
-do 2 rewrite natrec_0. 
-rewrite (natrec_S _ _ _ H H0); reflexivity.
+repeat rewrite add1.
+rewrite addS; trivial.
+reflexivity.
 Qed.
 
 
@@ -604,12 +591,8 @@ apply Fall_intro.
   assert (nth_error (EQ_trm Zero (Add (Ref 0) (Succ Zero))::T::e) 
     0 = value (EQ_trm Zero (Add (Ref 0) (Succ Zero)))); trivial.
   specialize H with (1:=H0). clear H0. red in H; simpl in H.
-  rewrite natrec_S in H.
-   rewrite EQ_discr in H. apply empty_ax in H; contradiction.
-
-   do 2 red; intros _ _ _ x1 x2 H1; rewrite H1; reflexivity.
-
-   apply zero_typ.
+  rewrite add1 in H.
+  rewrite EQ_discr in H. apply empty_ax in H; contradiction.
 Qed.
 
 Lemma P_ax_intro2 : forall e, exists t, 
@@ -657,10 +640,7 @@ apply Fall_intro.
      simpl. rewrite H3. rewrite simpl_int_lift1.
      rewrite H3 in H0P at 2. rewrite simpl_int_lift1 in H0P.
      rewrite H in H0P; simpl in H0P. rewrite H0; simpl.
-     assert (morph2 (fun _ : set => succ)).
-      do 3 red; intros. rewrite H8; reflexivity.
-     do 2 rewrite (natrec_S _ _ _ H7 zero_typ) in H0P.
-     do 2 rewrite natrec_0 in H0P. simpl in H0P.
+     do 2 rewrite add1 in H0P.
      apply EQ_succ_inj with (x0 := i 0); trivial.
     
      rewrite H in H6; simpl in H6; discriminate.
@@ -811,15 +791,10 @@ apply Impl_intro.
       rewrite int_lift_rec_eq. rewrite <- V.cons_lams; simpl.
        2 : do 2 red; intros x y H3; rewrite H3; reflexivity.
 
-       rewrite natrec_S. 
-        2 : do 3 red; intros _ _ _ m0 n0 Hmn; rewrite Hmn; reflexivity.
-
-        2: apply zero_typ.
-
-       rewrite natrec_0. rewrite <- H0. rewrite <- V.cons_lams.
-        2 : do 2 red; intros m0 n0 Hmn; rewrite Hmn; reflexivity.
-
-        apply int_morph; try reflexivity.
+       rewrite add1.
+       rewrite <- H0. rewrite <- V.cons_lams.
+       2:apply V.shift_morph; trivial.
+       apply int_morph; try reflexivity.
          do 2 red; intros. apply V.cons_morph. 
           rewrite V.lams_bv; try omega.
           rewrite V.lams0. unfold V.cons. reflexivity.
@@ -841,18 +816,17 @@ apply Impl_intro.
      rewrite V.lams0. 
      replace (fun k : nat => V.shift 1 i k) with (V.shift 1 i); trivial.
      rewrite (Hsplit i). elim Hind using N_ind.
-      intros. rewrite natrec_morph.
+      intros. rewrite natrec_morph; auto.
        rewrite <- H0. apply H1.
      
        reflexivity.
 
-       do 2 red; intros. apply app_ext; trivial.
-        apply app_ext; try reflexivity; trivial.
+       apply app2_m2.
 
        symmetry; trivial.
 
      rewrite natrec_0; trivial.
-
+     
      intros. rewrite natrec_S; trivial.
       generalize prod_elim; intro Haux.
       specialize Haux with (2:=Hsucc) (3:=H). simpl in Haux.
@@ -871,9 +845,6 @@ apply Impl_intro.
         (fun _ : X => int P (V.cons (succ n) (V.shift 3 i)))) as H'.
       red; intros; try reflexivity.
       specialize Haux1 with (1:=H') (2:=Haux) (3:=H0). clear H'. apply Haux1.
-    
-      do 3 red; intros. apply app_ext; trivial.
-       apply app_ext; try reflexivity; trivial.
 Qed.
 
 

@@ -131,8 +131,8 @@ Defined.
 
 Lemma P1_ZERO : app P1 zero == prod props (fun p => prod p (fun p1 => p)).
 unfold P1. rewrite beta_eq.
- rewrite natrec_0; reflexivity.
-
+ apply natrec_0.
+ 
  do 2 red; intros. apply natrec_morph; [reflexivity|do 3 red; intros; reflexivity|trivial].
 
  red; rewrite El_def,eqNbot. apply zero_typ.
@@ -203,7 +203,7 @@ Qed.
 
 Lemma P2_ZERO : app P2 zero == prod props (fun p => p).
 unfold P2; rewrite beta_eq.
- rewrite natrec_0; reflexivity.
+ apply natrec_0; do 3 red; reflexivity.
 
  do 2 red; intros; apply natrec_morph; [reflexivity|do 3 red; reflexivity|trivial].
 
@@ -562,6 +562,12 @@ setoid_replace (Prod Nat Nat) with (subst m (Prod Nat (lift 2 Nat))) using relat
 apply typ_app with (V:=Nat); [trivial|apply typ_Add|discriminate|discriminate].
 Qed.
 
+
+Lemma succ_m2 : morph2 (fun _ => succ).
+intros _ _ _; apply succ_morph.
+Qed.
+Hint Resolve succ_m2.
+
 Lemma int_Add : forall n m i mm nn,  
   int m i ∈ N ->
   int n i ∈ N ->
@@ -587,16 +593,15 @@ assert (natrec (int m i) (fun _ : set => succ) (int n i) ==
  apply natrec_morph; [|do 3 red; intros; rewrite H0; reflexivity|]; trivial.
 rewrite <- H; clear H.
 
-pattern (int n i); apply N_ind; [|do 2 rewrite natrec_0; reflexivity| |trivial]; intros.
+pattern (int n i); apply N_ind; [|repeat rewrite natrec_0; auto; try reflexivity| |trivial]; intros.
  assert (natrec (int m i) (fun _ : set => succ) n0 == 
    natrec (int m i) (fun _ : set => succ) n').
   apply natrec_morph; [reflexivity|do 3 red; intros; rewrite H3; reflexivity|trivial].
 
  rewrite H2 in H1; rewrite <- H1; clear H2. 
  apply natrec_morph; [reflexivity
-   |do 3 red; intros; apply app_ext; [apply app_ext; [reflexivity|]|]; trivial 
+   |do 3 red; intros; apply app_ext; [apply app_ext; [reflexivity|]|]; trivial
    |rewrite H0; reflexivity].
- 
  rewrite natrec_S; [|do 3 red; intros; rewrite H1, H2; reflexivity|trivial].
  rewrite natrec_S; [|do 3 red; intros; rewrite H2; reflexivity|trivial].
  rewrite beta_eq; [rewrite H0|do 2 red; reflexivity|red;rewrite El_def,eqNbot; trivial].
@@ -654,7 +659,7 @@ Qed.
 
 Lemma ax1_aux_0 : forall e, eq_typ e True_symb (App ax1_aux Zero).
 red; intros e i j Hok; simpl.
-rewrite beta_eq; [rewrite natrec_0; reflexivity| |red;rewrite El_def,eqNbot; apply zero_typ].
+rewrite beta_eq; [rewrite natrec_0; auto; try reflexivity| |red;rewrite El_def,eqNbot; apply zero_typ].
  do 2 red; intros. apply natrec_morph; [reflexivity| |trivial].
   do 3 red; intros. apply app_ext; [apply app_ext|]; trivial.
    apply lam_ext; [|do 2 red; intros]; reflexivity.
@@ -766,7 +771,7 @@ apply Impl_intro; [|discriminate|].
        (rewrite int_S; simpl; [reflexivity|apply zero_typ]).
      rewrite int_Add with (3:=H0) (4:=H1); 
        [|rewrite H0; trivial|rewrite H1; apply succ_typ; apply zero_typ].
-      rewrite natrec_S; [rewrite natrec_0; rewrite int_S; [reflexivity|trivial]
+      rewrite natrec_S; [rewrite natrec_0; trivial; try (rewrite int_S; [reflexivity|trivial])
         |do 3 red; intros; rewrite H3; reflexivity|apply zero_typ].
 
   setoid_replace Nat with (lift 3 Nat) using relation eq_term at 2;
@@ -860,7 +865,7 @@ assert ([int (Ref 0) i, tm (Ref 0) j] \real
     assert (int (App Succ Zero) (V.shift 1 i) == succ zero) by (apply int_S; apply zero_typ).
     rewrite int_Add with (3:=H4) (4:=H5); [
       |rewrite H4; trivial|rewrite H5; apply succ_typ; apply zero_typ].
-     rewrite natrec_S; [rewrite natrec_0, H3; reflexivity
+     rewrite natrec_S; [rewrite natrec_0, H3; auto; reflexivity
        |do 3 red; intros; rewrite H7; reflexivity|apply zero_typ].
 
     rewrite split_lift. do 2 rewrite int_cons_lift_eq.
@@ -868,7 +873,7 @@ assert ([int (Ref 0) i, tm (Ref 0) j] \real
     assert (int (App Succ Zero) (V.shift 1 i) == succ zero) by (apply int_S; apply zero_typ).
     rewrite int_Add with (3:=H6) (4:=H7); [
       |rewrite H6; trivial|rewrite H7; apply succ_typ; apply zero_typ].
-     rewrite natrec_S; [rewrite natrec_0, H3; reflexivity
+     rewrite natrec_S; [rewrite natrec_0, H3; auto; reflexivity
        |do 3 red; intros; rewrite H9; reflexivity|apply zero_typ].
 
 apply H0 in H; clear H0.
@@ -910,7 +915,7 @@ apply in_int_not_kind in H; [destruct H as (H, _)|discriminate].
 unfold inX in H; simpl in H; rewrite El_def,eqNbot in H.
 assert (int (Ref 0) (V.shift 2 (fun k : nat => i k)) == i 2) by reflexivity.
 assert (int Zero (V.shift 2 (fun k : nat => i k)) == zero) by reflexivity.
-rewrite int_Add with (3:=H0) (4:=H1); [rewrite natrec_0; reflexivity
+rewrite int_Add with (3:=H0) (4:=H1); [rewrite natrec_0; trivial; reflexivity
   |rewrite H0; trivial|rewrite H1; apply zero_typ].
 Qed.
 
@@ -988,7 +993,6 @@ apply typ_abs; [right| |discriminate].
    rewrite int_Add with (3:=H) (4:=(Hn1 1)); [clear H
      |rewrite H; change N with ((fun _ => N) (i 3)); apply natrec_typ; trivial; 
        [do 2 red; intros; reflexivity
-       |do 3 red; intros; rewrite H1; reflexivity  
        |intros; apply succ_typ; trivial]
      |rewrite (Hn1 1); apply succ_typ; apply zero_typ].
    assert (int (Ref 0) (V.shift 2 (fun k : nat => i k)) == (i 2)) by reflexivity.
@@ -1000,17 +1004,16 @@ apply typ_abs; [right| |discriminate].
    rewrite int_Add with (3:=H) (4:=H0); [|rewrite H; trivial
      |rewrite H0; change N with ((fun _ => N) (succ zero)); apply natrec_typ; trivial; 
        [do 2 red; reflexivity
-       |do 3 red; intros; rewrite H2; reflexivity
        |apply succ_typ; apply zero_typ
        |intros; apply succ_typ; trivial]].
-   rewrite natrec_S; [rewrite natrec_0
+   rewrite natrec_S; [rewrite natrec_0; auto
      |do 3 red; intros; rewrite H2; reflexivity|apply zero_typ].
    assert (natrec (i 2) (fun _ : set => succ)
      (natrec (i 3) (fun _ : set => succ) (succ zero)) ==
      natrec (i 2) (fun _ : set => succ) (succ (i 3))).
     apply natrec_morph; [reflexivity
       |do 3 red; intros; rewrite H2; reflexivity
-      |rewrite natrec_S; [rewrite natrec_0; reflexivity
+      |rewrite natrec_S; [rewrite natrec_0; auto; reflexivity
         |do 3 red; intros; rewrite H2; reflexivity|apply zero_typ]].
    
    rewrite H1; clear Hn1 H H0 H1.
@@ -1147,7 +1150,7 @@ apply Impl_intro; [|discriminate|].
          rewrite int_Add with (3:=H0) (4:=H1); [|rewrite H0; trivial
            |rewrite H1; apply succ_typ; apply zero_typ].
          do 3 rewrite int_lift_rec_eq.
-         rewrite natrec_S; [rewrite natrec_0
+         rewrite natrec_S; [rewrite natrec_0; auto
            |do 3 red; intros; rewrite H3; reflexivity
            |apply zero_typ].
          rewrite int_S; [|simpl; unfold V.shift; trivial].

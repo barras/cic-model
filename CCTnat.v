@@ -89,13 +89,11 @@ unfold hyp_ok; unfold val_ok; induction t; simpl in *; intros.
 
     symmetry; trivial.
 
-  rewrite natrec_0. apply IHt1; trivial; intros.
+  rewrite add0. apply IHt1; trivial; intros.
    apply H. apply in_or_app; left; trivial.
 
-  rewrite natrec_S;trivial. 
+  rewrite addS;trivial. 
    apply succ_typ; trivial.
-
-   do 3 red; intros. rewrite H5; reflexivity.
 Qed.
 
    

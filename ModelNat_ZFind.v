@@ -8,7 +8,7 @@ Set Implicit Arguments.
     ModelZF. 
  *)
 
-Require Import ZF ZFcoc ZFind_nat.
+Require Import ZF ZFwfr ZFcoc ZFind_nat.
 Require Import basic ModelZF.
 Import CCM BuildModel.
 
@@ -55,16 +55,15 @@ Qed.
 (** * The recursor *)
 
 (*Import ZFwf ZFord.*)
-Import ZFwf.WellFoundedRecursion.
 Definition NAT_REC f g n :=
-  WFR (fun x => x ∈ NAT) (fun n m => n ∈ NAT /\ m == SUCC n)
-      (fun F n => NATCASE f (fun m => g m (F m)) n) n.
+  WFRK (fun x => x ∈ NAT) (fun n m => n ∈ NAT /\ m == SUCC n)
+       (fun F n => NATCASE f (fun m => g m (F m)) n) n.
 
 Instance NATREC_morph :
   Proper (eq_set ==> (eq_set ==> eq_set ==> eq_set) ==> eq_set ==> eq_set) NAT_REC.
 do 4 red; intros.
 unfold NAT_REC.
-apply WFR_morph; trivial.
+apply WFRK_morph; trivial.
  red; intros.
  rewrite H2; reflexivity.
 
@@ -75,16 +74,6 @@ apply WFR_morph; trivial.
  apply NATCASE_morph; trivial.
  red; intros.
  apply H0; auto.
-Qed.
-
-  Lemma Acc_morph :
-    Proper ((eq_set ==> eq_set ==> iff) ==> eq_set ==> iff) (Acc (A:=set)).
-apply morph_impl_iff2; auto with *.
-do 4 red; intros.    
-revert y0 H0; induction H1.
-constructor; intros.
-apply H1 with y1; auto with *.
-eapply H with (3:=H3); auto with *.
 Qed.
 
 Section NatrecProperties.
@@ -98,7 +87,7 @@ Qed.
 intros.
 apply NAT_ind with (4:=H). 
  intros.
- eapply Acc_morph with (3:=H2); auto with *.
+ revert H2; apply iff_impl; eapply wf_morph with (eqA:=eq_set); auto with *.
 
  constructor; intros.
  destruct H0.
@@ -108,7 +97,7 @@ apply NAT_ind with (4:=H).
  constructor; intros.
  destruct H2.
  apply SUCC_inj in H3.
- apply Acc_morph with (3:=H1); auto with *.
+ revert H1; apply iff_impl; apply wf_morph with (eqA:=eq_set); auto with *.
 Qed.
 
   Let invN x y : x ∈ NAT /\ y == SUCC x -> y ∈ NAT -> x ∈ NAT.
@@ -137,25 +126,41 @@ apply SUCC_inv_typ_gen.
 rewrite <- H2; trivial.
 Qed.
 
-  Lemma NATREC_0 f g : morph2 g -> NAT_REC f g ZERO == f.
+  Lemma NATREC_0 f g : NAT_REC f g ZERO == f.
 unfold NAT_REC; intros.
-rewrite WFR_eqn; auto.
+unfold WFRK; rewrite WFR_eqn_norec; auto.
+ rewrite cond_set_ok. 2:apply ZERO_typ.
  apply NATCASE_ZERO.
 
- apply caseext; trivial.
+ red; destruct 1.
+ apply NATf_discr in H0; trivial.
 
- apply ZERO_typ.
+ intros.
+ rewrite cond_set_ok. 2:apply ZERO_typ.
+ rewrite cond_set_ok. 2:rewrite <-H; apply ZERO_typ.
+ rewrite NATCASE_ZERO.
+ unfold NATCASE.
+  rewrite cond_set_ok; auto with *.
+  rewrite cond_set_mt.
+  symmetry; apply union2_mt_r.
+
+  red; destruct 1.
+  rewrite <- H in H0.
+  apply NATf_discr in H0; trivial.
 Qed.
 
 Lemma NATREC_S : forall f g n, morph2 g -> n ∈ NAT ->
    NAT_REC f g (SUCC n) == g n (NAT_REC f g n).
 unfold NAT_REC; intros.
-rewrite WFR_eqn; auto.
+rewrite WFRK_eqn; auto.
  rewrite NATCASE_SUCC.
   reflexivity.
 
   intros; apply H; trivial.
-  apply WFR_morph0; trivial.
+  apply WFR_morph_gen2; trivial.
+  reflexivity.  
+
+ clear; do 2 red; intros; rewrite H; reflexivity.
 
  apply caseext; trivial.
 
@@ -251,12 +256,7 @@ Lemma NatRec_eq_0 e f g :
   eq_typ e (NatRec f g Zero) f.
 red; simpl; intros.
 rewrite NATREC_0.
- reflexivity.
-
- do 3 red; intros.
- apply cc_app_morph;[|exact H1].
- apply cc_app_morph;[|exact H0].
- reflexivity.
+reflexivity.
 Qed.
 
 Lemma NatRec_eq_S e f g n :
