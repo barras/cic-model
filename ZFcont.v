@@ -517,7 +517,7 @@ Qed.
 End ProductContinuity.
 
 (* Case when mu is a regular ordinal *)
-
+(*
 Lemma func_cont : forall mu X F,
   isOrd mu ->
   VN_regular mu ->
@@ -536,3 +536,4 @@ apply eq_intro; intros.
  apply func_mono with X (F x); auto.
  reflexivity.
 Qed.
+*)

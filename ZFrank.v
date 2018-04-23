@@ -256,7 +256,7 @@ Qed.
 
 Lemma VN_osup2 o :
   isOrd o ->
-  forall x y,
+  forall x y (xo:isOrd x),
   x ∈ VN o ->
   y ∈ VN o ->
   x ⊔ y ∈ VN o.
@@ -268,8 +268,7 @@ exists (x0 ⊔ x1).
  apply osup2_lt; trivial.
 
  red; intros.
- rewrite osup2_ax in H6.
- 2:apply isWf_intro; intros; eauto using VN_wf, isOrd_inv.
+ rewrite osup2_ax in H6; trivial.
  assert (x ⊆ VN (x0 ⊔ x1)).
   red; intros.
   apply H4 in H7; revert H7; apply VN_mono_le.
@@ -284,6 +283,7 @@ exists (x0 ⊔ x1).
    apply osup2_incl2; eauto using isOrd_inv.
  destruct H6 as [?|[?|(x',?,(y',?,?))]]; auto.
  rewrite H10; apply H1; auto.
+ 2:apply isOrd_inv with x; trivial.
  apply osup2_lt; trivial.
 Qed.
 
@@ -371,7 +371,7 @@ Lemma VN_reg_ord : forall o,
   isOrd o -> 
   VN_regular o ->
   omega ∈ o ->
-  forall x F,
+  forall x F (xo:isOrd x),
   ext_fun x F ->
   x ∈ VN o ->
   (forall y, y ∈ x -> lt (F y) o) ->

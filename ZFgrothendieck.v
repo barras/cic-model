@@ -338,8 +338,8 @@ apply G_TR; trivial; intros.
 Qed.
 
 Lemma G_osup2 x y :
-  isWf x -> x ∈ U -> y ∈ U -> x ⊔ y ∈ U.
-intro wfx; revert y; induction wfx using isWf_ind.
+  isOrd x -> x ∈ U -> y ∈ U -> x ⊔ y ∈ U.
+intro wfx; revert y; induction wfx using isOrd_ind.
 intros.
 rewrite osup2_def; trivial.
  apply G_union2; trivial.
@@ -353,7 +353,7 @@ rewrite osup2_def; trivial.
    apply G_replf; trivial; intros.
     do 2 red; intros; apply osup2_morph; auto with *.
 
-    apply H; eauto using G_trans.
+    eauto using G_trans.
 Qed.
 
   Lemma G_Ffix F A : A ∈ U -> Ffix F A ∈ U.
