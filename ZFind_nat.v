@@ -1,4 +1,4 @@
-Require Import ZF ZFsum ZFfix ZFnats ZFrelations ZFord ZFcard (*ZFstable*) ZFcont.
+Require Import ZF ZFsum ZFfix ZFnats ZFrelations ZFord ZFcont.
 Require Import ZFind_basic.
 Import ZFrepl.
 

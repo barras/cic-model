@@ -844,7 +844,7 @@ unfold tiSAT.
 apply ZFlambda.sSAT_morph.
 apply cc_app_morph; trivial.
 apply TR_ext_ord; intros; auto with *.
-apply sup_morph; auto.
+apply sup_morph; auto with *.
 red; intros.
 apply cc_lam_ext.
  apply TI_morph_gen.
@@ -858,31 +858,32 @@ apply cc_lam_ext.
  assert (x0o: isOrd x0) by eauto using isOrd_inv.
  apply ZFlambda.iSAT_morph.
  apply cartSAT_morph.
-  apply H1; rewrite !fst_def, H13; reflexivity.
+ apply H1; rewrite !fst_def, H14; reflexivity.
 
   assert (w1 x1 ∈ X).
    assert (ext_fun X Y).
     apply eq_fun_ext in H0; trivial.
-   apply TI_elim in H12; auto with *.
-    destruct H12 as (ooo,?,?).
-    apply W_F_elim in H15; trivial.
-    destruct H15 as (?,_); trivial.
+   apply TI_elim in H13; auto with *.
+    destruct H13 as (ooo,?,?).
+    apply W_F_elim in H16; trivial.
+    destruct H16 as (?,_); trivial.
   apply piSAT0_morph; intros.
    red; intros.
    apply eq_set_ax; apply H0.
     rewrite fst_def; trivial.
-    rewrite H13; reflexivity.
+    rewrite H14; reflexivity.
 
    apply H2; auto with *.
     rewrite fst_def; trivial.
-    rewrite H13; reflexivity.
+    rewrite H14; reflexivity.
 
    apply ZFlambda.sSAT_morph.
    apply cc_app_morph.
-    apply H6; trivial.
+    rewrite H8; trivial.
+    apply H7; trivial.
 
     rewrite !snd_def.
-    rewrite H13; reflexivity.
+    rewrite H14; reflexivity.
 Qed.
 
 Instance rWi_morph_gen : Proper

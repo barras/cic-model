@@ -1,5 +1,4 @@
 Require Import ZF ZFpairs ZFnats ZFord.
-Require ZFfix. (* limited dependency... *)
 
 Section Limit.
 
@@ -142,7 +141,8 @@ End LimitMono.
 Section LimitTI.
 
 Variable F : set->set.
-Hypothesis Fm : Proper (incl_set==>incl_set) F.
+Hypothesis Fmono : Proper (incl_set==>incl_set) F.
+Let Fm := Fmono_morph _ Fmono.
 
 Lemma TIlim o :
   isOrd o ->
@@ -150,12 +150,181 @@ Lemma TIlim o :
 intros oo.
 rewrite TI_eq; auto.
 rewrite lim_def_mono; auto with *.
-red; intros.
-apply Fm; apply ZFfix.TI_mono; trivial.
+red; intros; apply Fmono.
+intros z ziny.
+apply TI_elim in ziny; trivial.
+destruct ziny as (o',o'lty,zino').
+apply TI_intro with o'; trivial.
+apply H1; trivial.
 Qed.
 
 End LimitTI.
 
+Section TransfiniteFunction.
+
+Variable F : (set->set)->set->set.
+Hypothesis Fm : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) F.
+
+Let K ox := exists o x, ox == couple o x /\ isOrd o.
+Let Km : Proper (eq_set==>iff) K.
+unfold K; do 2 red; intros.
+apply ex_morph; intros o.
+apply ex_morph; intros x'.
+rewrite H; reflexivity.
+Qed.
+Hint Resolve Km.
+
+Let R ox ox' := exists o x, ox == couple o x /\ o < fst ox'.
+Let Rm : Proper (eq_set==>eq_set==>iff) R.
+unfold R; do 3 red; intros.
+apply ex_morph; intros o.
+apply ex_morph; intros x'.
+rewrite H,H0; reflexivity.
+Qed.
+Hint Resolve Rm.
+
+Let AccR ox : K ox -> Acc R ox.
+intros (o,(x,(eqox,oo))).
+revert ox x eqox; elim oo using isOrd_ind; intros.
+constructor; intros.
+red in H2.
+destruct H2 as (o',(x',(eqox',lt))).
+apply H1 with o' x'; trivial.
+rewrite eqox,fst_def in lt; trivial.
+Qed.
+Hint Resolve AccR.
+
+   Let G f ox :=
+     F (fun y => lim (fst ox) (fun o' => f (couple o' y))) (snd ox).
+Let Gm : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) G.
+unfold G; do 3 red; intros.
+apply Fm.
+ red; intros.
+ apply lim_morph.
+  rewrite H0; reflexivity.
+
+  red; intros.
+  apply H.
+  rewrite H1,H2; reflexivity.
+
+ rewrite H0; reflexivity.
+Qed.
+Hint Resolve Gm.
+
+  Definition TRF o x := WFR R G (couple o x).
+
+  Global Instance TRF_morph0 : morph2 TRF.
+do 3 red; intros; apply WFR_morph0.
+rewrite H,H0; reflexivity.
+Qed.
+
+  Lemma TRF_eqn o x : isOrd o ->
+       TRF o x == F (fun y => lim o (fun o' => TRF o' y)) x.
+intros.
+unfold TRF.
+rewrite WFR_eqn_gen; auto with *.
+ unfold G.
+ apply Fm;[|apply snd_def].
+ red; intros.
+ apply lim_ext.
+  rewrite fst_def; trivial.
+  apply fst_def. 
+  red; intros.
+  rewrite fst_def in H1.
+  apply WFR_morph0.
+  rewrite H0,H2; reflexivity.
+
+  intros.
+  unfold G.  
+  apply Fm; auto with *.
+  red; intros.
+(*  destruct H0 as (o',(x',(eqox,?))).*)
+  apply lim_ext; auto with *.
+   rewrite fst_def; trivial.
+  red; intros.
+  apply H0.   
+   red.
+   exists x1; exists x0; auto with *.
+
+   apply couple_morph; trivial.
+
+ apply AccR.
+ exists o; exists x; auto with *.
+Qed.
+
+(** Properties when the domain (T) of the function increases with the ordinal *)
+Variable T : set -> set.
+Variable Tcont : forall o z, isOrd o ->
+  (z ∈ T o <-> exists2 o', o' ∈ o & z ∈ T (osucc o')).
+Hypothesis Fext : forall o f f',
+  isOrd o ->
+  eq_fun (T o) f f' ->
+  eq_fun (T (osucc o)) (F f) (F f').
+
+Lemma Tmono o o': isOrd o -> isOrd o' -> o ⊆ o' -> T o ⊆ T o'.
+red; intros.
+rewrite Tcont in H2; auto.
+destruct H2.
+rewrite Tcont; trivial.
+exists x; auto.
+Qed.
+
+Lemma TRF_irrel : forall o o' x,
+  isOrd o ->
+  isOrd o' ->
+  o' ⊆ o ->
+  x ∈ T o' ->
+  TRF o x == TRF o' x.
+intros.
+revert o H H1 x H2; elim H0 using isOrd_ind; intros.
+rewrite Tcont in H5; trivial; destruct H5. 
+rewrite TRF_eqn; auto with *.
+rewrite TRF_eqn; auto with *.
+eapply Fext with (o:=x0); auto with *.     
+ apply isOrd_inv with y; trivial.
+
+ red; intros.
+ rewrite lim_cst with (o':=x0); auto with *.
+ rewrite lim_cst with (o':=x0); auto with *.
+  rewrite <-H8; reflexivity.
+
+  do 2 red; intros; apply TRF_morph0; auto with *.
+  2:do 2 red; intros; apply TRF_morph0; auto with *.
+
+  intros.
+  apply H2; auto with *.
+   apply isOrd_inv with y; trivial.
+   rewrite <- H8; trivial.
+
+  intros.
+  apply H2; auto with *.
+  apply isOrd_inv with o; trivial.
+Qed.
+
+Lemma TRF_indep : forall o o' x,
+  isOrd o ->
+  o' ∈ o ->
+  x ∈ T (osucc o') ->
+  TRF o x == F (TRF o') x.
+intros.
+assert (os := fun y => isOrd_inv _ y H).
+rewrite TRF_eqn; auto with *.
+apply (Fext o'); auto with *.
+red; intros.
+rewrite <- H3.
+rewrite lim_cst with (o':=o'); auto with *.
+ do 2 red; intros.
+ apply TRF_morph0; auto with *.
+
+ intros.
+ apply TRF_irrel; auto with *.
+Qed.
+
+End TransfiniteFunction.
+
+
+(****)
+(*
 Section TRF.
 
 Hypothesis F:(set->set->set)->set->set->set.
@@ -426,3 +595,4 @@ rewrite lim_cst with (o':=o'); auto with *.
 Qed.
 
 End TRirr.
+*)

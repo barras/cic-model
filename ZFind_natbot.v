@@ -172,194 +172,160 @@ Qed.
 
 (** The usual recursor on NAT, extended to NAT' *)
 
-Definition NREC f g n y :=
-  forall (P:set->set->Prop),
-  Proper (eq_set==>eq_set==>iff) P ->
-  P empty empty ->
-  P ZERO f ->
-  (forall m z, m ∈ cc_bot NAT' -> P m z -> P (SUCC m) (g m z)) ->
-  P n y.
+Section Nat_rect.
 
-Lemma NREC_mt f g : NREC f g empty empty.
-red; intros; trivial.
+Let NAT_RECT_body f g (F:set->set) :=
+  NATCASE f (fun k => g k (F k)).
+
+Local Instance NAT_RECT_body_morph :
+  Proper (eq_set==>(eq_set==>eq_set==>eq_set)==>
+                (eq_set==>eq_set)==>eq_set==>eq_set) NAT_RECT_body.
+do 5 red; intros.
+apply NATCASE_morph; trivial.
+red; intros.
+apply H0; auto.
 Qed.
-Lemma NREC_ZERO f g : NREC f g ZERO f.
-red; intros; trivial.
-Qed.
-Lemma NREC_SUCC f g n y:
-  n ∈ cc_bot NAT' -> NREC f g n y -> NREC f g (SUCC n) (g n y).
-unfold NREC; intros.
-apply H4; trivial.
-apply H0; trivial.
-Qed.
-Instance NREC_morph :
-  Proper (eq_set==>(eq_set==>eq_set==>eq_set)==>eq_set==>eq_set==>iff) NREC.
-apply morph_impl_iff4; auto with *.
-unfold NREC; do 6 red; intros.
-rewrite <- H in H6.
-rewrite <- H1; rewrite <- H2; apply H3; trivial.
+(*Instance NAT_RECT_body_morph_eq :
+  Proper (eq_set==>eq==>eq==>eq_set==>eq_set) NAT_RECT_body.
+do 5 red; intros.
+subst y0 y1.
+unfold NAT_RECT_body, NATCASE.
+apply union2_morph.
+ rewrite H,H2; reflexivity.
+
+ apply cond_set_morph; auto with *.
+  Qed.
+*)
+Lemma NAT_RECT_body_ext f g x F F' :
+   morph2 g ->
+   (forall y y', x == SUCC y -> y == y' -> F y == F' y') ->
+   NAT_RECT_body f g F x == NAT_RECT_body f g F' x.
+intros gm Feq.
+apply NATCASE_morph_gen; auto with *.
 intros.
-rewrite (H0 _ _ (reflexivity m) _ _ (reflexivity z)).
-auto.
-Qed.
-Instance NREC_morph_eq :
-  Proper (eq_set==>eq==>eq_set==>eq_set==>iff) NREC.
-apply morph_impl_iff4; auto with *.
-unfold NREC; do 6 red; intros.
-subst x0; rewrite <- H in H6.
-rewrite <- H1; rewrite <- H2; apply H3; trivial.
+apply gm; auto.
 Qed.
 
-Lemma NREC_inv f g n y :
-  NREC f g n y ->
-   NREC f g n y /\
-   ((n==empty/\y==empty) \/
-    (n==ZERO/\y==f) \/
-    (exists2 m, n == SUCC m & exists2 z, NREC f g m z & y==g m z)).
-intros H; apply H; intros.
- do 3 red; intros.
- apply and_iff_morphism.
-  apply NREC_morph_eq; auto with *.
+Lemma NATCASE_ZERO' f g n : n==ZERO -> NATCASE f g n == f.
+intros; unfold NATCASE.
+rewrite cond_set_ok; trivial.
+rewrite cond_set_mt.
+ apply union2_mt_r.
 
-  repeat apply or_iff_morphism.
-   rewrite H0; rewrite H1; reflexivity.
-   rewrite H0; rewrite H1; reflexivity.
-   apply ex2_morph; red; intros.
-    rewrite H0; reflexivity.
-   apply ex2_morph; red; intros.
-    apply NREC_morph_eq; auto with *.
-    rewrite H1; reflexivity.
-
- split; auto with *.
- apply NREC_mt.
-
- split; auto with *.
- apply NREC_ZERO.
-
- destruct H1 as (?,_).
- split.
-  apply NREC_SUCC; trivial.
-
-  right; right.
-  exists m;[reflexivity|].
-  exists z; auto with *.
+ red; destruct 1.
+ rewrite H in H0.
+ apply NATf_discr in H0; trivial.
 Qed.
-Lemma NREC_inv_mt f g y :
-  NREC f g empty y -> y == empty.
-intros; apply NREC_inv in H;
-   destruct H as (_,[(_,eqy)|[(abs,_)|(n,abs,_)]]); auto.
- apply discr_mt_pair in abs; contradiction.
- apply discr_mt_pair in abs; contradiction.
-Qed.
-Lemma NREC_inv_ZERO f g y :
-  NREC f g ZERO y -> y == f.
-intros; apply NREC_inv in H;
-   destruct H as (_,[(abs,_)|[(_,eqy)|(n,abs,_)]]); auto.
- symmetry in abs; apply discr_mt_pair in abs; contradiction.
- apply NATf_discr in abs; contradiction.
-Qed.
-Lemma NREC_inv_SUCC f g n y :
-  morph2 g ->
-  NREC f g (SUCC n) y -> exists2 z, NREC f g n z & y == g n z.
-intros; apply NREC_inv in H0;
-   destruct H0 as (_,[(abs,_)|[(abs,_)|(m,eqS,(z,defz,eqy))]]).
- symmetry in abs; apply discr_mt_pair in abs; contradiction.
- symmetry in abs; apply NATf_discr in abs; contradiction.
+Lemma NATCASE_mt' f g n : n==empty -> NATCASE f g n == empty.
+intros; unfold NATCASE.
+repeat rewrite cond_set_mt.
+ apply union2_mt_r.
 
- apply SUCC_inj in eqS.
- rewrite <- eqS in defz, eqy; eauto.
+ red; destruct 1.
+ rewrite H0 in H.
+ apply couple_mt_discr in H; trivial.
+
+ intro.
+ rewrite H0 in H.
+ apply couple_mt_discr in H; trivial.
+Qed.
+Lemma NAT_RECT_body0 f g F n :
+  n==ZERO -> NAT_RECT_body f g F n == f.
+unfold NAT_RECT_body.
+intros; apply NATCASE_ZERO'; trivial.
+Qed.
+Lemma NAT_RECT_body_mt f g F n :
+  n==empty -> NAT_RECT_body f g F n == empty.
+unfold NAT_RECT_body.
+intros; apply NATCASE_mt'; trivial.
 Qed.
 
-Lemma NREC_uch_mt f g :
-  uchoice_pred (NREC f g empty).
-split;[|split]; intros.
- rewrite <- H; trivial.
-
- exists empty; apply NREC_mt.
- apply NREC_inv_mt in H.
- apply NREC_inv_mt in H0.
- rewrite H; rewrite H0; reflexivity.
+Let R m n := n == SUCC m.
+Local Instance Rmorph : Proper (eq_set==>eq_set==>iff) R.
+unfold R; do 3 red; intros.
+rewrite H,H0; reflexivity.
 Qed.
 
-Lemma NREC_uch_ZERO f g :
-  uchoice_pred (NREC f g ZERO).
-split;[|split]; intros.
- rewrite <- H; trivial.
+Definition NAT_RECT (f:set) (g:set->set->set) : set->set :=
+  WFR R (NAT_RECT_body f g).
 
- exists f; apply NREC_ZERO.
- apply NREC_inv_ZERO in H.
- apply NREC_inv_ZERO in H0.
- rewrite H; rewrite H0; reflexivity.
-Qed.
-
-Lemma NREC_uch f g n :
-  morph2 g ->
-  n ∈ cc_bot NAT' ->
-  uchoice_pred (NREC f g n).
-intros gm tyn.
-apply NAT'_ind with (2:=tyn).
- do 2 red; intros; apply uchoice_pred_morph.
- red; intros; apply NREC_morph_eq; auto with *.
-
- apply NREC_uch_mt.
-
- apply NREC_uch_ZERO.
-
- intros m tym (_,((z,?),muniq)).
- split; [|split]; intros.
-  rewrite <- H0; trivial.
-
-  exists (g m z); apply NREC_SUCC; trivial.
-
-  apply NREC_inv_SUCC in H0; trivial.
-  apply NREC_inv_SUCC in H1; trivial.
-  destruct H0 as (y,?,eqx).
-  destruct H1 as (y',?,eqx').
-  rewrite eqx; rewrite eqx'; apply gm; eauto with *.
-Qed.
-
-Definition NAT_RECT f g n := uchoice (NREC f g n).
-
-Instance NAT_RECT_morph :
-  Proper (eq_set==>(eq_set==>eq_set==>eq_set)==>eq_set==>eq_set) NAT_RECT.
+Global Instance NAT_RECT_morph :
+  Proper (eq_set ==> (eq_set ==> eq_set ==> eq_set) ==> eq_set ==> eq_set) NAT_RECT.
 do 4 red; intros.
-apply uchoice_morph_raw.
-red; intros; apply NREC_morph; trivial.
+apply WFR_morph; auto with *.
+ apply Rmorph.
+
+ do 2 red; intros.
+ apply NAT_RECT_body_morph; trivial.
 Qed.
+
+Global Instance NAT_RECT_morph_gen2 f g : morph1 (NAT_RECT f g).
+apply WFR_morph0.
+Qed.
+
 Instance NAT_RECT_morph_eq :
   Proper (eq_set==>eq==>eq_set==>eq_set) NAT_RECT.
 do 4 red; intros.
-apply uchoice_morph_raw.
-red; intros; apply NREC_morph_eq; trivial.
+subst y0.
+unfold NAT_RECT.
+apply WFR_morph_gen2; trivial.
+red; red; intros.
+unfold NAT_RECT_body, NATCASE.
+apply union2_morph.
+ rewrite H; reflexivity.
+
+ apply cond_set_morph; auto with *.
+Qed.
+
+Instance NAT_RECT_m1 f g : morph1 (NAT_RECT f g).
+apply NAT_RECT_morph_eq; auto with *.
 Qed.
 
 Lemma NAT_RECT_mt f g :
   NAT_RECT f g empty == empty.
-symmetry; apply uchoice_ext.
- apply NREC_uch_mt.
+unfold NAT_RECT.
+rewrite WFR_eqn_norec; intros.
+ apply NATCASE_mt.
 
- apply NREC_mt.
+ unfold R; red; intros.
+
+ symmetry in H.
+ apply couple_mt_discr in H; trivial.
+
+ rewrite NAT_RECT_body_mt; auto with *.
+ rewrite NAT_RECT_body_mt; auto with *.
 Qed.
 
 Lemma NAT_RECT_ZERO f g :
   NAT_RECT f g ZERO == f.
-symmetry; apply uchoice_ext.
- apply NREC_uch_ZERO.
+unfold NAT_RECT.
+rewrite WFR_eqn_norec; intros.
+ apply NATCASE_ZERO.
 
- apply NREC_ZERO.
+ unfold R; red; intros.
+ apply NATf_discr in H; trivial.
+
+ rewrite NAT_RECT_body0; auto with *.
+ rewrite NAT_RECT_body0; auto with *.
 Qed.
 
-Lemma NAT_RECT_eq f g n y :
-  morph2 g ->
-  n ∈ cc_bot NAT' ->
-  (NAT_RECT f g n == y <-> NREC f g n y).
-intros.
-assert (ch := NREC_uch f H H0).
-assert (eqn := uchoice_def _ ch).
-split; intros.
- rewrite <- H1; trivial.
+Lemma NATi_acc n o :
+  isOrd o ->
+  n ∈ cc_bot (TI NATf' o) ->
+  Acc R n.
+intros oo.
+revert n; elim oo using isOrd_ind; intros.
+apply cc_bot_ax in H2; destruct H2.
+ constructor; intros.
+ rewrite H2 in H3.
+ red in H3; symmetry in H3; apply couple_mt_discr in H3; contradiction.
 
- symmetry; apply uchoice_ext; trivial.
+ apply TI_elim in H2; auto with *.
+ destruct H2 as (z,?,?).
+ constructor; intros.
+ red in H4; rewrite H4 in H3.
+ apply SUCC_inv_typ_gen in H3.
+ apply H1 with z; auto.
 Qed.
 
 Lemma NAT_RECT_SUCC f g n :
@@ -367,16 +333,21 @@ Lemma NAT_RECT_SUCC f g n :
   n ∈ cc_bot NAT' ->
   NAT_RECT f g (SUCC n) == g n (NAT_RECT f g n).
 intros.
-apply NAT_RECT_eq; trivial.
- apply cc_bot_intro.
- apply SUCC_typ'; trivial.
+unfold NAT_RECT at 1.
+rewrite WFR_eqn; auto with *.
+ fold (NAT_RECT f g).
+ unfold NAT_RECT_body; rewrite NATCASE_SUCC; auto with *.
+ intros; apply H; auto with *.
+ apply NAT_RECT_m1; trivial.
+ 
+ apply NAT_RECT_body_morph; auto with *.
 
- apply NREC_SUCC; trivial.
+ intros; apply NAT_RECT_body_ext; trivial.
 
- apply NAT_RECT_eq; trivial.
- reflexivity.
+ apply SUCC_typ' in H0.
+ apply cc_bot_intro in H0.
+ apply NATi_acc in H0; trivial.
 Qed.
-
 
 Lemma NAT_RECT_typ f g n P :
   morph1 P ->
@@ -403,6 +374,8 @@ apply NAT'_ind with (2:=H0).
   do 3 red; intros.
   rewrite H6; rewrite H7; reflexivity.
 Qed.
+
+End Nat_rect.
 
 (** Recursor on NAT' *)
 

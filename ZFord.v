@@ -1172,152 +1172,39 @@ Section TransfiniteRecursion.
   Variable F : (set -> set) -> set -> set.
   Hypothesis Fm : Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) F.
 
-  Variable ord : set.
-  Hypothesis Fmorph :
-    forall x f f', isOrd x -> x ⊆ ord -> eq_fun x f f' -> F f x == F f' x.
-
-
-  Let R o o' := isOrd o /\ (*o ⊆ ord /\*) o < o'.
+  Let R o o' := o < o'.
 
   Local Instance Rm : Proper (eq_set==>eq_set==>iff) R.
 unfold R; do 3 red; intros.
 rewrite H,H0; reflexivity.
 Qed.
 
-  Let K o := isOrd o /\ o ⊆ ord.
-  Local Instance Km : Proper (eq_set==>iff) K.
-unfold K; do 2 red; intros.
-rewrite H; reflexivity.
+  Definition TR := WFR R F.
+
+Global Instance TR_morph0 : morph1 TR.
+clear Fm; do 2 red; intros.
+unfold TR.
+apply WFR_morph0; trivial.
 Qed.
-  
-  Definition TR0 := WFRK (fun o => isOrd o /\ o ⊆ ord) R F.
-  
-  Lemma TR_eqn0 o : isOrd o -> o ⊆ ord -> TR0 o == F TR0 o.
-intros.
-unfold TR0.
-apply WFRK_eqn; auto with *.
- destruct 1.
- elim H1 using isOrd_ind; intros.
- constructor; destruct 1; auto.
-
- destruct 1 as (xo,ole); intros.
- apply Fmorph; trivial.
- red; intros.
- apply H1; trivial.
- split; trivial.
- apply isOrd_inv with x; trivial.
-Qed.
-
-  Definition TR := TR0 ord.
-
-End TransfiniteRecursion.
-
- 
-Global Instance TR_morph0 F : morph1 (TR F).
-do 2 red; intros.
-apply WFR_morph_gen2; trivial.
-intros f o.
-apply cond_set_morph; auto with *.
-rewrite H; reflexivity.
-Qed.
-
-Global Instance TR_morph :
-    Proper (((eq_set ==> eq_set) ==> eq_set ==> eq_set) ==> eq_set ==> eq_set) TR.
-do 3 red; intros.
-apply WFR_morph; trivial.
- do 2 red; intros.
- rewrite H1, H2; reflexivity.
-
- do 3 red; intros.
- apply cond_set_morph.
-  rewrite H0,H2; reflexivity. 
-  apply H; trivial.
-Qed.
-
-Lemma TR0_irrel F o o' x :
-  Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) F ->
-  (forall x0 f f',
-   isOrd x0 -> x0 ⊆ o \/ x0 ⊆ o' -> eq_fun x0 f f' -> F f x0 == F f' x0) ->
-  isOrd x ->
-  x ⊆ o ->
-  x ⊆ o' ->
-  TR0 F o x == TR0 F o' x.
-intros Fm Fext xo.
-elim xo using isOrd_ind; intros.
-rewrite TR_eqn0 with (ord:=o); auto.
-rewrite TR_eqn0 with (ord:=o'); auto.
-apply Fext; auto with *.
-red; intros.
-rewrite H1; auto.
- apply WFR_morph0; trivial.
-
- rewrite <- H2; auto with *.
- rewrite <- H3; auto with *.
-Qed.
-
-
-  Lemma TR_ext_ord F F' o o' :
-  (forall f f' oo oo',
-   eq_fun oo f f' ->
-   isOrd oo ->
-   oo ⊆ o ->
-   oo == oo' ->
-   F f oo == F' f' oo') ->
- isOrd o ->
- o == o' ->
- TR F o == TR F' o'.
-intros.
-apply WFRK_ext; auto with *.
- red; intros.
- rewrite H1; reflexivity.
-
- do 2 red; intros.
- rewrite H2; reflexivity.
-
- destruct 2; intros.
- apply H; auto.
- red; intros; apply H2; trivial.
- split; trivial.
- apply isOrd_inv with y; trivial. 
-
- split; [rewrite <-H1; trivial|auto with *].
-Qed.
-
-
-Section TransfiniteRec.
-
-  Variable F : (set -> set) -> set -> set.
-  Hypothesis Fm : Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) F.
 
   Lemma TR_eqn o :
     isOrd o ->
     (forall x f f', isOrd x -> x ⊆ o -> eq_fun x f f' -> F f x == F f' x) ->
-    TR F o == F (TR F) o.
-intros oo Fmorph.
-unfold TR; rewrite TR_eqn0; eauto with *.
-apply Fmorph; auto with *.
-red; intros.
-rewrite TR0_irrel with (o:=o) (o':=x'); auto.
- apply WFR_morph0; trivial.
-
- intros.
- apply Fmorph; trivial.
- destruct H2; auto.
- rewrite H2, <-H0; auto.
-
- apply isOrd_inv with o; trivial.
-
- rewrite H0; reflexivity.
-Qed.
+    TR o == F TR o.
+intros oo Fext.
+unfold TR.
+apply WFR_eqn_gen; auto with *.
+elim oo using isOrd_ind; intros; constructor; intros; auto.
+Qed. 
 
   Lemma TR_ind : forall o (P:set->set->Prop),
     Proper (eq_set ==> eq_set ==> iff) P ->
     isOrd o ->
     (forall x f f', isOrd x -> x ⊆ o -> eq_fun x f f' -> F f x == F f' x) ->
     (forall y, isOrd y -> y ⊆ o ->
-     (forall x, x < y -> P x (TR F x)) ->
-     P y (F (TR F) y)) ->
-    P o (TR F o).
+     (forall x, x < y -> P x (TR x)) ->
+     P y (F TR y)) ->
+    P o (TR o).
 intros o P Pm oo Fmorph.
 revert Fmorph; induction oo using isOrd_ind; intros.
 rewrite TR_eqn; trivial.
@@ -1336,7 +1223,7 @@ Qed.
     morph1 X ->
     (forall y f, morph1 f -> isOrd y -> y ⊆ o ->
      (forall z, z < y -> f z ∈ X z) -> F f y ∈ X y) ->
-    TR F o ∈ X o.
+    TR o ∈ X o.
 intros o X oo Fmorph Xm Hrec.
 apply TR_ind with (o:=o); intros; trivial.
  do 3 red; intros.
@@ -1348,7 +1235,45 @@ apply TR_ind with (o:=o); intros; trivial.
  apply TR_morph0.
 Qed.
 
-End TransfiniteRec.
+  
+End TransfiniteRecursion.
+
+
+Global Instance TR_morph :
+    Proper (((eq_set ==> eq_set) ==> eq_set ==> eq_set) ==> eq_set ==> eq_set) TR.
+do 3 red; intros.
+apply WFR_morph; trivial.
+ do 2 red; intros.
+ rewrite H1, H2; reflexivity.
+Qed.
+
+  Lemma TR_ext_ord F F' o o' :
+  (forall f f' oo,
+   morph1 f ->
+   morph1 f' ->
+   (forall z, z ∈ oo -> f z == f' z) ->
+   isOrd oo ->
+   oo ⊆ o ->
+   F f oo == F' f' oo) ->
+ isOrd o ->
+ o == o' ->
+ TR F o == TR F' o'.
+intros.
+apply WFR_ext; auto with *.
+ do 2 red; intros.
+ rewrite H2; reflexivity.
+intros.
+assert (isOrd y /\ y ⊆ o).
+ apply Kstar_rel with (3:=H5); auto with *.
+  do 2 red; intros.
+  rewrite H6; reflexivity.
+
+  destruct 2; split.
+   apply isOrd_inv with y0; trivial.
+   rewrite <- H8; auto.
+clear H5; destruct H6.
+apply H; trivial.
+Qed.
 
 (** Specialized version where the case of limit ordinals is union *)
 Section TransfiniteIteration.

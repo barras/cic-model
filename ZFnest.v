@@ -827,11 +827,11 @@ Qed.
 
 Lemma nest_tradm : Proper (eq_set==>eq_set==>eq_set) nest_trad.
 do 3 red; intros.
-apply TRF_morph; trivial.
-do 3 red; intros.
+apply TRF_morph0; trivial.
+(*do 3 red; intros.
 unfold comp_iso.
 apply gm; trivial.
-apply hm; trivial.
+apply hm; trivial.*)
 Qed.
 
 Lemma nest_iso_it X o:

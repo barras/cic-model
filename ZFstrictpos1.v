@@ -560,7 +560,7 @@ rewrite <- DINDi_eq; trivial.
 unfold DINDi.
 apply subset_morph. 
  rewrite INDi_succ_eq; trivial.
- apply IND_eq; trivial.
+ exact (IND_eq _ (tr_pos_morph _ _ eqp)).
 
  red; reflexivity.
 Qed.

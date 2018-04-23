@@ -622,7 +622,7 @@ Lemma tr_iso_it a o :
 intros oo; revert a; elim oo using isOrd_ind; intros.
 constructor; intros.
  do 2 red; intros.
- unfold TRF; apply TRF_morph; auto with *.
+ apply TRF_morph0; auto with *.
 
  red; intros.
  rewrite subset_ax in H3; destruct H3.
@@ -1489,7 +1489,29 @@ apply couple_intro_sigma; trivial.
 Qed.
 
 Definition L_match q f g :=
-  if_prop (q==empty) f (g (fst q) (fst (snd q)) (snd (snd q))).
+  if_prop (exists x y q', q == couple x (couple y q'))
+          (g (fst q) (fst (snd q)) (snd (snd q)))
+          f.
+
+Lemma L_match_mt l f0 g :
+  l==empty ->
+  L_match l f0 g == f0.
+intros; unfold L_match.
+apply if_right; trivial.
+intros (x,(y,(q,eql))).
+rewrite eql in H; apply couple_mt_discr in H; trivial.
+Qed.
+
+Lemma L_match_cons l f0 g x y q :
+  Proper (eq_set==>eq_set==>eq_set==>eq_set) g ->
+  l==couple x (couple y q) ->
+  L_match l f0 g == g x y q.
+intros; unfold L_match.
+rewrite if_left.
+ rewrite H0,!snd_def,!fst_def; reflexivity.
+
+ exists x; exists y;exists q; trivial.
+Qed.
 
 Lemma L_elim a q X :
   morph1 X ->
@@ -1628,230 +1650,146 @@ apply L_intro2; trivial with *.
 Qed.
 
 Require Import ZFfixrec.
+Require Import Inverse_Image.
 
-Section Arg'_recursor.
+(** Auxiliary result to build recursive function over an Arg' *)
 
-Variable g : set -> set.
-Variable h : set -> set -> set -> (set -> set) -> set -> set.
-Hypothesis gm : morph1 g.
-Hypothesis hm :
-  Proper (eq_set==>eq_set==>eq_set==>(eq_set==>eq_set)==>eq_set==>eq_set) h.
-Definition Arg'_rec_rel q f' :=
-  forall P,
-  Proper (eq_set==>(eq_set==>eq_set)==>iff) P ->
-  P empty g ->
-  (forall x y q' f',
-   morph1 f' ->
-   P q' f' ->
-   P (couple x (couple y q')) (h x y q' f')) ->
-  P q f'.
+Definition Arg'lt q q' :=
+  exists x y, q' == couple x (couple y q).
+Definition Arg'K q := Acc Arg'lt q.
 
-Instance Arg'_rec_rel_morph : Proper (eq_set==>(eq_set==>eq_set)==>iff) Arg'_rec_rel.
-apply morph_impl_iff2; auto with *.
-do 5 red; intros.
-cut (P x x0).
- apply H2; symmetry; trivial.
-apply H1; trivial.
-Qed.
 
-Lemma Arg'_case q0 f' :
-  Arg'_rec_rel q0 f' ->
-  Arg'_rec_rel q0 f' /\
-  (q0 == empty -> (eq_set==>eq_set)%signature f' g) /\
-  forall x y q,
-  q0 == couple x (couple y q) ->
-  exists2 h', morph1 h' &
-  Arg'_rec_rel q h' /\ (eq_set==>eq_set)%signature f' (h x y q h').
-intro H; apply H; intros.
- apply morph_impl_iff2; auto with *.
- do 4 red; intros.
- destruct H2; split; intros.
-  revert H2; apply Arg'_rec_rel_morph; symmetry; auto.
-
-  destruct H3; split; intros.
-   rewrite <- H0 in H5; rewrite <- H1; auto.
-
-   rewrite <- H0 in H5.
-   destruct H4 with (1:=H5).
-   exists x2; trivial.
-   destruct H7; split; trivial.
-   transitivity x0; auto with *.
-
- split; [red; auto|split;intros; auto].
- apply discr_mt_pair in H0; contradiction.
-
- destruct H1 as (?,(?,?)).
- split; [|split]; intros.
-  red; intros.
-  apply H6; trivial.
-  apply H1; trivial.
-
-  symmetry in H4; apply discr_mt_pair in H4; contradiction.
-
-  exists f'0; trivial.
-  apply couple_injection in H4; destruct H4. 
-  apply couple_injection in H5; destruct H5. 
-  split; trivial.
-   rewrite <- H6; trivial.
-
-   apply hm; trivial.
-Qed.
- 
-
-Lemma Arg'_uniq q f1 q' f1':
-  Arg'_rec_rel q f1 ->
-  Arg'_rec_rel q' f1' ->
-  q == q' -> (eq_set==>eq_set)%signature f1 f1'.
-intros qrel.
-revert q' f1'.
-apply qrel; intros.
- do 3 red; intros.
- apply fa_morph; intros q'.
- apply fa_morph; intros f1'.
- rewrite H.
- apply fa_morph; intros _.
- apply fa_morph; intros _.
- split; intros.
-  rewrite <- H0; trivial.
-  rewrite H0; trivial.
-
- apply Arg'_case in H.
- destruct H as (_,(?,_)).
- symmetry in H0|-*; auto.
-
- apply Arg'_case in H1.
- destruct H1 as (H1,(_,?)).
- destruct H3 with x y q'; auto with *.
- destruct H5.
- rewrite H6.
- apply hm; auto with *.
- apply H0 with q'; auto with *.
-Qed.
-
-Lemma Arg'_ex a q :
-  a ∈ Arg ->
-  q ∈ Arg' a ->
-  exists2 f', morph1 f' & Arg'_rec_rel q f'.
-intros.
-pattern a, q; apply Arg'_ind with (5:=H0); intros; trivial.
- apply morph_impl_iff2; auto with *.
- do 4 red; intros.
- destruct H3.
- exists x1; trivial.
- rewrite <- H2; trivial.
-
- exists g; auto.
- red; auto.
-
- destruct H5.
- exists (h x y q0 x0).
-  apply hm; auto with *.
-
-  red; intros.
-  apply H9; trivial.
-  apply H6; trivial.
-Qed.
-
-Definition Arg'_rec q x :=
-  uchoice (fun y => exists2 f', morph1 f' & Arg'_rec_rel q f' /\ y == f' x).
-
-Lemma Arg'_rec_morph : morph2 Arg'_rec.
+Instance Arg'ltm : Proper (eq_set ==> eq_set ==> iff) Arg'lt.
 do 3 red; intros.
-apply uchoice_morph_raw.
+unfold Arg'lt.
+apply ex_morph; intro x1.
+apply ex_morph; intro y1.
+rewrite H,H0; reflexivity.
+Qed.
+
+Instance Arg'Km : Proper (eq_set ==> iff) Arg'K.
+do 2 red; intros.
+apply wf_morph with (eqA := eq_set); auto with *.
+apply Arg'ltm.
+Qed.
+
+Lemma Arg'K_intro : forall a q, a ∈ Arg -> q ∈ Arg' a -> Arg'K q.
+intros.
+pattern a, q; apply Arg'_ind with (a:=a) (q:=q); trivial.
+ do 3 red; intros.
+ apply Arg'Km; trivial.
+
+ intros; constructor; intros.
+ destruct H2 as (x1,(y1,h)).
+ symmetry in h; apply couple_mt_discr in h; contradiction.
+
+ intros.
+ constructor; intros.
+ destruct H6 as (x1,(y1,h)).
+ apply couple_injection in h; destruct h as (_,h).
+ apply couple_injection in h; destruct h as (_,h).
+ rewrite <- h; trivial.
+Qed.
+
+Hint Resolve Arg'ltm Arg'Km Arg'K_intro.
+     
+Section DecodePath.
+
+  Let K aq :=  exists a q, aq == couple a q /\ Arg'K q.
+
+  Let R aq aq' := (*Arg'K (snd aq) /\*) Arg'lt (snd aq) (snd aq').
+
+
+  Let F Frec aq :=
+    L_match (snd aq)
+            (*q=[]:*)(fst aq)
+            (*q=[x:y:q']:*)(fun x y q' => Frec (couple (f (fst aq) x y) q')).
+
+  Definition Dec a(**∈Arg*) q(**∈Arg' a*) : set(*∈ Arg*) :=
+    WFR R F (couple a q).
+
+  Let Km : Proper (eq_set ==> iff) K.
+do 2 red; intros.
+apply ex_morph; intros a.
+apply ex_morph; intros q.
+rewrite H; reflexivity.
+Qed.
+
+  Let Rm : Proper (eq_set ==> eq_set ==> iff) R.
+unfold R; do 3 red; intros.
+rewrite H,H0; reflexivity.
+Qed.
+
+  Let AccR aq : K aq -> Acc R aq.
+destruct 1 as (x,(y,(qeq,h))); trivial.
+red in h.
+(*apply Acc_incl with (fun aq aq' => Arg'lt (snd aq) (snd aq')).
+ red; destruct 1; trivial.*)
+
+ apply Acc_inverse_image with (f:=snd).
+ rewrite qeq, snd_def; trivial.
+Qed.
+
+  Let Fm : Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) F.
+unfold F; do 3 red; intros.
+apply if_prop_morph.
+ apply ex_morph; intros x1.
+ apply ex_morph; intros y1.
+ apply ex_morph; intros q'.
+ rewrite H0; reflexivity.
+
+ apply H; rewrite H0; reflexivity.
+
+ rewrite H0; reflexivity.
+Qed.
+
+  Let Fext x g g' :
+    K x ->
+    (forall y y', R y x -> y==y' -> g y == g' y') ->
+    F g x == F g' x.
+unfold F; intros.
+apply union2_morph; apply cond_set_morph2; intros; auto with *.
+apply H0; auto with *.
+red; rewrite snd_def.
+red in H.
+destruct H as (a,(q,(h,_))).
+destruct H1 as (x',(y',(q',h'))).
+rewrite h, snd_def in h'|-*.
+rewrite h',!snd_def.
+exists x';exists y'; reflexivity.
+Qed.
+  
+  Let KArg : forall a q, a ∈ Arg -> q ∈ Arg' a -> K (couple a q).
 red; intros.
-split; intros.
- destruct H2.
- exists x2; trivial.
- rewrite <- H; rewrite <- H0; rewrite <- H1; auto.
-
- destruct H2.
- exists x2; trivial.
- rewrite H; rewrite H0; rewrite H1; auto.
+apply Arg'K_intro in H0; trivial.
+exists a; exists q; split;[reflexivity|trivial].
 Qed.
 
-Lemma uchoice_Arg'_rec a q x :
-  a ∈ Arg ->
-  q ∈ Arg' a ->
-  uchoice_pred (fun y => exists2 f', morph1 f' & Arg'_rec_rel q f' /\ y == f' x).
-intros.
-split;[|split]; intros.
- destruct H2 as (f',?,(?,?)).
- exists f'; trivial.
- split; trivial.
- rewrite <- H1; trivial.
+  Hint Resolve Km Rm AccR Fm Fext.
 
- destruct Arg'_ex with (2:=H0); trivial.
- exists (x0 x); exists x0; auto with *.
 
- destruct H1 as (f1,?,(?,?)); destruct H2 as (f1',?,(?,?)).
- specialize Arg'_uniq with (1:=H3) (2:=H5); intro.
- rewrite H4; rewrite H6; apply H7; auto with *.
+  Global Instance Dec_morph : morph2 Dec.
+do 3 red; intros.
+apply WFR_morph_gen2.
+ reflexivity.
+ apply couple_morph; trivial.
 Qed.
 
-Lemma Arg'_def a q :
-  a ∈ Arg ->
-  q ∈ Arg' a ->
-  Arg'_rec_rel q (Arg'_rec q).
-intros.
-generalize
- (fun x => uchoice_def _ (uchoice_Arg'_rec a q x H H0)); intro.
-destruct Arg'_ex with (2:=H0); trivial.
-generalize H3; apply Arg'_rec_rel_morph; auto with *.
-red; intros.
-destruct (H1 x0) as (f',?,(?,?)).
-transitivity (f' y).
- rewrite <- H4; trivial.
-
- apply Arg'_uniq with (1:=H6)(2:=H3); reflexivity.
-Qed.
-
-
-Lemma Arg'_rec_mt a x :
-  a ∈ Arg ->
-  Arg'_rec empty x == g x.
-intros.
-destruct (uchoice_def _ (uchoice_Arg'_rec a empty x H (Arg'_intro1 _ H)))
- as (f',?,(?,?)).
-transitivity (f' x); trivial.
-apply Arg'_uniq with empty empty; auto with *.
-red; auto.
-Qed.
-
-Lemma Arg'_rec_cons a x y q z :
-  a ∈ Arg ->
-  x ∈ A a ->
-  y ∈ B a x ->
-  q ∈ Arg' (f a x y) ->
-  Arg'_rec (couple x (couple y q)) z == h x y q (Arg'_rec q) z.
-intros.
-specialize Arg'_def with (1:=H) (2:=Arg'_intro2 _ _ _ _ H H0 H1 H2); intro.
-apply Arg'_case in H3.
-destruct H3 as (?,(_,?)).
-destruct (H4 x y q); auto with *.
-clear H4; destruct H6.
-rewrite (H6 z z); auto with *.
-apply hm; auto with *.
-apply Arg'_uniq with (1:=H4)(q':=q); auto with *.
-apply Arg'_def with (f a x y); trivial.
-apply ftyp; auto.
-Qed.
-
-
-End Arg'_recursor.
-
-(** Decoding paths as a parameter value *)
-Definition Dec a q :=
-  Arg'_rec (fun a => a) (fun x y q' F a => F (f a x y)) q a.
-
-
-Lemma Dec_mt a : a ∈ Arg -> Dec a empty == a.
+  Lemma Dec_mt a : a ∈ Arg -> Dec a empty == a.
 unfold Dec; intros.
-rewrite Arg'_rec_mt with (a:=a); auto with *.
- do 2 red; auto.
+rewrite WFR_eqn_gen; auto.
+ unfold F; rewrite L_match_mt.
+  apply fst_def.
+  apply snd_def.
 
- do 6 red; intros.
- apply H3.
- apply fm; trivial.
+  intros; apply Fext; auto.
+  exists a; exists empty; split;[reflexivity|].
+  apply Arg'K_intro with a; trivial.
+  apply Arg'_intro1; trivial.
+
+  apply AccR.
+  apply KArg; trivial.
+ apply Arg'_intro1; trivial.
 Qed.
 
 Lemma Dec_cons a x y q :
@@ -1861,20 +1799,28 @@ Lemma Dec_cons a x y q :
   q ∈ Arg' (f a x y) ->
   Dec a (couple x (couple y q)) == Dec (f a x y) q.
 intros.
-unfold Dec.
-apply Arg'_rec_cons with (a:=a); trivial.
- do 2 red; auto.
+unfold Dec at 1.
+rewrite WFR_eqn_gen; auto.
+ unfold F; rewrite L_match_cons with (x:=x)(y:=y) (q:=q).
+  apply Dec_morph; auto with *.
+  rewrite fst_def; reflexivity.
 
- do 6 red; intros.
- apply H6.
- apply fm; trivial.
+  clear -fm; do 4 red; intros.
+  apply WFR_morph0.
+  rewrite H,H0,H1; reflexivity.
+
+  apply snd_def.
+
+  intros; apply Fext; trivial.
+  exists a; exists (couple x (couple y q));split;[reflexivity|].
+  apply Arg'K_intro with a; trivial.
+  apply Arg'_intro2; trivial.
+
+ apply AccR.
+ apply KArg; trivial.
+ apply Arg'_intro2; trivial.
 Qed.
-
-
-Instance Dec_morph : morph2 Dec.
-unfold Dec; do 3 red; intros.
-apply Arg'_rec_morph; trivial.
-Qed.
+End DecodePath.
 
 
 Lemma Dec_typ a q :
@@ -1892,30 +1838,52 @@ apply Arg'_ind with (5:=H0); intros; auto with *.
 Qed.
 
 (** Extending a path *)
-Definition extln q x y :=
-  Arg'_rec (fun _ => couple x (couple y empty))
-    (fun x' y' q' F z => couple x' (couple y' (F z))) q empty.
 
-Instance extln_morph : Proper (eq_set==>eq_set==>eq_set==>eq_set) extln.
-do 4 red; intros.
-unfold extln.
-unfold Arg'_rec.
-apply uchoice_morph_raw.
-red; intros.
-apply ex2_morph'; intros; auto with *.
-unfold Arg'_rec_rel.
-apply and_iff_morphism.
- apply fa_morph; intros P.
- apply fa_morph; intros Pm.
- apply impl_morph.
-  apply Pm; auto with *.
-  red; intros; rewrite H0; rewrite H1; reflexivity.
+Section ExtendPath.
 
-  intros _.
-  apply fa_morph; intros _.
-  apply Pm; auto with *.
+  Let F x y g q :=
+    L_match q
+             (*q=[]:*)(couple x (couple y empty))
+             (*q=[x:y:q']:*)(fun x' y' q' => couple x' (couple y' (g q'))).
 
+  Let Fm : Proper (eq_set==>eq_set==>(eq_set ==> eq_set) ==> eq_set ==> eq_set) F.
+unfold F; do 5 red; intros.
+apply if_prop_morph; auto with *.
+ apply ex_morph; intros x'.
+ apply ex_morph; intros y'.
+ apply ex_morph; intros q'.
  rewrite H2; reflexivity.
+
+ apply couple_morph; [rewrite H2;reflexivity|].
+ apply couple_morph; [rewrite H2;reflexivity|].
+ apply H1; rewrite H2; reflexivity.
+
+ rewrite H,H0; reflexivity.
+Qed.
+
+  Let Fext x0 y0 x g g' :
+    Arg'K x ->
+    (forall y y', Arg'lt y x -> y==y' -> g y == g' y') ->
+    F x0 y0 g x == F x0 y0 g' x.
+unfold F; intros.
+apply union2_morph; apply cond_set_morph2; intros; auto with *.
+ apply couple_morph; [reflexivity|].
+ apply couple_morph; [reflexivity|].
+ apply H0; auto with *.
+ red.
+ destruct H1 as (x1,(y1,(q1,h))).
+ exists x1; exists y1.
+ apply transitivity with (1:=h).
+ rewrite h,!snd_def; reflexivity.
+Qed. 
+  
+  Definition extln q x y : set := WFR Arg'lt (F x y) q.
+
+Global Instance extln_morph : Proper (eq_set==>eq_set==>eq_set==>eq_set) extln.
+do 4 red; intros.
+apply WFR_morph; auto with *.
+ apply Arg'ltm.
+ apply Fm; trivial.
 Qed.
 
 Lemma extln_cons a x y q x' y' :
@@ -1928,13 +1896,19 @@ Lemma extln_cons a x y q x' y' :
   extln (couple x (couple y q)) x' y' == couple x (couple y (extln q x' y')).
 intros.
 unfold extln at 1.
-rewrite Arg'_rec_cons with (a:=a); auto.
- reflexivity.
+rewrite WFR_eqn_gen; auto with *.
+ apply L_match_cons with (x:=x) (y:=y) (q:=q); auto with *.
+ clear; do 4 red; intros.
+ rewrite H,H0,H1; reflexivity.
 
- do 2 red; auto with *.
+ apply Fm; reflexivity.
 
- do 6 red; intros.
- apply couple_morph;[|apply couple_morph;[|apply H8]]; trivial.
+ intros; apply Fext; trivial.
+ apply Arg'K_intro with a; trivial.
+ eapply Arg'_intro2; eauto.
+
+ eapply Arg'K_intro; eauto.
+ eapply Arg'_intro2; eauto.
 Qed.
 
 Lemma extln_nil a x y :
@@ -1944,13 +1918,20 @@ Lemma extln_nil a x y :
   extln empty x y == couple x (couple y empty).
 intros.
 unfold extln at 1.
-rewrite Arg'_rec_mt with (a:=a); auto with *.
+rewrite WFR_eqn_gen; auto with *.
+ apply L_match_mt; auto with *.
 
- do 2 red; auto with *.
+ apply Fm; reflexivity.
 
- do 6 red; intros.
- apply couple_morph;[|apply couple_morph;[|apply H5]]; trivial.
+ intros; apply Fext; trivial.
+ eapply Arg'K_intro; eauto.
+ eapply Arg'_intro1; trivial.
+ 
+ eapply Arg'K_intro; eauto.
+ eapply Arg'_intro1; trivial.
 Qed.
+
+End ExtendPath.
 
 Lemma extln_typ : forall a q x y,
   a ∈ Arg ->
@@ -1962,7 +1943,7 @@ intros a q x y aty qty; revert x y; apply Arg'_ind with (5:=qty); trivial; intro
  do 3 red; intros.
  apply fa_morph; intros x1.
  apply fa_morph; intros y1.
- rewrite H; rewrite H0; reflexivity.
+ rewrite H,H0; reflexivity.
 
  rewrite Dec_mt in H0,H1; trivial.
  rewrite extln_nil with (a:=a0); trivial.
@@ -2210,35 +2191,31 @@ End UniverseFacts.
 
 End BigParameter.
 
+Existing Instance Arg'ltm.
 Instance Dec_morph_gen :
   Proper ((eq_set==>eq_set==>eq_set==>eq_set)==>eq_set==>eq_set==>eq_set) Dec.
 do 4 red; intros.
 unfold Dec.
-unfold Arg'_rec.
-apply uchoice_morph_raw.
-red; intros.
-apply ex2_morph'.
- reflexivity.
-intros f fm.
-unfold Arg'_rec_rel.
-apply and_iff_morphism.
-2:rewrite H2,H0; reflexivity.
-apply fa_morph; intros P.
-apply fa_morph; intros Pm.
-apply fa_morph; intros _.
-apply impl_morph; intros.
- apply fa_morph; intros ?.
- apply fa_morph; intros ?.
- apply fa_morph; intros ?.
- apply fa_morph; intros f'.
- apply fa_morph; intros f'm.
- apply fa_morph; intros ?.
- apply Pm; auto with *.
- red; intros.
- apply f'm; auto.
- apply H; auto with *.
+apply WFR_morph.
+ do 2 red; intros.
+ rewrite H2,H3; reflexivity.
 
- apply Pm; auto with *.
+ do 3 red; intros.
+ apply if_prop_morph.
+  apply ex_morph; intros x'.
+  apply ex_morph; intros y'.
+  apply ex_morph; intros q'.
+  rewrite H3; reflexivity.
+
+  apply H2.
+  apply couple_morph.
+   apply H; rewrite H3; reflexivity.
+
+   rewrite H3; reflexivity.
+
+  rewrite H3; reflexivity.
+
+ rewrite H0,H1; reflexivity.
 Qed.
 
 Instance W_ord_a_morph :

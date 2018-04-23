@@ -56,17 +56,14 @@ Qed.
 
 (*Import ZFwf ZFord.*)
 Definition NAT_REC f g n :=
-  WFRK (fun x => x ∈ NAT) (fun n m => n ∈ NAT /\ m == SUCC n)
-       (fun F n => NATCASE f (fun m => g m (F m)) n) n.
+  WFR (fun n m => n ∈ NAT /\ m == SUCC n)
+      (fun F n => NATCASE f (fun m => g m (F m)) n) n.
 
 Instance NATREC_morph :
   Proper (eq_set ==> (eq_set ==> eq_set ==> eq_set) ==> eq_set ==> eq_set) NAT_REC.
 do 4 red; intros.
 unfold NAT_REC.
-apply WFRK_morph; trivial.
- red; intros.
- rewrite H2; reflexivity.
-
+apply WFR_morph; trivial.
  do 2 red; intros.
  rewrite H2,H3; reflexivity.
 
@@ -128,16 +125,13 @@ Qed.
 
   Lemma NATREC_0 f g : NAT_REC f g ZERO == f.
 unfold NAT_REC; intros.
-unfold WFRK; rewrite WFR_eqn_norec; auto.
- rewrite cond_set_ok. 2:apply ZERO_typ.
+rewrite WFR_eqn_norec; auto.
  apply NATCASE_ZERO.
 
  red; destruct 1.
  apply NATf_discr in H0; trivial.
 
  intros.
- rewrite cond_set_ok. 2:apply ZERO_typ.
- rewrite cond_set_ok. 2:rewrite <-H; apply ZERO_typ.
  rewrite NATCASE_ZERO.
  unfold NATCASE.
   rewrite cond_set_ok; auto with *.
@@ -152,18 +146,17 @@ Qed.
 Lemma NATREC_S : forall f g n, morph2 g -> n ∈ NAT ->
    NAT_REC f g (SUCC n) == g n (NAT_REC f g n).
 unfold NAT_REC; intros.
-rewrite WFRK_eqn; auto.
+rewrite WFR_eqn_gen; auto.
  rewrite NATCASE_SUCC.
   reflexivity.
 
   intros; apply H; trivial.
-  apply WFR_morph_gen2; trivial.
-  reflexivity.  
+  apply WFR_morph0; trivial.
 
- clear; do 2 red; intros; rewrite H; reflexivity.
+ intros; apply caseext; trivial.
+ apply SUCC_typ; trivial.
 
- apply caseext; trivial.
-
+ apply AccN.
  apply SUCC_typ; trivial.
 Qed.
 End NatrecProperties.

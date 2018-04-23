@@ -1,3 +1,4 @@
+Add LoadPath "..".
 Require Import ZF.
 
 (* Cardinal ordering *)

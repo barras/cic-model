@@ -1,5 +1,5 @@
 Require Import ZF.
-Require Import ZFpairs ZFrelations ZFord ZFfix ZFlimit ZFiso.
+Require Import ZFpairs ZFrelations ZFord ZFfix ZFiso.
 Require Import ZFnest ZFspos.
 
 (* Simply nested inductive *)

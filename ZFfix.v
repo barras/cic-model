@@ -452,19 +452,13 @@ apply cond_set_morph.
 Qed.
 
 
-Definition Fix_rec :=
-  WFRK (fun z => z ∈ Ffix) (fun b a => b ∈ fsub a) G'.
+(*Definition Fix_rec :=
+  WFRK (fun z => z ∈ Ffix) (fun b a => b ∈ fsub a) G'.*)
+Definition Fix_rec := WFR (fun b a => b ∈ fsub a) G'.
 
 Instance Fix_rec_morph0 : morph1 Fix_rec.
 do 2 red; intros.
-apply WFRK_morph; auto with *.
- red; intros.
- rewrite H0; reflexivity.
-
- do 2 red; intros.
- rewrite H0,H1; reflexivity.
-
- apply G'm.
+apply WFR_morph0; auto with *.
 Qed.
 
 (*
@@ -487,21 +481,18 @@ Lemma Fr_eqn : forall a o,
 intros.
 transitivity (G' Fix_rec a).
  unfold Fix_rec.
- apply WFRK_eqn; intros.
-  clear; do 2 red; intros; rewrite H; reflexivity. 
-
+ apply WFR_eqn_gen; intros.
   clear; do 3 red; intros; rewrite H,H0; reflexivity. 
-
-  apply Ffix_def in H1; destruct H1 as (o',oo',tyx).
-  revert x tyx; elim oo' using isOrd_ind; intros.
-  constructor; intros. 
-  destruct fsub_elim with (2:=tyx) (3:=H4) as (z,ltx,tyy0); eauto.
 
   apply G'm.
 
   apply G'ext; auto with *.
+  apply Ffix_def.
+  exists o; trivial.  
 
-  apply TI_Ffix in H0; trivial.
+  revert a H0; elim H using isOrd_ind; intros.
+  constructor; intros. 
+  destruct fsub_elim with (2:=H3) (3:=H4) as (z,ltx,tyy0); eauto.
 
  unfold G'; apply cond_set_ok.
  apply TI_Ffix in H0; trivial.  
@@ -999,11 +990,7 @@ Instance Fix_rec_morph :
   Proper ((E==>E)==>E==>((E==>E)==>E==>E)==>E==>E) Fix_rec. 
 do 5 red; intros.
 unfold Fix_rec.
-apply WFRK_morph; trivial.
- red; intros.
- apply in_set_morph; trivial.
- apply Ffix_morph; trivial.
-
+apply WFR_morph; trivial.
  do 2 red; intros.
  apply in_set_morph; trivial.
  apply fsub_morph_gen; trivial.
@@ -1094,10 +1081,7 @@ apply osup_morph.
 
  red; intros.
  apply osucc_morph.
- apply WFRK_morph; trivial.
-  red; intros.
-  rewrite H1,Ffix_indep; reflexivity.
-
+ apply WFR_morph; trivial.
   do 2 red; intros.
   rewrite <- H2.
   apply in_set_morph; auto with *.
