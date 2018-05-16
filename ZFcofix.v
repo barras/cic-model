@@ -1,82 +1,295 @@
 Require Import ZF ZFrelations ZFwfr ZFnats ZFord ZFstable.
 
-(** Transfinite iteration of a monotonic operator
+(** Decreasing transfinite iteration of a monotonic operator
  *)
+
+Definition interb A x := inter(singl A ∪ x).
+Lemma interb_def A a x :
+  x ∈ interb A a <->
+  (x ∈ A /\ forall y : set, y ∈ a -> x ∈ y).
+unfold interb.
+split; intros.
+ split.
+  apply inter_elim with (1:=H).
+  apply union2_intro1; apply singl_intro.
+
+  intros.
+  apply inter_elim with (1:=H).
+  apply union2_intro2; trivial.
+
+ destruct H.
+ apply inter_intro.
+  intros.
+  apply union2_elim in H1; destruct H1; auto.
+  apply singl_elim in H1; rewrite H1; trivial.
+
+  exists A.
+  apply union2_intro1; apply singl_intro.   
+Qed.
+
+Lemma interb_bound A a : interb A a ⊆ A.
+red; intros; apply interb_def in H; destruct H; trivial.
+Qed.
+
+Instance interb_morph : morph2 interb.
+unfold interb; do 3 red; intros.
+rewrite H,H0; reflexivity.
+Qed.
+
+Definition infb A I f := interb A (replf I f).
+
+Lemma infb_morph : Proper (eq_set==>eq_set==>(eq_set==>eq_set)==>eq_set) infb.
+unfold infb; do 4 red; intros.
+apply interb_morph; trivial.
+apply replf_morph; auto.
+red; intros; apply H1; trivial.
+Qed.
+
+Lemma infb_ext A A' I I' f f':
+  A==A' -> I==I' -> eq_fun I f f' -> infb A I f== infb A' I' f'.
+intros.
+apply interb_morph; trivial.
+apply replf_morph; auto.
+Qed.
+
+Lemma infb_ax A I f z :
+  ext_fun I f ->
+  (z ∈ infb A I f <->
+   (z ∈ A /\ forall x, x ∈ I -> z ∈ f x)).
+unfold infb; intros.
+rewrite interb_def.  
+apply and_iff_morphism; auto with *.
+split; intros.
+ apply H0.
+ apply replf_intro with x; auto with *.
+
+ apply replf_elim in H1; trivial.
+ destruct H1 as (x,?,eqy); rewrite eqy; auto.
+Qed.
+
+Lemma infb_bound A I f : infb A I f ⊆ A.
+apply interb_bound.
+Qed.
+
+Lemma infb_incl A I f x :
+  ext_fun I f ->
+  x ∈ I -> infb A I f ⊆ f x.
+red; intros.
+apply infb_ax in H1; trivial.
+destruct H1; auto.
+Qed.
+
+Lemma infb_glb A I f a :
+  ext_fun I f ->
+  a ⊆ A ->
+  (forall x, x ∈ I -> a ⊆ f x) ->
+  a ⊆ infb A I f.
+red; intros.
+apply infb_ax; trivial.
+split; intros; auto.
+apply H1; trivial.
+Qed.
+
+Section CoTransfiniteIteration.
+
+  Variable A:set.
+  Variable F:set->set.
+  Hypothesis Fmorph : morph1 F.
+    
+Let G f o := infb A o (fun o' => F (f o')).
+
+Let Gm : Proper ((eq_set ==> eq_set) ==> eq_set ==> eq_set) G.
+do 3 red; intros.
+apply infb_morph; auto with *.
+red; intros; auto.
+Qed.
+
+Let Gmorph : forall o f f', eq_fun o f f' -> G f o == G f' o.
+unfold G; intros.
+apply infb_ext; auto with *.
+red; intros; auto.
+Qed.
+
+  Definition COTI := TR G.
+
+  Instance COTI_morph : morph1 COTI.
+unfold COTI; do 2 red; intros.
+apply TR_morph0; auto with *.
+Qed.
+
+  Lemma COTI_fun_ext : forall x, ext_fun x (fun y => F (COTI y)).
+do 2 red; intros.
+apply Fmorph.
+apply COTI_morph; trivial.
+Qed.
+Hint Resolve COTI_fun_ext.
+
+  Lemma COTI_eq : forall o,
+    isOrd o ->
+    COTI o == infb A o (fun o' => F (COTI o')).
+intros.
+unfold COTI.
+apply TR_eqn; auto.
+Qed.
+
+  Lemma COTI_intro o x :
+    isOrd o ->
+    x ∈ A ->                   
+    (forall o', lt o' o -> x ∈ F (COTI o')) ->
+    x ∈ COTI o.
+intros.
+rewrite COTI_eq; trivial.
+apply infb_ax; auto.
+Qed.
+
+  Lemma COTI_bound o : isOrd o -> COTI o ⊆ A.
+intros.
+rewrite COTI_eq; trivial.
+apply infb_bound.
+Qed.
+
+  Lemma COTI_elim : forall o x,
+    isOrd o ->
+    x ∈ COTI o ->
+    forall o', o' < o -> x ∈ F (COTI o').
+intros.
+rewrite COTI_eq in H0; trivial.
+rewrite infb_ax in H0; auto.
+destruct H0; auto.
+Qed.
+
+  Lemma COTI_initial : COTI zero == A.
+    rewrite COTI_eq; auto.
+apply incl_eq.
+ apply infb_bound.
+
+ red; intros; apply infb_ax; auto.
+ split; intros; trivial.
+ apply empty_ax in H0; contradiction.
+Qed.
+
+End CoTransfiniteIteration.
+Local Hint Resolve COTI_fun_ext.
+
+Global Instance COTI_morph_gen :
+  Proper (eq_set==>(eq_set==>eq_set)==>eq_set==>eq_set) COTI.
+do 4 red; intros.
+unfold COTI.
+apply TR_morph; trivial.
+do 2 red; intros.
+apply infb_morph; trivial.
+red; intros.
+auto.
+Qed.
+
+Definition decreasing F :=
+  forall x y, isOrd x -> isOrd y -> y ⊆ x -> F x ⊆ F y.
+  
+  Lemma COTI_mono A F : morph1 F -> decreasing (COTI A F).
+do 2 red; intros.
+apply COTI_intro; intros; auto.
+ revert H3; apply COTI_bound; trivial.
+
+ apply COTI_elim with (3:=H3); auto.
+ apply H2; trivial.
+Qed.
 
 (** * Elementary properties *)
 Section IterMonotone.
 
+  Variable A : set.
   Variable F : set -> set.
   Variable Fmono : Proper (incl_set ==> incl_set) F.
+  Hypothesis Fbound : F A ⊆ A.
 
   Let Fm := Fmono_morph _ Fmono.
-
-  Lemma TI_mono_succ : forall o,
-    isOrd o ->
-    TI F (osucc o) == F (TI F o).
+  
+  Lemma COTI_incl : forall o, isOrd o ->
+    forall o', o' < o ->
+    COTI A F o ⊆ COTI A F o'.
 intros.
-assert (Fext : ext_fun (osucc o) (fun o' => F (TI F o'))).
- generalize (isOrd_succ _ H); auto.
-rewrite TI_eq; auto.
- apply eq_intro; intros.
-  rewrite sup_ax in H0; trivial.
-  destruct H0.
-  apply Fmono with (TI F x); trivial.
-  apply TI_mono; trivial.
-   apply isOrd_inv with (osucc o); auto.
-   apply olts_le; trivial.
-
- rewrite sup_ax; trivial.
- exists o; trivial.
- apply lt_osucc; trivial.
-Qed.
-
-Lemma TI_inv o x :
-  isOrd o ->
-  x ∈ TI F o ->
-  exists2 o', o' ∈ o & x ∈ TI F (osucc o').
-intros.
-apply TI_elim in H0; trivial.
-destruct H0 as (o',?,?).
-exists o'; trivial.
-rewrite TI_mono_succ; auto with *.
+apply COTI_mono; trivial; auto.
 apply isOrd_inv with o; trivial.
 Qed.
 
-  Lemma TI_mono_eq : forall o,
+  Lemma COTI_mono_succ0 : forall o,
     isOrd o ->
-    TI F o == sup o (fun o' => TI F (osucc o')).
+    COTI A F (osucc o) == A ∩ F (COTI A F o).
 intros.
-rewrite TI_eq; auto.
-apply sup_morph; auto with *.
+assert (Fext : ext_fun (osucc o) (fun o' => F (COTI A F o'))).
+  generalize (isOrd_succ _ H); auto.
+rewrite COTI_eq; auto.
+apply eq_set_ax; intros z.
+rewrite infb_ax; auto.
+rewrite inter2_def.
+apply and_iff_morphism; auto with *.
+split; intros.
+ apply H0; apply lt_osucc; trivial.
+
+ revert H0; apply Fmono; apply COTI_mono; auto.
+  apply isOrd_inv with (osucc o); auto.
+  apply olts_le in H1; trivial. 
+Qed.
+
+  Lemma COTI_mono_succ : forall o,
+    isOrd o ->
+    COTI A F (osucc o) == F (COTI A F o).
+intros.
+rewrite COTI_mono_succ0; trivial.
+apply eq_set_ax; intros z.
+ rewrite inter2_def.
+split;[destruct 1; auto|intros].
+split; auto.
+apply Fbound.
+revert H0; apply Fmono; apply COTI_bound; trivial.
+Qed.
+
+Lemma COTI_inv o x :
+  isOrd o ->
+  x ∈ COTI A F o ->
+  forall o', o' ∈ o -> x ∈ COTI A F (osucc o').
+intros.
+rewrite COTI_mono_succ.
+2:apply isOrd_inv with o; trivial.
+apply COTI_elim with (3:=H0); auto.
+Qed.
+
+  Lemma COTI_mono_eq : forall o,
+    isOrd o ->
+    COTI A F o == infb A o (fun o' => COTI A F (osucc o')).
+intros.
+rewrite COTI_eq; auto.
+apply infb_ext; auto with *.
 red; intros.
-rewrite <- TI_mono_succ.
- apply TI_morph; auto.
+rewrite <- COTI_mono_succ.
  rewrite H1; reflexivity.
 
  apply isOrd_inv with o; trivial.
 Qed.
 
-  Lemma TI_pre_fix : forall fx o,
+  Lemma COTI_post_fix : forall fx o,
      isOrd o ->
-     F fx ⊆ fx ->
-     TI F o ⊆ fx.
+     fx ⊆ A ->
+     fx ⊆ F fx ->
+     fx ⊆ COTI A F o.
 intros.
 induction H using isOrd_ind; intros.
 red; intros.
-apply H0.
-elim TI_elim with (3:=H3); intros; auto with *.
-apply Fmono with (TI F x); auto.
+apply COTI_intro; auto.
+intros.
+apply H1 in H4.
+revert H4; apply Fmono; auto.
 Qed.
-(** Stability of ordinal-indexed families *)
 
+(** Stability of ordinal-indexed families *)
+(*
 Definition stable_ord := stable_class isOrd.
 
-Lemma TI_stable K :
+Lemma COTI_stable K :
   Proper (eq_set ==> iff) K ->
   stable_class K F ->
-  (forall o, isOrd o -> K (TI F o)) ->
-  stable_ord (TI F).
+  (forall o, isOrd o -> K (COTI A F o)) ->
+  stable_ord (COTI A F).
 intros Km Fs KTI.
 cut (forall o, isOrd o ->
   forall X, o == inter X ->
@@ -160,207 +373,49 @@ apply inter_intro.
  rewrite replf_ax; trivial.
  exists wy; auto with *.
 Qed.
-
+*)
 (** * Case of a bounded monotonic operator 
  *)
-Section BoundedOperator.
 
-Variable A : set.
-Hypothesis Ftyp : forall X, X ⊆ A -> F X ⊆ A.
+(** The intersection of all stages. We will show it is a fixpoint. *)
 
-(** The union of all stages. We will show it is a fixpoint. *)
+Definition COFfix := subset A (fun a => forall o, isOrd o -> a ∈ COTI A F o).
 
-Definition Ffix := subset A (fun a => exists2 o, isOrd o & a ∈ TI F o).
-
-Lemma Ffix_inA : Ffix ⊆ A.
+Lemma COFfix_inA : COFfix ⊆ A.
 red; intros.
 apply subset_elim1 in H; trivial.
 Qed.
 
-Lemma TI_inA o : isOrd o -> TI F o ⊆ A.
-induction 1 using isOrd_ind; intros.
-rewrite TI_eq; auto.
-apply sup_lub; auto with *.
-Qed.
-
-Lemma TI_Ffix : forall o, isOrd o -> TI F o ⊆ Ffix.
+Lemma COTI_Ffix : forall o, isOrd o -> COFfix ⊆ COTI A F o.
 intros.
+apply isOrd_ind with (2:=H); intros.
 red; intros.
-apply subset_intro.
- apply TI_inA in H0; auto.
-
- exists o; trivial.
+apply COTI_intro; auto with *.
+ apply COFfix_inA; trivial.
+intros.
+rewrite <- COTI_mono_succ; auto.
+2:apply isOrd_inv with y; trivial.
+apply subset_ax in H3; destruct H3.
+destruct H5 as (z',eqz,?).
+rewrite eqz; eauto using isOrd_inv.
 Qed.
 
-Lemma Ffix_def : forall a, a ∈ Ffix <-> exists2 o, isOrd o & a ∈ TI F o.
-unfold Ffix; intros.
+Lemma COFfix_def : forall a, a ∈ COFfix <-> (forall o, isOrd o -> a ∈ COTI A F o).
+unfold COFfix; intros.
 rewrite subset_ax.
 split; intros.
  destruct H.
- destruct H0.
  destruct H1.
- exists x0; trivial.
- rewrite H0; trivial.
+ rewrite H1; auto.
 
- destruct H.
  split.
-  apply TI_inA in H0; trivial.
+  generalize (H _ isOrd_zero).
+  apply COTI_bound; auto.
 
   exists a; auto with *.
-  exists x; trivial.
 Qed.
 
-(** Showing Ffix is a fixpoint if collection holds *)
-
-Section FixColl.
-
-Hypothesis coll_ax :
-  forall A (R:set->set->Prop), 
-  Proper (eq_set ==> eq_set ==> iff) R ->
-  exists B, forall x, x ∈ A ->
-         (exists y, R x y) -> exists2 y, y ∈ B & R x y.
-
-
-Lemma Ffix_fix_coll_stage : exists2 o, isOrd o & Ffix ⊆ TI F o.
-pose (R := fun x o => isOrd o /\ x ∈ TI F o).
-destruct coll_ax with (A:=Ffix) (R:=R) as (B,?).
- do 3 red; intros.
- unfold R; rewrite H; rewrite H0; reflexivity.
-pose (o:=osup (subset B isOrd) (fun x => x)).
-assert (oo : isOrd o).
- apply isOrd_osup.
-  do 2 red; trivial.
-  intros.
-  apply subset_elim2 in H0; destruct H0.
-  rewrite H0; trivial.
-exists o; trivial.
-red; intros.
-destruct H with (1:=H0).
- rewrite Ffix_def in H0.
- destruct H0 as (o',?,?); exists o'; split; auto.
-
- destruct H2.
- revert H3; apply TI_mono; auto.
-apply osup_intro with (f:=fun x=>x)(x:=x).
- do 2 red; trivial.
-
- apply subset_intro; trivial.
-Qed.
-
-Lemma Ffix_fix_coll : Ffix == F Ffix.
-apply eq_intro; intros.
- rewrite Ffix_def in H.
- destruct H.
- apply TI_elim in H0; trivial.
- destruct H0 as (o,?,?).
- revert H1; apply Fmono.
- apply TI_Ffix.
- apply isOrd_inv with x; trivial.
-
- destruct Ffix_fix_coll_stage as (o,?,?).
- apply Fmono in H1.
- apply H1 in H.
- rewrite <- TI_mono_succ in H; trivial.
- revert H; apply TI_Ffix; auto.
-Qed.
-
-End FixColl.
-
-(*(* The same, but with universe size *)
-Section FixCollUniv.
-
-Hypothesis coll_ax :
-  forall A (R:set->set->Prop), 
-  Proper (eq_set ==> eq_set ==> iff) R ->
-  exists B, forall x, x ∈ A ->
-         (exists y, R x y) -> exists2 y, y ∈ B & R x y.
-
-Hypothesis K : set -> Prop.
-Hypothesis Km : Proper (eq_set==>iff) K.
-Hypothesis Kord : forall o, K o -> isOrd o.
-Hypothesis Kord_sup : forall I f,
-  morph1 f ->
-  I ⊆ A ->
-  (forall x, x ∈ I -> K (f x)) ->
-  K (osup I f).
-
-Definition Ffix' := subset A (fun a => exists o, K o /\ a ∈ TI F o).
 (*
-Lemma Ffix_inA' : Ffix' ⊆ A.
-red; intros.
-apply subset_elim1 in H; trivial.
-Qed.
-*)
-Lemma Ffix_def' : forall a, a ∈ Ffix' <-> exists2 o, K o & a ∈ TI F o.
-unfold Ffix'; intros.
-rewrite subset_ax.
-split; intros.
- destruct H.
- destruct H0.
- destruct H1.
- destruct H1.
- exists x0; trivial.
- rewrite H0; trivial.
-
- destruct H.
- split.
-  apply Ffix_inA.
-  revert a H0; apply TI_Ffix; auto.
-
-  exists a; auto with *.
-  exists x; auto.
-Qed.
-
-Lemma Ffix_fix_coll_stage' : exists2 o, K o & Ffix' ⊆ TI F o.
-pose (R := fun x o => K o /\ x ∈ TI F o).
-destruct coll_ax with (A:=Ffix') (R:=R) as (B,?).
- do 3 red; intros.
- unfold R; rewrite H; rewrite H0; reflexivity.
-pose (o:=osup (subset B K) (fun x => x)).
-assert (oo : K o).
- apply Kord_sup.
-  do 2 red; trivial.
-
-  red; intros.
-  apply subset_elim2 in H0; destruct H0.
-  intros.
-  apply subset_elim2 in H0; destruct H0.
-  rewrite H0; auto.
-trivial.
-exists o; trivial.
-red; intros.
-destruct H with (1:=H0).
- rewrite Ffix_def in H0.
- destruct H0 as (o',?,?); exists o'; split; auto.
-
- destruct H2.
- revert H3; apply TI_mono; auto.
-apply osup_intro with (f:=fun x=>x)(x:=x).
- do 2 red; trivial.
-
- apply subset_intro; trivial.
-Qed.
-
-Lemma Ffix_fix_coll : Ffix == F Ffix.
-apply eq_intro; intros.
- rewrite Ffix_def in H.
- destruct H.
- apply TI_elim in H0; trivial.
- destruct H0 as (o,?,?).
- revert H1; apply Fmono.
- apply TI_Ffix.
- apply isOrd_inv with x; trivial.
-
- destruct Ffix_fix_coll_stage as (o,?,?).
- apply Fmono in H1.
- apply H1 in H.
- rewrite <- TI_mono_succ in H; trivial.
- revert H; apply TI_Ffix; auto.
-Qed.
-
-End FixColl.
-*)
-
 (** Subterms of [a] *)
 Definition fsub a :=
   subset Ffix (fun b => forall X, X ⊆ Ffix -> a ∈ F X -> b ∈ X).
@@ -905,11 +960,13 @@ apply TI_clos_fix_eqn'.
 Qed.
 
 (*END*)  
-End BoundedOperator.
 
+End BoundedOperator.
+*)
 
 End IterMonotone.
 
+(*
 Lemma TI_mono_gen G G' o o' :
   morph1 G ->
   morph1 G' ->
@@ -1214,4 +1271,4 @@ revert H3; apply post_fix_lfp.
 Qed.
 
 End KnasterTarski.
-
+*)

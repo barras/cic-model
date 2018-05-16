@@ -1004,23 +1004,19 @@ assert (forall o', lt o' o ->
 apply eq_intro; intros.
  apply TIF_elim in H1; auto with *.
  2:apply W_Fd_morph; trivial.
- 2:apply W_Fd_mono; trivial.
  destruct H1 as (o',?,?).
  rewrite H in H5; trivial.
  apply TIF_intro with o'; trivial.
   apply W_Fd_morph; trivial.
-  apply W_Fd_mono; trivial.
   rewrite <- H4; auto.
 
  apply TIF_elim in H1; auto with *.
  2:apply W_Fd_morph; trivial.
- 2:apply W_Fd_mono; trivial.
  2:rewrite <- H4; auto.
  destruct H1 as (o',?,?).
  rewrite <- H in H5; trivial.
  apply TIF_intro with o'; trivial.
   apply W_Fd_morph; trivial.
-  apply W_Fd_mono; trivial.
 Qed.
 
 Import ZFfix.
@@ -2082,11 +2078,6 @@ apply incl_eq.
 
  unfold Wi.
  apply TIF_mono; auto using W_o_o with *.
-  red; intros.
-  apply W_Fd_mono; auto with *.
-  intros.
-  apply extln_typ; auto.
-
   apply Arg'_intro1; trivial.
 
   assert (tmp := W_ord_a_smaller).

@@ -304,7 +304,7 @@ assert (x ∈ TI (WF' A B i') (int O i)).
   reflexivity.
 
  revert H3; apply TI_mono; trivial.
- apply W_F_mono.
+ apply W_F_morph.
  apply Bw_morph; reflexivity.
 Qed.
 

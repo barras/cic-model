@@ -882,6 +882,16 @@ exists x; trivial.
 Qed.
 Hint Resolve sup_incl.
 
+Lemma sup_lub x f A :
+  ext_fun x f ->
+  (forall y, y ∈ x -> f y ⊆ A) ->
+  sup x f ⊆ A.
+red; intros.
+apply sup_ax in H1; trivial.
+destruct H1 as (y,?,?).
+apply H0 with (y:=y); trivial.
+Qed.
+
 
 Lemma replf_is_sup A F :
   ext_fun A F ->

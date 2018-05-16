@@ -1340,6 +1340,22 @@ rewrite TI_eq in H0; trivial.
 rewrite sup_ax in H0; auto.
 Qed.
 
+  Lemma TI_mono : increasing TI.
+do 2 red; intros.
+apply TI_elim in H2; intros; auto with *.
+destruct H2.
+apply TI_intro with x0; auto with *.
+apply H1 in H2; trivial.
+Qed.
+
+  Lemma TI_incl : forall o, isOrd o ->
+    forall o', o' < o ->
+    TI o' ⊆ TI o.
+intros.
+apply TI_mono; trivial; auto.
+apply isOrd_inv with o; trivial.
+Qed.
+
   Lemma TI_initial : TI zero == empty.
 apply empty_ext; red; intros.
 apply TI_elim in H.

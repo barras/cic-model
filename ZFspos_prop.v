@@ -57,6 +57,17 @@ do 3 red; intros.
 apply H; trivial.
 Qed.
 
+Lemma w2_morph' p : isPositive p -> morph1 (w2 p).
+intros; apply w2m; trivial.
+Qed.
+
+Lemma pos_oper_morph0 p : isPositive p -> morph1 (pos_oper p).
+do 2 red; intros.
+apply Fmono_morph; trivial.
+apply pos_mono; trivial.
+Qed.
+Hint Resolve w2_morph' pos_oper_morph0.
+
 (* pos_oper is stable by isomorphism with W_F *)
 Lemma pos_oper_stable : forall p, isPositive p ->
   stable (pos_oper p).
@@ -68,13 +79,13 @@ assert (WFm : morph1 (W_F (w1 p) (w2 p))).
 (*assert (WFm : ext_fun X (W_F (w1 p) (w2 p))).
  do 2 red; intros; apply W_F_ext; auto with *.
  apply H.*)
-assert (posm : morph1 (pos_oper p)).
+(*assert (posm : morph1 (pos_oper p)).
  do 2 red; intros.
- apply (Fmono_morph _ (pos_mono p H)); trivial.
+ apply (Fmono_morph _ (pos_mono p H)); trivial.*)
 (*assert (posm' : ext_fun X (pos_oper p)).
 do 2 red; intros; apply posm; trivial.*)
 red; intros.
-destruct inter_wit with (2:=H1) as (w,?); trivial.
+destruct inter_wit with (2:=H1) as (w,?); auto.
 apply iso_fun_narrow with
  (1:=w_iso _ H (inter X)) (2:=w_iso _ H w).
  apply pos_mono; trivial.
@@ -148,7 +159,6 @@ Qed.
     INDi p o ⊆ INDi p o'.
 intros.
 apply TI_mono; auto with *.
-apply H.
 Qed.
 
 (** * Convergence *)
@@ -261,7 +271,7 @@ destruct TI_iso_fun with
   2:apply p_ok; trivial.
   2:apply W_o_o; trivial.  
   revert H; apply TI_incl.
-   apply p_ok; trivial.
+   apply Fmono_morph; apply p_ok; trivial.
    apply isOrd_succ; apply W_o_o; trivial.
    apply lt_osucc; apply W_o_o; trivial.
 Qed.
@@ -272,17 +282,12 @@ Qed.
 induction 1 using isOrd_ind; intros.
 unfold INDi.
 rewrite TI_eq; auto.
-2:apply Fmono_morph; apply p_ok.
 red; intros.
 rewrite sup_ax in H2; auto.
  destruct H2.
  rewrite IND_eq.
  revert H3; apply p_ok; auto.
  apply H1; trivial.
-
- do 2 red; intros; apply Fmono_morph; auto.
-  apply p_ok; auto.
-  apply TI_morph; trivial.
 Qed.
 
 End InductiveFixpoint.

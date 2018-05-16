@@ -159,7 +159,7 @@ intros.
 apply TI_elim in H0; auto.
 destruct H0.
 apply SUCC_inv_typ_gen in H1.
-revert H1; apply TI_mono; trivial.
+revert H1; apply TI_mono; auto with *.
  apply isOrd_inv with (osucc o); auto.
 
  apply olts_le in H0; trivial.

@@ -389,7 +389,6 @@ apply iso_fun_inj with (f:=isow p (dIND_clos_ord p) a)
   apply isowm; auto with *.
 apply TIF_mono.
  apply dopm; trivial.
- apply dpmono; trivial.
  trivial.
  apply isOrd_clos_ord; trivial.
  apply W0.isOrd_W_ord_a.

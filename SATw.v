@@ -118,6 +118,8 @@ End W_PartialModel.
 Module W_Facts (M:W_PartialModel).
 Import M.
 
+Definition W_F_morph A B Bm := Fmono_morph _ (W_F_mono A B Bm).
+
 Lemma mt_not_in_W_F : forall A B, morph1 B ->
     forall o x,
     isOrd o -> x ∈ TI (W_F A B) o -> ~ x == empty.
@@ -222,7 +224,7 @@ apply cc_bot_ax in H2; destruct H2.
      apply WREC_irr with (1:=oko); auto with *.
 
     revert H3; apply TI_mono; auto with *.
-    apply W_F_mono.
+    apply W_F_morph; trivial.
     apply (WBm _ _ _ _ _ oko).
 
    red in eqF; apply eqF; auto with *.
@@ -233,7 +235,7 @@ apply cc_bot_ax in H2; destruct H2.
    revert H3; apply eq_elim; apply TI_morph_gen; auto with *.
    red; intros; apply W_F_ext; trivial.
   revert H4; apply TI_mono; auto with *.
-   apply W_F_mono.
+   apply W_F_morph.
    apply (WBm _ _ _ _ _ oko').
 
    transitivity y; trivial.

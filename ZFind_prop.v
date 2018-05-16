@@ -108,7 +108,7 @@ Qed.
   Lemma Wi_mono o o' : isOrd o -> isOrd o' -> o ⊆ o' -> Wi o ⊆ Wi o'.
 intros.
 apply TI_mono; trivial.
-apply W_F_mono.
+apply W_F_morph.
 Qed.
 
   Lemma Wi_W o : isOrd o -> Wi o ⊆ W.

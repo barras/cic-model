@@ -33,7 +33,6 @@ rewrite VN_def in H0; trivial.
 destruct H0.
 apply H2 in H1.
 revert H1; apply TI_incl; auto with *.
-apply power_mono.
 Qed.
 
   Lemma VN_incl : forall o x y,

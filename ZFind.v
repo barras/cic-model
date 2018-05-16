@@ -118,9 +118,7 @@ Qed.
 unfold Wi, W0.Wi.
 intros.
 apply TIF_mono; trivial.
- apply W0.W_Fd_morph; auto.
-
- apply W0.W_Fd_mono; auto.
+apply W0.W_Fd_morph; auto.
 Qed.
 
   (** The fixpoint *)
@@ -435,7 +433,6 @@ split; intros.
     rewrite <- H2; trivial.
 
    apply W0.W_Fd_morph; auto.
-   apply W0.W_Fd_mono; auto.
 
   do 3 red; intros.
   rewrite H1,H2; reflexivity.
@@ -465,7 +462,6 @@ split; intros.
  rewrite Wi_succ; auto.
  apply isOrd_inv with o0; auto.
   apply W0.W_Fd_morph; auto.
-  apply W0.W_Fd_mono; auto.
 
  apply WFm.  
 
@@ -511,7 +507,6 @@ split; intros.
  rewrite <- H8.
  apply TIF_mono; auto with *.
   apply W0.W_Fd_morph; auto.
-  apply W0.W_Fd_mono; auto.
   apply osucc_mono; auto.
 
  do 2 red; intros.
@@ -593,7 +588,6 @@ revert tyw; apply sigma_mono; auto.
  rewrite <- H5.
  apply TIF_incl; trivial.
   apply W0.W_Fd_morph; auto.
-  apply W0.W_Fd_mono; auto.
 
   apply isOrd_succ.
   apply W_o_o.

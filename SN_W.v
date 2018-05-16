@@ -1293,7 +1293,7 @@ assert (RBm : Proper (eq_set ==> eq_set ==> eqSAT)
  rewrite H,H0; reflexivity.
 destruct tyord_inv with (3:=tyO) (4:=proj1 val_m); trivial.
 destruct tyord_inv with (3:=tyO) (4:=proj1 (proj2 val_m)); trivial.
-(*red in eqA; specialize eqA with (1:=val_m).*)
+assert (eqiA := eqA); red in eqiA; specialize eqiA with (1:=val_m).
 specialize subO with (1:=val_m).
 red in xreal; rewrite El_int_W in xreal.
 rewrite Real_int_W in xsat; trivial.
@@ -1320,11 +1320,13 @@ assert (cc_bot (TI (WF A B i) (int O i)) ⊆ cc_bot (TI (WF A B i') (int O i')))
 *)
   destruct H0; destruct H2.
   apply TI_mono; trivial.
-red in eqA; specialize eqA with (1:=val_m).
-split.
- red; rewrite El_int_W; auto.
+   apply WF_morph; auto with *.
 
+   
  rewrite Real_int_W; auto.
+ split.
+  apply H3 in xreal.
+  rewrite <- El_int_W in xreal; auto.
  rewrite cc_bot_ax in xreal; destruct xreal as [H4|xreal].
   assert (eqSAT (RW A B i (int O i) x) (RW A B i (int O i) empty)).
    unfold RW; apply rWi_morph; auto with *.
@@ -1337,6 +1339,7 @@ split.
   unfold RW in xsat; rewrite rWi_neutral in xsat; auto with *.
    apply Bw_morph; reflexivity.
    apply RAw_morph; reflexivity.
+
  setoid_replace (RW A B i' (int O i') x) with (RW A B i (int O i) x); trivial.
  symmetry; transitivity (RW A B i (int O i') x).
   unfold RW; apply rWi_mono; trivial.
@@ -1353,17 +1356,17 @@ split.
    eapply El_eq with (1:=eqB).
    apply val_push_var; eauto.
     split;[trivial|apply varSAT].
-    split;[rewrite eqA in H4;rewrite H5 in H4;trivial|apply varSAT].
- 
+    split;[rewrite eqiA in H4;rewrite H5 in H4;exact H4|apply varSAT].
+
    do 2 red; intros.
-   rewrite eqA; rewrite H4; reflexivity.
+   rewrite <- eqiA; rewrite H4; reflexivity.
 
    do 2 red; intros.
    apply Real_morph; trivial.
    eapply eqB.
    apply val_push_var; eauto.
     split;[trivial|apply varSAT].
-    split;[rewrite eqA in H4;rewrite H5 in H4;trivial|apply varSAT].
+    split;[rewrite eqiA in H4;rewrite H5 in H4;trivial|apply varSAT].
 
   reflexivity.
   reflexivity.

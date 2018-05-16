@@ -228,7 +228,6 @@ Qed.
     INDi p o ⊆ INDi p o'.
 intros.
 apply TI_mono; auto with *.
-apply sp_mono; trivial.
 Qed.
 
 
@@ -1117,7 +1116,7 @@ destruct TI_iso_fun with
  2:apply sp_mono; trivial.
  2:apply W_o_o; trivial.  
  revert H; apply TI_incl.
-  apply sp_mono; trivial.
+  apply Fmono_morph; apply sp_mono; trivial.
   apply isOrd_succ; apply W_o_o; trivial.
   apply lt_osucc; apply W_o_o; trivial.
 Qed.

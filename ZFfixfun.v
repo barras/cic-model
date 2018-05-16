@@ -22,23 +22,8 @@ Section IterMonotone.
   Variable A : set.
   Variable F : (set -> set) -> set -> set.
   Variable Fm : Proper ((eq_set==>eq_set) ==> eq_set ==> eq_set) F.
-  Variable Fmono : mono_fam A F.
 
-  Lemma FFmono_ext: forall X Y, morph1 X -> morph1 Y -> eq_fun A X Y -> eq_fun A (F X) (F Y).
-red; intros.
-rewrite <- H3; clear x' H3.
-apply incl_eq.
- apply Fmono; trivial.
- red; red; intros.
- revert H4; apply eq_elim; auto with *.
-
- apply Fmono; trivial.
- red; red; intros.
- revert H4; apply eq_elim; symmetry; apply H1; auto with *.
-Qed.
-Hint Resolve FFmono_ext.
-
-(** Definition of the TIF iterator *)
+  (** Definition of the TIF iterator *)
   Let F' f o := cc_lam A (fun a => sup o (fun o' => F (cc_app (f o')) a)).
 
   Let F'm : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) F'.
@@ -48,13 +33,9 @@ apply cc_lam_ext; intros; auto with *.
 red; intros.
 apply sup_morph; trivial.
 red; intros.
-apply FFmono_ext; trivial.
- apply cc_app_morph; reflexivity.
-(**)
- apply cc_app_morph; reflexivity.
-(**)
- red; intros.
- apply cc_app_morph; auto with *.
+apply Fm; trivial.
+red; intros.
+apply cc_app_morph; auto with *.
 Qed.
 
   Let F'ext : forall o f f', isOrd o -> eq_fun o f f' -> F' f o == F' f' o.
@@ -64,13 +45,9 @@ apply cc_lam_ext; intros; auto with *.
 red; intros.
 apply sup_morph; auto with *.
 red; intros.
-apply FFmono_ext; trivial.
- apply cc_app_morph; reflexivity.
-(**)
- apply cc_app_morph; reflexivity.
-(**)
- red; intros.
- apply cc_app_morph; auto with *.
+apply Fm; trivial.
+red; intros.
+apply cc_app_morph; auto with *.
 Qed.
 
   Definition TIF o := cc_app (TR F' o).
@@ -84,11 +61,8 @@ Qed.
   Let m2: forall a a' o o', a ∈ A -> a == a' -> isOrd o -> o == o' ->
     F (TIF o) a == F (TIF o') a'.
 intros.
-apply FFmono_ext; auto with *.
- apply TIF_morph; auto with *.
- apply TIF_morph; auto with *.
-(**)
- red; intros; apply TIF_morph; auto.
+apply Fm; auto with *.
+apply TIF_morph; auto with *.
 Qed.
 
   Lemma TIF_eq : forall o a,
@@ -150,6 +124,25 @@ intros.
 apply TIF_mono; trivial; auto.
 apply isOrd_inv with o; trivial.
 Qed.
+
+
+  
+  Variable Fmono : mono_fam A F.
+
+(*  Lemma FFmono_ext: forall X Y, morph1 X -> morph1 Y -> eq_fun A X Y -> eq_fun A (F X) (F Y).
+red; intros.
+rewrite <- H3; clear x' H3.
+apply incl_eq.
+ apply Fmono; trivial.
+ red; red; intros.
+ revert H4; apply eq_elim; auto with *.
+
+ apply Fmono; trivial.
+ red; red; intros.
+ revert H4; apply eq_elim; symmetry; apply H1; auto with *.
+Qed.
+Hint Resolve FFmono_ext.
+*)
 
   Lemma TIF_mono_succ : forall o a,
     isOrd o ->

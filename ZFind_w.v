@@ -1415,7 +1415,7 @@ apply H with (fst x) (cc_app (snd x)); intros; trivial.
  apply cc_app_morph; reflexivity.
 
  generalize (H6 _ H8); apply TI_incl; auto with *.
-  apply W_F_mono; trivial.
+  apply W_F_morph; trivial.
 
   apply H2; trivial.
 
