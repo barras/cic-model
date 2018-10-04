@@ -1752,8 +1752,6 @@ rewrite red_lift_ref_bound; auto with arith.
       assert (i 4 ∈ osucc omega).
        apply cc_bot_ax in H1; destruct H1; trivial.
        rewrite H1; apply ole_lts; auto.
-       red; intros.
-       apply empty_ax in H2; contradiction.
       red; rewrite El_def.
       revert H0; apply cc_bot_mono.
       apply TI_mono; auto with *.

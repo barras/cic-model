@@ -666,8 +666,6 @@ Proof proj1 limo.
   Let zer : forall x, x ∈ VN o -> zero ∈ VN o.
 intros.
 apply VN_incl with x; auto.
-red; intros.
-elim empty_ax with z; trivial.
 Qed.
 
   Let suc : forall x, x ∈ VN o -> succ x ∈ VN o.
@@ -685,8 +683,6 @@ unfold NATf.
 unfold sum.
 assert (zero ∈ VN o).
  apply VN_incl with X; trivial.
- red; intros.
- apply empty_ax in H0; contradiction.
 assert (forall Y Z, Y ∈ VN o -> Z ∈ VN o -> ZFpairs.prodcart Y Z ∈ VN o).
  intros.
  unfold ZFpairs.prodcart.

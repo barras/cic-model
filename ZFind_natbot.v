@@ -912,7 +912,6 @@ Section NAT'_Univ.
 intros.
 assert (empty ∈ U).
  apply G_incl with X; trivial.
-intros z h; apply empty_ax in h; contradiction.
 unfold NATf'.
 apply G_sum; trivial.
  unfold ZFind_basic.UNIT.

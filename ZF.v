@@ -309,12 +309,18 @@ apply power_ext; intros.
     eapply power_elim;  eauto.
 Qed.
 
+Lemma empty_incl_all a : empty ⊆ a.
+red; intros; apply empty_ax in H; contradiction.
+Qed.  
+
 Lemma empty_in_power : forall x, empty ∈ power x.
 Proof.
 intros.
 apply power_intro; intros.
 elim empty_ax with (1:=H).
 Qed.
+
+Hint Resolve empty_incl_all empty_in_power.
 
 Lemma union_in_power :
     forall x X, x ⊆ power X -> union x ∈ power X.
@@ -324,6 +330,19 @@ elim union_elim with (1:=H0); clear H0; intros.
 apply power_elim with x0; auto.
 Qed.
 
+
+Lemma subset_ax' x P z :
+  Proper (eq_set==>iff) P ->
+  (z ∈ subset x P <-> z ∈ x /\ P z).
+intros.
+rewrite subset_ax.
+apply and_iff_morphism; auto with *.
+split; intros.
+ destruct H0.
+ rewrite H0; trivial.
+
+ exists z; auto with *.
+Qed.
 
 Lemma subset_intro : forall a (P:set->Prop) x,
   x ∈ a -> P x -> x ∈ subset a P.
@@ -924,6 +943,16 @@ apply eq_intro; intros.
 
  rewrite sup_ax in H;[|do 2 red; auto].
  destruct H; eauto using union_intro.
+Qed.
+
+Lemma power_sup_closed a I f :
+  ext_fun I f ->
+  (forall x, x ∈ I -> f x ∈ power a) ->
+  sup I f ∈ power a.
+intros fext tyf; apply power_intro; intros.
+apply sup_ax in H; trivial.
+destruct H as (?,?,tyz).
+apply power_elim with (f x); auto.
 Qed.
 
 (** Conditional set *)

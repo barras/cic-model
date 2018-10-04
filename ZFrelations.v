@@ -288,7 +288,7 @@ specialize subset_elim1 with (1:=infunc); intro.
 apply subset_elim2 in infunc.
 destruct infunc.
 apply subset_intro.
- eapply rel_mono; eauto.
+ revert H; apply rel_mono; auto.
  rewrite eqA; reflexivity.
 
  destruct H1.

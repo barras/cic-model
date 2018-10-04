@@ -151,8 +151,6 @@ elim H0 using ZFnats.N_ind; intros.
  rewrite <- H2; trivial.
 
  apply G_incl with x; trivial.
- red; intros.
- apply empty_ax in H1; contradiction.
 
  apply G_union2; trivial.
  apply G_singl; trivial.

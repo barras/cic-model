@@ -652,7 +652,6 @@ apply G_W_F; trivial.
 apply G_union2; trivial.
 apply G_singl; trivial.
 apply G_incl with X; trivial.
-red; intros z ?; elim empty_ax with z; trivial.
 Qed.
 
   Lemma G_W_ord' : W_ord' ∈ U.

@@ -75,8 +75,6 @@ apply eq_intro; intros; auto.
 rewrite cc_bot_ax in H; destruct H; trivial.
 rewrite H.
 apply ole_lts; auto.
-red; intros.
-apply empty_ax in H0; contradiction.
 Qed.
 
 Lemma tyord_inv : forall e i j o o',

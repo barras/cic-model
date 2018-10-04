@@ -168,6 +168,19 @@ elim ty_p using N_ind; intros.
     apply union2_intro1; auto.
 Qed.
 
+Lemma le_trans m n p :
+  p ∈ N -> le m n -> le n p -> le m p.
+intros.
+apply le_case in H0; destruct H0.
+ rewrite H0; trivial.
+
+ apply lt_is_le.
+ apply le_case in H1; destruct H1.
+ rewrite <-H1; trivial.
+
+ apply lt_trans with n; trivial.
+Qed.
+
 Lemma pred_succ_eq : forall n, n ∈ N -> pred (succ n) == n.
 Proof.
 unfold pred, succ in |- *; intros.
@@ -201,14 +214,6 @@ intros.
  rewrite <- (pred_succ_eq _ H).
  rewrite <- (pred_succ_eq _ H0).
  rewrite H1; reflexivity.
-Qed.
-
-(** max *)
-
-Definition max := union2.
-
-Instance max_morph : morph2 max.
-exact union2_morph.
 Qed.
 
 Lemma lt_0_succ : forall n, n ∈ N -> zero < succ n.
@@ -260,6 +265,14 @@ elim Hm using N_ind; intros. rewrite <- H0; auto.
     apply lt_mono; trivial.
 Qed.
 
+(** max *)
+
+Definition max := union2.
+
+Instance max_morph : morph2 max.
+exact union2_morph.
+Qed.
+
 Lemma max_sym : forall m n, max m n == max n m.
 unfold max; intros.
 apply union2_commut.
@@ -300,6 +313,21 @@ elim H using N_ind; intros.
   apply union2_intro2; trivial.
 Qed.
 
+Lemma max_le_l n m : n ∈ N -> m ∈ N -> le n (max n m).
+intros.
+destruct le_total with n m as [?|[?|?]]; trivial.
+ rewrite max_lt; trivial.
+ apply lt_is_le; trivial.
+
+ rewrite max_eq; trivial.
+
+ rewrite max_sym,max_lt; trivial.
+Qed.
+
+Lemma max_le_r n m : n ∈ N -> m ∈ N -> le m (max n m).
+intros.
+rewrite max_sym; apply max_le_l; trivial.
+Qed.
 
 Lemma max_typ : forall m n, m ∈ N -> n ∈ N -> max m n ∈ N.
 intros.
@@ -312,6 +340,7 @@ elim le_total with m n; trivial; intros.
   rewrite (max_sym m n).
   rewrite (max_lt n m); trivial.
 Qed.
+Hint Resolve max_le_l max_le_r max_typ.
 
 (* nat -> set *)
 Fixpoint nat2set (n:nat) : set :=

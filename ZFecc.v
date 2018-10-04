@@ -16,8 +16,6 @@ Lemma grot_succ_hf : grot_succ empty == grot_succ props.
 
     rewrite <- H; apply H2; trivial.
     apply G_incl with props; trivial.
-    red; intros.
-    apply empty_ax in H5; contradiction.
 
    destruct H0.
    rewrite <- H in H0.
@@ -25,8 +23,6 @@ Lemma grot_succ_hf : grot_succ empty == grot_succ props.
    destruct H1; split; intros.
     rewrite <- H in H1.
     apply G_incl with props; trivial.
-    red; intros.
-    apply empty_ax in H3; contradiction.
 
     rewrite H; apply H2; trivial.
     apply G_power; trivial.
@@ -232,8 +228,6 @@ rewrite sup_ax in H.
   elim x1; intros.
    apply G_incl with ZFcoc.props; trivial.
     apply ecc_in1.
-    red; intros.
-    apply empty_ax in H3; contradiction.
 
    apply G_subset; trivial.
    apply G_power; auto.

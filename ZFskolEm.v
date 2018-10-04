@@ -49,8 +49,7 @@ Lemma set_intro : forall (f:Z.set->Prop) (P:set->Prop),
   (forall Hex Huniq, P (exist _ f (conj Hex Huniq))) ->
   sig P.
 intros.
-exists (exist (fun _ => _ /\ _) f (conj H H0)); trivial. (* regression of unification *)
-(*exists (exist _ f (conj H H0)); trivial.*)
+exists (exist _ f (conj H H0)); trivial.
 Qed.
 
 (** Membership. (Uses an inductive to avoid unwanted unfolding...) *)
@@ -549,6 +548,7 @@ apply Tr_morph; apply ex2_morph; red; intros.
 
  reflexivity.
 Qed.
+
 
 Instance uchoice_pred_morph : Proper ((eq_set ==> iff) ==> iff) uchoice_pred.
 apply morph_impl_iff1; auto with *.

@@ -485,7 +485,7 @@ intros.
 rewrite Ffix_def in H0; destruct H0.
 revert a H1.
 induction H0 using isOrd_ind; intros.
-rewrite Fr_eqn with (2:=H3); trivial.
+rewrite (Fr_eqn _ _) with (2:=H3); trivial. (*!*)
 apply H.
  do 2 red; intros.
  apply Fix_rec_morph0; trivial.
@@ -790,7 +790,7 @@ intros.
 rewrite Ffix_def in H0; destruct H0.
 revert a H1.
 induction H0 using isOrd_ind; intros.
-rewrite Fr_eqn' with (2:=H3); trivial.
+rewrite (Fr_eqn' _ _) with (2:=H3); trivial. (*!*)
 apply H.
  do 2 red; intros.
  apply Fix_rec_morph0'; trivial.

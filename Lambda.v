@@ -518,7 +518,7 @@ split; intros.
     destruct n; simpl; trivial.
     inversion l.
 
-    apply NPeano.Nat.lt_pred_le in g.
+    do 2 red in g; rewrite <- S_pred with (m:=k) in g; trivial.
     elim (Lt.lt_irrefl n).
     apply Lt.le_lt_trans with k; trivial.
 

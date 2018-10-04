@@ -35,6 +35,13 @@ Qed.
 (**********************************************************************************)
 (** Setoid and morphisms stuff *)
 
+Lemma and_iff_morphisml A A' B B' :
+  (A <-> A') ->
+  (A -> A' -> (B<->B')) ->
+  (A /\ B <-> A' /\ B').
+firstorder.
+Qed.
+
 Lemma impl_morph A A' B B' :
   (A <-> A') ->
   (A -> (B <-> B')) ->
@@ -127,6 +134,14 @@ Qed.
 
 (* Should be in stdlib ? *)
 
+Instance Sym_respect A B (R:A->A->Prop) (R':B->B->Prop) :
+  Symmetric R ->
+  Symmetric R' ->
+  Symmetric (R ==> R')%signature.
+do 2 red; intros.
+symmetry; apply H1; symmetry; trivial.
+Qed.
+
 Lemma morph_impl_iff1 : forall A (R:A->A->Prop) f,
   Symmetric R ->
   Proper (R ==> impl) f ->
@@ -198,9 +213,6 @@ Instance wf_morph A (eqA:A->A->Prop) :
   Proper ((eqA==>eqA==>iff) ==> eqA ==> iff) (@Acc A).
 intros.
 apply morph_impl_iff2; auto with *.
- do 3 red; intros.
- symmetry; apply H1; symmetry; trivial.
-
  do 2 red; intros.
  apply wf_mono; trivial.
  do 3 red; intros.

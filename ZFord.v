@@ -102,12 +102,6 @@ revert x; induction H using isWf_ind; intros.
 unfold plumps at 1; rewrite WFR_eqn; fold plumps; trivial with *.
  unfold plump_set; rewrite subset_ax.
  rewrite power_ax.
-Lemma and_iff_morphisml A A' B B' :
-  (A <-> A') ->
-  (A -> A' -> (B<->B')) ->
-  (A /\ B <-> A' /\ B').
-firstorder.
-Qed.
  apply and_iff_morphisml; auto with *.
   intros _ xincla.
   split; intros.
@@ -1042,7 +1036,7 @@ exists (singl (couple x (F f x)) ∪ replf x (fun y' => couple y' (f y'))).
   exists (cc_lam o f); intros.
    rewrite H in H1|-*; clear o H.
    apply union2_intro2.
-   rewrite replf_ax;[|admit].
+   rewrite replf_ax. 2:do 2 red; intros; apply couple_morph; auto.
    exists n; auto with *.
    rewrite cc_beta_eq; auto with *.
 
@@ -1053,7 +1047,7 @@ exists (singl (couple x (F f x)) ∪ replf x (fun y' => couple y' (f y'))).
    rewrite <- H1; clear x' H1.
    rewrite cc_beta_eq; auto with *.
 
-  rewrite replf_ax in H;[|admit].
+  rewrite replf_ax in H. 2:do 2 red; intros; apply couple_morph; auto.
   destruct H.
   apply couple_injection in H0; destruct H0.
   rewrite <- H0 in H,H1; clear x0 H0.
@@ -1065,7 +1059,7 @@ exists (singl (couple x (F f x)) ∪ replf x (fun y' => couple y' (f y'))).
   exists (cc_lam o f).
    intros.
    apply union2_intro2.
-   rewrite replf_ax;[|admit].
+   rewrite replf_ax. 2:do 2 red; intros; apply couple_morph; auto.
    exists n; auto with *.
     apply isOrd_trans with o; trivial.
    rewrite cc_beta_eq; auto with *.
@@ -1084,7 +1078,7 @@ exists (singl (couple x (F f x)) ∪ replf x (fun y' => couple y' (f y'))).
    apply isTR_rel_fun with P P x0; auto.
    destruct Hsub with x0 as (P',?,?).
     apply isOrd_trans with o; trivial.
-   rewrite <- isTR_rel_fun with (3:=H0) (4:=H6) (5:=H3 _ H5) (6:=H7); auto.
+   rewrite <- (isTR_rel_fun _ _ _ _ _) with (3:=H0) (4:=H6) (5:=H3 _ H5) (6:=H7); auto. (* ?*)
 
  apply union2_intro1.
  apply singl_intro.
@@ -1735,8 +1729,8 @@ split.
    rewrite inter2_def; split.
     apply isOrd_plump with x0; trivial.
      apply Hrecx; eauto using isOrd_inv.
-     rewrite <- incl_inter2 with (1:=H5).
-     rewrite <- incl_inter2 with (1:=H6).
+     rewrite <- (incl_inter2 _ _) with (1:=H5). (*!*)
+     rewrite <- (incl_inter2 _ _) with (1:=H6). (*!*)
      rewrite (inter2_comm x' x0); rewrite (inter2_comm y' x0).
      rewrite <- Hrec; eauto using isOrd_inv.
      apply inter2_incl1.
@@ -1756,8 +1750,8 @@ Lemma osup2_lub : forall x y z,
   isOrd x -> isOrd y -> isOrd z ->
   x ⊆ z -> y ⊆ z -> x ⊔ y ⊆ z.
 intros.
-rewrite <- incl_inter2 with (1:=H2).
-rewrite <- incl_inter2 with (1:=H3).
+rewrite <- (incl_inter2 _ _) with (1:=H2). (*!*)
+rewrite <- (incl_inter2 _ _) with (1:=H3). (*!*)
 rewrite (inter2_comm x z); rewrite (inter2_comm y z).
 destruct osup2_proof with (1:=H)(2:=H0) as (_,dint); rewrite <- dint; trivial.
 apply inter2_incl1.

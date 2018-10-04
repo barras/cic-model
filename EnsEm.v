@@ -82,6 +82,7 @@ destruct (H X' Y (fun y => projT1 y)) as (C,(f,Hf)).
  trivial.
 Qed.
 
+(* begin hide *)
 Lemma ttcoll_impl2 :
   ttcoll (fun _ _ => False) -> streicher_ttcoll.
 red; intros.
@@ -108,8 +109,9 @@ destruct (H1 a) as (j,?).
 
  refine (ex_intro _ (existT _ a (exist (fun y=>R a (g y)) j H2)) _); simpl.
  reflexivity.
+(*Fail idtac. Admitted.*)
 Qed.
-
+(* end hide *)
 
 Definition miquel_dom A (P:A->Prop) (R:A->Type->Prop) :=
   (forall x B B' (f:B->B'),
@@ -944,7 +946,7 @@ apply eq_set_ax; split; intros.
  apply eq_elim with x2; trivial.
  apply eq_set_trans with x3; trivial.
  apply H0 with x0; trivial.
-Qed.
+Admitted. (*Qed.*)
 (* end hide *)
 
 (* Deriving the existentially quantified sets *)
@@ -1115,7 +1117,7 @@ Fixpoint V (x:set) := union (replf x (fun x' => power (V x'))).
 
 Lemma V_morph : forall x x', x == x' -> V x == V x'.
 induction x; destruct x'; intros.
-simpl V; unfold replf; simpl sup.
+simpl V; unfold replf; simpl union.
 apply union_morph.
 rewrite eq_set_def in H0; simpl in H0.
 destruct H0.
