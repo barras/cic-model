@@ -1,3 +1,5 @@
+ModelZF.html
+ModelZFClassic.html
 ModelECCW_sized.html
 ModelNat.html
 ModelNat_ZFind.html
