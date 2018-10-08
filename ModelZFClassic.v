@@ -106,50 +106,61 @@ Require Import Term Env.
 Require Import TypeJudge.
 Load "template/Library.v".
 
+Lemma mt_cl_props: empty ∈ cl_props.
+Proof.
+apply subset_intro.
+ unfold props; apply empty_in_power.
+ unfold p2P.
+
+ intros [ ].
+ intro in_mt.
+ apply empty_ax in in_mt; trivial.
+Qed.
+Hint Resolve mt_cl_props.
+
+Lemma em_consistent :
+  let FF := T.Prod T.prop (T.Ref 0) in
+  let N p := T.Prod p FF in
+  let EM := T.Prod T.prop (T.Prod (N (N (T.Ref 0))) (T.Ref 1)) in
+  val_ok (EM::nil) (fun _ => empty).
+intros; red; intros.
+destruct n as [ | [|?]]; try discriminate.
+injection H; clear H; intros; subst T.
+simpl. unfold ClassicCCM.prod, ClassicCCM.props.
+red.
+apply cc_forall_intro.
+ do 2 red; intros.
+ apply cc_arr_morph; trivial.
+ apply cc_arr_morph; [|reflexivity].
+ apply cc_arr_morph; [trivial|reflexivity].
+intros P Pty.
+assert (Pty' := Pty).
+apply subset_ax in Pty'; destruct Pty' as (Pty',(P',eqP,Pcl)).
+rewrite <- eqP in Pcl.
+apply cc_forall_intro; [auto with *|].
+intros prf nnpty.
+apply Pcl.
+intro.
+apply cc_prod_elim with (x:=empty) in nnpty.
+ apply cc_prod_elim with (2:=mt_cl_props) in nnpty.
+ apply empty_ax in nnpty; trivial.
+
+ apply cc_forall_intro; auto with *.
+ intros p pty. 
+ elim H.
+ rewrite props_proof_irrelevance with (P:=P) (x:=p) in pty; trivial.
+Qed.
+
 Lemma cl_cc_consistency M M': ~ eq_typ (EM::nil) M M' FALSE.
 Proof.
 unfold FALSE; red in |- *; intros.
 specialize BuildModel.int_sound with (1 := H); intro.
 destruct H0 as (H0,_).
-red in H0; simpl in H0.
-assert (mt_prop: empty ∈ cl_props).
- apply subset_intro.
-  unfold props; apply empty_in_power.
-  unfold p2P.
+simpl in H0.
+apply abstract_theory_consistency with (1:=mt_cl_props) (4:=H0).
+ exists (fun _ => empty).
+ apply em_consistent.
 
-  intros [ ].
-  intro in_mt.
-  apply empty_ax in in_mt; trivial.
-setoid_replace (ClassicCCM.prod ClassicCCM.props (fun x => x)) with empty in H0.
- eapply empty_ax; apply H0 with (i:=fun _ => empty).
  red; intros.
- destruct n as [ | [|?]]; try discriminate.
- injection H1; clear H1; intros; subst T.
- simpl.
- red.
- apply cc_forall_intro.
-  do 2 red; intros.
-  apply cc_arr_morph; trivial.
-  apply cc_arr_morph; [|reflexivity].
-  apply cc_arr_morph; [trivial|reflexivity].
- intros P Pty.
- assert (Pty' := Pty).
- apply subset_ax in Pty'; destruct Pty' as (Pty',(P',eqP,Pcl)).
- rewrite <- eqP in Pcl.
- apply cc_forall_intro; [auto with *|].
- intros prf nnpty.
- apply Pcl.
- intro.
- apply cc_prod_elim with (x:=empty) in nnpty.
-  apply cc_prod_elim with (2:=mt_prop) in nnpty.
-  apply empty_ax in nnpty; trivial.
-
-  apply cc_forall_intro; auto with *.
-  intros p pty. 
-  elim H1.
-  rewrite props_proof_irrelevance with (P:=P) (x:=p) in pty; trivial.
- 
- apply empty_ext; red; intros.
- specialize cc_prod_elim with (1:=H1) (2:=mt_prop); intro.
- apply empty_ax with (1:=H2).
+ apply empty_ax with (1:=H1).
 Qed.

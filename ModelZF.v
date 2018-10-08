@@ -147,17 +147,12 @@ Proof.
 unfold FALSE; red in |- *; intros.
 specialize BuildModel.int_sound with (1 := H); intro.
 destruct H0 as (H0,_).
-red in H0; simpl in H0.
-setoid_replace (CCM.prod CCM.props (fun x => x)) with empty in H0.
- eapply empty_ax; apply H0 with (i:=fun _ => empty).
- red; intros.
- destruct n; discriminate.
+simpl in H0.
+apply abstract_consistency with (M:=int_trm(unmark_app M)) (FF:=empty); trivial.
+ unfold props; apply empty_in_power.
 
- apply empty_ext; red; intros.
- assert (empty ∈ props) by
-   (unfold props; apply empty_in_power).
- specialize cc_prod_elim with (1:=H1) (2:=H2); intro.
- apply empty_ax with (1:=H3).
+ red; intros.
+ apply empty_ax with (1:=H1); trivial.
 Qed.
 
 (*begin hide*)
