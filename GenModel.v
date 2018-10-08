@@ -959,6 +959,25 @@ destruct T' as [(T',T'm)|]; simpl in *; trivial.
 rewrite <- H0; auto.
 Qed.
 
+(** Extendability *)
+
+Lemma typ_cst_ty e x :
+  typ e (cst x) kind.
+red; simpl; intros; trivial.
+Qed.
+
+Lemma typ_cst e x y :
+  x ∈ y ->
+  typ e (cst x) (cst y).
+red; simpl; intros; trivial.
+Qed.
+
+Lemma eq_typ_cst e x y :
+  x == y ->
+  eq_typ e (cst x) (cst y).
+red; simpl; intros; trivial.
+Qed.
+
 (** Weakening *)
 
 Lemma weakening : forall e M T A,
@@ -1158,18 +1177,27 @@ Hint Resolve in_int_el.
 
 (** Consistency *)
 
+Lemma abstract_theory_consistency TH M FF :
+  FF ∈ props ->
+  (exists i, val_ok TH i) ->
+  (forall x, ~ x ∈ FF) ->
+  ~ typ TH M (Prod prop (Ref 0)).
+intros FFty (i,THcons) FFmt.
+unfold typ; intros Mty.
+specialize Mty with (1:=THcons); simpl in Mty.
+apply FFmt with (app (int M i) FF).
+apply prod_elim with (2:=Mty) (3:=FFty).
+red; auto.
+Qed.
+
 Lemma abstract_consistency M FF :
   FF ∈ props ->
   (forall x, ~ x ∈ FF) ->
   ~ typ List.nil M (Prod prop (Ref 0)).
-unfold typ; red; intros.
-assert (val_ok List.nil (V.nil props)).
- red; simpl; intros.
- destruct n; discriminate H2.
-specialize H1 with (1:=H2); simpl in H1.
-apply H0 with (app (int M (V.nil props)) FF).
-apply prod_elim with (2:=H1) (3:=H).
-red; auto.
+intros; apply abstract_theory_consistency with (FF:=FF); trivial.
+exists (V.nil props).
+red; simpl; intros.
+destruct n; discriminate H1.
 Qed.
 
 End MakeModel.
