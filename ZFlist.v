@@ -71,7 +71,7 @@ rewrite union2_ax.
 rewrite cond_set_ax.
 rewrite cond_set_ax.
 intuition.
-apply discr_mt_pair in H1; contradiction.
+apply discr_mt_couple in H1; contradiction.
 Qed.
 
   Lemma LIST_case_Cons x l f g : LIST_case (Cons x l) f g == g.
@@ -81,7 +81,7 @@ rewrite union2_ax.
 rewrite cond_set_ax.
 rewrite cond_set_ax.
 intuition.
- symmetry in H1; apply discr_mt_pair in H1; contradiction.
+ symmetry in H1; apply discr_mt_couple in H1; contradiction.
 
  right; split; trivial.
  unfold Cons; rewrite fst_def; rewrite snd_def; reflexivity.

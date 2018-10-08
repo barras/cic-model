@@ -225,15 +225,39 @@ Qed.
 
 Require Import ZFrelations.
 
-  Lemma VN_func : forall o A B,
+Local Transparent ZFpairs.couple ZFpairs.prodcart.
+Lemma VNlim_couple o x y :
+  limitOrd o ->
+  x ∈ VN o ->
+  y ∈ VN o ->
+  ZFpairs.couple x y ∈ VN o.
+intros.
+unfold ZFpairs.couple.
+apply VNlim_pair; trivial.
+ apply VNlim_pair; trivial.
+ apply VNlim_pair; trivial.
+Qed.
+Lemma VNlim_prodcart o A B :
+  limitOrd o ->
+  A ∈ VN o ->
+  B ∈ VN o ->
+  ZFpairs.prodcart A B ∈ VN o.
+intros.
+unfold ZFpairs.prodcart.
+assert (oo := proj1 H).
+apply VN_subset; trivial.
+apply VNlim_power; trivial.
+apply VNlim_power; trivial.
+apply VN_union; trivial.
+apply VNlim_pair; trivial.
+Qed.  
+
+Lemma VN_prodcart o A B :
     isOrd o ->
     A ∈ VN o ->
     B ∈ VN o ->
-    func A B ∈ VN (osucc (osucc (osucc (osucc o)))).
-unfold func; intros.
-apply VN_subset; auto.
-unfold rel.
-apply VNsucc_power; auto.
+    ZFpairs.prodcart A B ∈ VN (osucc (osucc (osucc o))).
+intros.
 unfold ZFpairs.prodcart.
 apply VN_subset; auto.
 apply VNsucc_power; auto.
@@ -242,6 +266,21 @@ unfold union2.
 apply VN_union; auto.
 apply VNsucc_pair; trivial.
 Qed.
+Opaque ZFpairs.couple ZFpairs.prodcart.
+
+Local Transparent func.
+Lemma VN_func : forall o A B,
+    isOrd o ->
+    A ∈ VN o ->
+    B ∈ VN o ->
+    func A B ∈ VN (osucc (osucc (osucc (osucc o)))).
+unfold func; intros.
+apply VN_subset; auto.
+unfold rel.
+apply VNsucc_power; auto.
+apply VN_prodcart; trivial.
+Qed.
+Opaque func.
 
 Require Import ZFwf.
 

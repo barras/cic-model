@@ -22,23 +22,15 @@ apply singl_ext; intros.
 
   reflexivity.
 
- unfold cc_prod in H1.
- rewrite replf_ax in H1; intros.
-  destruct H1 as (f,f_fun,z_lam).
-  rewrite z_lam; clear z z_lam.
-  apply cc_impredicative_lam; intros.
-   do 2 red; intros.
-   rewrite H2; reflexivity.
-
-   apply singl_elim.
-   fold prf_trm.
-   rewrite <- (H0 _ H1).
-   apply dep_func_elim with (1:=f_fun); trivial.
-
+ rewrite cc_eta_eq with (1:=H1).
+ apply cc_impredicative_lam; intros.
   do 2 red; intros.
-  apply cc_lam_ext; try reflexivity.
-  red; intros.
-  apply app_morph; trivial.
+  rewrite H3; reflexivity.
+
+  apply singl_elim.
+  fold prf_trm.
+  rewrite <- (H0 _ H2).
+  apply cc_prod_elim with (1:=H1); trivial.
 Qed.
 
 (***********************************************************************)

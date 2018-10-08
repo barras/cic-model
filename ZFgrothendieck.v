@@ -156,6 +156,8 @@ elim H0 using ZFnats.N_ind; intros.
  apply G_singl; trivial.
 Qed.
 
+Local Transparent prodcart sigma couple.
+
 Lemma G_prodcart : forall A B, A ∈ U -> B ∈ U -> prodcart A B ∈ U.
 intros.
 unfold prodcart.
@@ -163,6 +165,17 @@ apply G_subset; intros; trivial.
 apply G_power; trivial.
 apply G_power; trivial.
 apply G_union2; trivial.
+Qed.
+
+  Lemma G_sigma A B :
+    ext_fun A B ->
+    A ∈ U ->
+    (forall x, x ∈ A -> B x ∈ U) ->
+    sigma A B ∈ U.
+intros.
+apply G_subset; trivial.
+apply G_prodcart; trivial.
+apply G_sup; trivial.
 Qed.
 
 Lemma G_couple : forall x y, x ∈ U -> y ∈ U -> couple x y ∈ U.
@@ -173,6 +186,8 @@ apply G_pair; trivial.
 
  apply G_pair; trivial.
 Qed.
+
+Opaque prodcart sigma couple.
 
   Lemma G_sum X Y : X ∈ U -> Y ∈ U -> sum X Y ∈ U.
 unfold sum; intros.
@@ -205,6 +220,7 @@ apply G_power; trivial.
 apply G_prodcart; trivial.
 Qed.
 
+Local Transparent dep_func func cc_prod lam app cc_lam cc_app.
 Lemma G_func : forall A B, A ∈ U -> B ∈ U -> func A B ∈ U.
 intros.
 unfold func.
@@ -235,17 +251,6 @@ unfold rel_image.
 apply G_subset.
 apply G_union; trivial.
 apply G_union; trivial.
-Qed.
-
-  Lemma G_sigma A B :
-    ext_fun A B ->
-    A ∈ U ->
-    (forall x, x ∈ A -> B x ∈ U) ->
-    sigma A B ∈ U.
-intros.
-apply G_subset; trivial.
-apply G_prodcart; trivial.
-apply G_sup; trivial.
 Qed.
 
   Lemma G_cc_lam A F :
@@ -297,6 +302,7 @@ apply G_replf; auto with *.
 
    apply G_trans with A; trivial.
 Qed.
+Opaque dep_func func cc_prod lam app cc_lam cc_app.
 
   Lemma G_TR F o :
     Proper ((eq_set==>eq_set)==>eq_set==>eq_set) F ->

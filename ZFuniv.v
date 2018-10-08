@@ -137,9 +137,7 @@ assert (Kse : singl empty ∈ K).
 apply sn_sort_elim in T_in_K; destruct T_in_K.
  apply G_union2; trivial.
  rewrite H.
- apply G_union; trivial.
- apply G_subset; trivial.
- apply G_union; trivial.
+ rewrite fst_mt; trivial.
 
  apply G_union2; auto.
 Qed.
@@ -154,10 +152,8 @@ apply cc_bot_prop.
 apply sn_sort_elim in H; destruct H; trivial.
 rewrite H.
 apply power_intro; intros.
-apply union_elim in H0; destruct H0.
-apply subset_elim1 in H1.
-apply union_elim in H1; destruct H1.
-apply empty_ax in H2; contradiction.
+rewrite fst_mt in H0.
+apply empty_ax in H0; contradiction.
 Qed.
 
 

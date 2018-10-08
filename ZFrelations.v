@@ -6,19 +6,11 @@ Require Import ZFpairs ZFstable.
 Definition is_relation x :=
   forall p, p ∈ x -> p == couple (fst p) (snd p).
 
-Definition rel_app r x y := couple x y ∈ r.
-
-Instance rel_app_morph :
-  Proper (eq_set ==> eq_set ==> eq_set ==> iff) rel_app.
-unfold rel_app; do 4 red; intros.
-rewrite H; rewrite H0; rewrite H1; reflexivity.
-Qed.
-
 Definition rel_domain r :=
-  subset (union (union r)) (fun x => exists y, rel_app r x y).
+  subset (union (union r)) (fun x => exists y, couple x y ∈ r).
 
 Definition rel_image r :=
-  subset (union (union r)) (fun y => exists x, rel_app r x y).
+  subset (union (union r)) (fun y => exists x, couple x y ∈ r).
 
 Instance rel_image_morph : morph1 rel_image.
 do 2 red; intros.
@@ -36,7 +28,7 @@ apply subset_morph.
   rewrite H; trivial.
 Qed.
 
-Lemma rel_image_ex : forall r x, x ∈ rel_domain r -> exists y, rel_app r x y.
+Lemma rel_image_ex r x : x ∈ rel_domain r -> exists y, couple x y ∈ r.
 Proof.
 unfold rel_domain; intros.
 elim subset_elim2 with (1:=H); intros.
@@ -45,35 +37,42 @@ rewrite <- H0 in H1.
 exists x1; trivial.
 Qed.
 
-Lemma rel_domain_intro : forall r x y, rel_app r x y -> x ∈ rel_domain r.
+Lemma rel_domain_intro : forall r x y, couple x y ∈ r -> x ∈ rel_domain r.
 Proof.
 unfold rel_domain in |- *; intros.
 apply subset_intro.
  red in H.
-   apply union_intro with (pair x y); auto.
-   apply union_intro with (couple x y); trivial.
-   unfold couple in |- *; auto.
+ destruct union_elim with x (couple x y) as (z,?,?).
+  rewrite union_couple_eq.
+  apply pair_intro1.
+
+  apply union_intro with z; auto.
+  apply union_intro with (couple x y); trivial.
+
  exists y; trivial.
 Qed.
 
-Lemma rel_image_intro : forall r x y, rel_app r x y -> y ∈ rel_image r.
+Lemma rel_image_intro : forall r x y, couple x y ∈ r -> y ∈ rel_image r.
 Proof.
 unfold rel_image in |- *; intros.
 apply subset_intro.
  red in H.
-   apply union_intro with (pair x y); auto.
-   apply union_intro with (couple x y); trivial.
-   unfold couple in |- *; auto.
+ destruct union_elim with y (couple x y) as (z,?,?).
+  rewrite union_couple_eq; auto.
+
+  apply union_intro with z; auto.
+  apply union_intro with (couple x y); trivial.
+
  exists x; trivial.
 Qed.
 
 
 Definition rel_comp f g := 
   subset (prodcart (rel_domain g) (rel_image f))
-    (fun p => exists2 y, rel_app g (fst p) y & rel_app f y (snd p)).
+    (fun p => exists2 y, couple (fst p) y ∈ g & couple y (snd p) ∈ f).
 
 Lemma rel_comp_intro : forall f g x y z,
-  rel_app g x y -> rel_app f y z -> rel_app (rel_comp f g) x z.
+  couple x y ∈ g -> couple y z ∈ f -> couple x z ∈ rel_comp f g.
 Proof.
 intros.
 red in |- *.
@@ -106,17 +105,17 @@ unfold rel.
 rewrite H; rewrite H0; reflexivity.
 Qed.
 
-Lemma app_typ1 : forall r x y A B, r ∈ rel A B -> rel_app r x y -> x ∈ A.
+Lemma app_typ1 : forall r x y A B, r ∈ rel A B -> couple x y ∈ r -> x ∈ A.
 Proof.
-unfold rel, rel_app in |- *; intros.
+unfold rel in |- *; intros.
 specialize power_elim with (1 := H) (2 := H0); intro.
 rewrite <- (fst_def x y).
 apply fst_typ with (1 := H1).
 Qed.
 
-Lemma app_typ2 : forall r x y A B, r ∈ rel A B -> rel_app r x y -> y ∈ B.
+Lemma app_typ2 : forall r x y A B, r ∈ rel A B -> couple x y ∈ r -> y ∈ B.
 Proof.
-unfold rel, rel_app in |- *; intros.
+unfold rel in |- *; intros.
 specialize power_elim with (1 := H) (2 := H0); intro.
 rewrite <- (snd_def x y).
 apply snd_typ with (1 := H1).
@@ -191,9 +190,9 @@ Lemma inject_rel_intro :
   x ∈ A ->
   y ∈ B ->
   R x y ->
-  rel_app (inject_rel R A B) x y.
+  couple x y ∈ inject_rel R A B.
 Proof.
-unfold inject_rel, rel_app in |- *; intros.
+unfold inject_rel in |- *; intros.
 apply subset_intro.
  apply couple_intro; trivial.
  elim (H x (fst (couple x y)) y (snd (couple x y))); intros; auto.
@@ -204,10 +203,10 @@ Qed.
 Lemma inject_rel_elim :
   forall (R:set->set->Prop) A B x y,
   ext_rel A R ->
-  rel_app (inject_rel R A B) x y ->
+  couple x y ∈ inject_rel R A B ->
   x ∈ A /\ y ∈ B /\ R x y.
 Proof.
-unfold inject_rel, rel_app in |- *; intros.
+unfold inject_rel in |- *; intros.
 specialize subset_elim1 with (1 := H0); intro.
 elim subset_elim2 with (1 := H0); intros.
 assert (x ∈ A).
@@ -227,10 +226,10 @@ Qed.
 
 Definition is_function f :=
   is_relation f /\
-  forall x y y', rel_app f x y -> rel_app f x y' -> y == y'.
+  forall x y y', couple x y ∈ f -> couple x y' ∈ f -> y == y'.
 
 Definition app f x :=
-  union (subset (rel_image f) (fun y => rel_app f x y)).
+  union (subset (rel_image f) (fun y => couple x y ∈ f)).
 
 
 Instance app_morph : morph2 app.
@@ -251,7 +250,7 @@ Qed.
 
 
 Lemma app_defined : forall f x y,
-  is_function f -> rel_app f x y -> app f x == y.
+  is_function f -> couple x y ∈ f -> app f x == y.
 Proof.
 unfold app, is_function in |- *; intros.
 destruct H.
@@ -266,7 +265,7 @@ transitivity (union (singl y)).
 Qed.
 
 Lemma app_elim : forall f x,
-  is_function f -> x ∈ rel_domain f -> rel_app f x (app f x).
+  is_function f -> x ∈ rel_domain f -> couple x (app f x) ∈ f.
 Proof.
 intros.
 elim rel_image_ex with (1 := H0); intros.
@@ -278,8 +277,8 @@ Qed.
 Definition func A B :=
   subset (rel A B)
     (fun r =>
-       (forall x, x ∈ A -> exists2 y, y ∈ B & rel_app r x y) /\
-       (forall x y y', rel_app r x y -> rel_app r x y' -> y == y')).
+       (forall x, x ∈ A -> exists2 y, y ∈ B & couple x y ∈ r) /\
+       (forall x y y', couple x y ∈ r -> couple x y' ∈ r -> y == y')).
 
 Instance func_mono :
   Proper (eq_set ==> incl_set ==> incl_set) func.
@@ -347,25 +346,26 @@ Lemma fun_domain_func : forall f A B, f ∈ func A B -> rel_domain f == A.
 Proof.
 intros; apply eq_intro; intros.
  apply rel_domain_incl with f B; trivial.
-   unfold func in H.
-   apply subset_elim1 with (1 := H).
+ unfold func in H.
+ apply subset_elim1 with (1 := H).
+
  unfold rel_domain in |- *.
-   unfold func in H.
-   elim subset_elim2 with (1 := H); intros.
-   destruct H2.
-   apply subset_intro.
+ unfold func in H.
+ elim subset_elim2 with (1 := H); intros.
+ destruct H2.
+ apply subset_intro.
   specialize subset_elim1 with (1 := H); unfold rel in |- *; intro.
-    apply union_intro with (singl z).
-   apply singl_intro.
-   elim H2 with (1 := H0); intros.
-     red in H6.
-     rewrite <- H1 in H6.
-     apply union_intro with (2 := H6).
-     unfold couple in |- *.
-     auto.
-  elim H2 with (1 := H0); intros.
-    rewrite <- H1 in H5.
-    exists x0; trivial.
+  destruct H2 with (1:=H0) as (y,tyy,rxy).
+  destruct union_elim with z (couple z y).
+   rewrite union_couple_eq; trivial.
+
+   apply union_intro with x0; trivial.
+   apply union_intro with (couple z y); trivial.
+   rewrite H1; trivial.
+
+ elim H2 with (1 := H0); intros.
+ rewrite <- H1 in H5.
+ exists x0; trivial.
 Qed.
 
 Lemma app_typ :
@@ -795,6 +795,7 @@ rewrite sup_ax.
  do 2 red; intros; apply replf_morph; auto.
  red; intros; apply couple_morph; auto with *.
 Qed.
+Opaque cc_lam.
 
 Lemma is_cc_fun_lam A F :
   ext_fun A F ->
@@ -857,18 +858,17 @@ Lemma couple_in_app : forall x z f,
   couple x z ∈ f <-> z ∈ cc_app f x.
 unfold cc_app, rel_image; split; intros.
  apply subset_intro.
-  apply union_intro with (pair x z).
-   apply pair_intro2.
+ destruct union_elim with z (couple x z) as (y,?,?).
+  rewrite union_couple_eq; trivial.
 
-   apply union_intro with (couple x z).
-    apply pair_intro2.
-
-    apply subset_intro; trivial.
-    apply fst_def.
-
-  exists x.
-  red; apply subset_intro; trivial.
+  apply union_intro with y; trivial.
+  apply union_intro with (couple x z); trivial.
+  apply subset_intro; trivial.
   apply fst_def.
+
+ exists x.
+ red; apply subset_intro; trivial.
+ apply fst_def.
 
  rewrite subset_ax in H; destruct H.
  destruct H0.
@@ -887,6 +887,7 @@ apply empty_ext; red; intros.
 rewrite <- couple_in_app in H.
 apply empty_ax in H; trivial.
 Qed.
+Opaque cc_app.
 
 Lemma cc_app_outside_domain dom f x :
   is_cc_fun dom f ->
@@ -1152,3 +1153,5 @@ apply cc_prod_intro.
   2:red;red;intros; apply Fm; auto with *.
   eauto with *.
 Qed.
+
+Global Opaque func dep_func cc_prod app lam cc_app cc_lam.

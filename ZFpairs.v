@@ -2,9 +2,9 @@
 Require Export ZF.
 Require Import ZFstable.
 
-(* ordered pairs *)
+(** ordered pairs *)
 
-(* 1- untyped operations *)
+(** 1- untyped operations *)
 
 Definition couple x y := pair (singl x) (pair x y).
 
@@ -24,6 +24,10 @@ apply union_ext; intros.
   exists (singl a); auto.
     apply singl_intro_eq; auto.
   exists (pair a b); auto.
+Qed.
+
+Lemma discr_mt_couple a b : ~ empty == couple a b.
+apply discr_mt_pair.  
 Qed.
 
 Definition fst p := union (subset (union p) (fun x => singl x ∈ p)).
@@ -59,6 +63,15 @@ transitivity (union (singl x)).
      rewrite (singl_elim _ _ H2); reflexivity.
  apply union_singl_eq.
 Qed.
+
+Lemma fst_mt : fst empty == empty.
+unfold fst.
+apply empty_ext; red; intros.
+apply union_elim in H; destruct H.
+apply subset_elim1 in H0.
+apply union_elim in H0; destruct H0.
+apply empty_ax in H1; trivial.
+Qed.  
 
 Definition snd p :=
   union (subset (union p) (fun z => pair (fst p) z == union p)).
@@ -113,7 +126,7 @@ apply empty_ax with (x:=singl a).
 rewrite <- H; apply pair_intro1.
 Qed.
 
-(* 2- typing *)
+(** 2- typing *)
 
 Definition prodcart A B :=
   subset (power (power (A ∪ B)))
@@ -559,3 +572,5 @@ apply couple_intro_sigma.
   2:red;red;intros; apply Gm; auto with *.
   eauto with *.
 Qed.
+
+Global Opaque couple fst snd prodcart sigma.

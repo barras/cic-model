@@ -253,16 +253,10 @@ apply empty_ext; red; intros.
 rewrite union2_ax in H; do 2 rewrite cond_set_ax in H.
 destruct H as [(_,?)|(_,(k,?))].
  (* ~ empty == ZERO *)
- unfold ZERO, inl, ZFpairs.couple in H.
- apply empty_ax with (singl zero).
- rewrite H.
- auto.
+ apply ZFpairs.discr_mt_couple in H; trivial.
 
  (* ~ empty == SUCC _ *)
- unfold SUCC, inr, ZFpairs.couple in H.
- apply empty_ax with (singl (succ zero)).
- rewrite H.
- auto.
+ apply ZFpairs.discr_mt_couple in H; trivial.
 Qed.
 
 Lemma NATCASE_typ :
@@ -683,20 +677,12 @@ unfold NATf.
 unfold sum.
 assert (zero ∈ VN o).
  apply VN_incl with X; trivial.
-assert (forall Y Z, Y ∈ VN o -> Z ∈ VN o -> ZFpairs.prodcart Y Z ∈ VN o).
- intros.
- unfold ZFpairs.prodcart.
- apply VN_subset; trivial.
- apply VNlim_power; trivial.
- apply VNlim_power; trivial.
- apply VN_union; trivial.
- apply VNlim_pair; trivial.
 apply VN_union; trivial.
 apply VNlim_pair; trivial.
- apply H1; eauto.
+ apply VNlim_prodcart; eauto.
  apply VNlim_pair; trivial.
 
- apply H1; auto.
+ apply VNlim_prodcart; auto.
  apply VNlim_pair; trivial.
   apply VN_union; trivial.
   apply VNlim_pair; trivial.
@@ -715,18 +701,11 @@ red; intros.
 apply NATf_case with (3:=H0); intros.
  rewrite H1.
  unfold ZERO, inl.
- unfold ZFpairs.couple.
- apply VNlim_pair; trivial.
-  apply VNlim_pair; trivial.
-  apply VNlim_pair; trivial.
+ apply VNlim_couple; trivial.
 
  rewrite H2; unfold SUCC.
  unfold inr.
- unfold ZFpairs.couple.
- apply VNlim_pair; trivial.
-  apply VNlim_pair; auto.
-
-  apply VNlim_pair; auto.
+ apply VNlim_couple; auto.
 Qed.
 
 End NatConvergence.

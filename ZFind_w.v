@@ -326,7 +326,7 @@ split; intros.
   rewrite replf_ax in H0; trivial.
   destruct H0.
   apply couple_injection in H1; destruct H1 as (H1,_).
-   apply discr_mt_pair in H1; contradiction.
+   apply discr_mt_couple in H1; contradiction.
 
  rewrite H.
  unfold Wsup.
@@ -346,7 +346,7 @@ split; intros.
  destruct H.
   apply couple_injection in H; destruct H as (H,_).
   symmetry in H.
-  apply discr_mt_pair in H; contradiction.
+  apply discr_mt_couple in H; contradiction.
 
   destruct H as (i',?,(q,?,?)).
   apply couple_injection in H1; destruct H1.

@@ -39,8 +39,8 @@ destruct H0 as (o',?,?).
 unfold NATf' in H2.
 rewrite H1 in H2.
 apply NATf_case with (3:=H2); intros.
- apply discr_mt_pair in H3; trivial.
- apply discr_mt_pair in H4; trivial.
+ apply discr_mt_couple in H3; trivial.
+ apply discr_mt_couple in H4; trivial.
 Qed.
 
 Definition NAT' := TI NATf' omega.

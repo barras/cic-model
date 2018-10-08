@@ -2369,8 +2369,8 @@ right; intros (X,tyn).
 unfold NATf' in tyn.
 rewrite H0 in tyn.
 apply NATf_case with (3:=tyn); intros.
- apply discr_mt_pair in H1; trivial.
- apply discr_mt_pair in H2; trivial.
+ apply discr_mt_couple in H1; trivial.
+ apply discr_mt_couple in H2; trivial.
 Qed.
 
   Lemma NAT_eqn : TI NATf' omega == NATf' (TI NATf' omega).

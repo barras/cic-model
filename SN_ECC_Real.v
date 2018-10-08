@@ -17,7 +17,7 @@ Set Implicit Arguments.
 
 Definition type (n:nat) : term := SN_CC_Real.cst (sn_sort (ecc (S n))).
 
-Lemma cumul_Type : forall e n, sub_typ e (type n) (type (S n)).
+Lemma cumul_Type e n : sub_typ e (type n) (type (S n)).
 unfold type.
 red; intros.
 destruct H0.
@@ -30,7 +30,7 @@ apply and_split; intros.
  rewrite Real_sort_sn; trivial.
 Qed.
 
-Lemma cumul_Prop : forall e, sub_typ e prop (type 0).
+Lemma cumul_Prop e : sub_typ e prop (type 0).
 unfold type.
 red; intros.
 destruct H0.
@@ -44,6 +44,47 @@ apply and_split; intros.
 
  rewrite Real_sort_sn; trivial.
 Qed.
+
+Lemma cumul_Prod e A B B' :
+  A <> kind ->
+  sub_typ (A::e) B B' ->
+  sub_typ e (Prod A B) (Prod A B').
+intros Ank.
+unfold sub_typ; intros.
+destruct H1.
+unfold int, Prod, iint.
+simpl int in H1,H2.
+unfold inX, props in H1,H2.
+assert (m1 : forall a b, ext_fun a (fun x0 => int b (V.cons x0 i))).
+ do 2 red; intros.
+ rewrite H4; reflexivity.
+rewrite Real_prod in H2; trivial.
+apply and_split; intros.
+ unfold inX; rewrite El_prod; trivial.
+ rewrite El_prod in H1; trivial.
+ revert H1; apply cc_prod_covariant; auto with *.
+  do 2 red; intros; apply El_morph.
+  rewrite H3; reflexivity.
+
+  intros a tya b tyb.
+  apply H with (i:=V.cons a i) (j:=I.cons SatSet.daimon j) (x:=b)(t:=SatSet.daimon).
+   apply vcons_add_var_daimon; trivial.
+
+   split; trivial.
+   apply varSAT.
+
+ rewrite Real_prod; trivial.
+ revert t H2; apply piSAT0_mono with (f:=fun x => x); auto with *.
+ intros a tya u ru.
+ apply H with (i:=V.cons a i) (j:=I.cons SatSet.daimon j) (x:=cc_app x a)(t:=u).
+  apply vcons_add_var_daimon; trivial.
+
+  split; trivial.
+  red.
+  eapply prod_elim with (2:=H1) (3:=tya).
+  apply m1.
+Qed.
+
 
 
 Lemma typ_prop_type0 e :
@@ -78,37 +119,17 @@ Qed.
 Lemma typ_prop_cumul e T :
   typ e T prop ->
   typ e T (type 0).
-red; intros.
-apply H in H0.
-destruct H0.
-destruct H1.
-apply in_int_intro; intros; trivial; try discriminate.
-apply and_split; intros.
- revert H1; apply sort_incl.
- transitivity (ecc 0); red; intros; [apply ecc_incl_prop|apply ecc_incl]; trivial.
-
- revert H2; simpl int.
- unfold props.
- rewrite Real_sort_sn; trivial.
- rewrite Real_sort_sn; trivial.
+intros.
+apply typ_subsumption with (1:=H); try discriminate.
+apply cumul_Prop.
 Qed.
 
 Lemma typ_type_cumul e T n :
   typ e T (type n) ->
   typ e T (type (S n)).
-red; intros.
-apply H in H0.
-destruct H0.
-destruct H1.
-apply in_int_intro; intros; trivial; try discriminate.
-apply and_split; intros.
- revert H1; apply sort_incl.
- red; intros; apply ecc_incl; trivial.
-
- revert H2; simpl int.
- unfold props.
- rewrite Real_sort_sn; trivial.
- rewrite Real_sort_sn; trivial.
+intros.
+apply typ_subsumption with (1:=H); try discriminate.
+apply cumul_Type.
 Qed.
 
 Lemma typ_type_cumul_le e T m n :

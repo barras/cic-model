@@ -213,8 +213,8 @@ rewrite H0 in H; clear z H0.
 unfold B' in H; rewrite subset_ax in H; destruct H.
 destruct H0.
 destruct H1.
- rewrite H2 in H0; apply discr_mt_pair in H0; trivial.
- rewrite H3 in H0; apply discr_mt_pair in H0; trivial.
+ rewrite H2 in H0; apply discr_mt_couple in H0; trivial.
+ rewrite H3 in H0; apply discr_mt_couple in H0; trivial.
 Qed.
 (*
 Lemma B'nil X x' l :
@@ -311,7 +311,7 @@ destruct zok.
    do 2 red; intros.
    rewrite H0; reflexivity.
 
-   apply discr_mt_pair in H0; contradiction.
+   apply discr_mt_couple in H0; contradiction.
 
    apply couple_injection in H2; destruct H2 as (_,H2); rewrite <- H2; trivial.
 
@@ -343,7 +343,7 @@ revert z H1 H2; induction H3; intros.
    do 2 red; intros.
    rewrite H2; reflexivity.
 
-   apply discr_mt_pair in H2; contradiction.
+   apply discr_mt_couple in H2; contradiction.
 
    apply couple_injection in H8; destruct H8.
    rewrite <- H9; trivial.

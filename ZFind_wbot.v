@@ -121,7 +121,7 @@ unfold W_F' in H2.
 apply W_F_elim in H2; trivial.
 destruct H2 as (_,(_,?)).
 rewrite H2 in H1.
-symmetry in H1; apply discr_mt_pair in H1; trivial.
+symmetry in H1; apply discr_mt_couple in H1; trivial.
 Qed.
 
   Lemma mt_not_in_Wf' o x :

@@ -317,11 +317,11 @@ apply sat_sn in H1.
 apply Real_sum_case with (1:=H).
  apply piSAT0_intro; trivial.
  intros.
- apply discr_mt_pair in H2; contradiction.
+ apply discr_mt_couple in H2; contradiction.
 
  apply piSAT0_intro; trivial.
  intros.
- apply discr_mt_pair in H2; contradiction.
+ apply discr_mt_couple in H2; contradiction.
 Qed.
 
 Lemma WHEN_SUM_sat RA RB S x t m :

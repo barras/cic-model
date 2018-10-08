@@ -323,7 +323,7 @@ split; intros.
   apply couple_injection in eqc; destruct eqc; trivial.
 
   apply couple_injection in eqc; destruct eqc as (eqc,_).
-  apply discr_mt_pair in eqc; contradiction.
+  apply discr_mt_couple in eqc; contradiction.
 
  left; rewrite H; reflexivity.
 Qed.
@@ -336,7 +336,7 @@ split; intros.
  destruct H as [eqc|(i'&l'&y&in_f&eqc)].
   apply couple_injection in eqc; destruct eqc as (eqc,_).
   symmetry in eqc.
-  apply discr_mt_pair in eqc; contradiction.
+  apply discr_mt_couple in eqc; contradiction.
 
   apply couple_injection in eqc; destruct eqc as (eqc,eqa).
   apply couple_injection in eqc; destruct eqc as (eqi,eql).

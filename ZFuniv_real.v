@@ -44,14 +44,7 @@ apply fst_morph; trivial.
 Qed.
 
 Lemma Elt_empty : Elt empty == empty.
-apply empty_ext.
-red; intros.
-unfold Elt in H.
-unfold fst in H.
-apply union_elim in H; destruct H.
-apply subset_elim1 in H0.
-apply union_elim in H0; destruct H0.
-apply empty_ax in H1; trivial.
+apply fst_mt.
 Qed.
 
 Lemma Elt_def : forall X R, Elt (mkTY X R) == X.
@@ -220,9 +213,7 @@ assert (Kse : singl empty ∈ K).
 apply sn_sort_elim in T_in_K; destruct T_in_K.
  apply G_union2; trivial.
  rewrite H.
- apply G_union; trivial.
- apply G_subset; trivial.
- apply G_union; trivial.
+ rewrite Elt_empty; trivial.
 
  apply G_union2; auto.
 Qed.
