@@ -12,6 +12,7 @@ Module ClassicCCM <: CC_Model.
 Definition X := set.
 Definition inX : X -> X -> Prop := in_set.
 Definition eqX : X -> X -> Prop := eq_set.
+Definition inclX : X -> X -> Prop := incl_set.
 Definition eqX_equiv : Equivalence eqX := eq_set_equiv.
 Notation "x ∈ y" := (inX x y).
 Notation "x == y" := (eqX x y).

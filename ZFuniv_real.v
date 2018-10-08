@@ -285,6 +285,7 @@ apply morph_impl_iff2; auto with *.
 unfold inX; do 4 red; intros.
 rewrite H,H0 in H1; trivial.
 Qed.
+Definition inclX x y := forall z, inX z x -> inX z y.
 
 (* Accessing the realizability relation.
    inSAT t (Real T x), means that t is a realizer of x in type T. It

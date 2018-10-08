@@ -55,6 +55,7 @@ intros.
 apply cc_impredicative_prod; auto.
 Qed.
 
+
 Lemma cc_forall_intro A B :
   ext_fun A B ->
   (forall x, x ∈ A -> empty ∈ B x) ->

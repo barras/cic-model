@@ -9,17 +9,18 @@ Set Implicit Arguments.
 Require Import basic ZF ZFcoc ZFuniv_real ZFnats.
 Require Import Sat SATnat SN_CC_Real.
 Module Lc:=Lambda.
-Import CC_Real.
 
 (* Building the realizability on the nats of ZFnats *)
-Module natARG <: SimpleNats.
- Include ZFnats.
- Definition Nbot := N.
- Definition N_Nbot : N ⊆ N := reflexivity N.
- Definition Ndec n (h:n∈N) : n∈N \/ ~n∈N := or_introl _ h.
+Require ModelZF.
+Module natARG <: SimpleNats ModelZF.ZFsets.
+  Include ZFnats.
+  Definition Nbot := N.
+ Definition N_Nbot : forall x:X, x∈N -> x ∈Nbot := fun _ h => h.
+ Definition Ndec n (h:n∈Nbot) : n∈N \/ ~n∈N := or_introl _ h.
 End natARG.
-Module SAT_nat := SATnat.Make(natARG).
+Module SAT_nat := SATnat.Make(ModelZF.ZFsets)(natARG).
 Export natARG SAT_nat.
+Export CC_Real.
 
 (** * Nat and its constructors *)
 
@@ -35,7 +36,7 @@ Defined.
 
 Definition Succ : term.
 (*begin show*)
-left; exists (fun _ => lam (mkTY N cNAT) succ) (fun _ => SU).
+left; exists (fun _ => CC_Real.lam (mkTY N cNAT) succ) (fun _ => SU).
 (*end show*)
  do 2 red; reflexivity.
  do 2 red; reflexivity.
@@ -125,11 +126,11 @@ apply rprod_intro_sn.
 
  destruct 1; split; unfold inX in *.
   rewrite int_cons_lift_eq.
-  rewrite ElNat_eq in H|-*.
+  unfold CC_Real.inX in H|-*; rewrite ElNat_eq in H|-*.
   apply succ_typ; trivial.
 
   rewrite int_cons_lift_eq.
-  rewrite ElNat_eq in H.
+  unfold CC_Real.inX in H; rewrite ElNat_eq in H.
   rewrite RealNat_eq in H0|-*; trivial.
   2:apply succ_typ; trivial.
   apply cNAT_SU; trivial.
@@ -207,7 +208,7 @@ assert (tygg :forall k h : set,
  apply cc_prod_elim with (2:=tyh) in tyg.
  simpl in tyg.
  rewrite int_lift_eq in tyg.
- rewrite beta_eq in tyg; auto with *.
+ rewrite CC_Real.beta_eq in tyg; auto with *.
  red; intros; apply succ_morph; trivial.
 assert (NRtyp : forall n, n ∈ N ->
   natrec (int f i) gg n ∈ El (app (int P i) n)).
@@ -246,7 +247,7 @@ apply and_split; intros.
    rewrite ElNat_eq in tym.
    specialize satg with (1:=NRtyp _ tym) (2:=satv).
    rewrite int_lift_eq in satg.
-   rewrite beta_eq in satg; auto with *.
+   rewrite CC_Real.beta_eq in satg; auto with *.
     red; intros; apply succ_morph; trivial.
 
     red; rewrite El_def; auto.

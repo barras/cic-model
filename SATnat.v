@@ -5,15 +5,39 @@
 
 Set Implicit Arguments.
 Require Import basic Lambda Can Sat.
-Require Import ZF.
+Require Import Models.
 
+(** An abstract strong normalization model of natural numbers, set-
+    theoretical interpretation. *)
+Module Type SimpleNats (Import S:Sets).
+  
+  (** N is the type of natural numbers including neutral values.
+      Nbot is a decidable subet of N. *)
+  Parameter N Nbot : X.
+  Parameter N_Nbot : N ⊆ Nbot.
+  Parameter Ndec : forall n, n ∈ Nbot -> n∈N \/ ~n∈N.
 
+  Parameter zero : X.
+  Parameter succ : X -> X.
+  Parameter succ_morph : Proper (eqX==>eqX) succ.
+  Existing Instance succ_morph.
+
+  (** Constructors produce non-neutral values *)
+  Parameter zero_typ : zero ∈ N.
+  Parameter succ_typ : forall n, n ∈ Nbot -> succ n ∈ N.
+End SimpleNats.
+
+  
+(** A functor producing the realizability familes associated to natural
+    numbers, given the set-theoretical intrepretation. *)
+Module Make (Import S:Sets)(Import N:SimpleNats S).
+  
 (** Quantification over families *)
 Definition piFAM F :=
-  depSAT (fun P:set->SAT => Proper (eq_set==>eqSAT)P) F.
+  depSAT (fun P:X->SAT => Proper (eqX==>eqSAT)P) F.
 
 Lemma piFAM_ax t F :
-  inSAT t (piFAM F) <-> forall P, Proper (eq_set==>eqSAT)P->inSAT t (F P).
+  inSAT t (piFAM F) <-> forall P, Proper (eqX==>eqSAT)P->inSAT t (F P).
 split; intros.
  apply depSAT_elim with (1:=H)(x:=P)(2:=H0).
 
@@ -23,46 +47,22 @@ split; intros.
  do 2 red; reflexivity.
 Qed.
 
-Instance piFAM_morph : Proper (((eq_set==>eqSAT)==>eqSAT)==>eqSAT) piFAM.
+Instance piFAM_morph : Proper (((eqX==>eqSAT)==>eqSAT)==>eqSAT) piFAM.
 do 2 red; intros.
 apply interSAT_morph.
 apply indexed_relation_id; intros (P,Pm); simpl; auto.
 Qed.
 
 
-(** An abstract strong normalization model of natural numbers, set-
-    theoretical interpretation. *)
-Module Type SimpleNats.
-  (** N is the type of natural numbers including neutral values.
-      Nbot is a decidable subet of N. *)
-  Parameter N Nbot : set.
-  Parameter N_Nbot : N ⊆ Nbot.
-  Parameter Ndec : forall n, n ∈ Nbot -> n∈N \/ ~n∈N.
-
-  Parameter zero : set.
-  Parameter succ : set -> set.
-  Parameter succ_morph : morph1 succ.
-  Existing Instance succ_morph.
-
-  (** Constructors produce non-neutral values *)
-  Parameter zero_typ : zero ∈ N.
-  Parameter succ_typ : forall n, n ∈ Nbot -> succ n ∈ N.
-End SimpleNats.
-  
-(** A functor producing the realizability familes associated to natural
-    numbers, given the set-theoretical intrepretation. *)
-Module Make (N:SimpleNats).
-  Import N.
-  
 (** * Functional applying constructors of Nat to A *)
 
-Definition fNAT (A:set->SAT) (k:set) :=
+Definition fNAT (A:X->SAT) (k:X) :=
   piFAM(fun P =>
         prodSAT (P zero)
        (prodSAT (depSAT (fun n => n ∈ Nbot) (fun n => prodSAT (A n) (prodSAT (P n) (P (succ n)))))
                 (P k))).
 
-Instance fNAT_morph : Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) fNAT.
+Instance fNAT_morph : Proper ((eqX==>eqSAT)==>eqX==>eqSAT) fNAT.
 do 3 red; intros.
 apply piFAM_morph.
 red; intros.
@@ -79,7 +79,7 @@ Qed.
 Lemma fNAT_def t A k :
   inSAT t (fNAT A k) <->
   forall P f g,
-  Proper (eq_set==>eqSAT) P ->
+  Proper (eqX==>eqSAT) P ->
   inSAT f (P zero) ->
   inSAT g (depSAT(fun n=>n ∈ Nbot)(fun n => prodSAT (A n) (prodSAT (P n) (P (succ n))))) ->
   inSAT (App2 t f g) (P k).
@@ -115,10 +115,10 @@ Qed.
     but we could do otherwise. Note that k∈N instead of k∈Nbot ensures that
     cNAT is neuSAT for neutral values. *)
 Definition cNAT n :=
-  depSAT (fun P => Proper (eq_set==>eqSAT) P /\
+  depSAT (fun P => Proper (eqX==>eqSAT) P /\
                    forall k, k ∈ N -> inclSAT (fNAT P k) (P k)) (fun P => P n).
 
-Instance cNAT_morph : Proper (eq_set==>eqSAT) cNAT.
+Instance cNAT_morph : Proper (eqX==>eqSAT) cNAT.
 do 2 red; intros.
 apply interSAT_morph.
 apply indexed_relation_id; intros (P,(Pm,Pind)); simpl; auto.
@@ -172,7 +172,7 @@ Lemma cNAT_out k S :
 intros notn t tsat.
 unfold cNAT, depSAT in tsat.
 pose (P:= fun k => condSAT (k∈N) (cNAT k)).
-assert (Pm : Proper (eq_set==>eqSAT) P).
+assert (Pm : Proper (eqX==>eqSAT) P).
  do 2 red; intros.
  apply condSAT_morph.
   rewrite H; reflexivity.
@@ -189,7 +189,7 @@ intros.
   rewrite condSAT_ok; trivial.
   apply cNAT_post; trivial.
 specialize interSAT_elim with (1:=tsat)
-    (x:=exist (fun P=>Proper(eq_set==>eqSAT)P/\
+    (x:=exist (fun P=>Proper(eqX==>eqSAT)P/\
                 forall k,k∈N->inclSAT(fNAT P k)(P k)) P (conj Pm Ppost)).
 simpl.
 apply condSAT_neutral; red; auto with *.

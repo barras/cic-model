@@ -3,26 +3,34 @@ Require Export Setoid Morphisms.
 
 Reserved Notation "x ∈ y" (at level 60).
 Reserved Notation "x == y" (at level 70).
+Reserved Notation "x ⊆ y" (at level 70).
 
-(** Abstract term model of CC *)
-Module Type CC_Terms.
-
+Module Type Sets.
 Parameter X : Type.
 Parameter inX : X -> X -> Prop.
 Parameter eqX : X -> X -> Prop.
 Parameter eqX_equiv : Equivalence eqX.
+Parameter in_ext: Proper (eqX ==> eqX ==> iff) inX.
+
+Definition inclX (a b : X) : Prop :=
+  forall z, inX z a -> inX z b.
+
 Notation "x ∈ y" := (inX x y).
 Notation "x == y" := (eqX x y).
+Notation "x ⊆ y" := (inclX x y).
 
-Parameter in_ext: Proper (eqX ==> eqX ==> iff) inX.
+Definition eq_fun (x:X) (f1 f2:X->X) :=
+  forall y1 y2, y1 ∈ x -> y1 == y2 -> f1 y1 == f2 y2.
+
+End Sets.
+
+(** Abstract term model of CC *)
+Module Type CC_Sig (Import S:Sets).
 
 Parameter props : X.
 Parameter app : X -> X -> X.
 Parameter lam : X -> (X -> X) -> X.
 Parameter prod : X -> (X -> X) -> X.
-
-Definition eq_fun (x:X) (f1 f2:X->X) :=
-  forall y1 y2, y1 ∈ x -> y1 == y2 -> f1 y1 == f2 y2.
 
 Parameter lam_ext :
   forall x1 x2 f1 f2,
@@ -48,13 +56,12 @@ Existing Instance eqX_equiv.
 Existing Instance in_ext.
 Existing Instance app_ext.
 
+End CC_Sig.
 
-End CC_Terms.
+Module Type CC_Terms := Sets <+ CC_Sig.
 
 (** Abstract model of CC *)
-Module Type CC_Model.
-
-Include CC_Terms.
+Module Type CC_Properties (Import T:CC_Terms).
 
 Parameter prod_intro : forall dom f F,
   eq_fun dom f f ->
@@ -73,7 +80,9 @@ Parameter impredicative_prod : forall dom F,
   (forall x, x ∈ dom -> F x ∈ props) ->
   prod dom F ∈ props.
 
-End CC_Model.
+End CC_Properties.
+
+Module Type CC_Model := CC_Terms <+ CC_Properties.
 
 (** Extension of CC_Model to ensure we can automatically derive
    the strong normalization model.

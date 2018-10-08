@@ -4,7 +4,7 @@
 Require Import List Bool Models TypModels.
 Require Import ZF ZFsum ZFnats ZFrelations ZFord ZFfix ZFgrothendieck.
 Require Import ZFfunext ZFind_w.
-Require Import ModelZF ModelECC.
+Require Import ModelCC ModelECC.
 
 
 (** Importing the common model constructions + variance judgments *)

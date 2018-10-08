@@ -1,10 +1,10 @@
 Require Import List Bool Models.
 Require Import ZFfunext ZFecc ZFind_nat.
 Import ZF ZFsum ZFnats ZFrelations ZFord ZFfix ZFgrothendieck.
-Require ModelZF.
+Require ModelCC.
 
 Import ModelZF.CCM.
-Import ModelZF.BuildModel.
+Import ModelCC.BuildModel.
 Import T R J.
 
 Require Import Model_variance.

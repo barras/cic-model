@@ -4,7 +4,7 @@
 
 Require Import List Bool Models TypModels.
 Require Import ZF ZFsum ZFnats ZFrelations ZFord ZFfix ZFgrothendieck ZFcoc ZFecc.
-Require Import ModelZF.
+Require Import ModelCC.
 
 Import BuildModel.
 Import T J R.

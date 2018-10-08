@@ -12,7 +12,8 @@ Require Import ZF ZFcoc ZFuniv_real ZFind_natbot.
 Module Lc:=Lambda.
 
 (* Building the realizability on the nats of ZFind_natbot *)
-Module natARG <: SimpleNats.
+Require ModelZF.
+Module natARG <: SimpleNats ModelZF.ZFsets.
   Definition N := NAT'.
   Definition Nbot := cc_bot NAT'.
   Definition N_Nbot : N ⊆ Nbot := cc_bot_intro NAT'.
@@ -28,8 +29,9 @@ Module natARG <: SimpleNats.
   Definition zero_typ := ZERO_typ'.
   Definition succ_typ := SUCC_typ'.
 End natARG.
-Module SAT_nat := SATnat.Make(natARG).
+Module SAT_nat := SATnat.Make ModelZF.ZFsets natARG.
 Import SAT_nat.
+Import CC_Real.
 
 (** * Nat and its constructors *)
 

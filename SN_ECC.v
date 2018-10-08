@@ -20,6 +20,7 @@ Module AbstractModel <: SN_CC_Model.
 Definition X := set.
 Definition inX x y := x ∈ El y.
 Definition eqX := eq_set.
+Definition inclX x y := forall z, inX z x -> inX z y.
 Lemma eqX_equiv : Equivalence eqX.
 Proof eq_set_equiv.
 

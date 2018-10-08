@@ -1,6 +1,6 @@
 Require Import Bool.
 Require Import ZF ZFcoc ZFfunext.
-Require Import ModelZF.
+Require Import ModelCC.
 
 Import BuildModel.
 Import T J R.

@@ -20,6 +20,7 @@ split.
  apply eq_hf_sym.
  apply eq_hf_trans.
 Qed.
+Definition inclX := Incl_hf.
 
 Notation "x ∈ y" := (inX x y).
 Notation "x == y" := (eqX x y).
