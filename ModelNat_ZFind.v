@@ -1,60 +1,17 @@
-
-(* Nat *)
 Set Implicit Arguments.
 
 (** In this file, we build a consistency model of the
     Calculus of Constructions extended with natural numbers and
     the usual recursor (CC+NAT). It is a follow-up of file
-    ModelZF. 
+    ModelZF. It shows that the natural numbers introduced in
+    ZFind_nat form an instance of Nat_Model.
  *)
 
-Require Import ZF ZFwfr ZFcoc ZFind_nat.
-Require Import basic ModelZF.
-Import CCM BuildModel.
+Require Import basic Models.
+Require Import ZF ZFwfr ZFind_nat.
+Require Import ModelZF.
 
-(** * Nat and its constructors *)
-Import T J R.
-
-Definition Zero : term.
-(*begin show*)
-left; exists (fun _ => ZERO).
-(*end show*)
- do 2 red; reflexivity.
-Defined.
-
-Definition Succ : term.
-(*begin show*)
-left; exists (fun _ => lam NAT SUCC).
-(*end show*)
- do 2 red; reflexivity.
-Defined.
-
-Definition Nat : term.
-(*begin show*)
-left; exists (fun _ => NAT).
-(*end show*)
- do 2 red; reflexivity.
-Defined.
-
-(** Typing rules of constructors *)
-Lemma typ_0 : forall e, typ e Zero Nat.
-red; simpl; intros.
-apply ZERO_typ.
-Qed.
-
-Lemma typ_S : forall e, typ e Succ (Prod Nat (lift 1 Nat)).
-red; simpl; intros.
-apply cc_prod_intro; intros; auto with *.
-apply SUCC_typ; trivial.
-Qed.
-
-Lemma typ_N : forall e, typ e Nat kind.
-red; simpl; trivial.
-Qed.
-
-(** * The recursor *)
-
-(*Import ZFwf ZFord.*)
+(** All that remains to build is the recursor *)
 Definition NAT_REC f g n :=
   WFR (fun n m => n ∈ NAT /\ m == SUCC n)
       (fun F n => NATCASE f (fun m => g m (F m)) n) n.
@@ -72,7 +29,6 @@ apply WFR_morph; trivial.
  red; intros.
  apply H0; auto.
 Qed.
-
 Section NatrecProperties.
 
   Let Rm : Proper (eq_set ==> eq_set ==> iff) (fun n m : set => n ∈ NAT /\ m == SUCC n).
@@ -177,103 +133,28 @@ elim H1 using NAT_ind; intros.
  rewrite NATREC_S; auto.
 Qed.
 
-(** Recursor *)
-Definition NatRec (f g n:term) : term.
-(*begin show*)
-left; exists (fun i => NAT_REC (int f i) (fun n y => app (app (int g i) n) y) (int n i)).
-(*end show*)
- do 2 red; intros.
- apply NATREC_morph.
-  rewrite H; reflexivity.
-(**)
-  do 2 red; intros.
-  rewrite H; rewrite H0; rewrite H1; reflexivity.
-(**)
-  rewrite H; reflexivity.
-Defined.
+(** Now we can gather (and rename) all the constructions to
+    instantiate Nat_Model. *)
+Module ZFind_Nats <: Models.Nat_Model CCM.
+Definition N := NAT.
+Definition zero := ZERO.
+Definition succ := SUCC.
+Definition succ_morph := ZFsum.inr_morph.
 
+Definition zero_typ := ZERO_typ.
+Definition succ_typ := SUCC_typ.
 
-(** Typing rule of the eliminator *)
-Lemma typ_Nrect : forall e n f g P,
-  typ e n Nat ->
-  typ e f (App P Zero) ->
-  typ e g (Prod Nat (Prod (App (lift 1 P) (Ref 0))
-              (App (lift 2 P) (App Succ (Ref 1))))) ->
-  typ e (NatRec f g n) (App P n).
-red; simpl; intros.
-apply NATREC_typ with (P:=fun x => app (int P i) x); trivial.
- apply cc_app_morph; reflexivity.
+Definition natrec := NAT_REC.
+Definition natrec_morph := NATREC_morph.
 
- do 3 red; intros.
- apply cc_app_morph; trivial.
- apply cc_app_morph; trivial.
- reflexivity.
+Definition natrec_0 := NATREC_0.
+Definition natrec_S := NATREC_S.
+Definition natrec_typ := NATREC_typ.
 
- apply H; trivial.
+End ZFind_Nats.
 
- apply H0; trivial.
+Module CCN := CCM <+ ZFind_Nats.
 
- intros.
- red in H1; specialize H1 with (1:=H2).
- simpl in H1.
- apply cc_prod_elim with (2:=H3) in H1.
- eapply eq_elim.
- 2:eapply cc_prod_elim with (1:=H1).
-  rewrite simpl_int_lift.
-  rewrite simpl_int_lift1.
-  rewrite cc_beta_eq; auto with *.
-  reflexivity.
-
-  rewrite simpl_int_lift1; trivial.
-Qed.
-
-
-Lemma eq_typ_NatRec e f f' g g' n n' :
-  eq_typ e f f' ->
-  eq_typ e g g' ->
-  eq_typ e n n' ->
-  eq_typ e (NatRec f g n) (NatRec f' g' n').
-unfold eq_typ; intros.
-specialize H with (1:=H2).
-specialize H0 with (1:=H2).
-specialize H1 with (1:=H2).
-simpl.
-apply NATREC_morph; trivial.
-do 2 red; intros.
-rewrite H0; rewrite H3; rewrite H4; reflexivity.
-Qed.
-
-(** iota-reduction *)
-
-Lemma NatRec_eq_0 e f g :
-  eq_typ e (NatRec f g Zero) f.
-red; simpl; intros.
-rewrite NATREC_0.
-reflexivity.
-Qed.
-
-Lemma NatRec_eq_S e f g n :
-  typ e n Nat ->
-  eq_typ e (NatRec f g (App Succ n)) (App (App g n) (NatRec f g n)).
-red; simpl; intros.
-eapply transitivity.
- apply NATREC_morph.
-  reflexivity.
-
-  do 2 red; intros.
-  apply cc_app_morph;[|exact H2].
-  apply cc_app_morph;[|exact H1].
-  reflexivity.
-  
-  apply beta_eq.
-   red; intros; apply ZFsum.inr_morph; trivial.
-
-   apply H in H0; trivial.
-rewrite NATREC_S; auto.
- reflexivity.
-
- do 2 red; intros; apply cc_app_morph; auto with *.
- apply cc_app_morph; auto with *.
-
- apply H; trivial.
-Qed.
+(** Derive the judgements and typing rules of CC+nats *)
+Require Import GenModelNat.
+Module M <: CCNat_Rules := MakeNatModel(CCN).

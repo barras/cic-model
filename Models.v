@@ -154,3 +154,38 @@ Parameter prod_elim : forall dom f x F,
 
 End CC_Model2.
 
+(** A model of natural numbers with recursor *)
+
+Module Type Nat_Model (Import M:CC_Model).
+
+Parameter N : X.
+Parameter zero : X.
+Parameter succ : X->X.
+Parameter succ_morph : Proper (eqX==>eqX) succ.
+Existing Instance succ_morph.
+Parameter natrec : X -> (X->X->X) -> X -> X.
+Parameter natrec_morph :
+  Proper (eqX ==> (eqX ==> eqX ==> eqX) ==> eqX ==> eqX) natrec.
+
+Parameter zero_typ : zero ∈ N.
+
+Parameter succ_typ : forall n, n ∈ N -> succ n ∈ N.
+
+Parameter natrec_typ : forall P f g n,
+  Proper (eqX==>eqX) P ->
+  Proper (eqX==>eqX==>eqX) g ->
+  n ∈ N ->
+  f ∈ P zero ->
+  (forall k h, k ∈ N -> h ∈ P k -> g k h ∈ P (succ k)) ->
+  natrec f g n ∈ P n.
+
+Parameter natrec_0 : forall f g, natrec f g zero == f.
+
+Parameter natrec_S : forall f g n,
+  Proper (eqX==>eqX==>eqX) g ->
+  n ∈ N ->
+  natrec f g (succ n) == g n (natrec f g n).
+
+End Nat_Model.
+
+Module Type CCNat_Model := CC_Model <+ Nat_Model.
