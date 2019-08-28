@@ -1121,6 +1121,12 @@ split; intros.
  apply pair_elim in H1; destruct H1; rewrite H1; trivial.
 Qed.
 
+Instance inter2_mono : Proper (incl_set==>incl_set==>incl_set) inter2.
+do 4 red; intros.
+apply inter2_def in H1; destruct H1.
+apply inter2_def; split; auto.
+Qed.
+
 Lemma inter2_incl1 : forall x y, x ∩ y ⊆ x.
 red; intros.
 rewrite inter2_def in H; destruct H; trivial.
