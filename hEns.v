@@ -75,9 +75,13 @@ Qed.
 
 (*Hint Resolve tr_prop isProp_forall isProp_conj.*)
 
-Definition eq_fam_set {Y} (p q:{X:Ti & X->Y}) :=
+Definition map (Y:Tj) : Tj := {X:Ti & X->Y}.
+Definition mkm {Y:Tj} (X:Ti) (f:X->Y) : map Y :=
+  existT _ X f.
+
+Definition eq_fam_set {Y:Tj} (p q:map Y) :=
   eq_fam (projT2 p) (projT2 q).
-Instance isRel_eq_fam {Y} : isRel (@eq_fam_set Y).
+Instance isRel_eq_fam {Y:Tj} : isRel (@eq_fam_set Y).
 split.
  unfold eq_fam_set, eq_fam; auto with *.
 
@@ -112,52 +116,52 @@ Hypothesis Ys : isSet Y.
 (* The index function of a set, unique up to equivalence...
    obtained by identifying indices that yield the same set. *)
 
-Definition ker (X:Ti) (f:X->Y) : Ti :=
+Definition ker (m:map Y) : Ti :=
+  let X := projT1 m in let f := projT2 m in
   quo X (fun x y => f x = f y).
 
 
-Instance isRel_ker {X:Ti}(f:X->Y): isRel (fun x y => f x = f y).
+Instance isRel_ker (m:map Y) : isRel (fun x y => projT2 m x = projT2 m y).
 split; intros.
  red; intros; apply Ys.
 split; red; intros; eauto.
-transitivity (f y); trivial.
+transitivity (projT2 m y); trivial.
 Qed.
 
-Definition ker_i {X:Ti}(f:X->Y) (x:X) : ker X f :=
+Definition ker_i (m:map Y) (x:projT1 m) : ker m :=
   quo_i (isRel_ker _) x.
 
-Definition ker_map (X:Ti) (f:X->Y) (i:ker X f) : Y.
-elim i using (quo_ind_set_nodep _ Ys) with (h:=f).
+Definition ker_map (m:map Y) (i:ker m) : Y.
+elim i using (quo_ind_set_nodep _ Ys) with (h:=projT2 m).
 trivial.
 Defined.
 
-Definition ker_set (X:Ti) (f:X->Y) : {X:Ti & X->Y} :=
-  existT (fun X:Ti=>X->Y) (ker X f) (ker_map X f).
+Definition ker_set (m:map Y) : map Y := mkm (ker m) (ker_map m).
 
 (** Unicity of ker up to isomorphism *)
 
-Definition ker_f0 {X X':Ti} {f:X->Y} {f':X'->Y} :
-  eq_fam f f' ->
-  X -> ker X' f'.
-assert (Hr := isRel_ker f).
-assert (Hr' := isRel_ker f').
-assert (Hs := isSet_quo X' (fun x0 y0 : X' => f' x0 = f' y0) Hr').
-pose (f1:= fun i (x : {x : X' | f i = f' x}) => ker_i f' (proj1_sig x)).
+Definition ker_f0 {m m':map Y} :
+  eq_fam_set m m' ->
+  projT1 m -> ker m'.
+assert (Hr := isRel_ker m).
+assert (Hr' := isRel_ker m').
+assert (Hs := isSet_quo (projT1 m') (fun x0 y0 => projT2 m' x0 = projT2 m' y0) Hr').
+pose (f1:= fun i (x : {x : projT1 m' | projT2 m i = projT2 m' x}) => ker_i m' (proj1_sig x)).
 assert (inv1 : forall i x y, f1 i x = f1 i y).
  intros.
  apply quo_i_eq.
- transitivity (f i).
+ transitivity (projT2 m i).
   symmetry; apply (proj2_sig x).
   apply (proj2_sig y).
 intros eqf x.
 exact (tr_ind_set_nodep _ _ Hs _ (inv1 x) (proj1 tr_ex_sig (proj1 eqf x))).
 Defined.
 
-Definition ker_f {X X':Ti} {f:X->Y} {f':X'->Y} :
-  eq_fam f f' -> ker X f -> ker X' f'.
-assert (Hr := isRel_ker f).
-assert (Hr' := isRel_ker f').
-assert (Hs := isSet_quo X' (fun x0 y0 : X' => f' x0 = f' y0) Hr').
+Definition ker_f {m m':map Y} :
+  eq_fam_set m m' -> ker m -> ker m'.
+assert (Hr := isRel_ker m).
+assert (Hr' := isRel_ker m').
+assert (Hs := isSet_quo (projT1 m') (fun x0 y0 => projT2 m' x0 = projT2 m' y0) Hr').
 intros eqf k.
 eapply quo_ind_set_nodep with (1:=Hr) (2:=Hs) (h:=ker_f0 eqf) (4:=k).
 intros.
@@ -172,8 +176,8 @@ apply quo_i_eq; simpl.
 rewrite <- e, <- e0; trivial.
 Defined.
 
-Lemma ker_f_eq {X X':Ti} {f:X->Y} {f':X'->Y} (eqf:eq_fam f f') i j :
-  f i = f' j -> ker_f eqf (ker_i f i) = ker_i f' j.
+Lemma ker_f_eq {m m':map Y} (eqf:eq_fam_set m m') i j :
+  projT2 m i = projT2 m' j -> ker_f eqf (ker_i m i) = ker_i m' j.
 intros.
 unfold ker_f, ker_i, quo_ind_set_nodep.
 rewrite quo_ind_set_eq.
@@ -185,12 +189,12 @@ apply quo_i_eq.
 rewrite <- H, <- e; trivial.
 Qed.
 
-Lemma ker_f_id {X X':Ti} {f:X->Y} {f':X'->Y} (eqf:eq_fam f f')(eqf':eq_fam f' f) x :
+Lemma ker_f_id {m m':map Y} (eqf:eq_fam_set m m')(eqf':eq_fam_set m' m) x :
   ker_f eqf' (ker_f eqf x) = x.
 elim x using (quo_ind _).
  red; intros; apply isSet_quo; auto with *.
 intros i.
-fold (ker_i f i).
+fold (ker_i m i).
 elim (proj1 tr_ex_sig (proj1 eqf i)) using tr_ind.
  red; intros; apply isSet_quo; auto with *.
 intros (j,?).
@@ -198,8 +202,8 @@ rewrite ker_f_eq with (j0:=j); trivial.
 apply ker_f_eq; auto.
 Qed.
 
-Definition ker_map_def (X:Ti) (f:X->Y) (i:ker X f) :
-  tr{i':X & ker_i _ i' = i /\ f i' = ker_map X f i}.
+Definition ker_map_def (m:map Y) (i:ker m) :
+  tr{i':projT1 m & ker_i _ i' = i /\ projT2 m i' = ker_map m i}.
 elim i using (quo_ind _).
  intros; apply tr_prop.
 intros x.
@@ -210,27 +214,26 @@ rewrite quo_ind_set_eq.
 reflexivity.
 Qed.
 
-Lemma eq_fam_ker (X:Ti) (f:X->Y) :
-  eq_fam f (ker_map X f).
+Lemma eq_fam_ker (m:map Y): eq_fam_set m (ker_set m).
 split; intros.
- apply tr_i; exists (ker_i f i). 
- unfold ker_i, ker_map, quo_ind_set_nodep.
+ apply tr_i; exists (ker_i m i). 
+ unfold ker_set, ker_i, ker_map, quo_ind_set_nodep; simpl.
  rewrite quo_ind_set_eq; trivial.
 
- apply tr_ind_tr with (2:=ker_map_def X f j).
+ apply tr_ind_tr with (2:=ker_map_def m j).
  intros (i,(?,?)).
  apply tr_i; exists i; trivial.
 Qed.
 
 
-Definition fam := Quo.quo {X:Ti&X->Y} eq_fam_set.
+Definition fam := Quo.quo (map Y) eq_fam_set.
 
 Lemma fams : isSet fam.
 apply Quo.isSet_quo.
 apply isRel_eq_fam.
 Qed.
 
-Definition isDecomp (a:fam) (q:{X:Ti & X->Y}) : Prop :=
+Definition isDecomp (a:fam) (q:map Y) : Prop :=
   isSet (projT1 q) /\
   (forall x x', projT2 q x = projT2 q x' -> x=x') /\
   a = Quo.quo_i _ q.
@@ -256,20 +259,20 @@ apply isProp_conj.
 Qed.
 
 Definition decomp_fam (a:fam) :=
-  { s:{X:Ti & X->Y} | isDecomp a s }.
+  { s:map Y | isDecomp a s }.
 
-Lemma decomp_ker X f :
-  isDecomp (Quo.quo_i _ (existT (fun X:Ti=>X->Y) X f)) (ker_set X f).
+Lemma decomp_ker m :
+  isDecomp (Quo.quo_i _ m) (ker_set m).
 split;[|split]; simpl.
  (* ker is a set *)
  apply isSet_quo; auto with *.
 
  (* ker_map is injective *)
  intros.
- apply tr_ind_nodep with (3:=ker_map_def X f x).
+ apply tr_ind_nodep with (3:=ker_map_def m x).
   red; intros; apply isSet_quo; auto with *.
  intros (i,(?,?)).
- apply tr_ind_nodep with (3:=ker_map_def X f x').
+ apply tr_ind_nodep with (3:=ker_map_def m x').
   red; intros; apply isSet_quo; auto with *.
  intros (i',(?,?)).
  rewrite <-H1,<-H3 in H.
@@ -283,8 +286,8 @@ Qed.
 Definition decomp_tr (a:fam) : tr(decomp_fam a).
 pattern a.
 elim a using (Quo.quo_ind _); auto with *.
-intros (X,f); apply tr_i.
-exists (ker_set X f).
+intros m; apply tr_i.
+exists (ker_set m).
 apply decomp_ker.
 Defined.
 
@@ -370,9 +373,8 @@ elim (decomp_tr a) using tr_ind_nodep; trivial.
 apply isProp_decomp.  
 Defined.
 
-Lemma decomp_eq X (f:X->Y) :
-  proj1_sig (decomp (Quo.quo_i _ (existT(fun X=>X->Y) X f))) =
-  ker_set X f.
+Lemma decomp_eq m :
+  proj1_sig (decomp (Quo.quo_i _ m)) = ker_set m.
 unfold decomp.
 unfold decomp_tr.
 rewrite Quo.quo_ind_eq.
@@ -418,9 +420,9 @@ Qed.
 
 Module SetsQuo <: WfSetTheory TrSubThms.
 
-  Definition isup (c:{X:Ti & X->iset}) : iset := Z.isup (projT1 c) (projT2 c).
+  Definition isup (c:map iset) : iset := Z.isup (projT1 c) (projT2 c).
 
-  Definition unsup (x:iset) := let (X,f) := x in existT (fun X:Ti=>X->iset) X f.
+  Definition unsup (x:iset) := let (X,f) := x in mkm X f.
 
   (* The type of extensional sets *)
   Definition set := quo iset eq_iset.
@@ -433,7 +435,7 @@ Qed.
   Definition mks (x:iset) : set := quo_i _ x.
   
   Definition unfold_set (x:set) : fam set.
-pose (f:= fun x:iset => quo_i _ (existT (fun X:Ti=>X->set)
+pose (f:= fun x:iset => quo_i _ (mkm
                                (projT1 (unsup x))
                                (fun i => mks (projT2 (unsup x) i)))).
 apply quo_ind_set_nodep with (h:=f) (4:=x); auto with *.
@@ -457,7 +459,7 @@ Defined.
 
 Lemma unfold_set_eq X f :
   unfold_set (quo_i _ (Z.isup X f)) =
-  quo_i _ (existT(fun X:Ti=>X->set) X (fun i => mks (f i))).
+  quo_i _ (mkm X (fun i => mks (f i))).
 unfold unfold_set.
 unfold quo_ind_set_nodep.
 rewrite quo_ind_set_eq.
@@ -470,13 +472,15 @@ Definition Ker (a:set) : Ti :=
   projT1 (proj1_sig (decomp _ isSet_set (unfold_set a))).
 Definition Kerf (a:set) : Ker a -> set :=
   projT2 (proj1_sig (decomp _ isSet_set (unfold_set a))).
+Definition Kers (a:set) : map set :=
+  proj1_sig (decomp _ isSet_set (unfold_set a)).
 
 
   (* Equality *)
   Definition eq_set (x y:set) := x=y.
 
 Lemma eq_set_intro x y :
-  eq_fam (Kerf x) (Kerf y) ->
+  eq_fam_set (Kers x) (Kers y) ->
   x = y.
 elim x using (quo_ind _).
  intros; apply isProp_forall.
@@ -486,30 +490,34 @@ elim y using (quo_ind _).
  intros; apply isProp_forall.
  red; intros; apply isSet_set.
 intros (Y,g).
-unfold Kerf, Ker.
+unfold Kers.
 rewrite !unfold_set_eq.
-rewrite !decomp_eq.  
+rewrite !decomp_eq.
 simpl.
-intros (xy,yx).
+intros (xy,yx); simpl in *.
 apply quo_i_eq.
 simpl.
-destruct (eq_fam_ker _ isSet_set X (fun i => mks(f i))) as (e1,e2).
-destruct (eq_fam_ker _ isSet_set Y (fun i => mks(g i))) as (f1,f2).
+pose (x' := mkm X (fun i => mks(f i)) : map set).
+pose (y' := mkm Y (fun i => mks(g i)) : map set).
+destruct (eq_fam_ker _ isSet_set x') as (e1,e2).
+destruct (eq_fam_ker _ isSet_set y') as (f1,f2); simpl in *.
 split; intros.
- specialize xy with (ker_i _ isSet_set (fun i => mks(f i)) i). 
- elim xy using (tr_ind_tr _).
+ specialize xy with (ker_i _ isSet_set x' i). 
+ elim xy using (tr_ind_tr _); simpl.
  clear xy; intros (j,?).
- elim (f2 j) using tr_ind_tr.
+ fold x' y' in H.
+ elim (f2 j) using tr_ind_tr; simpl.
  intros (i',?); apply tr_i; exists i'.
  rewrite <- H in H0.
  unfold ker_map, ker_i, Quo1.quo_ind_set_nodep in H0.
- rewrite Quo1.quo_ind_set_eq in H0.
+ rewrite Quo1.quo_ind_set_eq in H0; simpl in H0.
  apply quo_i_eq in H0; symmetry; trivial.
 
  elim (f1 j) using tr_ind_tr.
  intros (k,?).
  elim (yx k) using tr_ind_tr.
  intros (k',?).
+ fold x' y' in H0.
  elim (e2 k') using tr_ind_tr.
  intros (i,?); apply tr_i; exists i.
  rewrite H0,<-H in H1.
@@ -530,18 +538,18 @@ unfold Ker, Kerf.
 rewrite unfold_set_eq.
 rewrite decomp_eq.
 simpl.
-destruct (eq_fam_ker _ isSet_set X (fun i => mks (f i))) as (e1,e2).
+destruct (eq_fam_ker _ isSet_set (mkm X (fun i => mks (f i)))) as (e1,e2).
 split; intros.
  elim H using tr_ind_tr; clear H.
  intros (k,?).
  elim (e2 k) using tr_ind_tr.
- intros (i,?).
+ simpl; intros (i,?).
  apply tr_i; exists i; rewrite H; trivial.
 
  elim H using tr_ind_tr; clear H.
  intros (i,?). 
  elim (e1 i) using tr_ind_tr.
- intros (j,?).
+ simpl; intros (j,?).
  rewrite H in e.
  apply tr_i; exists j; trivial.
 Qed. 
@@ -653,7 +661,7 @@ assert (kin: forall i, in_set (Kerf x i) x).
  apply tr_i; exists i; trivial.
 assert (Hreck := fun i => Hrec _ (kin i)).
 clear kin Hrec.
-pose (y:=isup(existT(fun X=>X->iset)(Ker x)(fun i => proj1_sig(projT1(Hreck i))))).
+pose (y:=isup(mkm(Ker x)(fun i => proj1_sig(projT1(Hreck i))))).
 pose (yc:=ISC_sup _ _ (fun i => proj2_sig(projT1(Hreck i)))).
 exists (exist (set_cano x) y yc).
 intros (z,zc).
@@ -953,7 +961,7 @@ apply isSet_quo; auto with *.
 Qed.
 
 Definition sup (X:Ti) (f:X->set) : set :=
-  fold_set (quo_i _ (existT (fun X=>X->set) X f)).
+  fold_set (quo_i _ (mkm X f)).
 
 Lemma eq_fam_def {X X' f f'}:
   eq_fam f f' <-> sup X f = sup X' f'.
@@ -1015,7 +1023,7 @@ Definition set_ind (P:set->Type) (Ps : forall x, isSet(P x))
 Lemma set_ind_eq P Ps h hcomp X f :
   set_ind P Ps h hcomp (sup X f) = h X f.
 unfold set_ind, sup.
-set (q := quo_i _ (existT (fun X:Type=>X->set) X f)) in *.
+set (q := quo_i _ (mkm X f)) in *.
 replace (fold_unfold_eq (fold_set q)) with (f_equal fold_set (eq_sym(eq_sym(unfold_fold_eq q)))).  
 2:apply isSet_set.
 rewrite transport_f_equal.
