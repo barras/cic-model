@@ -741,7 +741,7 @@ Arguments isProp_isProp {_} A _ _.
 Arguments isProp_forall {_} A P _ x y.
 
 (** Predicate extensionality: consequence of univalence *)
-Definition iffT A B := prod (A->B) (B->A).
+Definition iffT A B := tr A <-> tr B.
 
 Lemma iffT_trans {A B C}: iffT A B -> iffT B C -> iffT A C.
 intros (?,?) (?,?); split; auto.
@@ -776,8 +776,8 @@ intros.
 *)
 
 Definition pred_eqv {A} {P Q:A->Type} (e:P=Q) a : iffT (P a) (Q a).
-Proof ((fun x => match e in _=X return X a with eq_refl => x end),
-       (fun x => match eq_sym e in _=X return X a with eq_refl => x end)).
+Proof conj (fun x => match f_equal (fun A x=>tr (A x)) e in _=X return X a with eq_refl => x end)
+           (fun x => match eq_sym (f_equal (fun A x=>tr(A x)) e) in _=X return X a with eq_refl => x end).
 
 (* Version of pred_ext that returns the reflexivity when
    given the identity equivalence, so it is the inverse of pred_eqv *)
@@ -806,10 +806,8 @@ Lemma isProp_pred_eq {A} {P Q:A->Type} :
 intros Pp Qp e1 e2.  
 rewrite <-(pred_ext_eqv Pp Qp e1), <-(pred_ext_eqv Pp Qp e2).
 apply f_equal with (f:=pred_ext' Pp Qp).
-apply isProp_forallT; intros a.
-apply isProp_prod.
- apply isProp_forallT; intros _; trivial.
- apply isProp_forallT; intros _; trivial.
+apply isProp_forall; intros a.
+apply isProp_iff; auto with *.
 Qed.
 
 Lemma prop_ext (P Q:Type) (Pp:isProp P) (Qp:isProp Q) :
@@ -912,30 +910,39 @@ split.
  reflexivity.
 
  intros; apply quo_ext; simpl; intros; trivial.
- split; intros.
-  transitivity x; auto with *.
-  transitivity y; auto with *.
+ red.
+ split; apply tr_map; rewrite H; auto.
 Qed.
 
 Lemma class_quo_proj1 X R (Rr:isRel R) (q:quo X R) w :
   iffT (proj1_sig q w) (q = quo_i _ w).
-split; intros.
+split; apply tr_map; intros.
  apply quo_ext; trivial.
  intros; simpl.
  assert (Pp := isProp_quo_proj1 q).
  destruct q as (P,Pc); simpl in *.
  elim Pc using tr_ind_nodep; intros.
-  apply isProp_prod; apply isProp_forallT; auto.
-  intros; apply Rr.
+  apply isProp_iff; auto with *.
  destruct X1 as (_,w',_,eqvP).
- destruct eqvP with w.
- destruct eqvP with x.
- split; intros.
-  transitivity w'; auto.
-  symmetry; auto.
+ red.
+ transitivity (tr(R w' x)); auto.
+  apply eqvP.
 
-  apply p0.
-  transitivity w; auto.
+  assert (tr (R w' w)).
+   destruct eqvP with w.
+   apply H; apply tr_i; trivial.
+  split; intros.
+   elim H using tr_ind_nodep; auto with *.
+   clear H; intro.
+   elim H0 using tr_ind_nodep; auto with *.
+   clear H0; intro.
+   apply tr_i; rewrite <-H; trivial.
+   
+   elim H using tr_ind_nodep; auto with *.
+   clear H; intro.
+   elim H0 using tr_ind_nodep; auto with *.
+   clear H0; intro.
+   apply tr_i; rewrite H; trivial.
 
  subst q; simpl.
  reflexivity.
@@ -949,7 +956,9 @@ intros Pp h x.
 assert (w := quo_proj1_wit x).
 elim w using tr_ind_nodep; auto.
 clear w; intros (w,wdef).
-apply class_quo_proj1 with (Rr:=Rr) in wdef.
+apply tr_i in wdef; apply class_quo_proj1 with (Rr:=Rr) in wdef.
+elim wdef using tr_ind_nodep; auto with *.
+clear wdef; intros wdef.
 rewrite wdef; trivial.
 Qed.
 
@@ -1131,30 +1140,40 @@ split.
  reflexivity.
 
  intros; apply quo_ext; simpl; intros; trivial.
- split; intros.
+ split; apply tr_map; intros.
   transitivity x; auto with *.
   transitivity y; auto with *.
 Qed.
 
 Lemma class_quo_proj1 X R (Rr:isRel R) (q:quo X R) w :
   iffT (proj1_sig q w) (q = quo_i _ w).
-split; intros.
+split; apply tr_map; intros.
  apply quo_ext; trivial.
  intros; simpl.
  assert (Pp := isProp_quo_proj1 q).
  destruct q as (P,Pc); simpl in *.
  elim Pc using tr_ind_nodep; intros.
-  apply isProp_prod; apply isProp_forallT; auto.
-  intros; apply Rr.
+  apply isProp_iff; auto with *.
  destruct X1 as (_,w',_,eqvP).
- destruct eqvP with w.
- destruct eqvP with x.
- split; intros.
-  transitivity w'; auto.
-  symmetry; auto.
+ red.
+ transitivity (tr(R w' x)); auto.
+  apply eqvP.
 
-  apply p0.
-  transitivity w; auto.
+  assert (tr (R w' w)).
+   destruct eqvP with w.
+   apply H; apply tr_i; trivial.
+  split; intros.
+   elim H using tr_ind_nodep; auto with *.
+   clear H; intro.
+   elim H0 using tr_ind_nodep; auto with *.
+   clear H0; intro.
+   apply tr_i; rewrite <-H; trivial.
+   
+   elim H using tr_ind_nodep; auto with *.
+   clear H; intro.
+   elim H0 using tr_ind_nodep; auto with *.
+   clear H0; intro.
+   apply tr_i; rewrite H; trivial.
 
  subst q; simpl.
  reflexivity.
@@ -1168,7 +1187,9 @@ intros Pp h x.
 assert (w := quo_proj1_wit x).
 elim w using tr_ind_nodep; auto.
 clear w; intros (w,wdef).
-apply class_quo_proj1 with (Rr:=Rr) in wdef.
+apply tr_i in wdef; apply class_quo_proj1 with (Rr:=Rr) in wdef.
+elim wdef using tr_ind_nodep; auto with *.
+clear wdef; intros wdef.
 rewrite wdef; trivial.
 Qed.
 

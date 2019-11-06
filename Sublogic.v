@@ -236,8 +236,7 @@ Ltac prove_isL :=
   | |- isL True => apply T_isL; exact I
   | |- isL(impl _ _) => apply imp_isL; prove_isL
   | |- isL(iff _ _) => apply iff_isL; prove_isL
-  | |- isL(_ -> _) => apply imp_isL; prove_isL
-  | |- isL(forall x, _) => apply fa_isL; intro; prove_isL
+  | |- isL(forall x, _) => (apply imp_isL || (apply fa_isL; intro)); prove_isL
   | |- isL _ => auto 10; fail "Cannot prove isL side-condition"
   | |- _ => fail "Tactic prove_isL does not apply to this goal"
   end.
