@@ -29,17 +29,21 @@ Qed.
 
 (* Equality of families *)
 
-Definition eq_fam {X X':Ti}{Y} (f:X->Y) (f':X'->Y) :=
-  (forall i, #exists j, f i = f' j) /\
-  (forall j, #exists i, f i = f' j).
+Definition map (Y:Tj) : Tj := {X:Ti & X->Y}.
+Definition mkm {Y:Tj} (X:Ti) (f:X->Y) : map Y :=
+  existT _ X f.
 
-Lemma eq_fam_refl {X Y f} : @eq_fam X X Y f f.
+Definition eq_map {Y:Tj} (p q:map Y) :=
+  (forall i, #exists j, projT2 p i = projT2 q j) /\
+  (forall j, #exists i, projT2 p i = projT2 q j).
+
+Lemma eq_fam_refl {Y} {m:map Y} : eq_map m m.
 split; intros.
  apply tr_i; exists i; trivial.
  apply tr_i; exists j; trivial.
 Qed.
   
-Lemma eq_fam_sym {X X' Y f f'} : @eq_fam X X' Y f f' -> eq_fam f' f.
+Lemma eq_fam_sym {Y} {m m':map Y} : eq_map m m' -> eq_map m' m.
 destruct 1; split; intros.
  generalize (H0 i); apply TrMono.
  intros (j,?); exists j; auto.
@@ -48,61 +52,31 @@ destruct 1; split; intros.
  intros (i,?); exists i; auto.
 Qed.
 
-Lemma eq_fam_trans {X1 X2 X3 Y} {f1:X1->Y}{f2:X2->Y}{f3:X3->Y} :
-  eq_fam f1 f2 -> eq_fam f2 f3 -> eq_fam f1 f3.
+Lemma eq_fam_trans {Y} {m1 m2 m3:map Y} :
+  eq_map m1 m2 -> eq_map m2 m3 -> eq_map m1 m3.
 intros (e12,e21) (e23,e32).
 split.
  intros i1.
  elim (e12 i1) using tr_ind_tr; intros (i2,ef12).
  elim (e23 i2) using tr_ind_tr; intros (i3,ef23).
- apply tr_i; exists i3; transitivity (f2 i2); trivial.
+ apply tr_i; exists i3; transitivity (projT2 m2 i2); trivial.
 
  intros i3.
  elim (e32 i3) using tr_ind_tr; intros (i2,ef32).
  elim (e21 i2) using tr_ind_tr; intros (i1,ef21).
- apply tr_i; exists i1; transitivity (f2 i2); trivial.
+ apply tr_i; exists i1; transitivity (projT2 m2 i2); trivial.
 Qed.
 
-Lemma eq_fam_comp {X X' Y Y'} (f:Y->Y'){g:X->Y}{g':X'->Y}:
-  eq_fam g g' -> eq_fam (fun i => f (g i)) (fun i => f (g' i)).
-destruct 1; split; intros.
- Tdestruct (H i) as (j,?). 
- Texists j; f_equal; trivial.
-
- Tdestruct (H0 j) as (i,?). 
- Texists i; f_equal; trivial.
-Qed.
-
-(*Hint Resolve tr_prop isProp_forall isProp_conj.*)
-
-Definition map (Y:Tj) : Tj := {X:Ti & X->Y}.
-Definition mkm {Y:Tj} (X:Ti) (f:X->Y) : map Y :=
-  existT _ X f.
-
-Definition eq_fam_set {Y:Tj} (p q:map Y) :=
-  eq_fam (projT2 p) (projT2 q).
-Instance isRel_eq_fam {Y:Tj} : isRel (@eq_fam_set Y).
+Instance isRel_eq_fam {Y:Tj} : isRel (@eq_map Y).
 split.
- unfold eq_fam_set, eq_fam; auto with *.
+ unfold eq_map; auto with *.
 
  split; red; intros.
-  split; intros.
-   Texists i; trivial.
-   Texists j; trivial.
+  apply eq_fam_refl.
 
- apply eq_fam_sym; trivial.
+  apply eq_fam_sym; trivial.
 
- destruct H; destruct H0.
- split; intros.
-  Tdestruct (H i) as (j,?).
-  Tdestruct (H0 j) as (k,?).
-  rewrite <- H3 in H4.
-  Texists k; auto.
-
-  Tdestruct (H2 j) as (i,?).
-  Tdestruct (H1 i) as (k,?).
-  rewrite H3 in H4.
-  Texists k; auto.
+  apply @eq_fam_trans with y; trivial.
 Qed.
 
 Section Ker. (** 1- Using univalence (truncated at set level) *)
@@ -138,70 +112,6 @@ Defined.
 
 Definition ker_set (m:map Y) : map Y := mkm (ker m) (ker_map m).
 
-(** Unicity of ker up to isomorphism *)
-
-Definition ker_f0 {m m':map Y} :
-  eq_fam_set m m' ->
-  projT1 m -> ker m'.
-assert (Hr := isRel_ker m).
-assert (Hr' := isRel_ker m').
-assert (Hs := isSet_quo (projT1 m') (fun x0 y0 => projT2 m' x0 = projT2 m' y0) Hr').
-pose (f1:= fun i (x : {x : projT1 m' | projT2 m i = projT2 m' x}) => ker_i m' (proj1_sig x)).
-assert (inv1 : forall i x y, f1 i x = f1 i y).
- intros.
- apply quo_i_eq.
- transitivity (projT2 m i).
-  symmetry; apply (proj2_sig x).
-  apply (proj2_sig y).
-intros eqf x.
-exact (tr_ind_set_nodep _ _ Hs _ (inv1 x) (proj1 tr_ex_sig (proj1 eqf x))).
-Defined.
-
-Definition ker_f {m m':map Y} :
-  eq_fam_set m m' -> ker m -> ker m'.
-assert (Hr := isRel_ker m).
-assert (Hr' := isRel_ker m').
-assert (Hs := isSet_quo (projT1 m') (fun x0 y0 => projT2 m' x0 = projT2 m' y0) Hr').
-intros eqf k.
-eapply quo_ind_set_nodep with (1:=Hr) (2:=Hs) (h:=ker_f0 eqf) (4:=k).
-intros.
-unfold ker_f0; intros.
-apply tr_ind_set_nodep_ind.
- red; intros; apply isSet_quo; auto with *. 
-intros (x',?).
-apply tr_ind_set_nodep_ind.
- red; intros; apply isSet_quo; auto with *. 
-intros (y',?).
-apply quo_i_eq; simpl.
-rewrite <- e, <- e0; trivial.
-Defined.
-
-Lemma ker_f_eq {m m':map Y} (eqf:eq_fam_set m m') i j :
-  projT2 m i = projT2 m' j -> ker_f eqf (ker_i m i) = ker_i m' j.
-intros.
-unfold ker_f, ker_i, quo_ind_set_nodep.
-rewrite quo_ind_set_eq.
-unfold ker_f0.
-apply tr_ind_set_nodep_ind.
- red; intros; apply isSet_quo; auto with *. 
-intros (j',?); simpl.
-apply quo_i_eq.
-rewrite <- H, <- e; trivial.
-Qed.
-
-Lemma ker_f_id {m m':map Y} (eqf:eq_fam_set m m')(eqf':eq_fam_set m' m) x :
-  ker_f eqf' (ker_f eqf x) = x.
-elim x using (quo_ind _).
- red; intros; apply isSet_quo; auto with *.
-intros i.
-fold (ker_i m i).
-elim (proj1 tr_ex_sig (proj1 eqf i)) using tr_ind.
- red; intros; apply isSet_quo; auto with *.
-intros (j,?).
-rewrite ker_f_eq with (j0:=j); trivial.
-apply ker_f_eq; auto.
-Qed.
-
 Definition ker_map_def (m:map Y) (i:ker m) :
   tr{i':projT1 m & ker_i _ i' = i /\ projT2 m i' = ker_map m i}.
 elim i using (quo_ind _).
@@ -214,7 +124,7 @@ rewrite quo_ind_set_eq.
 reflexivity.
 Qed.
 
-Lemma eq_fam_ker (m:map Y): eq_fam_set m (ker_set m).
+Lemma eq_fam_ker (m:map Y): eq_map m (ker_set m).
 split; intros.
  apply tr_i; exists (ker_i m i). 
  unfold ker_set, ker_i, ker_map, quo_ind_set_nodep; simpl.
@@ -226,7 +136,7 @@ split; intros.
 Qed.
 
 
-Definition fam := Quo.quo (map Y) eq_fam_set.
+Definition fam := Quo.quo (map Y) eq_map.
 
 Lemma fams : isSet fam.
 apply Quo.isSet_quo.
@@ -258,9 +168,6 @@ apply isProp_conj.
  red; intros; apply fams.
 Qed.
 
-Definition decomp_fam (a:fam) :=
-  { s:map Y | isDecomp a s }.
-
 Lemma decomp_ker m :
   isDecomp (Quo.quo_i _ m) (ker_set m).
 split;[|split]; simpl.
@@ -283,6 +190,9 @@ split;[|split]; simpl.
  apply eq_fam_ker.
 Qed.
 
+Definition decomp_fam (a:fam) :=
+  { s:map Y | isDecomp a s }.
+
 Definition decomp_tr (a:fam) : tr(decomp_fam a).
 pattern a.
 elim a using (Quo.quo_ind _); auto with *.
@@ -291,6 +201,8 @@ exists (ker_set m).
 apply decomp_ker.
 Defined.
 
+
+(** Unicity of ker up to isomorphism *)
 
 Lemma isDecomp_eqv a q q' :
   isDecomp a q ->
@@ -480,7 +392,7 @@ Definition Kers (a:set) : map set :=
   Definition eq_set (x y:set) := x=y.
 
 Lemma eq_set_intro x y :
-  eq_fam_set (Kers x) (Kers y) ->
+  eq_map (Kers x) (Kers y) ->
   x = y.
 elim x using (quo_ind _).
  intros; apply isProp_forall.
@@ -964,7 +876,7 @@ Definition sup (X:Ti) (f:X->set) : set :=
   fold_set (quo_i _ (mkm X f)).
 
 Lemma eq_fam_def {X X' f f'}:
-  eq_fam f f' <-> sup X f = sup X' f'.
+  eq_map (mkm X f) (mkm X' f') <-> sup X f = sup X' f'.
 Proof.
 unfold sup.
 split.
@@ -989,12 +901,13 @@ Definition set_ind_prop (P:set->Type) (Pp : forall x, isProp(P x))
               (unfold_set x)).
 
 Definition set_comp (P:set->Type) (h:forall X f, P (sup X f)) :=
- forall X X' f f' (r : eq_fam f f'), eqD P ((let (h,_) := eq_fam_def in h) r) (h X f) (h X' f').
+  forall X X' f f' (r : eq_map (mkm X f) (mkm X' f')),
+    eqD P ((let (h,_) := eq_fam_def in h) r) (h X f) (h X' f').
 
 
 Definition unf_set_comp (P:set->Type) (h:forall X f, P (sup X f)) :=
- forall (x y : {X : Ti & X -> set}) (r : eq_fam_set x y),
- eqD (fun x0 : quo {X : Ti & X -> set} eq_fam_set => P (fold_set x0))
+ forall (x y : {X : Ti & X -> set}) (r : eq_map x y),
+ eqD (fun x0 : quo {X : Ti & X -> set} eq_map => P (fold_set x0))
           (proj2 (quo_i_eq isRel_eq_fam) r)
            (let (X, f) as p0 return (P (fold_set (quo_i _ p0))) := x in h X f)
            (let (X, f) as p0 return (P (fold_set (quo_i _ p0))) := y in h X f).
@@ -1015,7 +928,7 @@ Qed.
 Definition set_ind (P:set->Type) (Ps : forall x, isSet(P x))
     (h: forall (X:Ti) (f:X->set), P (sup X f)) (hcomp:set_comp P h) (x:set) : P x :=
   transport P (fold_unfold_eq x)
-  (quo_ind_set {X:Ti&X->set} eq_fam_set isRel_eq_fam
+  (quo_ind_set {X:Ti&X->set} eq_map isRel_eq_fam
               (fun x => P (fold_set x)) (fun _ => Ps _)
               (fun p:{X:Ti&X->set} => match p with existT X f => h X f end)
               (mk_comp _ _ hcomp) (unfold_set x)).
@@ -1032,19 +945,19 @@ unfold q.
 rewrite quo_ind_set_eq; reflexivity.
 Qed.
 
-Definition set_comp_nodep (P:Type) (h:forall X:Ti,(X->set)->P) :=
- forall X X' f f' (r : eq_fam f f'), h X f = h X' f'.
+Definition set_comp_nodep (P:Type) (h:map set->P) :=
+ forall f f' (r : eq_map f f'), h f = h f'.
 
 Lemma set_comp_nodep_intro {P h} (c:set_comp_nodep P h) :
-  set_comp (fun _ => P) h.
+  set_comp (fun _ => P) (fun X f => h (mkm X f)).
 red; intros.
 red in c.
-rewrite <- (c _ _ _ _ r).
+rewrite <- (c _ _ r).
 apply transport_cst.
 Defined.
 Definition set_ind_nodep (P:Type) (Ps : isSet P)
-           (h: forall (X:Ti) (f:X->set), P) (hcomp:set_comp_nodep P h) (x:set) : P :=
-  set_ind (fun _ => P) (fun _ => Ps) h (set_comp_nodep_intro hcomp) x.
+           (h: map set -> P) (hcomp:set_comp_nodep P h) (x:set) : P :=
+  set_ind (fun _ => P) (fun _ => Ps) (fun X f=>h(mkm X f)) (set_comp_nodep_intro hcomp) x.
 
 Definition eq_set := @eq set.
 
@@ -1063,7 +976,7 @@ Lemma in_set_ax X f x :
 split; intros.
  Tdestruct H as (X',(f',eqf,(j,?))).
  apply eq_fam_def in eqf.
- Tdestruct (proj2 eqf j) as (i,?).
+ Tdestruct (proj2 eqf j) as (i,?); simpl in *.
  rewrite <- H0 in H.
  Texists i; trivial.
 
@@ -1138,13 +1051,13 @@ Qed.
 
 (** Subset *)
 
-Definition subset_fam (X:Ti) (f:X->set) (P:set->Prop) :=
-  sup {i:X | tr (P (f i))} (fun i => f (proj1_sig i)).
+Definition subset_fam (f:map set) (P:set->Prop) :=
+  sup {i:projT1 f | tr (P (projT2 f i))} (fun i => projT2 f (proj1_sig i)).
 
-Lemma subset_fam_ext {P P':set->Prop} {X X' f f'} :
-  @eq_fam X X' _ f f' ->
+Lemma subset_fam_ext {P P':set->Prop} {f f':map set} :
+  eq_map f f' ->
   (forall z, tr (P z) <-> tr (P' z)) ->
-  subset_fam X f P = subset_fam X' f' P'.
+  subset_fam f P = subset_fam f' P'.
 intros (ff',f'f) eqP.
 unfold subset_fam.
 apply eq_fam_def.
@@ -1153,17 +1066,17 @@ split; intros.
  Tdestruct (ff' i) as (j,?).
  rewrite H in t.
  apply eqP in t.
- Texists (exist (fun i => tr (P' (f' i))) j t); simpl; trivial.
+ Texists (exist (fun i => tr (P' (projT2 f' i))) j t); simpl; trivial.
 
  destruct j as (j,?); simpl.
  Tdestruct (f'f j) as (i,?).
  rewrite <- H in t.
  apply eqP in t.
- Texists (exist (fun i => tr (P (f i))) i t); simpl; trivial.
+ Texists (exist (fun i => tr (P (projT2 f i))) i t); simpl; trivial.
 Qed.
 
 Lemma subset_fam_comp P :
-  set_comp_nodep set (fun X f => subset_fam X f P).
+  set_comp_nodep set (fun f => subset_fam f P).
 red; intros.
 apply subset_fam_ext; trivial.
 reflexivity.
@@ -1171,10 +1084,10 @@ Qed.
 
 Definition subset (a:set) (P:set->Prop) : set :=
   set_ind_nodep set isSet_set
-    (fun X f => subset_fam X f P) (subset_fam_comp P) a.
+    (fun f => subset_fam f P) (subset_fam_comp P) a.
 
 Lemma subset_fam_ax X f P z :
-  in_set z (subset_fam X f P) <-> (in_set z (sup X f) /\ #P z).
+  in_set z (subset_fam (mkm X f) P) <-> (in_set z (sup X f) /\ #P z).
 unfold subset_fam; do 2 rewrite in_set_ax.
 split; intros.
  Tdestruct H as ((i,?),?); simpl in *; subst z.
@@ -1206,16 +1119,16 @@ Qed.
 
 (** Powerset *)
 
-Definition power_fam (X:Ti) (f:X->set) :=
-  sup (X->Prop)
-   (fun P => subset_fam X f (fun y => exists2 i, y = f i & P i)).
+Definition power_fam (f:map set) :=
+  sup (projT1 f->Prop)
+   (fun P => subset_fam f (fun y => exists2 i, y = projT2 f i & P i)).
 
 Lemma power_fam_comp :
-  set_comp_nodep set (fun X f => power_fam X f).
+  set_comp_nodep set (fun f => power_fam f).
 red; intros; unfold power_fam.
 apply eq_fam_def.
 split; intros.
- Texists (fun j => exists2 k, f k = f' j & i k).
+ Texists (fun j => exists2 k, projT2 f k = projT2 f' j & i k).
  apply subset_fam_ext; trivial.
  split; intros.
   Tdestruct H as (k,?,?). 
@@ -1228,7 +1141,7 @@ split; intros.
   subst z.
   Texists j; auto.
 
- Texists (fun i => exists2 k, f i = f' k & j k).
+ Texists (fun i => exists2 k, projT2 f i = projT2 f' k & j k).
  apply subset_fam_ext; trivial.
  split; intros.
   Tdestruct H as (k,?,(i,?,?)). 
@@ -1244,7 +1157,7 @@ Qed.
 
 Definition power (a:set) : set :=
   set_ind_nodep set isSet_set
-    (fun X f => power_fam X f) power_fam_comp a.
+    (fun f => power_fam f) power_fam_comp a.
 
 Lemma power_ax a z :
   in_set z (power a) <-> forall x, in_set x z -> in_set x a.
@@ -1265,8 +1178,8 @@ split; intros.
   intros; apply isProp_forall; intros.
   red; intros; apply isSet_set.
  intros X' f' ?. 
- apply eq_fam_def.
- split; intros.
+ apply eq_fam_def; simpl.
+ split; simpl; intros.
   assert (in_set (f' i) (sup X' f')). 
    apply in_set_ax; Texists i; trivial.
   specialize H with (1:=H0).
@@ -1372,17 +1285,17 @@ Texists (S n); trivial.
 Qed.
 
 
-Definition replf_fam (X:Ti) (f:X->set) (F:set->set) : set :=
-  sup X (fun i => F (f i)).
+Definition replf_fam (f:map set) (F:set->set) : set :=
+  sup (projT1 f) (fun i => F (projT2 f i)).
 
-Lemma replf_fam_ext {F F':set->set} {X X' f f'} :
-  @eq_fam X X' _ f f' ->
+Lemma replf_fam_ext {F F':set->set} {f f'} :
+  eq_map f f' ->
   (forall z, F z = F' z) ->
-  replf_fam X f F = replf_fam X' f' F'.
+  replf_fam f F = replf_fam f' F'.
 intros (ff',f'f) eqF.
 unfold replf_fam.
 apply eq_fam_def.
-split; intros.
+split; simpl; intros.
  Tdestruct (ff' i) as (j,?).
  rewrite H.
  Texists j; auto.
@@ -1393,13 +1306,13 @@ split; intros.
 Qed.
 
 Lemma replf_fam_comp F :
-  set_comp_nodep set (fun X f => replf_fam X f F).
+  set_comp_nodep set (fun f => replf_fam f F).
 red; intros; apply replf_fam_ext; auto.
 Qed.
 
 Definition replf (a:set) (F:set->set) : set :=
   set_ind_nodep set isSet_set
-    (fun X f => replf_fam X f F) (replf_fam_comp F) a.
+    (fun f => replf_fam f F) (replf_fam_comp F) a.
 
 Lemma replf_ax a F z :
   in_set z (replf a F) <-> #exists2 x, in_set x a & z = F x.
@@ -1429,17 +1342,17 @@ exists (f i).
 apply in_set_sup.
 Defined.
 
-Definition repl1_fam (X:Ti) (f:X->set) (F:{x:set|in_set x (sup X f)}->set) : set :=
-  sup X (fun i => F (in_set1 X f i)).
+Definition repl1_fam (f:map set) (F:{x:set|in_set x (sup _ (projT2 f))}->set) : set :=
+  sup (projT1 f) (fun i => F (in_set1 _ (projT2 f) i)).
 
-Lemma repl1_fam_ext {X X' f f'} {F:_->set} {F':_->set}:
-  @eq_fam X X' _ f f' ->
+Lemma repl1_fam_ext {f f'} {F:_->set} {F':_->set}:
+  eq_map f f' ->
   (forall z z', proj1_sig z = proj1_sig z' -> F z = F' z') ->
-  repl1_fam X f F = repl1_fam X' f' F'.
+  repl1_fam f F = repl1_fam f' F'.
 intros (ff',f'f) eqF.
 unfold repl1_fam.
 apply eq_fam_def.
-split; intros.
+split; simpl; intros.
  Tdestruct (ff' i) as (j,?).
  Texists j.
  apply eqF; simpl; trivial.
@@ -1450,12 +1363,12 @@ Qed.
 
   
 Lemma repl1_fam_comp :
-  set_comp (fun a=>({x:set|in_set x a}->set)->set) (repl1_fam).
+  set_comp (fun a=>({x:set|in_set x a}->set)->set) (fun X f => repl1_fam (mkm X f)).
 red; intros.
 red.
 set (h := (let (h,_) := eq_fam_def in h) r).
 apply fun_ext; intros F.
-transitivity (repl1_fam X f (transport (fun a => {x:set|in_set x a}->set) (eq_sym h) F)).
+transitivity (repl1_fam (mkm X f) (transport (fun a => {x:set|in_set x a}->set) (eq_sym h) F)).
  destruct h; simpl; reflexivity.
 
  apply repl1_fam_ext; auto.
@@ -1472,7 +1385,7 @@ Qed.
 
 Definition repl1 (a:set) (F:{x|in_set x a}->set) : set :=
   set_ind (fun a => ({x|in_set x a}->set)->set) (fun _ => isSet_forall (fun _ => isSet_set))
-    (fun X f F => repl1_fam X f F) (repl1_fam_comp) a F.
+    (fun X f F => repl1_fam (mkm X f) F) (repl1_fam_comp) a F.
 
 Lemma repl1_ax a F z :
   in_set z (repl1 a F) <-> #exists x, z = F x.
