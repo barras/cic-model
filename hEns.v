@@ -103,6 +103,8 @@ Qed.
 
 Section Ker. (** 1- Using univalence (truncated at set level) *)
 Import Quo1. (* Need a copy of quo at another universe level... univ poly needed! *)
+(* Quo is used at level Tj, Quo1 at level Ti *)
+
 
 Variable Y:Tj.
 Hypothesis Ys : isSet Y.
@@ -221,14 +223,14 @@ split; intros.
 Qed.
 
 
-Definition fam := Quo.quo {X:Type&X->Y} eq_fam_set.
+Definition fam := Quo.quo {X:Ti&X->Y} eq_fam_set.
 
 Lemma fams : isSet fam.
 apply Quo.isSet_quo.
 apply isRel_eq_fam.
 Qed.
 
-Definition isDecomp (a:fam) (q:{X:Type & X->Y}) : Prop :=
+Definition isDecomp (a:fam) (q:{X:Ti & X->Y}) : Prop :=
   isSet (projT1 q) /\
   (forall x x', projT2 q x = projT2 q x' -> x=x') /\
   a = Quo.quo_i _ q.
@@ -254,7 +256,7 @@ apply isProp_conj.
 Qed.
 
 Definition decomp_fam (a:fam) :=
-  { s:{X:Type & X->Y} | isDecomp a s }.
+  { s:{X:Ti & X->Y} | isDecomp a s }.
 
 Lemma decomp_ker X f :
   isDecomp (Quo.quo_i _ (existT (fun X:Ti=>X->Y) X f)) (ker_set X f).
