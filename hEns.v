@@ -88,7 +88,7 @@ Variable Y:Tj.
 Hypothesis Ys : isSet Y.
 
 (* The index function of a set, unique up to equivalence...
-   obtained by identifying indices that yield the same set. *)
+   domain obtained by identifying indices that yield the same set. *)
 
 Definition ker (m:map Y) : Ti :=
   let X := projT1 m in let f := projT2 m in
@@ -110,8 +110,6 @@ elim i using (quo_ind_set_nodep _ Ys) with (h:=projT2 m).
 trivial.
 Defined.
 
-Definition ker_set (m:map Y) : map Y := mkm (ker m) (ker_map m).
-
 Definition ker_map_def (m:map Y) (i:ker m) :
   tr{i':projT1 m & ker_i _ i' = i /\ projT2 m i' = ker_map m i}.
 elim i using (quo_ind _).
@@ -123,6 +121,8 @@ unfold ker_map, quo_ind_set_nodep.
 rewrite quo_ind_set_eq.
 reflexivity.
 Qed.
+
+Definition ker_set (m:map Y) : map Y := mkm (ker m) (ker_map m).
 
 Lemma eq_fam_ker (m:map Y): eq_map m (ker_set m).
 split; intros.
@@ -176,6 +176,13 @@ split;[|split]; simpl.
 
  (* ker_map is injective *)
  intros.
+(* destruct (eq_fam_ker m) as (e1,e2); simpl in *.
+ elim (e2 x) using tr_ind_nodep.
+  red; intros; apply isSet_quo; auto with *.
+ intros (i,?).
+ elim (e2 x') using tr_ind_nodep.
+  red; intros; apply isSet_quo; auto with *.
+ intros (i',?).*)
  apply tr_ind_nodep with (3:=ker_map_def m x).
   red; intros; apply isSet_quo; auto with *.
  intros (i,(?,?)).
@@ -183,7 +190,7 @@ split;[|split]; simpl.
   red; intros; apply isSet_quo; auto with *.
  intros (i',(?,?)).
  rewrite <-H1,<-H3 in H.
- rewrite <-H0,<-H2; apply quo_i_eq; trivial.
+ subst x x'; apply quo_i_eq; trivial.
 
  (* (X,f) and ker_set X f are equal families *)
  apply Quo.quo_i_eq.
@@ -405,31 +412,27 @@ intros (Y,g).
 unfold Kers.
 rewrite !unfold_set_eq.
 rewrite !decomp_eq.
-simpl.
+set (x' := mkm X (fun i => mks(f i)) : map set).
+set (y' := mkm Y (fun i => mks(g i)) : map set).
 intros (xy,yx); simpl in *.
 apply quo_i_eq.
 simpl.
-pose (x' := mkm X (fun i => mks(f i)) : map set).
-pose (y' := mkm Y (fun i => mks(g i)) : map set).
 destruct (eq_fam_ker _ isSet_set x') as (e1,e2).
 destruct (eq_fam_ker _ isSet_set y') as (f1,f2); simpl in *.
 split; intros.
- specialize xy with (ker_i _ isSet_set x' i). 
- elim xy using (tr_ind_tr _); simpl.
- clear xy; intros (j,?).
- fold x' y' in H.
- elim (f2 j) using tr_ind_tr; simpl.
- intros (i',?); apply tr_i; exists i'.
- rewrite <- H in H0.
- unfold ker_map, ker_i, Quo1.quo_ind_set_nodep in H0.
- rewrite Quo1.quo_ind_set_eq in H0; simpl in H0.
- apply quo_i_eq in H0; symmetry; trivial.
+ elim (e1 i) using tr_ind_tr.
+ intros (k,?).
+ elim (xy k) using tr_ind_tr.
+ intros (k',?).
+ elim (f2 k') using tr_ind_tr.
+ intros (j,?); apply tr_i; exists j.
+ rewrite <-H0,<-H in H1.
+ symmetry; apply quo_i_eq in H1; trivial.
 
  elim (f1 j) using tr_ind_tr.
  intros (k,?).
  elim (yx k) using tr_ind_tr.
  intros (k',?).
- fold x' y' in H0.
  elim (e2 k') using tr_ind_tr.
  intros (i,?); apply tr_i; exists i.
  rewrite H0,<-H in H1.
