@@ -3,8 +3,6 @@
 
 Require Import ZF ZFrelations ZFnats ZFord ZFfunext.
 
-(** Same as ZFfixrec but with a lowest bound on the ordinal *)
-
 Section TransfiniteIteration.
 
   (** (F o x) produces value for stage o+1 given x the value for stage o *)
@@ -211,7 +209,10 @@ Let oordlt := fun o olt => isOrd_inv _ o oord olt.
   (** The domain of the function to build (indexed by ordinals): *)
   Variable T : set -> set.
 
-  (** An invariant (e.g. typing) *)
+  (** [Q o f] expresses an invariant (e.g. typing) satisfied by the
+      recursor on domain [T o]. It shall *not* use [f] outside of [T o].
+      In particular, it should not imply that the domain of [f] is limited
+      to [T o]. *)
   Variable Q : set -> set -> Prop.
 
   Let Ty o f := isOrd o /\ is_cc_fun (T o) f /\ Q o f.
@@ -219,7 +220,7 @@ Let oordlt := fun o olt => isOrd_inv _ o oord olt.
   (** The step function *)
   Variable F : set -> set -> set.
 
-  (** NB: we could try to replace (osucc o) with (osucc o ∩ ord)... *)
+  (** NB: [osucc o] may exceed ord. What if we use [osucc o ∩ ord] instead? *)
   Definition stage_irrelevance :=
     forall o o' f g,
     o' ⊆ ord ->
@@ -231,11 +232,14 @@ Let oordlt := fun o olt => isOrd_inv _ o oord olt.
   (** Assumptions *)
   Record recursor := mkRecursor {
     rec_dom_m    : morph1 T;
+    (** Domain is continuous *)
     rec_dom_cont : forall o, isOrd o ->
       T o == sup o (fun o' => T (osucc o'));
+    (** [Q o f] depends upon [f] only within domain [T o] *)
     rec_inv_m : forall o o',
       isOrd o -> o ⊆ ord -> o == o' ->
       forall f f', fcompat (T o) f f' -> Q o f -> Q o' f';
+    (** Invariant is continuous *)
     rec_inv_cont : forall o f,
       isOrd o ->
       o ⊆ ord ->
@@ -243,10 +247,12 @@ Let oordlt := fun o olt => isOrd_inv _ o oord olt.
       (forall o', o' ∈ o -> Q (osucc o') f) ->
       Q o f;
     rec_body_m : morph2 F;
+    (** The step function preserves the invariant *)
     rec_body_typ : forall o f,
       isOrd o -> o ∈ ord ->
       is_cc_fun (T o) f -> Q o f ->
       is_cc_fun (T (osucc o)) (F o f) /\ Q (osucc o) (F o f);
+    (** The step function is "stage" irrelevant" *)
     rec_body_irrel : stage_irrelevance
   }.
 
