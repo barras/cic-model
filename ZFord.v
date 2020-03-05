@@ -931,6 +931,7 @@ apply isOrd_intro; intros.
  rewrite inter2_def in H; destruct H.
  apply isOrd_inv with x; trivial.
 Qed.
+Hint Resolve isOrd_inter2.
 
 Lemma inter2_succ : forall x y,
   isOrd x -> isOrd y ->

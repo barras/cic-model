@@ -1,6 +1,6 @@
 Require Import basic ZF ZFpairs ZFsum ZFrelations.
 Require Import ZFcont.
-Require Import ZFord ZFfix ZFfunext ZFfixrec.
+Require Import ZFord ZFfix ZFfunext ZFfixrec0.
 Require Import ZFfixfun.
 
 Set Implicit Arguments.
@@ -1983,7 +1983,6 @@ Qed.
 
   Variable F G : set -> set.
   Variable g : (set -> set) -> set -> set.
-  Variable o : set.
   Hypothesis Fmono : Proper (incl_set ==> incl_set) F.
   Hypothesis Gmono : Proper (incl_set ==> incl_set) G.
   Hypothesis gm : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) g.
@@ -1994,7 +1993,6 @@ Qed.
     eq_fun (F (TI F o)) (g f) (g f').
   Hypothesis isog' : forall o f, isOrd o ->
     iso_fun (TI F o) (TI G o) f -> iso_fun (F (TI F o)) (G (TI G o)) (g f).
-  Hypothesis oord : isOrd o.
 
   Let Fm := Fmono_morph _ Fmono.
   Let Gm := Fmono_morph _ Gmono.
@@ -2005,7 +2003,7 @@ apply cc_app_morph; auto with *.
 Qed.
 
   Lemma TI_iso_recursor :
-    recursor o (TI F)
+    recursor (TI F)
       (fun o f => iso_fun (TI F o) (TI G o) (cc_app f))
       (fun o f => cc_lam (F (TI F o)) (g (cc_app f))).
 constructor; intros.
@@ -2018,15 +2016,15 @@ constructor; intros.
   apply Fm.
   apply TI_morph; trivial.
 
-  rewrite <- H1; apply isOrd_inv with o0; trivial.
+  rewrite <- H1; apply isOrd_inv with o; trivial.
 
- revert H3; apply iso_fun_ext; auto with *.
+ revert H2; apply iso_fun_ext; auto with *.
   apply cc_app_morph; reflexivity.
   apply TI_morph; trivial.
   apply TI_morph; trivial.
 
   red; intros.
-  rewrite <- H4; auto.
+  rewrite <- H3; auto.
 
   apply iso_cont; trivial.
   apply cc_app_morph; reflexivity.
@@ -2043,45 +2041,47 @@ constructor; intros.
   rewrite TI_mono_succ; auto with *.
   apply is_cc_fun_lam; auto.
 
-  apply isog' in H2; trivial.
-  revert H2; apply iso_fun_ext.
+  apply isog' in H1; trivial.
+  revert H1; apply iso_fun_ext.
    apply cc_app_morph; reflexivity.
    symmetry; apply TI_mono_succ; eauto using isOrd_inv.
    symmetry; apply TI_mono_succ; eauto using isOrd_inv.
 
    red; intros.  
    rewrite cc_beta_eq; auto.
-    rewrite H3; reflexivity.
+    rewrite H2; reflexivity.
 
-    rewrite <- H3; trivial.
+    rewrite <- H2; trivial.
 
  (* irrel : *)
  red; intros.
  red; intros.
- destruct H1 as (oo0,(ofun,oiso)); destruct H2 as (oo',(o'fun,o'iso)).
+ destruct H0 as (oo0,(ofun,oiso)); destruct H1 as (oo',(o'fun,o'iso)).
  rewrite cc_beta_eq; auto.
- 2:rewrite TI_mono_succ in H4; auto with *.
+ 2:rewrite TI_mono_succ in H3; auto with *.
  rewrite cc_beta_eq; auto.
-  apply (@gext o0); auto with *.
+  apply (@gext o); auto with *.
    apply cc_app_morph; auto with *.
 
    red; intros.
-   rewrite <- H2; auto.
+   rewrite <- H1; auto.
 
    rewrite <- TI_mono_succ; auto.
 
-  rewrite TI_mono_succ in H4; auto with *.
-  revert H4; apply Fmono; apply TI_mono; auto.
+  rewrite TI_mono_succ in H3; auto with *.
+  revert H3; apply Fmono; apply TI_mono; auto.
 Qed.
 
-  Lemma TI_iso_fun :
+  Lemma TI_iso_fun o:
+    isOrd o ->
     iso_fun (TI F o) (TI G o) (TI_iso F g o) /\
     (forall x, x ∈ TI F o -> TI_iso F g o x == g (TI_iso F g o) x).
+intros oord.
 split; intros.
- apply REC_typing with (1:=oord) (2:=TI_iso_recursor).
+ apply REC_typing with (1:=TI_iso_recursor) (2:=oord).
 
  unfold TI_iso.
- rewrite REC_expand with (1:=oord) (2:=TI_iso_recursor); trivial.
+ rewrite REC_expand with (1:=TI_iso_recursor) (2:=oord); trivial.
  rewrite cc_beta_eq; auto with *.
  rewrite <- TI_mono_succ; auto.
  revert H; apply TI_incl; auto.
@@ -2091,16 +2091,17 @@ Qed.
     isOrd o' ->
     isOrd o'' ->
     o' ⊆ o'' ->
-    o'' ⊆ o ->
     eq_fun (TI F o') (TI_iso F g o') (TI_iso F g o'').
 red; intros.
-unfold TI_iso at 2; rewrite <- H4.
-apply REC_ord_irrel with (2:=TI_iso_recursor); auto with *.
+unfold TI_iso at 2; rewrite <- H3.
+apply REC_ord_irrel with (1:=TI_iso_recursor); auto with *.
 Qed.
 
-  Lemma TI_iso_fixpoint :
-    TI F o == F (TI F o) <-> TI G o == G (TI G o).
-assert (iso1 := proj1 TI_iso_fun).
+  Lemma TI_iso_fixpoint o :
+    isOrd o ->
+    (TI F o == F (TI F o) <-> TI G o == G (TI G o)).
+intros oord.
+assert (iso1 := proj1 (TI_iso_fun oord)).
 assert (iso2 := isog' oord iso1).
 assert (same_iso : eq_fun (TI F o) (TI_iso F g o) (g (TI_iso F g o))).
  red; intros.
@@ -2239,7 +2240,7 @@ Qed.
   Variable oo : isOrd o.
 
   Lemma TIF_iso_recursor :
-    recursor o (fun o => sigma A (fun a' => TIF A F o a'))
+    recursor (fun o => sigma A (fun a' => TIF A F o a'))
       (fun o f => forall a, a ∈ A -> iso_fun (TIF A F o a) (TIF A G o a) (fun x => cc_app f (couple a x)))
       (fun o f =>  cc_lam (sigma A (fun a' => TIF A F (osucc o) a'))
             (fun p => g (fun x y => cc_app f (couple x y)) (fst p) (snd p))).
@@ -2259,20 +2260,20 @@ constructor; intros.
  apply osucc_morph; trivial.
 
  (* iso *)
- generalize (H3 _ H4); apply iso_fun_ext; auto with *.
-  do 2 red; intros. rewrite H5; reflexivity.
+ generalize (H2 _ H3); apply iso_fun_ext; auto with *.
+  do 2 red; intros. rewrite H4; reflexivity.
   apply TIF_morph; auto with *.
   apply TIF_morph; auto with *.
 
   red; intros.
-  rewrite <- H6; apply H2.
+  rewrite <- H5; apply H1.
   apply couple_intro_sigma; trivial.
   do 2 red; intros; apply TIF_morph; auto with *.
 
  (* Q continuity *)
  apply TIF_iso_cont with (f:=fun a0 x => cc_app f (couple a0 x)); auto.
  do 2 red; intros.
- rewrite H5; reflexivity.
+ rewrite H4; reflexivity.
 
  (* F morph *)
  do 3 red; intros.
@@ -2295,12 +2296,12 @@ constructor; intros.
   apply is_cc_fun_lam; auto.
 
   intros.
-  apply isog with (a:=a) in H2; trivial.
+  apply isog with (a:=a) in H1; trivial.
   2:apply TIF_morph; auto with *.
   2:apply TIF_morph; auto with *.
-   revert H2; apply iso_fun_ext.
+   revert H1; apply iso_fun_ext.
     do 2 red; intros. apply cc_app_morph;[reflexivity|].
-    rewrite H2; reflexivity.
+    rewrite H1; reflexivity.
 
     symmetry; apply TIF_mono_succ; eauto using isOrd_inv.
     symmetry; apply TIF_mono_succ; eauto using isOrd_inv.
@@ -2318,18 +2319,18 @@ constructor; intros.
     apply couple_intro_sigma; trivial.
      do 2 red; intros; apply TIF_morph; auto with *.
 
-     rewrite <- H4.
+     rewrite <- H3.
      rewrite TIF_mono_succ; auto.
 
    do 3 red; intros.
-   rewrite H4; rewrite H5; reflexivity.
+   rewrite H3, H4; reflexivity.
 
  (* irrel : *)
  red; intros.
  red; intros.
- destruct H1 as (oo0,(ofun,oiso)); destruct H2 as (oo',(o'fun,o'iso)).
+ destruct H0 as (oo0,(ofun,oiso)); destruct H1 as (oo',(o'fun,o'iso)).
  rewrite cc_beta_eq; auto.
- assert (tyfx := fst_typ_sigma _ _ _ H4).
+ assert (tyfx := fst_typ_sigma _ _ _ H3).
  rewrite cc_beta_eq; auto.
   red in gext.
   apply gext with (X:=TIF A F o0); auto with *.
@@ -2340,16 +2341,16 @@ constructor; intros.
    apply couple_morph; trivial.
 
    red; intros.
-   rewrite <- H5; apply H3.
+   rewrite <- H4; apply H2.
    apply couple_intro_sigma; trivial.
    do 2 red; intros; apply TIF_morph; auto with *.
 
-   apply snd_typ_sigma with (y:=fst x) in H4; auto with *.
+   apply snd_typ_sigma with (y:=fst x) in H3; auto with *.
    2:do 2 red; intros; apply TIF_morph; auto with *.
-   revert H4; apply eq_elim.
+   revert H3; apply eq_elim.
    apply TIF_mono_succ; auto with *.
 
-  revert H4; apply sigma_mono; auto with *.
+  revert H3; apply sigma_mono; auto with *.
    do 2 red; intros; apply TIF_morph; auto with *.
 
    do 2 red; intros; apply TIF_morph; auto with *.
@@ -2359,7 +2360,7 @@ constructor; intros.
     apply TIF_mono; auto with *.
     red; intros.
     apply ole_lts; eauto using isOrd_inv.
-    apply olts_le in H4; transitivity o0; trivial.
+    apply olts_le in H3; transitivity o0; trivial.
 
     red; intro; apply eq_elim.
     apply TIF_morph; auto with *.
@@ -2375,14 +2376,14 @@ split.
  intros a tya.
  unfold TIF_iso.
  revert a tya.
- apply REC_typing with (1:=oo) (2:=TIF_iso_recursor).
+ apply REC_typing with (1:=TIF_iso_recursor) (2:=oo).
 
 split.
  intros a x tya tyx.
  assert (couple a x ∈ sigma A (fun a' => TIF A F o a')).
   apply couple_intro_sigma; trivial.
   do 2 red; intros; apply TIF_morph; auto with *.
- unfold TIF_iso; rewrite REC_expand with (1:=oo) (2:=TIF_iso_recursor); trivial.
+ unfold TIF_iso; rewrite REC_expand with (1:=TIF_iso_recursor) (2:=oo); trivial.
  rewrite cc_beta_eq; auto with *.
   apply gm.
    do 2 red; intros.
@@ -2407,11 +2408,9 @@ split.
 
  intros a o' x oo' ole aty xty.
  unfold TIF_iso.
- apply REC_ord_irrel with (1:=oo) (2:=TIF_iso_recursor); trivial.
-  reflexivity.
-
-  apply couple_intro_sigma; trivial.
-  do 2 red; intros; apply TIF_morph; auto with *.
+ apply REC_ord_irrel with (1:=TIF_iso_recursor); trivial.
+ apply couple_intro_sigma; trivial.
+ do 2 red; intros; apply TIF_morph; auto with *.
 Qed.
 
 End TIF_iso.

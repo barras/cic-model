@@ -114,38 +114,6 @@ Module NatFacts (M:SizedNats).
 Import M.
 
 
-(*
-Lemma neutr_dec' : forall n o,
-  isOrd o ->
-  n ∈ cc_bot (TI NATf' o) ->
-  n ∈ TI NATf' o \/ ~ exists Y, n ∈ NATf' Y.
-intros.
-apply cc_bot_ax in H0; destruct H0; auto.
-destruct neutr_dec with n empty; auto.
-
- rewrite H0; auto.
-
- admit.
-
-admit.
-
-
-Admitted.
-*)
-
-Lemma neutr_TI x o :
-  isOrd o ->
-  ~ (exists X, x ∈ NATf' X) ->
-  ~ x ∈ TI NATf' o.
-red; intros.
-apply H0.
-apply TI_elim in H1; auto with *.
-destruct H1.
-exists (TI NATf' x0); auto.
-Qed.
-
-
-
 Definition NATf2sum n :=
   natcase (inl empty) inr n.
 
@@ -300,12 +268,16 @@ Module NF := NatFacts M.
 Export NF.
 
 Definition fNAT (A:set->SAT) (n:set) : SAT :=
-  sumReal (fun _ => unitSAT) A (NATf2sum n).
+  condSAT (exists X, n ∈ NATf' X)
+          (sumReal (fun _ => unitSAT) A (NATf2sum n)).
 
 Lemma fNAT_morph :
    Proper ((eq_set ==> eqSAT) ==> eq_set ==> eqSAT) fNAT.
 do 3 red; intros.
 unfold fNAT.
+apply condSAT_morph; auto.
+ apply ex_morph.
+ red; intros; rewrite H0; reflexivity.
 unfold sumReal.
 apply interSAT_morph.
 apply indexed_relation_id.
@@ -320,70 +292,25 @@ apply prodSAT_morph.
 Qed.
 Hint Resolve fNAT_morph.
 
-Lemma fNAT_irrel (R R' : set -> SAT) (o o' : set) :
- isOrd o' ->
- isOrd o ->
- True (*o ⊆ o'*) ->
- (forall x x', x ∈ TI NATf' o \/ ~ x ∈ TI NATf' o' -> x == x' -> eqSAT (R x) (R' x')) ->
- forall x x',
- x ∈ TI NATf' (osucc o) -> x == x' -> eqSAT (fNAT R x) (fNAT R' x').
-intros.
-unfold fNAT.
+Lemma sumReal_mono X X' Y Y':
+  inclFam X X' ->
+  inclFam Y Y' ->
+  inclFam (sumReal X Y) (sumReal X' Y').
+red; intros.
 unfold sumReal.
-apply interSAT_morph.
-apply indexed_relation_id; intros S.
-apply prodSAT_morph.
- apply piSAT0_morph; intros; auto with *.
- red; intros.
- rewrite H4; reflexivity.
-
- apply prodSAT_morph; auto with *.
- apply piSAT0_morph; intros; auto with *.
-  red; intros.
-  rewrite H4; reflexivity.
-
-  apply H2; auto with *.
-  rewrite TI_mono_succ in H3; auto with *.
-  apply succ_inv_typ with (2:=H5) in H3.
-  destruct H3.
-  apply neutr_dec' in H3; trivial.
-  destruct H3;[left|right]; trivial.
-  apply neutr_TI; trivial.
+apply interSAT_mono; intros C.
+apply prodSAT_mono.
+ red; apply piSAT0_mono with (f:=fun x=>x); auto with *.
+apply prodSAT_mono; auto with *.
+red; apply piSAT0_mono with (f:=fun x=>x); auto with *.
 Qed.
-
-Lemma Real_inl' RX RY x y t :
-  Proper (eq_set ==> eqSAT) RX ->
-  inSAT t (RX x) ->
-  y == inl x ->
-  inSAT (INL t) (sumReal RX RY y).
-intros.
-apply interSAT_intro; auto.
-intros.
-apply prodSAT_intro; intros.
-unfold subst; simpl subst_rec.
-unfold subst; rewrite simpl_subst; auto.
-apply prodSAT_intro; intros.
-unfold subst; simpl subst_rec.
-unfold subst; repeat rewrite simpl_subst; auto.
-repeat rewrite lift0.
-apply piSAT0_elim with (2:=H1) (3:=H0) in H2; trivial.
-Qed.
-Lemma Real_inr' RX RY x y t :
-  Proper (eq_set ==> eqSAT) RY ->
-  inSAT t (RY x) ->
-  y == inr x ->
-  inSAT (INR t) (sumReal RX RY y).
-intros.
-apply interSAT_intro; auto.
-intros.
-apply prodSAT_intro; intros.
-unfold subst; simpl subst_rec.
-unfold subst; rewrite simpl_subst; auto.
-apply prodSAT_intro; intros.
-unfold subst; simpl subst_rec.
-unfold subst; repeat rewrite simpl_subst; auto.
-repeat rewrite lift0.
-apply piSAT0_elim with (2:=H1) (3:=H0) in H3; auto with *.
+Lemma fNAT_mono : monoFam fNAT.
+red; red; intros.
+unfold fNAT.
+apply condSAT_mono.
+ red; trivial.
+apply sumReal_mono; trivial.
+red; reflexivity.
 Qed.
 
 
@@ -392,7 +319,9 @@ Definition ZE := INL ID.
 Lemma Real_ZERO_gen A :
   inSAT ZE (fNAT A zero).
 unfold fNAT, NATf2sum.
-apply Real_inl' with empty.
+rewrite condSAT_ok.
+2:exists empty; apply zero_typ.
+apply Real_inl with empty.
  do 2 red; reflexivity.
 
  apply ID_intro.
@@ -409,7 +338,9 @@ Lemma Real_SUCC_gen A n t :
   inSAT (SU t) (fNAT A (succ n)).
 intros.
 unfold fNAT, NATf2sum.
-apply Real_inr' with n; trivial.
+rewrite condSAT_ok.
+2:exists (singl n); apply succ_typ; apply cc_bot_intro; apply singl_intro.
+apply Real_inr with n; trivial.
 apply natcase_succ; auto with *.
 Qed.
 
@@ -441,6 +372,8 @@ Lemma Real_NATCASE_gen X A C n nt ft gt:
   inSAT (NCASE ft gt nt) (C n).
 intros Cm nty nreal freal greal.
 apply Real_sum_case with (NATf2sum n) (fun _ => unitSAT) A; trivial.
+ unfold fNAT in nreal; rewrite condSAT_ok in nreal; eauto.
+
  apply piSAT0_intro.
   apply Lc.sn_abs.
   apply Lc.sn_lift.
@@ -462,174 +395,78 @@ apply Real_sum_case with (NATf2sum n) (fun _ => unitSAT) A; trivial.
   apply piSAT0_elim with (1:=greal); trivial.
 Qed.
 
-Definition fNATi o := tiSAT NATf' fNAT o.
+Definition cNAT := fixSAT fNAT.
 
-Instance fNATi_morph :
-  Proper (eq_set ==> eq_set ==> eqSAT) fNATi.
-apply tiSAT_morph; auto.
+Instance cNAT_morph :
+  Proper (eq_set ==> eqSAT) cNAT.
+apply fixSAT_morph; auto.
+apply fNAT_morph.
 Qed.
 
 Hint Resolve NATf'_mono.
 
-Lemma fNATi_mono o1 o2:
-  isOrd o1 ->
-  isOrd o2 ->
-  o1 ⊆ o2 ->
-  forall x,
-  x ∈ TI NATf' o1 ->
-  eqSAT (fNATi o1 x) (fNATi o2 x).
+Lemma cNAT_eq x :
+  eqSAT (cNAT x) (fNAT cNAT x).
 intros.
-apply tiSAT_mono; trivial.
-intros; apply fNAT_irrel with (o:=o') (o':=o2); trivial.
-Qed.
+apply fixSAT_eq; auto.
+apply fNAT_mono.
+Qed. 
 
-Lemma fNATi_succ_eq o x :
-  isOrd o ->
-  x ∈ TI NATf' (osucc o) ->
-  eqSAT (fNATi (osucc o) x) (fNAT (fNATi o) x).
-intros.
-apply tiSAT_succ_eq; auto.
-intros; apply fNAT_irrel with (o:=o') (o':=osucc o); auto.
-Qed.
-
-Lemma fNATi_neutral o x :
-  isOrd o ->
-  ~ x ∈ TI NATf' o ->
-  eqSAT (fNATi o x) neuSAT.
-intros.
-apply tiSAT_outside_domain; auto with *.
- intros; apply fNAT_irrel with (o:=o') (o':=o); trivial.
-Qed.
-
-Lemma fNATi_neutral' o x :
-  isOrd o ->
+Lemma cNAT_neutral x :
   ~ (exists X, x ∈ NATf' X) ->
-  eqSAT (fNATi o x) neuSAT.
+  eqSAT (cNAT x) neuSAT.
 intros.
-apply tiSAT_outside_domain; auto with *.
- intros; apply fNAT_irrel with (o:=o') (o':=o); trivial.
-
- apply neutr_TI with (2:=H0); trivial.
+rewrite cNAT_eq.
+apply neuSAT_ext.
+apply condSAT_neutral; trivial.
 Qed.
 
-
-(*
-Lemma fNATi_neutral o :
-  isOrd o ->
-  eqSAT (fNATi o empty) neuSAT.
+Lemma Real_ZERO :
+  inSAT ZE (cNAT zero).
 intros.
-apply tiSAT_outside_domain; auto with *.
- intros; apply fNAT_irrel with (o:=o'); trivial.
-
- intro.
- apply mt_not_in_NATf' in H0; auto with *.
-Qed.
-*)
-Lemma Real_ZERO o :
-  isOrd o ->
-  inSAT ZE (fNATi (osucc o) zero).
-intros.
-rewrite fNATi_succ_eq; trivial.
- apply Real_ZERO_gen.
-
- apply TI_intro with o; auto.
- apply zero_typ.
+rewrite cNAT_eq; trivial.
+apply Real_ZERO_gen.
 Qed.
 
-
-(*
 Lemma Real_SUCC o n t :
   isOrd o ->
   n ∈ cc_bot (TI NATf' o) ->
-  inSAT t (fNATi o n) ->
-  inSAT (SU t) (fNATi (osucc o) (SUCC n)).
+  inSAT t (cNAT n) ->
+  inSAT (SU t) (cNAT (succ n)).
 intros.
-rewrite fNATi_succ_eq; trivial.
- unfold SU, fNAT.
- apply Real_inr; trivial.
-admit.
-(*  apply fNATi_morph; reflexivity.*)
-
-  apply cc_bot_ax in H0; destruct H0.
-   rewrite H0 in H1; revert H1.
-   apply fNATi_neutral; trivial.
-
-   rewrite condSAT_ok; trivial.
-   apply mt_not_in_NATf' in H0; auto.
-
- apply TI_intro with o; auto.
- apply SUCC_typ_gen; trivial.
+rewrite cNAT_eq.
+unfold SU, fNAT.
+rewrite condSAT_ok.
+2:exists (TI NATf' o); apply succ_typ; trivial.
+apply Real_inr with n; auto with *.
+unfold NATf2sum; apply natcase_succ; auto with *.
 Qed.
-*)
 
 Lemma Real_NATCASE o C n nt ft gt:
   isOrd o ->
   Proper (eq_set ==> eqSAT) C ->
   n ∈ TI NATf' (osucc o) ->
-  inSAT nt (fNATi (osucc o) n) ->
+  inSAT nt (cNAT n) ->
   inSAT ft (C zero) ->
-  inSAT gt (piSAT0 (fun x => x ∈ cc_bot (TI NATf' o)) (fNATi o) (fun x => C (succ x))) ->
+  inSAT gt (piSAT0 (fun x => x ∈ cc_bot (TI NATf' o)) cNAT (fun x => C (succ x))) ->
   inSAT (NCASE ft gt nt) (C n).
 intros oo Cm nty nreal freal greal.
-rewrite fNATi_succ_eq in nreal; trivial.
-(*unfold NATi in nty;*) rewrite TI_mono_succ in nty; auto.
+rewrite cNAT_eq in nreal; trivial.
+rewrite TI_mono_succ in nty; auto.
 apply Real_NATCASE_gen with (2:=nty) (3:=nreal); auto.
 Qed.
 
 
-(** Introducing the fixpoint of fNATi *)
-
-Definition cNAT := fNATi omega.
-
-Instance cNAT_morph : Proper (eq_set ==> eqSAT) cNAT.
-do 2 red; intros.
-apply fNATi_morph; auto with *.
-Qed.
+(** Introducing the fixpoint of NATf' *)
 
 Definition NAT' := TI NATf' omega.
-
-Lemma cNAT_eq x :
-  x ∈ NAT' ->
-  eqSAT (cNAT x) (fNAT cNAT x).
-intros.
-apply tiSAT_eq; auto with *.
-intros; apply fNAT_irrel with (o:=o') (o':=omega); trivial.
-Qed.
-
-Lemma fNATi_stages : forall o x,
-       isOrd o ->
-       x ∈ cc_bot (TI NATf' o) -> eqSAT (fNATi o x) (cNAT x).
-intros.
-apply neutr_dec' in H0; trivial.
-destruct H0.
- transitivity (fNATi (osup2 o omega) x);[|symmetry]; apply fNATi_mono;
-   auto with *.
-
-  apply isOrd_osup2; auto.
-
-  apply osup2_incl1; auto.
-
-  apply isOrd_osup2; auto.
-
-  apply osup2_incl2; auto.
-
-  revert H0; apply TI_pre_fix; auto with *.
-  rewrite <- NAT_eqn; reflexivity.
-
- transitivity neuSAT;[|symmetry]; apply fNATi_neutral'; trivial.
-Qed.
 
 Lemma Real_SUCC_cNAT n t :
   n ∈ cc_bot NAT' ->
   inSAT t (cNAT n) ->
   inSAT (SU t) (cNAT (succ n)).
 intros.
-rewrite cNAT_eq.
- apply Real_inr' with n; auto with *.
- unfold NATf2sum; apply natcase_succ; auto with *.
-
- unfold NAT'; rewrite NAT_eqn.
- apply succ_typ; trivial.
+apply Real_SUCC with (o:=omega); auto.
 Qed.
 
 (** * Structural fixpoint: *)
@@ -642,136 +479,6 @@ Qed.
      --> (\x. m (G x)) (\x. m (G x)) n
      --> m (G (\x. m (G x))) n == m (NATFIX m) n
  *)
-(*
-Definition guard_sum m :=
-  Lc.Abs (Lc.App2 (Lc.App2 (Lc.Ref 0) (Lc.Abs (Lc.lift 2 m)) (Lc.Abs (Lc.lift 2 m))) (Lc.lift 1 m) (Lc.Ref 0)).
-
-(** (G m n) reduces to (m m n) when n is a constructor. Note that
-    n need not be closed. *)
-Lemma G_sim : forall m n,
-  (exists t c, (c=0\/c=1) /\ n = Lc.Abs (Lc.Abs (Lc.App (Lc.Ref c) t))) ->
-  Lc.redp (Lc.App (guard_sum m) n) (Lc.App2 m m n).
-intros m n (t,(c,(eqc,eqn))).
-unfold guard_sum.
-eapply t_trans.
- apply t_step.
- apply Lc.beta.
-unfold Lc.subst; simpl.
-repeat rewrite Lc.simpl_subst; auto.
-repeat rewrite Lc.lift0.
-apply Lc.redp_app_l.
-apply Lc.redp_app_l.
-rewrite eqn.
-eapply t_trans.
- apply t_step.
- apply Lc.app_red_l.
- apply Lc.beta.
-destruct eqc; subst c.
- unfold Lc.subst; simpl.
- eapply t_trans.
-  apply t_step.
-  apply Lc.beta.
- unfold Lc.subst; simpl.
- rewrite Lc.lift0.
- apply t_step.
- apply Lc.red1_beta.
- unfold Lc.subst; rewrite Lc.simpl_subst; auto.
- rewrite Lc.lift0; trivial.
-
- unfold Lc.subst; simpl.
- eapply t_trans.
-  apply t_step.
-  apply Lc.beta.
- unfold Lc.subst; simpl; rewrite Lc.simpl_subst_rec; auto.
- rewrite Lc.lift_rec0.
- apply t_step.
- apply Lc.red1_beta.
- unfold Lc.subst; rewrite Lc.simpl_subst; auto.
- rewrite Lc.lift0; trivial.
-Qed.
-
-Lemma G_INL m a :
-  Lc.redp (Lc.App (guard_sum m) (INL a)) (Lc.App2 m m (INL a)).
-apply G_sim.
-econstructor; exists 1; split; auto.
-reflexivity.
-Qed.
-Lemma G_INR m a :
-  Lc.redp (Lc.App (guard_sum m) (INR a)) (Lc.App2 m m (INR a)).
-apply G_sim.
-econstructor; exists 0; split; auto.
-reflexivity.
-Qed.
-*)
-(*
-Lemma G_sn m :
-  sn m -> sn (App guard_sum m).
-unfold guard_sum; intros.
-apply sat_sn with snSAT.
-
-apply sn_abs.
-apply sat_sn with snSAT.
-apply prodSAT_elim with snSAT;[|apply varSAT].
-apply prodSAT_elim with snSAT;[|apply snSAT_intro;apply sn_lift;trivial].
-apply prodSAT_elim with snSAT;[|apply snSAT_intro;apply sn_abs;apply sn_lift;trivial].
-apply prodSAT_elim with snSAT;[|apply snSAT_intro;apply sn_abs;apply sn_lift;trivial].
-apply varSAT.
-Qed.
-*)
-
-(*
-Lemma G_sat_gen A k m t X :
-  k ∈ NAT ->
-  inSAT t (fNAT A k) ->
-  inSAT (Lc.App2 m m t) X ->
-  inSAT (Lc.App2 guard_sum m t) X.
-intros.
-unfold guard_sum.
-apply GUARD_sat.
-revert H1; apply inSAT_context.
-apply inSAT_context.
-intros.
-rewrite NAT_eq in H.
-apply WHEN_SUM_sat with (1:=H) (2:=H0); trivial.
-Qed.
-*)
-
-(*
-Lemma sn_G_inv m : Lc.sn (guard_sum m) -> Lc.sn m.
-intros.
-unfold guard_sum in H.
-eapply subterm_sn in H;[|constructor].
-eapply subterm_sn in H;[|apply sbtrm_app_l].
-eapply subterm_sn in H;[|apply sbtrm_app_r].
-apply sn_lift_inv with (1:=H) (2:=eq_refl).
-Qed.
-*)
-
-(**)
-(*
-Lemma G_sat o x t m (X:SAT):
-  isOrd o ->
-  x ∈ NATi o ->
-  inSAT t (fNATi o x) ->
-  inSAT (Lc.App2 m m t) X ->
-  inSAT (Lc.App2 guard_sum m t) X.
-intros.
-assert (x ∈ NAT).
- apply NATi_NAT in H0; trivial.
-apply TI_elim in H0; auto.
-destruct H0 as (o',?,?).
-assert (isOrd o') by eauto using isOrd_inv.
-assert (osucc o' ⊆ o).
- red; intros.
- apply isOrd_plump with o'; trivial.
-  eauto using isOrd_inv.
-  apply olts_le; trivial.
-rewrite <- TI_mono_succ in H4; auto.
-rewrite <- fNATi_mono with (o1:=osucc o') in H1; auto.
-rewrite fNATi_succ_eq in H1; auto.
-apply G_sat_gen with (2:=H1); trivial.
-Qed.
-*)
 
 (* specialized fix *)
 
@@ -790,18 +497,19 @@ intros.
 apply WHEN_SUM_INR.
 Qed.
 
-Lemma NATFIX_sat : forall o m X,
-  let FIX_ty o := piSAT0 (fun n => n ∈ cc_bot (TI NATf' o)) (fNATi o) (X o) in
-  let FIX_ty' o := piSAT0 (fun n => n ∈ TI NATf' o) (fNATi o) (X o) in
+Lemma NATFIX_sat o m X :
+  let FIX_ty o := piSAT0 (fun n => n ∈ cc_bot (TI NATf' o)) cNAT (X o) in
+  let FIX_ty' o := piSAT0 (fun n => n ∈ TI NATf' o) cNAT (X o) in
   isOrd o ->
   (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ TI NATf' y ->
    inclSAT (X y n) (X y' n)) ->
-  inSAT m (piSAT0 (fun o' => o' ∈ osucc o)
+  inSAT m (piSAT0 (fun o' => o' ∈ o)
              (fun o1 => FIX_ty o1) (fun o1 => FIX_ty' (osucc o1))) ->
+  inSAT m (prodSAT (FIX_ty empty) snSAT) ->
   inSAT (NATFIX m) (FIX_ty o).
-intros o m X FIX_ty FIX_ty' oo Xmono msat.
-apply FIXP_sat0
-   with (T:=TI NATf') (U:=fun o => cc_bot (TI NATf' o)) (RT:=fNATi); trivial.
+intros FIX_ty FIX_ty' oo Xmono msat mneutr.
+apply FIXP_sat
+   with (T:=TI NATf') (U:=fun o => cc_bot (TI NATf' o)) (RT:=cNAT); trivial.
  intros.
  apply neutr_dec' in H1; trivial.
  destruct H1.
@@ -812,12 +520,9 @@ apply FIXP_sat0
   rewrite TI_mono_succ; auto with *.
   apply isOrd_inv with y; trivial.
 
-  left; apply fNATi_neutral'; trivial.
+  left; apply cNAT_neutral; trivial.
 
  exists empty; trivial.
-
- intros.
- apply fNATi_mono; trivial.
 
  intros.
  apply neuSAT_def.
@@ -831,12 +536,85 @@ apply FIXP_sat0
   apply isOrd_inv with o0; auto.
  assert (xty' := xty).
  rewrite <-TI_mono_succ in xty'; auto.
- rewrite <- fNATi_mono with (o1:=osucc z) in H1; auto.
-  rewrite fNATi_succ_eq in H1; auto.
-  apply WHEN_SUM_sat with (1:=H1) (2:=H2); trivial.
+ rewrite cNAT_eq in H1.
+ apply condSAT_smaller in H1.
+ apply WHEN_SUM_sat with (1:=H1) (2:=H2); trivial.
+Qed.
+
+Lemma NATREC_sat o F RF U RU :
+  Proper (eq_set ==> eq_set ==> eq_set ==> eqSAT) RU ->
+  isOrd o ->
+  natfix_hyps o F U ->
+  (forall o' o'' x y y',
+      isOrd o' ->
+      isOrd o'' ->
+      o' ⊆ o'' ->
+      o'' ⊆ o ->
+      x ∈ TI NATf' o' -> y ∈ U o' x -> y == y' -> inclSAT (RU o' x y) (RU o'' x y')) ->
+  let FIX_ty o' f:=
+      piSAT0 (fun n => n ∈ cc_bot (TI NATf' o')) cNAT (fun n => RU o' n (cc_app f n)) in
+  (forall o' f u,
+      isOrd o' ->
+      o' ∈ cc_bot o ->
+      f ∈ (Π w ∈ cc_bot (TI NATf' o'), U o' w) ->
+      inSAT u (FIX_ty o' f) -> inSAT (Lc.App RF u) (FIX_ty (osucc o') (F o' f))) ->
+  inSAT (NATFIX RF) (FIX_ty o (natfix F o)).
+intros RUm oo ty RUmono FIX_ty satF.
+eapply NATFIX_sat with
+   (X:=fun o n => RU o n (cc_app (natfix F o) n)); trivial.
+ intros.
+ apply RUmono; auto.
+  apply cc_prod_elim with (dom := cc_bot (TI NATf' y)) (F := U y); auto.
+  apply natfix_typ with (1:=ty); trivial.
+  transitivity y'; trivial.
+
+  eapply natfix_irr with (1:=ty); auto.
+
+ apply piSAT0_intro.
+  assert (inSAT (Lc.App RF daimon) (FIX_ty (osucc empty) (F empty (natfix F empty)))).
+  apply satF; auto.
+   apply natfix_typ with (1:=ty); auto.
+
+   apply varSAT.
+
+  apply sat_sn in H.
+  apply Lc.subterm_sn with (Lc.App RF daimon); auto.
+ intros.
+ assert (xo : isOrd x) by eauto using isOrd_inv.
+(* apply olts_le in H.*)
+ assert (Wty : natfix F x ∈ Π w ∈ cc_bot (TI NATf' x), U x w).
+  apply natfix_typ with (1:=ty); trivial.
+  red; intros; apply isOrd_trans with x; auto.
+ specialize satF with (1:=xo)(2:=cc_bot_intro _ _ H)(3:=Wty)(4:=H0).
+ revert satF; apply piSAT0_mono with (f:=fun x=>x); auto with *.
+ intros.
+ rewrite natfix_eqn with (1:=ty); auto with *.
+ 2:red; intros; apply le_lt_trans with x; auto.
+ assert (aux := WMirr ty).
+ red in aux.
+ rewrite aux with (o':=osucc x) (g:=natfix F (osucc x)); auto.
+  reflexivity.
+
+  red; intros; apply isOrd_trans with x; auto.
+
+  apply lt_osucc_compat; auto.
+
+  apply natfix_typ with (1:=ty); auto.
+  red; intros; apply le_lt_trans with x; auto.
 
   red; intros.
-  apply le_lt_trans with z; trivial.
+  apply natfix_irr with (1:=ty); auto.
+   red; intros; apply isOrd_trans with x; auto.
+
+   red; intros; apply le_lt_trans with x; auto.
+
+ apply prodSAT_intro'; intros.
+ assert (inSAT (Lc.App RF v) (FIX_ty (osucc empty) (F empty (natfix F empty)))).
+  apply satF; auto.
+  apply natfix_typ with (1:=ty); auto.
+
+  apply snSAT_intro.
+  apply sat_sn with (1:=H0).
 Qed.
 
 End Make.

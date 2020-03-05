@@ -7,7 +7,7 @@ Require Import basic Models.
 Require SN_ECC_Real.
 Import ZFgrothendieck.
 Import ZF ZFsum ZFnats ZFrelations ZFord ZFfix.
-Require Import ZFfunext ZFfixrec ZFcoc ZFecc SATtypes SATnat_real.
+Require Import ZFfunext ZFcoc ZFecc SATtypes SATnat_real.
 
 Import ZFuniv_real SN_ECC_Real.
 Opaque Real.
@@ -264,10 +264,7 @@ split.
 
  rewrite Real_int_NatI; auto.
  simpl.
- rewrite cNAT_eq.
-  apply Real_ZERO_gen.
-
-  unfold NAT'; rewrite NAT_eqn; apply zero_typ.
+ apply Real_ZERO.
 Qed.
 
 Definition Succ (O:term) : term.
@@ -564,8 +561,6 @@ apply and_split; intros.
 
     apply natcase_morph; auto with *.
 
-   rewrite fNATi_stages; auto with *.
-
    rewrite natcase_zero.
    trivial.
 
@@ -575,7 +570,6 @@ apply and_split; intros.
    apply inSAT_exp.
     apply sat_sn in H2; auto.
    rewrite <- tm_subst_cons.
-   rewrite fNATi_stages in H2; auto.
    specialize ok' with (1:=H1) (2:=H2).
    red in tyBS; specialize tyBS with (1:=ok').
    apply in_int_not_kind in tyBS;[|discriminate].
@@ -599,7 +593,7 @@ apply and_split; intros.
   eapply prodSAT_elim.
    eapply prodSAT_elim.
     apply neuSAT_def.
-    rewrite fNATi_neutral' with (o:=omega) in satN; trivial.
+    rewrite cNAT_neutral in satN; trivial.
 
     apply prodSAT_intro with (A:=snSAT).
     intros.
@@ -1115,6 +1109,41 @@ split; trivial.
 Qed.
 
 
+Lemma int_Prod_intro0 dom F0 f t :
+  morph1 F0 ->
+  f ∈ (Π x ∈ El dom, El(F0 x)) ->
+  (forall x u, [x,u] \real dom ->
+   app f x ∈ El (F0 x) ->
+   inSAT (Lc.App t u) (Real (F0 x) (app f x))) ->
+  [f,t] \real prod dom F0.
+split.
+ red; rewrite El_prod; trivial.
+ do 2 red; intros; apply H; trivial.
+
+ rewrite Real_prod; auto.
+  apply piSAT0_intro'; intros.
+   apply H1; auto.
+   apply cc_prod_elim with (1:=H0); trivial.
+
+   exists empty; auto.
+
+  rewrite El_prod; trivial.
+  do 2 red; intros; apply H; trivial.
+Qed.
+
+Lemma int_Prod_intro A0 B0 f t i :
+  f ∈ (Π x ∈ El(int A0 i), El(int B0 (V.cons x i))) ->
+  (forall x u, [x,u] \real (int A0 i) ->
+   app f x ∈ El(int B0 (V.cons x i)) ->
+   inSAT (Lc.App t u) (Real (int B0 (V.cons x i)) (app f x))) ->
+  [f,t] \real int (Prod A0 B0) i.
+intros.
+apply int_Prod_intro0; trivial.
+do 2 red; intros.
+rewrite H1; reflexivity.
+Qed.
+
+  
 Lemma typ_natfix :
   typ e (NatFix O M) (Prod (NatI O) (subst_rec O 1 U)).
 red; intros.
@@ -1142,108 +1171,107 @@ apply and_split; intros.
  rewrite Real_int_prod; trivial.
  cut (inSAT (NATFIX m)
        (piSAT0 (fun x => x ∈ Nati (int O i))
-         (fNATi (int O i))
+         cNAT
          (fun x =>
             Real (int U (V.cons x (V.cons (int O i) i))) 
               (cc_app (natfix (F' i) (int O i)) x)))).
-  apply piSAT0_morph; intros; auto with *.
+ { apply piSAT0_morph; intros; auto with *.
    red; simpl; intros; rewrite El_def; reflexivity.
 
-   rewrite Real_int_NatI; auto with *.
-   symmetry; apply fNATi_stages; auto.
+   apply Real_int_NatI; auto with *.
 
    apply Real_morph; simpl;[|reflexivity].
    rewrite int_subst_rec_eq.
    apply int_morph; auto with *.
    intros [|[|k]]; reflexivity.
+ }
+apply NATREC_sat with (3:=Mok H)
+ (RF:= Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j))))
+ (RU:= fun o w => Real (int U (V.cons w (V.cons o i)))); auto with *.
+ do 4 red; intros; apply Real_morph; auto with *.
+ apply int_morph; auto with *.
+ repeat apply V.cons_morph; auto with *.
 
- apply NATFIX_sat with
-   (X:=fun o n => Real (int U (V.cons n (V.cons o i)))
-     (cc_app (natfix (F' i) o) n)); trivial.
-  red; intros.
-  apply cc_bot_intro in H7.
-  apply fx_sub_U with (V.cons n (V.cons y i))
+ (**)
+ red; intros.
+ apply fx_sub_U with (V.cons x (V.cons o' i))
      (I.cons daimon (I.cons daimon j)) (I.cons daimon (I.cons daimon j)).
-   apply val_mono_2; auto with *.
+  apply val_mono_2; auto with *.
+  unfold Nati; auto.
 
-   assert (cc_app (natfix (F' i) y) n == cc_app (natfix (F' i) y') n).
-    apply natfix_irr with (1:=Mok H); eauto with *.
-   apply and_split; intros.
-    red; rewrite <- H9.
-    apply cc_prod_elim with (dom:=Nati y) (F:=U' i y); trivial.
-    apply natfix_typ with (1:=Mok H);eauto with *.
-    transitivity y'; trivial.
+  split.
+   rewrite <- H9; trivial.
+   rewrite <- H9; trivial.
 
-    rewrite <- H9; trivial.
-
-  (* sat body *)
-  apply piSAT0_intro'.
-  2:exists (int O i).
-  2:apply lt_osucc; auto.
-  intros o' u lto satu.
-  apply inSAT_exp.
-   right; apply sat_sn in satu; trivial.
-  rewrite <- tm_subst_cons.
+ (**)
+ intros.
+ apply inSAT_exp;[right;apply sat_sn in H6;trivial|].
+  replace (Lc.subst u (tm M (Lc.ilift (I.cons (tm O j) j)))) with
+     (tm M (I.cons u (I.cons (tm O j) j))).
+  2:unfold Lc.subst; rewrite <- tm_substitutive.
+  2:apply tm_morph; auto with *.
+  2:intros [|[|k]]; unfold Lc.ilift,I.cons; simpl.
+  2:rewrite Lc.lift0; reflexivity.
+  2:rewrite Lc.simpl_subst; trivial.
+  2:rewrite Lc.lift0; trivial.
+  2:rewrite Lc.simpl_subst; trivial.
+  2:rewrite Lc.lift0; trivial.
   assert (ok': val_ok (Prod (NatI (Ref 0)) U::OSucct O::e)
-            (V.cons (natfix (F' i) o') (V.cons o' i)) (I.cons u (I.cons (tm O j) j))).
-   apply vcons_add_var.
-   3:discriminate.
+            (V.cons f (V.cons o' i)) (I.cons u (I.cons (tm O j) j))).
+  {apply vcons_add_var.
     apply vcons_add_var; trivial.
-    2:discriminate.
-    split.
-     red; rewrite El_int_osucc; trivial.
+     split; simpl.
+      red; rewrite El_def.
+      revert H4; apply cc_bot_mono.
+      red; intros; apply isOrd_trans with (int O i); auto.
 
-     simpl; rewrite Real_def; auto with *.
+      rewrite Real_def; auto.
+       reflexivity.
+       revert H4; apply cc_bot_mono.
+       red; intros; apply isOrd_trans with (int O i); auto.
 
-     assert (natfix (F' i) o' ∈ cc_prod (Nati o') (U' i o')).
-      apply natfix_typ with (1:=Mok H); eauto with *.
-       apply isOrd_inv with (2:=lto); auto.
-       apply olts_le in lto; trivial.
-     apply and_split; intros.
-      red; rewrite El_int_prod.
-      revert H3; apply eq_elim; apply cc_prod_ext.
-       simpl; rewrite El_def; reflexivity.
+     discriminate.
 
-       apply ext_fun_ty.
+    apply int_Prod_intro.
+     revert H5; apply eq_set_ax.
+     apply cc_prod_ext.
+      rewrite El_int_NatI; auto with *.
+      reflexivity.
 
-      red in H4; rewrite El_int_prod in H4; trivial.
-      rewrite Real_int_prod; trivial.
-      revert satu; apply piSAT0_morph; intros; auto with *.
-       red; simpl; intros; rewrite El_def; reflexivity.
+      red; intros.
+      unfold U'.
+      rewrite H7; reflexivity.
 
-       rewrite Real_int_NatI; trivial.
-       rewrite fNATi_stages; auto with *.
-       apply isOrd_inv with (2:=lto); auto.
+     intros.
+     destruct H7.
+     red in H7; rewrite El_int_NatI in H7.
+     rewrite Real_int_NatI in H9; trivial.
+     apply piSAT0_elim' in H6.
+     apply H6; trivial.
+
+    discriminate. }
  assert (ty_M' := ty_M _ _ ok').
  apply in_int_not_kind in ty_M'.
  2:discriminate.
  destruct ty_M' as (ty_M',sat_M').
  red in ty_M'; rewrite El_int_prod in ty_M'.
  rewrite Real_int_prod in sat_M'; trivial.
- apply piSAT0_intro.
-  apply sat_sn in sat_M'; trivial.
- intros x v tyx satv.
- rewrite natfix_unfold with (1:=Mok H); eauto with *.
- 2:eauto using isOrd_inv.
- 2:apply olts_le; trivial.
- apply piSAT0_elim' in sat_M'; red in sat_M'.
- specialize sat_M' with (x:=x) (u0:=v).
- eapply Real_morph.
- 3:apply sat_M'.
+ revert sat_M'; apply piSAT0_morph.
+  red; intros.
+  rewrite El_int_NatI; auto.
+
+  intros.
+  symmetry; apply Real_int_NatI; auto.
+
+  intros.
+  apply Real_morph; auto with *.
   rewrite int_lift_rec_eq.
   rewrite int_subst_rec_eq.
   rewrite int_lift_rec_eq.
   apply int_morph; auto with *.
-  intros [|[|k]]; unfold V.lams,V.shift; simpl; try reflexivity.
-   replace (k-0) with k; auto with *.
-
-  reflexivity.
-
-  simpl; rewrite El_def; auto.
-
-  rewrite Real_int_NatI; auto.
-  rewrite fNATi_stages in satv; auto.
-  apply isOrd_succ; apply isOrd_inv with (2:=lto); auto.
+  intros [|[|k]]; try reflexivity.
+  unfold V.cons, V.lams,V.shift; simpl.
+  replace (k-0) with k; auto with *.
 Qed.
 
 (** Fixpoint equation holds only when applied to a constructor,
