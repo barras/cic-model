@@ -723,7 +723,7 @@ Qed.
     U o x ⊆ U o' x'.
 
   Let Ty o := cc_prod (TI W_F o) (U o).
-  Hypothesis Ftyp : forall o f, isOrd o -> o ⊆ ord ->
+  Hypothesis Ftyp : forall o f, isOrd o -> o ∈ ord ->
     f ∈ Ty o -> F o f ∈ Ty (osucc o).
 
   Let Q o f := forall x, x ∈ TI W_F o -> cc_app f x ∈ U o x.
@@ -816,13 +816,14 @@ Qed.
 
 Let Qtyp : forall o f,
  isOrd o ->
- o ⊆ ord ->
+ o ∈ ord ->
  is_cc_fun (TI W_F o) f ->
  Q o f -> is_cc_fun (TI W_F (osucc o)) (F o f) /\ Q (osucc o) (F o f).
 intros.
 assert (F o f ∈ Ty (osucc o)).
  apply Ftyp; trivial.
  apply WREC_typing; trivial.
+ red; intros; apply isOrd_trans with o; auto.
 split.
  apply cc_prod_is_cc_fun in H3; trivial.
 
@@ -848,12 +849,18 @@ split; auto.
 Qed.
 Hint Resolve WREC_recursor.
 
+
+  Lemma WREC_is_rec : is_rec (TI W_F) Q F WREC ord.
+apply REC_stage; trivial.
+Qed.    
+
   (* Main properties of WREC: typing and equation *)
   Lemma WREC_wt : WREC ord ∈ Ty ord.
 intros.
+destruct (rec_typ _ _ _ _ _ (WREC_is_rec _ oord (fun _ h => h))).
 apply WREC_typing; auto with *.
- apply REC_wt with (1:=oord) (2:=WREC_recursor).
- apply REC_wt with (1:=oord) (2:=WREC_recursor).
+(*apply REC_wt with (1:=oord) (2:=WREC_recursor).
+ apply REC_wt with (1:=oord) (2:=WREC_recursor).*)
 Qed.
 
   Lemma WREC_ind : forall P x,
@@ -878,7 +885,8 @@ Qed.
   Lemma WREC_expand : forall n,
     n ∈ TI W_F ord -> cc_app (WREC ord) n == cc_app (F ord (WREC ord)) n.
 intros.
-apply REC_expand with (2:=WREC_recursor) (Q:=Q); auto.
+apply (rec_expand _ _ _ _ _ (WREC_is_rec _ oord (fun _ h => h))); trivial.
+(*apply REC_expand with (2:=WREC_recursor) (Q:=Q); auto.*)
 Qed.
 
   Lemma WREC_irrel o o' :
@@ -889,7 +897,8 @@ Qed.
     eq_fun (TI W_F o) (cc_app (WREC o)) (cc_app (WREC o')).
 red; intros.
 rewrite <- H4.
-apply REC_ord_irrel with (2:=WREC_recursor); auto with *.
+apply (rec_irr _ _ _ _ _ (WREC_is_rec _ H0 H2)); trivial.
+(*apply REC_ord_irrel with (2:=WREC_recursor); auto with *.*)
 Qed.
 
 End Recursor.

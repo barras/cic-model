@@ -29,9 +29,6 @@ Module Type SizedNats.
   Parameter NATf'_elim : forall n X,
     n ∈ NATf' X ->
     n == zero \/ exists2 x, x ∈ cc_bot X & n == succ x.
-(*Parameter neutr_dec : forall n X,
-  n ∈ cc_bot (NATf' X) ->
-  n ∈ NATf' X \/ ~ exists Y, n ∈ NATf' Y.*)
   Parameter neutr_dec' : forall n o,
     isOrd o ->
     n ∈ cc_bot (TI NATf' o) ->
@@ -95,11 +92,16 @@ Require Import ZFfunext.
     forall o o' x, isOrd o -> isOrd o' -> o ⊆ o' -> o' ⊆ O ->
     x ∈ cc_bot (TI NATf' o) ->
     cc_app (natfix M o) x == cc_app (natfix M o') x.
-  Parameter natfix_unfold : forall O M U,
+  Parameter natfix_eqn : forall O M U,
     natfix_hyps O M U ->
     forall o n, isOrd o -> o ⊆ O ->
+    n ∈ TI NATf' o ->
+    cc_app (natfix M o) n == cc_app (M o (natfix M o)) n.
+(*  Parameter natfix_def : forall O M U,
+    natfix_hyps O M U ->
+    forall o n, isOrd o -> o ∈ O ->
     n ∈ TI NATf' (osucc o) ->
-    cc_app (natfix M (osucc o)) n == cc_app (M o (natfix M o)) n.
+    cc_app (natfix M (osucc o)) n == cc_app (M o (natfix M o)) n.*)
   Parameter natfix_strict : forall O M U n,
     natfix_hyps O M U ->
     ~ (exists X, n ∈ NATf' X) ->
@@ -177,38 +179,8 @@ destruct H2.
   red; intros; apply H2; econstructor; eauto.
 Qed.
 
-Lemma natfix_eqn : forall O M U,
-    natfix_hyps O M U ->
-    forall o n,
-       isOrd o ->
-       o ⊆ O ->
-       n ∈ TI NATf' o ->
-       cc_app (natfix M o) n == cc_app (M o (natfix M o)) n.
-intros.
-apply TI_inv in H2; auto with *.
-destruct H2 as (o',lto,tyn).
-assert (oo' : isOrd o') by eauto using isOrd_inv.
-assert (leo : o' ⊆ O).
- red; intros; apply isOrd_trans with o'; auto.
-  apply Wo with (1:=H).
-  apply H1; trivial.
-rewrite <- natfix_irr with (1:=H)(o:=osucc o'); auto with *.
- rewrite natfix_unfold with (1:=H)(4:=tyn); auto with *.
-apply (WMirr H); auto with *.
- apply ole_lts; trivial.
- apply natfix_typ with (1:=H); auto.
- apply natfix_typ with (1:=H); auto.
-
- red; intros.
- apply natfix_irr with (1:=H); auto with *.
-
-red; intros.
-apply isOrd_plump with o'; trivial.
- apply isOrd_inv with (osucc o'); auto.
- apply olts_le; trivial.
-Qed.
-
 Require Import ZFfunext.
+
 Lemma natfix_ext F F' U U' o o' :
   isOrd o ->
   isOrd o' ->

@@ -855,10 +855,10 @@ split;[discriminate|apply and_split;simpl;intros].
 
  (* sat *)
  destruct in_U as (_,(in_U,satU)).
- rewrite Real_sort in satU|-*; simpl; trivial.
+ apply sat_sn in satU. 
  rewrite tm_subst_cons in satU.
- apply sat_sn in satU.
  apply Lc.sn_subst in satU.
+ rewrite Real_sort; simpl; trivial.
  apply KSAT_intro with (A:=snSAT); auto.
 Qed.
 

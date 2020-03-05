@@ -895,11 +895,11 @@ apply val_push_fun.
  apply val_push_ord; auto.
  3:discriminate.
   split;[|apply varSAT].
-  red; rewrite El_int_osucc.
+  red; rewrite El_int_osucct.
   apply ole_lts; trivial.
 
   split;[|apply varSAT].
-  red; rewrite El_int_osucc.
+  red; rewrite El_int_osucct.
   apply ole_lts; trivial.
 
  split;[|apply varSAT].
@@ -942,12 +942,12 @@ apply val_push_var; auto with *.
   apply val_mono_refl; trivial.
 
   split;[|apply varSAT].
-  red; rewrite El_int_osucc.
+  red; rewrite El_int_osucct.
   apply ole_lts; auto.
   transitivity y'; trivial.
 
   split;[|apply varSAT].
-  red; rewrite El_int_osucc.
+  red; rewrite El_int_osucct.
   apply ole_lts; auto.
 
  split;[|apply varSAT].
@@ -2537,7 +2537,34 @@ eapply NATREC'_irr.
  trivial.
 Qed.
 
-Lemma natfix_unfold : forall O M U,
+Lemma natfix_eqn O M U :
+    natfix_hyps O M U ->
+    forall o n, isOrd o -> o ⊆ O ->
+    n ∈ TI NATf' o ->
+    cc_app (natfix M o) n == cc_app (M o (natfix M o)) n.
+intros.
+eapply NATREC'_eqn.
+ apply (Wo _ _ _ H).
+ apply (WMm _ _ _ H).
+ apply (WUm _ _ _ H).
+ apply (WU_mt _ _ _ H).
+
+ intros.
+ apply (WMtyp _ _ _ H); trivial.
+ apply ole_lts; trivial.
+
+ red; intros.
+ apply (WMirr _ _ _ H); trivial.
+ apply ole_lts; trivial.
+
+ intros.
+ apply (WUmono _ _ _ H); trivial.
+
+ trivial.
+ trivial.
+ trivial.
+Qed.
+(*Lemma natfix_unfold : forall O M U,
     natfix_hyps O M U ->
     forall o n, isOrd o -> o ⊆ O ->
     n ∈ TI NATf' (osucc o) ->
@@ -2563,7 +2590,7 @@ eapply NATREC'_unfold.
  trivial.
  trivial.
  trivial.
-Qed.
+Qed.*)
 
 
 Lemma natfix_strict : forall O M U n,

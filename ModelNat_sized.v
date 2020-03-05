@@ -60,6 +60,7 @@ destruct T as [(T,Tm)|]; simpl in *.
  elim H0; trivial.
 Qed.
 
+
 (** Ordinal successor (also type of ordinals less or equal to the argument) *)
 Definition OSucc : term -> term.
 (*begin show*)
@@ -427,13 +428,17 @@ Section NatFixRules.
   Variable O U M : term.
   Hypothesis M_nk : ~ eq_term M kind.
   Hypothesis ty_O : typ_ord e O.
-  Hypothesis ty_M : typ (Prod (NatI (Ref 0)) U::OSucc O::e)
-    M (Prod (NatI (OSucc (Ref 1)))
-         (lift1 1 (subst_rec (OSucc (Ref 0)) 1 (lift_rec 1 2 U)))).
+
+  Definition UL := lift1 1 (subst_rec (OSucc (Ref 0)) 1 (lift_rec 1 2 U)).
+  Definition Nplus n := NatI (OSucc (Ref (n-1))).
+  
+  Hypothesis ty_M :
+    typ (Prod (NatI (Ref 0)) U::OSucc O::e)
+        M (Prod (Nplus 2) UL).
 
   Hypothesis stab : var_ext
     (push_fun (push_ord E (OSucc O)) (NatI (Ref 0)) U)
-    (NatI (OSucc (Ref 1)))
+    (Nplus 2)
     M.
 
   Let F i := fun o' f => int M (V.cons f (V.cons o' i)).
@@ -450,9 +455,34 @@ rewrite H0;reflexivity.
 Qed.
 
   Hypothesis var_mono_U :
-    var_mono (push_var (push_ord E (OSucc O)) (NatI (OSucc (Ref 0)))) U.
+    var_mono (push_var (push_ord E (OSucc O)) (Nplus 1)) U.
 
+  Lemma int_Nplus n i :
+    int (Nplus n) i == NATi (osucc (i(n-1))).
+unfold Nplus; simpl.
+unfold lift.
+reflexivity.
+Qed.
+  
+  Lemma int_UL i : int UL i == int U (V.cons (i 0) (V.cons (osucc (i 2)) (V.shift 3 i))).
+unfold UL; simpl.
+unfold lift1, lift.
+rewrite int_lift_rec_eq.
+rewrite int_subst_rec_eq.
+rewrite int_lift_rec_eq.
+apply int_morph; auto with *.
+intros [|[|k]].
+ compute; reflexivity.
 
+ unfold V.lams, V.shift, V.cons; simpl.
+ unfold V.shift; simpl.
+ reflexivity.
+
+ unfold V.lams, V.shift, V.cons; simpl.
+ rewrite <- minus_n_O.
+ reflexivity.
+Qed.
+  
   Lemma ty_fix_body : forall i o f,
     val_ok e i ->
     o < osucc (int O i) ->
@@ -463,30 +493,13 @@ unfold F; intros.
 specialize (ty_O _ H); simpl in ty_O.
 assert (isOrd (int O i)).
  auto.
-refine (eq_elim _ _ _ _ (ty_M (V.cons f (V.cons o i)) _)); simpl.
+refine (eq_elim _ _ _ _ (ty_M (V.cons f (V.cons o i)) _)).
  apply prod_ext; auto with *.
- red; intros.
- change (fun k => V.cons f (V.cons o i) k) with (V.cons f (V.cons o i)).
- rewrite simpl_lift1; rewrite lift10.
- rewrite int_subst_rec_eq.
- rewrite <- V.cons_lams.
-  rewrite V.lams0.
-  rewrite int_lift_rec_eq.
-  rewrite <- V.cons_lams.
-   rewrite <- V.cons_lams.
-    rewrite V.lams0.
-    simpl.
-    unfold V.shift; simpl.
-    rewrite H4; reflexivity.
+  apply int_Nplus.
 
-    red; red; intros.
-    rewrite H5; reflexivity.
-
-   red; red; intros.
-   rewrite H5; reflexivity.
-
-  red; red; intros.
-  rewrite H5; reflexivity.
+  red; intros.
+  rewrite <- H4.
+  apply int_UL.
 
  apply vcons_add_var; auto.
  apply vcons_add_var; simpl; auto.
@@ -502,13 +515,13 @@ red in stab.
 assert (Hstab := stab (V.cons f (V.cons o i)) (V.cons g (V.cons o' i))).
 simpl in Hstab.
 apply Hstab; clear Hstab; trivial.
-apply val_push_fun; auto.
-apply ole_lts in H1; trivial.
-apply val_push_ord; auto.
- apply val_mono_refl; trivial.
+ apply val_push_fun; auto.
+ apply ole_lts in H1; trivial.
+ apply val_push_ord; auto.
+  apply val_mono_refl; trivial.
 
- simpl.
- apply isOrd_plump with o'; auto.
+  simpl.
+  apply isOrd_plump with o'; auto.
 Qed.
 
   Lemma fix_codom_mono : forall o o' x x' i,
@@ -531,14 +544,40 @@ apply val_push_var; simpl; auto.
 
   apply ole_lts; auto.
 
- revert H4; apply TI_incl; auto.
-
+ revert H4; apply TI_mono; auto.
+ apply ord_lt_le; auto.
+ apply lt_osucc; auto.
+  
  rewrite <- H5.
- revert H4; apply TI_incl; auto.
- apply ole_lts; auto.
+ revert H4; apply TI_mono; auto.
+ rewrite H3; apply ord_lt_le; auto.
+ apply lt_osucc; auto.
 Qed.
 
   Hint Resolve morph_fix_body ext_fun_ty ty_fix_body fix_codom_mono fix_body_irrel.
+
+  Lemma fix_recursor i :
+    val_ok e i ->
+    ZFfixrec.recursor (int O i) NATi
+      (fun o f => forall x, x ∈ NATi o -> cc_app f x ∈ int U (V.cons x (V.cons o i)))
+      (F i).
+intros.
+apply NAT_recursor; auto.
+intros.
+apply ty_fix_body; trivial.
+apply isOrd_trans with (int O i); auto.
+Qed.
+  Lemma fix_is_rec i :
+    val_ok e i ->
+    ZFfixrec.is_rec NATi
+      (fun o f => forall x, x ∈ NATi o -> cc_app f x ∈ int U (V.cons x (V.cons o i)))
+      (F i) (NATREC (F i)) (int O i).
+intros.
+apply ZFfixrec.REC_stage; trivial.
+ apply ty_O; trivial.
+
+ apply fix_recursor; auto.
+Qed.
 
   Lemma nat_fix_eqn : forall i,
     val_ok e i ->
@@ -579,7 +618,7 @@ apply NATREC_wt with (F:=F i)
   (ord := int O i)
   (U:=fun o x => int U (V.cons x (V.cons o i))); intros; auto.
 apply ty_fix_body; trivial.
-apply ole_lts; trivial.
+apply isOrd_trans with (int O i); auto.
 Qed.
 
 
@@ -625,17 +664,18 @@ clear subO.
 assert (tyfx' :
   NATREC (F i') (int O i') ∈
   prod (NATi (int O i')) (fun x1 => int U (V.cons x1 (V.cons (int O i') i')))).
- apply NATREC_wt with
+{ apply NATREC_wt with
    (ord := int O i')
    (U:=fun o x => int U (V.cons x (V.cons o i'))); intros; auto.
  apply ty_fix_body; trivial.
  apply ole_lts; trivial.
+ apply ord_lt_le; trivial. }
 assert (NATREC (F i) (int O i) ==
   cc_lam (NATi (int O i)) (cc_app (NATREC (F i') (int O i')))).
- apply NATREC_ext with  (ord := int O i)
+{apply NATREC_ext with  (ord := int O i)
   (U:=fun o x => int U (V.cons x (V.cons o i))); intros; auto.
   apply ty_fix_body; trivial.
-  apply ole_lts; trivial.
+  apply isOrd_trans with (int O i); auto.
 
   apply is_cc_fun_lam.
   do 2 red; intros; apply cc_app_morph; auto with *.
@@ -662,31 +702,17 @@ assert (NATREC (F i) (int O i) ==
      rewrite cc_beta_eq; trivial.
       assert (tyfx1 : NATREC (F i) o' ∈
          prod (NATi o') (fun x1 => int U (V.cons x1 (V.cons o' i)))).
-       apply NATREC_wt with
-        (ord := o')
-        (U:=fun o x => int U (V.cons x (V.cons o i))); intros; auto.
-        apply isOrd_inv with (int O i); auto.
+       destruct (fix_is_rec _ isval o'); auto.
+        apply isOrd_inv with (int O i); trivial.
+       apply NATREC_typing with (ord:=int O i)(U:=fun o x => int U (V.cons x (V.cons o i))); auto.
+        apply isOrd_inv with (int O i); trivial.
 
-        apply fix_codom_mono; trivial.
-        transitivity o'; trivial.
-        transitivity (int O i); trivial.
-        red; intros; apply isOrd_trans with o'; auto.
-
-        reflexivity.
-
-        apply ty_fix_body; trivial.
-        apply ole_lts; trivial.
-        red; intros; apply isOrd_trans with o'; auto.
-        red; auto.
-
-        red; intros.
-        apply fix_body_irrel; trivial.
-        transitivity o'; trivial.
-        red; intros; apply isOrd_trans with o'; auto.
-       rewrite H2 in tyfx1.
-       specialize cc_prod_elim with (1:=tyfx1) (2:=H4); intro.
+        apply rec_typ.
+        apply rec_typ.
+      rewrite H2 in tyfx1.
+      specialize cc_prod_elim with (1:=tyfx1) (2:=H4); intro.
+      rewrite cc_beta_eq in H5; trivial.
        rewrite cc_beta_eq in H5; trivial.
-        rewrite cc_beta_eq in H5; trivial.
          do 2 red; intros; apply cc_app_morph; auto with *.
 
          revert H4; simpl; apply TI_incl; auto.
@@ -706,7 +732,7 @@ assert (NATREC (F i) (int O i) ==
 
      do 2 red; intros; apply cc_app_morph; auto with *.
 
-     simpl; trivial.
+     rewrite int_Nplus; simpl; trivial.
 
    do 2 red; intros; apply cc_app_morph; auto with *.
 
@@ -723,7 +749,7 @@ assert (NATREC (F i) (int O i) ==
    eauto using isOrd_inv.
 
    red; intros.
-   apply isOrd_plump with o'; eauto using isOrd_inv, olts_le.
+   apply isOrd_plump with o'; eauto using isOrd_inv, olts_le. }
 simpl in H1|-*; unfold F in H1 at 1; rewrite H1.
 rewrite cc_beta_eq; auto with *.
  reflexivity.
@@ -823,8 +849,8 @@ Qed.
     typ_ord (tenv e) O ->
     var_mono e O ->
     typ_ext (push_fun (push_ord e (OSucc O)) (NatI (Ref 0)) U) M
-      (NatI (OSucc (Ref 1))) (lift1 1 (subst_rec (OSucc (Ref 0)) 1 (lift_rec 1 2 U))) ->
-    var_mono (push_var (push_ord e (OSucc O)) (NatI (OSucc (Ref 0)))) U ->
+      (Nplus 2) (UL U) ->
+    var_mono (push_var (push_ord e (OSucc O)) (Nplus 1)) U ->
     typ_ext e (NatFix O M) (NatI O) (subst_rec O 1 U).
 intros e O U M tyO inclO (extM,tyM) tyU.
 split.
@@ -836,9 +862,8 @@ Qed.
   Lemma typ_eq_fix : forall e O U M,
     typ_ord (tenv e) O ->
     var_equals e O ->
-    typ_ext (push_fun (push_ord e (OSucc O)) (NatI (Ref 0)) U) M
-      (NatI (OSucc (Ref 1))) (lift1 1 (subst_rec (OSucc (Ref 0)) 1 (lift_rec 1 2 U))) ->
-    var_mono (push_var (push_ord e (OSucc O)) (NatI (OSucc (Ref 0)))) U ->
+    typ_ext (push_fun (push_ord e (OSucc O)) (NatI (Ref 0)) U) M (Nplus 2) (UL U) ->
+    var_mono (push_var (push_ord e (OSucc O)) (Nplus 1)) U ->
     typ_equals e (NatFix O M) (Prod (NatI O) (subst_rec O 1 U)).
 intros e O U M tyO inclO (extM,tyM) tyU.
 split.
@@ -851,9 +876,9 @@ Qed.
     sub_typ (tenv e) (Prod (NatI O) (subst_rec O 1 U)) T ->
     typ_ord (tenv e) O ->
     var_equals e O ->
-    var_mono (push_var (push_ord e (OSucc O)) (NatI (OSucc (Ref 0)))) U ->
+    var_mono (push_var (push_ord e (OSucc O)) (Nplus 1)) U ->
     typ_ext (push_fun (push_ord e (OSucc O)) (NatI (Ref 0)) U) M
-      (NatI (OSucc (Ref 1))) (lift1 1 (subst_rec (OSucc (Ref 0)) 1 (lift_rec 1 2 U))) ->
+      (Nplus 2) (UL U) ->
     typ_equals e (NatFix O M) T.
 intros.
 apply typ_eq_subsumption with (2:=H).
@@ -885,12 +910,34 @@ Definition nat_ind K :=
                                    (App (Ref 3) (App (SuccI Infty) (Ref 1)))))
   (NatFix Infty
     (*o,Hrec*)
-    (Abs (*n*)(NatI (OSucc (Ref 1)))
+    (Abs (*n*)(Nplus 2)
       (Natcase
         (Ref 4)
         (*k*)(App (App (Ref 4) (Ref 0))
                   (App (Ref 2) (Ref 0)))
         (Ref 0)))))).
+
+  Lemma NatI_covariant e O1 O2 :
+    typ_ord e O1 ->
+    typ_ord e O2 ->
+    sub_typ e O1 O2 -> 
+    sub_typ e (NatI O1) (NatI O2).
+unfold typ_ord, sub_typ; simpl; intros.
+ revert H3; apply TI_mono; auto with *.
+
+ red; intros; apply H1; trivial.
+Qed.
+    Lemma typ_ord_var e n O :
+      nth_error e n = Some O ->
+      O <> kind ->
+      typ_ord e (lift (S n) O) ->
+      typ_ord e (Ref n).
+unfold typ_ord; simpl; intros.
+assert (aux := H2 _ _ H); simpl in aux.
+destruct O as [(O,Om)|]; simpl in *.
+2:elim H0; trivial.
+apply isOrd_inv with (2:=aux); auto.
+Qed.
 
 Lemma nat_ind_def e K (cK:forall f, noccur(B.cons false f)K) :
   typ_equals e (nat_ind K) (nat_ind_typ K).
@@ -934,13 +981,14 @@ apply typ_eq_fix' with (U:=App (Ref 4) (Ref 0)); auto.
 apply typ_ext_abs; try discriminate.
  split;[|red;simpl;trivial].
  apply var_mono_NATi.
-  apply typ_OSucc.
-  apply typ_ord_ref with (OSucc Infty); auto.
-   discriminate.
-   red; simpl; auto.
+   apply typ_OSucc.
+   apply typ_ord_ref with (OSucc Infty); auto.
+    discriminate.
+    red; simpl; auto.
 
   apply var_mono_OSucc.
   apply var_mono_ref; reflexivity.
+
 (* case *)
 apply typ_eq_natcase with (Ref 2) (Ref 5); auto.
  eapply typ_ord_ref.
@@ -1027,12 +1075,15 @@ apply typ_eq_natcase with (Ref 2) (Ref 5); auto.
     red; simpl; intros; assumption.
 
  (* Scrutinee *)
- eapply typ_eq_ref'.
+  (* eqtrm *)
+  assert (eq_term (lift 1 (Nplus 2)) (NatI (OSucc (Ref 2)))).
+   red; simpl; red; intros.
+   rewrite <- (H0 2).
+   reflexivity.
+  rewrite <- H0.  
+ eapply typ_eq_ref.
   compute; reflexivity.
   simpl; reflexivity.
-  discriminate.
-  (* eqtrm *)
-  red; simpl; intros; assumption.
 Qed.
 
 
@@ -1041,7 +1092,7 @@ Qed.
 Definition minus O :=
   NatFix O
     (*o,Hrec*)
-    (Abs (*n*) (NatI (OSucc (Ref(*o*)1)))
+    (Abs (*n*) (Nplus (*o*)2)
     (Abs (*m*) (NatI Infty)
     (Natcase
        Zero
@@ -1054,6 +1105,61 @@ Definition minus O :=
        (Ref(*n*)1)))).
 
 Definition minus_typ O := Prod (NatI O) (Prod (NatI Infty) (NatI (lift 2 O))).
+
+
+Definition fenv_shift n e := 
+  Build_fenv (List.skipn n (tenv e)) (B.shift n (ords e)) (OT.shift n (fixs e)).
+
+Lemma val_ok_shift e n i :
+  val_ok e i ->
+  val_ok (List.skipn n e) (V.shift n i).
+unfold val_ok, el; intros.
+assert (nth_error e (n+n0) = value T).
+ clear H; revert e H0.
+ elim n; simpl; intros; trivial.
+ destruct e; auto.
+ destruct n0; discriminate H0.
+generalize (H _ _ H1).
+destruct T as [(T,Tm)|]; simpl; trivial.
+do 2 rewrite V.lams0.
+unfold V.shift.
+apply in_set_morph; auto with *.
+apply Tm.
+do 2 red; intros.
+simpl.
+replace (n+(S(n0+a))) with (S (n+n0+a)); auto with *.
+Qed.
+
+  Lemma val_mono_shift e n i j :
+  val_mono e i j ->
+  val_mono (fenv_shift n e) (V.shift n i) (V.shift n j).
+intros (ok&ok'&incl).
+split;[|split;intros].  
+ apply val_ok_shift; trivial. 
+ apply val_ok_shift; trivial. 
+
+ generalize (incl (n+n0)).
+ unfold fenv_shift, B.shift, OT.shift; simpl.
+ destruct (ords e (n+n0)); trivial.
+ destruct (fixs e (n+n0)); trivial.
+ intros.
+ apply H. 
+ revert H0; apply in_set_morph; auto with *.
+ apply int_morph; auto with *.
+ intros k.
+ unfold V.shift.
+replace (n+(S n0+k)) with (S (n+n0)+k); auto with *.
+Qed.
+
+
+Lemma var_equals_lift e n T :
+  var_equals (fenv_shift n e) T ->
+  var_equals e (lift n T).
+red; intros.
+unfold lift; rewrite !int_lift_rec_eq, !V.lams0.
+apply H.
+apply val_mono_shift; trivial.
+Qed.
 
 Lemma minus_def e O :
   typ_ord (tenv e) O ->
@@ -1094,24 +1200,25 @@ apply typ_eq_fix' with (Prod (NatI Infty) (NatI (Ref 2))); auto.
  apply typ_ext_abs; try discriminate.
   split;[|red;simpl; trivial].
   apply var_mono_NATi.
-   apply typ_OSucc.
-   eapply typ_ord_ref.
-    simpl; reflexivity.
-    discriminate.
+    apply typ_OSucc.
+    eapply typ_ord_ref.
+     simpl; reflexivity.
+     discriminate.
 
-    apply typ_ord_lift; simpl.
-    apply typ_OSucc; trivial.
+     apply typ_ord_lift; simpl.
+     apply typ_OSucc; trivial.
 
    apply var_mono_OSucc; auto.
    apply var_mono_ref.
-   compute; reflexivity.
+    compute; reflexivity.
 
  (* 2nd abs *)
+ unfold UL.
  rewrite eq_lift_prod.
  rewrite eq_subst_prod.
  unfold lift1; rewrite eq_lift_prod.
  eapply typ_eq_subsumption.
- apply typ_eq_abs with (s1:=kind); try discriminate; auto.
+  apply typ_eq_abs with (s1:=kind); try discriminate; auto.
   6:discriminate.
   5:apply sub_refl; reflexivity.
   discriminate.
@@ -1143,7 +1250,8 @@ apply typ_eq_fix' with (Prod (NatI Infty) (NatI (Ref 2))); auto.
 
    apply typ_var0; split; [discriminate|].
    apply sub_refl.
-   red; simpl; reflexivity.
+   red; simpl; intros.
+   reflexivity.
 
   (* branch 0 *)
   eapply typ_eq_subsumption.
@@ -1155,10 +1263,16 @@ apply typ_eq_fix' with (Prod (NatI Infty) (NatI (Ref 2))); auto.
     apply typ_OSucc; trivial.
 
    2:discriminate.
-   apply sub_refl.
-   rewrite eq_typ_betar.
+   simpl.
+   eapply sub_trans.
+   2:apply sub_refl.
+   2:apply sym.
+   2:apply eq_typ_betar.
    3:discriminate.
-    red; simpl; reflexivity.
+   apply sub_refl.
+    red; simpl; intros.
+   unfold V.lams, V.shift; simpl.
+    reflexivity.
 
     apply typ_Zero.
     eapply typ_ord_ref.

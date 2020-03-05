@@ -33,9 +33,34 @@ rewrite cc_bot_ax in H0; destruct H0; trivial.
 rewrite H0; trivial.
 Qed.
 
-Definition OSucc : term -> term.
+Definition OMin (O1 O2:term) : term.
 (*begin show*)
-intros o; left; exists (fun i => osucc (int o i)) (fun j => tm o j).
+left; exists (fun i => int O1 i ∩ int O2 i) (fun j => Lc.App2 Lc.K (tm O1 j) (tm O2 j)).
+(*end show*)
+ do 2 red; intros.
+ rewrite H; reflexivity.
+ (**)
+ do 2 red; intros.
+ rewrite H; reflexivity.
+ (**)
+ red; intros.
+ unfold Lc.App2; simpl.
+ f_equal.
+ 2:apply tm_liftable.
+ f_equal.
+ apply tm_liftable.
+ (**)
+ red; intros.
+ unfold Lc.App2; simpl.
+ f_equal.
+ 2:apply tm_substitutive.
+ f_equal.
+ apply tm_substitutive.
+Defined.
+
+Definition OSucc (o:term) : term.
+(*begin show*)
+left; exists (fun i => osucc (int o i)) (fun j => tm o j).
 (*end show*)
  do 2 red; intros.
  rewrite H; reflexivity.
@@ -50,9 +75,10 @@ intros o; left; exists (fun i => osucc (int o i)) (fun j => tm o j).
  apply tm_substitutive.
 Defined.
 
-Definition OSucct : term -> term.
+(** The type of ordinals <= o *)
+Definition OSucct (o : term) : term.
 (*begin show*)
-intros o; left; exists (fun i => mkTY (osucc (int o i)) (fun _ => snSAT)) (fun j => tm o j).
+left; exists (fun i => mkTY (osucc (int o i)) (fun _ => snSAT)) (fun j => tm o j).
 (*end show*)
  do 2 red; intros.
  apply mkTY_ext; auto with *.
@@ -68,7 +94,7 @@ intros o; left; exists (fun i => mkTY (osucc (int o i)) (fun _ => snSAT)) (fun j
  apply tm_substitutive.
 Defined.
 
-Lemma El_int_osucc O' i :
+Lemma El_int_osucct O' i :
   El (int (OSucct O') i) == osucc (int O' i).
 simpl; rewrite El_def.
 apply eq_intro; intros; auto.
@@ -108,9 +134,20 @@ Qed.
 Hint Resolve typ_ord_cst.
 
 
-Lemma OSucc_typ e O :
-  typ_ord e O ->
-  typ_ord e (OSucc O).
+Lemma OMin_typ e O1 O2 :
+  typ_ord e O1 ->
+  typ_ord e O2 ->
+  typ_ord e (OMin O1 O2).
+unfold typ_ord; intros.
+destruct H with (1:=H1).
+destruct H0 with (1:=H1).
+split; simpl; auto.
+apply Lc.sn_K2; trivial.
+Qed.
+
+Lemma OSucc_typ e o :
+  typ_ord e o ->
+  typ_ord e (OSucc o).
 unfold typ_ord; intros.
 destruct H with (1:=H0).
 split; simpl; auto.

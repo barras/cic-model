@@ -593,7 +593,8 @@ eapply WREC_wt with (U:=U' i); trivial.
  apply ty_fix_body with (1:=H); trivial.
  apply ole_lts; trivial.
  transitivity o; trivial.
-
+ apply ord_lt_le; auto.
+ 
  red; intros; apply fix_body_irrel with (1:=H); trivial.
  transitivity o; trivial.
 Qed.
@@ -619,6 +620,7 @@ apply WRECi with
  intros.
  apply ty_fix_body with (1:=H); trivial.
  apply ole_lts; trivial.
+ apply ord_lt_le; auto.
 Qed.
 
 Lemma fix_eqn0 : forall i o,

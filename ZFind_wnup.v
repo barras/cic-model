@@ -1645,7 +1645,6 @@ rewrite Arg'_eqn; trivial.
 apply L_intro2; trivial with *.
 Qed.
 
-Require Import ZFfixrec.
 Require Import Inverse_Image.
 
 (** Auxiliary result to build recursive function over an Arg' *)

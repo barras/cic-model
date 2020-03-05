@@ -299,7 +299,7 @@ Section Recursor.
   Let Q o f := forall x, x ∈ TI W_F' o -> cc_app f x ∈ U o x.
 
   Hypothesis ty_M :
-    forall o', o' ∈ osucc O -> forall f, f ∈ cc_prod (Wi o') (U o') ->
+    forall o', o' ∈ O -> forall f, f ∈ cc_prod (Wi o') (U o') ->
     M o' f ∈ cc_prod (Wi (osucc o')) (U (osucc o')).
 
   Hypothesis stab : forall o' o'' f g,
@@ -343,7 +343,7 @@ apply cc_prod_ext_mt in fty; trivial.
 Qed.
 
   Lemma ty_fix_body : forall o f,
-   o < osucc O ->
+   o < O ->
    f ∈ cc_prod (TI W_F' o) (U o) ->
    F o f ∈ cc_prod (TI W_F' (osucc o)) (U (osucc o)).
 unfold F; intros.
@@ -358,6 +358,28 @@ apply squash_typ.
  simpl; eauto using isOrd_inv. 
 Qed.
 
+Lemma squash_beta' f x :
+  ~ x ==empty ->
+  cc_app (squash f) x == cc_app f x.
+intros nmt.
+unfold squash.  
+Transparent cc_app.
+unfold cc_app.
+apply rel_image_morph.
+apply eq_set_ax; intros z.
+rewrite !subset_ax.
+split.
+ intros ((?,(z',?,?)),(z'',?,?)).
+ rewrite <- H0 in H1.
+ rewrite <- H2 in H3.
+ split;[trivial|exists z; auto with *].
+
+ intros (?,(z',?,?)).
+ split;[split; trivial|]; exists z'; auto with *.
+ rewrite H1; trivial.
+Qed.
+Opaque cc_app.
+
   Lemma fix_body_irrel : forall o o' f g,
     isOrd o' -> o' ⊆ O -> isOrd o -> o ⊆ o' ->
     f ∈ cc_prod (TI W_F' o) (U o) ->
@@ -371,32 +393,27 @@ assert (o0typ : o ∈ osucc O).
  apply le_lt_trans with o'; auto.
  apply ole_lts; trivial.
 unfold F.
-rewrite squash_eq.
-3:apply ty_M; trivial.
-2:apply wnot_mt; auto.
-2:apply wprod_ext_mt; trivial.
-rewrite squash_eq.
-3:apply ty_M; trivial.
-2:apply wnot_mt; auto.
-2:apply wprod_ext_mt; trivial.
+assert (nmt : ~ x == empty).
+ intros e; rewrite e in H6.
+ apply wnot_mt in H6; auto.
+rewrite squash_beta'; trivial.
+rewrite squash_beta'; trivial.
 assert (fext : forall A f, ext_fun A (cc_app f)).
  do 2 red; intros; apply cc_app_morph; auto with *.
-rewrite cc_beta_eq; trivial.
-rewrite cc_beta_eq; trivial.
- apply stab; trivial.
-  apply wprod_ext_mt; trivial.
-  apply wprod_ext_mt; trivial.
+apply stab; trivial.
+ apply wprod_ext_mt; trivial.
+ apply wprod_ext_mt; trivial.
 
-  red; intros.
-  unfold Wi in H7; rewrite cc_bot_ax in H7.
-  destruct H7; auto.
-  rewrite H7.
-  rewrite cc_app_outside_domain.
-   rewrite cc_app_outside_domain; auto with *.
-    rewrite cc_eta_eq with (1:=H4).
-    apply is_cc_fun_lam; trivial.
+ red; intros.
+ unfold Wi in H7; rewrite cc_bot_ax in H7.
+ destruct H7; auto.
+ rewrite H7.
+ rewrite cc_app_outside_domain.
+  rewrite cc_app_outside_domain; auto with *.
+   rewrite cc_eta_eq with (1:=H4).
+   apply is_cc_fun_lam; trivial.
 
-    apply wnot_mt; trivial.
+   apply wnot_mt; trivial.
 
    rewrite cc_eta_eq with (1:=H3).
    apply is_cc_fun_lam; trivial.
@@ -404,9 +421,6 @@ rewrite cc_beta_eq; trivial.
    apply wnot_mt; trivial.
 
   apply cc_bot_intro; trivial.
-
-  revert H6; apply TI_mono; auto with *.
-  apply osucc_mono; trivial.
 Qed.
 
   Let Qty o f :
@@ -464,8 +478,7 @@ split; intros; trivial.
  (* F typing *)
  apply Qty; auto.
  apply ty_fix_body.
-  apply ole_lts; auto.
-  transitivity o; trivial.
+  apply H0; trivial.
 
   apply Qty; auto.
 
@@ -532,66 +545,27 @@ apply cc_bot_ax in H3; destruct H3.
  apply REC_ord_irrel with (1:=H0) (2:=WREC'_recursor _ H0 H2); auto with *.
 Qed.
 
-Lemma fix_eqn0 : forall o,
-  isOrd o ->
-  o ⊆ O ->
-  WREC' M (osucc o) == F o (WREC' M o).
-intros.
-unfold WREC', WREC at 1; fold F.
-rewrite REC_eq; auto with *.
-rewrite eq_set_ax; intros z.
-rewrite sup_ax; auto with *.
-split; intros.
- destruct H1 as (o',o'lt,zty).
- change (z ∈ F o (WREC' M o)).
- change (z ∈ F o' (WREC' M o')) in zty.
- assert (o'o : isOrd o') by eauto using isOrd_inv.
- assert (o'le : o' ⊆ o) by (apply olts_le; auto).
- assert (o'le' : o' ⊆ O) by (transitivity o; trivial).
- assert (F o' (WREC' M o') ∈ cc_prod (TI W_F' (osucc o')) (U (osucc o'))).
-  apply ty_fix_body; auto.
-  apply ole_lts; auto.
- assert (F o (WREC' M o) ∈ cc_prod (TI W_F' (osucc o)) (U (osucc o))).
-  apply ty_fix_body; auto.
-  apply ole_lts; auto.
- rewrite cc_eta_eq with (1:=H1) in zty.
- rewrite cc_eta_eq with (1:=H2).
- rewrite cc_lam_def in zty|-*.
- 2:intros ? ? _ eqn; rewrite eqn; reflexivity.
- 2:intros ? ? _ eqn; rewrite eqn; reflexivity.
- destruct zty as (n', n'ty, (y, yty, eqz)).
- exists n'.
-  revert n'ty; apply TI_mono; auto with *.
-  apply osucc_mono; auto.
- exists y; trivial.
- revert yty; apply eq_elim.
- apply fix_body_irrel; auto with *.
- red; intros.
- apply WREC'_irr; auto.
- apply cc_bot_intro; trivial.
-
- exists o;[apply lt_osucc;trivial|trivial].
-Qed.
-
-
-Lemma WREC'_unfold : forall o n,
+(*Lemma WREC'_unfold : forall o n,
   isOrd o ->
   o ⊆ O ->
   n ∈ TI W_F' (osucc o) ->
   cc_app (WREC' M (osucc o)) n ==
   cc_app (M o (WREC' M o)) n.
 intros.
-rewrite fix_eqn0 with (1:=H); trivial.
-unfold F.
+unfold WREC', WREC.
+fold F.
+rewrite REC_unfold with (1:=H) (2:=WREC'_recursor _ H H0).
+unfold F at 1.
 rewrite squash_beta with (3:=H1).
  reflexivity.
 
  apply wnot_mt; auto.
 
  apply ty_M; auto.
- apply ole_lts; trivial.
-Qed.
+  apply ole_lts; trivial.
 
+  apply WREC'_typ; trivial.
+Qed.*)
 
 
 Lemma WREC'_typ_app o n:
@@ -611,22 +585,15 @@ Lemma WREC'_eqn : forall o n,
   cc_app (WREC' M o) n ==
   cc_app (M o (WREC' M o)) n.
 intros.
-apply TI_inv in H1; auto with *.
-destruct H1 as (o',?,?).
-assert (o'o: isOrd o') by eauto using isOrd_inv.
-rewrite <- WREC'_irr with (o:=osucc o'); auto.
- rewrite WREC'_unfold; auto.
- eapply stab; auto.
-  apply ole_lts; auto.
+unfold WREC', WREC.
+fold F.
+rewrite REC_expand with (1:=H) (2:=WREC'_recursor _ H H0); auto with *.
+unfold F at 1.
+rewrite squash_beta'.
+ reflexivity.
 
-  red; intros.
-  apply WREC'_irr; auto.
-
-  apply cc_bot_intro; trivial.
-
- red; intros; apply le_lt_trans with o'; trivial.
-
- apply cc_bot_intro; trivial.
+ intros e; rewrite e in H1.
+ apply wnot_mt in H1; auto.
 Qed.
 
 End Recursor.

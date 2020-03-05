@@ -345,7 +345,7 @@ Qed.
     U o x ⊆ U o' x'.
 
   Let Ty o := prod (NATi o) (U o).
-  Hypothesis Ftyp : forall o f, isOrd o -> o ⊆ ord ->
+  Hypothesis Ftyp : forall o f, isOrd o -> o ∈ ord ->
     f ∈ Ty o -> F o f ∈ Ty (osucc o).
 
   Let Q o f := forall x, x ∈ NATi o -> cc_app f x ∈ U o x.
@@ -359,7 +359,7 @@ Qed.
 
   Hypothesis Firrel : NAT_ord_irrel.
 
-  Definition NATREC := REC F.
+  Definition NATREC := ZFfixrec.REC F.
 
 Lemma Umorph : forall o o', isOrd o' -> o' ⊆ ord -> o == o' ->
     forall x x', x ∈ NATi o -> x == x' -> U o x == U o' x'. 
@@ -440,13 +440,14 @@ Qed.
 
 Let Qtyp : forall o f,
  isOrd o ->
- o ⊆ ord ->
+ o ∈ ord ->
  is_cc_fun (NATi o) f ->
  Q o f -> is_cc_fun (NATi (osucc o)) (F o f) /\ Q (osucc o) (F o f).
 intros.
 assert (F o f ∈ Ty (osucc o)).
  apply Ftyp; trivial.
  apply NATREC_typing; trivial.
+ red; intros; apply isOrd_trans with o; auto.
 split.
  apply cc_prod_is_cc_fun in H3; trivial.
 
@@ -460,7 +461,7 @@ destruct H1 as (oo,(ofun,oty)); destruct H2 as (o'o,(o'fun,o'ty)).
 apply Firrel; trivial.
  apply NATREC_typing; trivial. 
  transitivity o'; trivial.
-
+ 
  apply NATREC_typing; trivial. 
 Qed.
 Hint Resolve Firrel_NAT.
@@ -521,7 +522,7 @@ End Recursor.
 Instance NATREC_morph :
   Proper ((eq_set==>eq_set==>eq_set)==>eq_set==>eq_set) NATREC.
 do 3 red; intros.
-unfold NATREC, REC.
+unfold NATREC, ZFfixrec.REC.
 apply TR_morph; trivial; intros.
 do 2 red; intros.
 apply sup_morph; intros; auto.
@@ -838,10 +839,8 @@ rewrite cc_beta_eq; auto.
     rewrite H0; rewrite H6; reflexivity.
 
  revert tyx; apply TI_mono; auto with *.
- red; intros.
- apply ole_lts; eauto using isOrd_inv.
- apply olts_le in H.
- transitivity o; trivial.
+ red; intros; apply le_lt_trans with o; auto.
+ apply ole_lts; auto.
 Qed.
 
 End Example.

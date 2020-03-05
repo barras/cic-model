@@ -61,7 +61,6 @@ PIntp.html PIntp.glob PIntp.v.beautified: PIntp.v GenLemmas.html AbsTheoryIntp.h
 PSem.html PSem.glob PSem.v.beautified: PSem.v ZF.html ZFcoc.html ZFuniv_real.html Sat.html GenLemmas.html AbsTheorySem.html SN_CC_Real.html SN_nat.html
 PSyn.html PSyn.glob PSyn.v.beautified: PSyn.v AbsTheorySyn.html
 SATnat.html SATnat.glob SATnat.v.beautified: SATnat.v basic.html Lambda.html Can.html Sat.html Models.html
-SATnat_real-new.html SATnat_real-new.glob SATnat_real-new.v.beautified: SATnat_real-new.v ZF.html ZFpairs.html ZFsum.html ZFord.html ZFfix.html ZFgrothendieck.html ZFcoc.html Sat.html SATtypes.html ZFlambda.html Lambda.html ZFfunext.html
 SATnat_real.html SATnat_real.glob SATnat_real.v.beautified: SATnat_real.v ZF.html ZFpairs.html ZFsum.html ZFord.html ZFfix.html ZFgrothendieck.html ZFcoc.html Sat.html SATtypes.html ZFlambda.html Lambda.html ZFfunext.html
 SATnat_real2.html SATnat_real2.glob SATnat_real2.v.beautified: SATnat_real2.v ZF.html ZFpairs.html ZFsum.html ZFord.html ZFfix.html ZFgrothendieck.html ZFcoc.html Sat.html SATtypes.html ZFlambda.html Lambda.html
 SATtypes.html SATtypes.glob SATtypes.v.beautified: SATtypes.v ZF.html ZFpairs.html ZFsum.html Sat.html ZFlambda.html Lambda.html ZFord.html ZFfixrec.html ZFrelations.html ZFfix.html
@@ -77,12 +76,11 @@ SN_ECC.html SN_ECC.glob SN_ECC.v.beautified: SN_ECC.v Sat.html ZF.html ZFcoc.htm
 SN_ECC_Real.html SN_ECC_Real.glob SN_ECC_Real.v.beautified: SN_ECC_Real.v basic.html Sat.html ZF.html ZFcoc.html ZFuniv_real.html ZFecc.html ZFlambda.html SN_CC_Real.html
 SN_ECC_Real_syntax.html SN_ECC_Real_syntax.glob SN_ECC_Real_syntax.v.beautified: SN_ECC_Real_syntax.v Lambda.html ZF.html ZFuniv_real.html Sat.html SN_ECC_Real.html TypeJudgeECC.html
 SN_NAT.html SN_NAT.glob SN_NAT.v.beautified: SN_NAT.v basic.html Can.html Sat.html SATnat.html SN_CC_Real.html TypModels.html ZF.html ZFcoc.html ZFuniv_real.html ZFind_natbot.html ModelZF.html
-SN_NAT_sized-new.html SN_NAT_sized-new.glob SN_NAT_sized-new.v.beautified: SN_NAT_sized-new.v basic.html Models.html SN_ECC_Real.html ZFfunext.html ZFcoc.html ZFecc.html SATtypes.html SATnat_real.html SN_ord.html SN_variance.html ZFind_natbot.html
 SN_NAT_sized.html SN_NAT_sized.glob SN_NAT_sized.v.beautified: SN_NAT_sized.v basic.html Models.html SN_ECC_Real.html ZFfunext.html ZFcoc.html ZFecc.html SATtypes.html SATnat_real.html SN_ord.html SN_variance.html ZFind_natbot.html
 SN_NAT_sized2.html SN_NAT_sized2.glob SN_NAT_sized2.v.beautified: SN_NAT_sized2.v basic.html Models.html SN_ECC_Real.html ZFfunext.html ZFcoc.html ZFecc.html SATtypes.html SATnat_real2.html SN_ord.html SN_variance.html ZFind_natbot.html
 SN_P.html SN_P.glob SN_P.v.beautified: SN_P.v PIntp.html AbsSNT.html
 SN_Theory.html SN_Theory.glob SN_Theory.v.beautified: SN_Theory.v InstInterp.html
-SN_W.html SN_W.glob SN_W.v.beautified: SN_W.v basic.html Models.html SN_ECC_Real.html ZFfunext.html ZFfixrec.html ZFcoc.html ZFecc.html ZFuniv_real.html SATtypes.html SATw.html SN_ord.html SN_variance.html ZFind_wbot.html
+SN_W.html SN_W.glob SN_W.v.beautified: SN_W.v basic.html Models.html SN_ECC_Real.html ZFfunext.html ZFcoc.html ZFecc.html ZFuniv_real.html SATtypes.html SATw.html SN_ord.html SN_variance.html ZFind_wbot.html
 SN_W3.html SN_W3.glob SN_W3.v.beautified: SN_W3.v basic.html Models.html SN_ECC_Real.html ZFfunext.html ZFfixrec.html ZFcoc.html ZFecc.html ZFuniv_real.html SATtypes.html SATw3.html SN_ord.html ModelZF.html SN_variance.html ZFfixrec3.html ZFind_wbot2.html
 SN_nat.html SN_nat.glob SN_nat.v.beautified: SN_nat.v basic.html ZF.html ZFcoc.html ZFuniv_real.html ZFnats.html Sat.html SATnat.html SN_CC_Real.html ModelZF.html
 SN_ord.html SN_ord.glob SN_ord.v.beautified: SN_ord.v ZF.html ZFnats.html ZFord.html ZFcoc.html Sat.html ZFuniv_real.html SN_ECC_Real.html
@@ -133,7 +131,7 @@ ZFind_w3.html ZFind_w3.glob ZFind_w3.v.beautified: ZFind_w3.v ZF.html ZFpairs.ht
 ZFind_wbot.html ZFind_wbot.glob ZFind_wbot.v.beautified: ZFind_wbot.v ZF.html ZFpairs.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFstable.html ZFgrothendieck.html ZFlist.html ZFcoc.html ZFind_w.html ZFfunext.html ZFfixrec.html
 ZFind_wbot2.html ZFind_wbot2.glob ZFind_wbot2.v.beautified: ZFind_wbot2.v ZF.html ZFpairs.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFstable.html ZFgrothendieck.html ZFlist.html ZFcoc.html ZFind_w2.html ZFfunext.html ZFfixrec3.html
 ZFind_wd.html ZFind_wd.glob ZFind_wd.v.beautified: ZFind_wd.v ZF.html ZFpairs.html ZFrelations.html ZFord.html ZFstable.html ZFind_w.html ZFfixfun.html
-ZFind_wnup.html ZFind_wnup.glob ZFind_wnup.v.beautified: ZFind_wnup.v ZF.html ZFpairs.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFstable.html ZFlist.html ZFfixfun.html ZFind_w.html ZFiso.html ZFlimit.html ZFgrothendieck.html ZFfixrec.html
+ZFind_wnup.html ZFind_wnup.glob ZFind_wnup.v.beautified: ZFind_wnup.v ZF.html ZFpairs.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFstable.html ZFlist.html ZFfixfun.html ZFind_w.html ZFiso.html ZFlimit.html ZFgrothendieck.html
 ZFind_wpaths.html ZFind_wpaths.glob ZFind_wpaths.v.beautified: ZFind_wpaths.v ZF.html ZFpairs.html ZFsum.html ZFnats.html ZFrelations.html ZFord.html ZFfix.html ZFstable.html ZFgrothendieck.html ZFtarski.html ZFcofix.html ZFfixfun.html
 ZFiso.html ZFiso.glob ZFiso.v.beautified: ZFiso.v basic.html ZF.html ZFpairs.html ZFsum.html ZFrelations.html ZFcont.html ZFord.html ZFfix.html ZFfunext.html ZFfixrec0.html ZFfixfun.html
 ZFlambda.html ZFlambda.glob ZFlambda.v.beautified: ZFlambda.v Lambda.html ZF.html ZFpairs.html ZFnats.html ZFord.html ZFgrothendieck.html ZFfix.html Sat.html
