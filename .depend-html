@@ -107,7 +107,7 @@ ZFdef.html ZFdef.glob ZFdef.v.beautified: ZFdef.v basic.html Sublogic.html
 ZFecc.html ZFecc.glob ZFecc.v.beautified: ZFecc.v ZF.html ZFpairs.html ZFnats.html ZFgrothendieck.html ZFrelations.html ZFcoc.html
 ZFfix.html ZFfix.glob ZFfix.v.beautified: ZFfix.v ZF.html ZFrelations.html ZFwfr.html ZFnats.html ZFord.html ZFstable.html
 ZFfixfun.html ZFfixfun.glob ZFfixfun.v.beautified: ZFfixfun.v ZF.html ZFrelations.html ZFnats.html ZFord.html
-ZFfixrec.html ZFfixrec.glob ZFfixrec.v.beautified: ZFfixrec.v ZF.html ZFrelations.html ZFnats.html ZFord.html ZFfunext.html
+ZFfixrec.html ZFfixrec.glob ZFfixrec.v.beautified: ZFfixrec.v ZF.html ZFrelations.html ZFnats.html ZFord.html ZFfunext.html ZFcoc.html
 ZFfixrec1.html ZFfixrec1.glob ZFfixrec1.v.beautified: ZFfixrec1.v ZF.html ZFrelations.html ZFnats.html ZFord.html ZFfunext.html
 ZFfixrec2.html ZFfixrec2.glob ZFfixrec2.v.beautified: ZFfixrec2.v ZF.html ZFrelations.html ZFnats.html ZFord.html ZFfunext.html ZFfixrec.html
 ZFfixrec3.html ZFfixrec3.glob ZFfixrec3.v.beautified: ZFfixrec3.v ZF.html ZFrelations.html ZFnats.html ZFord.html ZFfunext.html ZFfixrec.html

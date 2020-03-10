@@ -1,7 +1,7 @@
 (** Specialized version of transfinite recursion where the case of limit
    ordinals is union and the stage ordinal is fed to the step function.  *)
 
-Require Import ZF ZFrelations ZFnats ZFord ZFfunext.
+Require Import ZF ZFrelations ZFnats ZFord ZFfunext ZFcoc.
 
 Section TransfiniteIteration.
 
@@ -527,6 +527,22 @@ transitivity (cc_app (F o' (REC F o')) x).
 Qed.
 *)
 
+  Lemma REC_expand : forall x,
+    x ∈ T ord -> cc_app (REC F ord) x == cc_app (F ord (REC F ord)) x.
+apply REC_step; auto with *.
+Qed.
+
+  Lemma REC_eqn :
+    REC F ord == cc_lam (T ord) (fun x => cc_app (F ord (REC F ord)) x).
+intros.
+rewrite (cc_eta_eq' (T ord) (REC F ord)).
+2:apply REC_inv; auto with *.
+apply cc_lam_ext; auto with *.
+red; intros.
+rewrite <- H0.
+apply REC_expand; trivial.
+Qed.
+
 Section REC_Eqn.
 
   Lemma REC_wt : is_cc_fun (T ord) (REC F ord) /\ Q ord (REC F ord).
@@ -551,6 +567,87 @@ apply finc_ext; intros; trivial.
  apply fincr_cont; intros; trivial.
  apply REC_inv; eauto using isOrd_inv.
 Qed.
+
+  (* Assumptions allow to proof the fix equation up to the succ of ord. *)
+(*  Lemma REC_unfold : REC F (osucc ord) == F ord (REC F ord).
+rewrite REC_eq; auto with *.
+rewrite eq_set_ax; intros z.
+rewrite sup_ax; auto with *.
+split; intros.
+ destruct H as (o',o'lt,zty).
+ assert (o'o : isOrd o') by eauto using isOrd_inv.
+ assert (o'le : o' ⊆ ord) by (apply olts_le; auto).
+ assert (is_cc_fun (T (osucc o')) (F o' (REC F o'))).
+  apply Ftyp'; trivial.
+  apply REC_inv; auto with *.
+ assert (is_cc_fun (T (osucc ord)) (F ord (REC F ord))).
+  apply Ftyp'; auto with *.
+  apply REC_inv; auto with *.
+ rewrite cc_eta_eq' with (1:=H) in zty.
+ rewrite cc_eta_eq' with (1:=H0).
+ rewrite cc_lam_def in zty|-*.
+ 2:intros ? ? _ eqn; rewrite eqn; reflexivity.
+ 2:intros ? ? _ eqn; rewrite eqn; reflexivity.
+ destruct zty as (n', n'ty, (y, yty, eqz)).
+ exists n'.
+  rewrite Tcont; auto.
+  rewrite sup_ax.
+  2:do 2 red; intros; apply Tm; apply osucc_morph; trivial.
+  exists o'; trivial.
+ exists y; trivial.
+ revert yty; apply eq_elim.
+ apply Firrel; auto with *.
+  apply REC_inv; auto.
+  apply REC_inv; auto with *.
+ red; intros.
+ apply REC_ord_irrel; auto with *.
+
+ exists ord;[apply lt_osucc;trivial|trivial].
+Qed.
+*)
+  Record is_rec_stage (*(F:set->set->set) (T:set->set) (Q:set->set->Prop)*)
+         (rec:set->set) (o:set) :=
+    mkIsRec {
+        rec_typ : is_cc_fun (T o) (rec o) /\ Q o (rec o);
+        rec_irr :
+          forall o', isOrd o' -> o' ⊆ o ->
+                       fcompat (T o') (rec o') (rec o);
+        rec_expand : fcompat (T o) (rec o) (F o (rec o))
+(*        rec_unfold : fcompat (T (osucc o)) (rec F (osucc o)) (F o (rec F o))*)
+      }.
+
+  Definition is_rec (*F T Q*) rec o :=
+    forall o', isOrd o' -> o' ⊆ o -> is_rec_stage (*F T Q*) rec o'.
+
+  Lemma REC_stage : is_rec (REC F) ord.
+Proof.
+split.
+ apply REC_inv; trivial.
+
+ red; intros.
+ apply REC_ord_irrel; trivial.
+
+ red; intros.
+ apply REC_step; trivial.
+ reflexivity.
+Qed.
+
+End REC_Eqn.
+
+Definition rec X U F f o :=
+  (* typing *)
+  (forall o', isOrd o' -> o' ⊆ o -> f o' ∈ Π x ∈ cc_bot (X o'), U o' x) /\
+  (* irrel *)
+  (forall y y' x, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o ->
+    x ∈ cc_bot (X y) ->
+    cc_app (f y) x == cc_app (f y') x) /\
+  (* strict *)
+  (forall o', (* o' < o should be enough by irrel *)
+   isOrd o' -> o' ⊆ o -> cc_app (f o') empty == empty) /\
+  (* equation *)
+  (forall o' n, isOrd o' -> o' ∈ o ->
+    n ∈ X (osucc o') ->
+    cc_app (f (osucc o')) n == cc_app (F o' (f o')) n).
 
 
   Lemma REC_ind : forall P x,
@@ -653,88 +750,7 @@ red in H0; rewrite H0 with (o':=x0) (x:=x); auto.
  symmetry; apply cc_beta_eq; trivial.
  do 2 red; intros; apply cc_app_morph; auto with *.
 Qed.
-
-  Lemma REC_expand : forall x,
-    x ∈ T ord -> cc_app (REC F ord) x == cc_app (F ord (REC F ord)) x.
-apply REC_step; auto with *.
-Qed.
-
-  Lemma REC_eqn :
-    REC F ord == cc_lam (T ord) (fun x => cc_app (F ord (REC F ord)) x).
-intros.
-rewrite (cc_eta_eq' (T ord) (REC F ord)).
-2:apply REC_inv; auto with *.
-apply cc_lam_ext; auto with *.
-red; intros.
-rewrite <- H0.
-apply REC_expand; trivial.
-Qed.
-
-  (* Assumptions allow to proof the fix equation up to the succ of ord. *)
-(*  Lemma REC_unfold : REC F (osucc ord) == F ord (REC F ord).
-rewrite REC_eq; auto with *.
-rewrite eq_set_ax; intros z.
-rewrite sup_ax; auto with *.
-split; intros.
- destruct H as (o',o'lt,zty).
- assert (o'o : isOrd o') by eauto using isOrd_inv.
- assert (o'le : o' ⊆ ord) by (apply olts_le; auto).
- assert (is_cc_fun (T (osucc o')) (F o' (REC F o'))).
-  apply Ftyp'; trivial.
-  apply REC_inv; auto with *.
- assert (is_cc_fun (T (osucc ord)) (F ord (REC F ord))).
-  apply Ftyp'; auto with *.
-  apply REC_inv; auto with *.
- rewrite cc_eta_eq' with (1:=H) in zty.
- rewrite cc_eta_eq' with (1:=H0).
- rewrite cc_lam_def in zty|-*.
- 2:intros ? ? _ eqn; rewrite eqn; reflexivity.
- 2:intros ? ? _ eqn; rewrite eqn; reflexivity.
- destruct zty as (n', n'ty, (y, yty, eqz)).
- exists n'.
-  rewrite Tcont; auto.
-  rewrite sup_ax.
-  2:do 2 red; intros; apply Tm; apply osucc_morph; trivial.
-  exists o'; trivial.
- exists y; trivial.
- revert yty; apply eq_elim.
- apply Firrel; auto with *.
-  apply REC_inv; auto.
-  apply REC_inv; auto with *.
- red; intros.
- apply REC_ord_irrel; auto with *.
-
- exists ord;[apply lt_osucc;trivial|trivial].
-Qed.
-*)
-  Record is_rec_stage (*(F:set->set->set) (T:set->set) (Q:set->set->Prop)*)
-         (rec:set->set) (o:set) :=
-    mkIsRec {
-        rec_typ : is_cc_fun (T o) (rec o) /\ Q o (rec o);
-        rec_irr :
-          forall o', isOrd o' -> o' ⊆ o ->
-                       fcompat (T o') (rec o') (rec o);
-        rec_expand : fcompat (T o) (rec o) (F o (rec o))
-(*        rec_unfold : fcompat (T (osucc o)) (rec F (osucc o)) (F o (rec F o))*)
-      }.
-
-  Definition is_rec (*F T Q*) rec o :=
-    forall o', isOrd o' -> o' ⊆ o -> is_rec_stage (*F T Q*) rec o'.
-
-  Lemma REC_stage : is_rec (REC F) ord.
-Proof.
-split.
- apply REC_inv; trivial.
-
- red; intros.
- apply REC_ord_irrel; trivial.
-
- red; intros.
- apply REC_step; trivial.
- reflexivity.
-Qed.
-
-End REC_Eqn.
+  
 
 End Recursor.
 

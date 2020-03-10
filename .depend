@@ -107,7 +107,7 @@ ZFdef.vo ZFdef.glob ZFdef.v.beautified: ZFdef.v basic.vo Sublogic.vo
 ZFecc.vo ZFecc.glob ZFecc.v.beautified: ZFecc.v ZF.vo ZFpairs.vo ZFnats.vo ZFgrothendieck.vo ZFrelations.vo ZFcoc.vo
 ZFfix.vo ZFfix.glob ZFfix.v.beautified: ZFfix.v ZF.vo ZFrelations.vo ZFwfr.vo ZFnats.vo ZFord.vo ZFstable.vo
 ZFfixfun.vo ZFfixfun.glob ZFfixfun.v.beautified: ZFfixfun.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo
-ZFfixrec.vo ZFfixrec.glob ZFfixrec.v.beautified: ZFfixrec.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFfunext.vo
+ZFfixrec.vo ZFfixrec.glob ZFfixrec.v.beautified: ZFfixrec.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFfunext.vo ZFcoc.vo
 ZFfixrec1.vo ZFfixrec1.glob ZFfixrec1.v.beautified: ZFfixrec1.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFfunext.vo
 ZFfixrec2.vo ZFfixrec2.glob ZFfixrec2.v.beautified: ZFfixrec2.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFfunext.vo ZFfixrec.vo
 ZFfixrec3.vo ZFfixrec3.glob ZFfixrec3.v.beautified: ZFfixrec3.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFfunext.vo ZFfixrec.vo
