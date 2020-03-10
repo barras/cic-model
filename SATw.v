@@ -6,8 +6,6 @@ Module Lc:=Lambda.
 Require Import ZFcoc.
 Require Models.
 
-(* Variant of SATw where rWi does not depend on the stage *)
-
 (** The abstract set-theoretical model of W-types, upon which the realizability
     interpretation is built.
  *)

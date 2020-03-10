@@ -61,8 +61,8 @@ Module Type SAT.
   Parameter interSAT_morph : forall A A' (F:A->SAT) (G:A'->SAT),
     indexed_relation eqSAT F G ->
     eqSAT (interSAT F) (interSAT G).
-  Parameter interSAT_intro : forall A F u,
-    A ->
+  Parameter interSAT_intro_gen : forall A F u,
+    sn u ->
     (forall x:A, inSAT u (F x)) ->
     inSAT u (interSAT F).
   Parameter interSAT_elim : forall A F u,
@@ -96,11 +96,28 @@ Qed.
 
   Definition inclSAT A B := forall t, inSAT t A -> inSAT t B.
 
+  Lemma eqSAT_incl X Y : eqSAT X Y -> inclSAT X Y.
+intros h t; apply h.
+Qed.
+
+  Lemma inclSAT_eq X Y :
+    inclSAT X Y -> inclSAT Y X -> eqSAT X Y.
+split; auto.
+Qed.
+  
   Global Instance inclSAT_ord : PreOrder inclSAT.
 split; red; intros.
  red; trivial.
 
  red; intros; auto.
+Qed.
+
+  Global Instance eqSAT_equiv : Equivalence eqSAT.
+split; red; intros.
+ rewrite eqSAT_def; reflexivity.
+ rewrite eqSAT_def in H|-*; symmetry; trivial.
+ rewrite eqSAT_def in H,H0|-*; intros;
+   transitivity (inSAT t y); trivial.
 Qed.
 
 
@@ -147,19 +164,14 @@ Qed.
 do 3 red; trivial.
 Qed.
 
+  Global Opaque snSAT.
+  
   Definition prodSAT (X Y:SAT) : SAT.
 (*begin show*)
 exists (Arr (proj1_sig X) (proj1_sig Y)).
 (*end show*)
 apply is_cand_Arr; apply proj2_sig.
 Defined.
-
-  Lemma prodSAT_intro : forall A B m,
-    (forall v, inSAT v A -> inSAT (subst v m) B) ->
-    inSAT (Abs m) (prodSAT A B).
-intros (A,A_can) (B,B_can) m in_subst; simpl in *.
-apply Abs_sound_Arr; auto.
-Qed.
 
   Lemma prodSAT_intro': forall A B m,
     (forall v, inSAT v A -> inSAT (App m v) B) ->
@@ -178,48 +190,46 @@ red in u_in.
 auto.
 Qed.
 
-  Instance prodSAT_morph : Proper (eqSAT ==> eqSAT ==> eqSAT) prodSAT.
-do 3 red; intros.
-destruct x; destruct y; destruct x0; destruct y0;
-  unfold prodSAT, eqSAT in *; simpl in *; intros.
-apply eq_can_Arr; trivial.
+  Global Opaque prodSAT.
+  
+  Lemma prodSAT_intro : forall A B m,
+    (forall v, inSAT v A -> inSAT (subst v m) B) ->
+    inSAT (Abs m) (prodSAT A B).
+intros.
+apply prodSAT_intro'; intros.
+apply inSAT_exp; auto.
+apply sat_sn in H0; auto.
 Qed.
 
   Instance prodSAT_mono : Proper (inclSAT --> inclSAT ++> inclSAT) prodSAT.
 do 4 red; intros.
+apply prodSAT_intro'.
 intros u satu.
 apply H0.
 apply prodSAT_elim with (1:=H1); auto.
+Qed.
+
+  Instance prodSAT_morph : Proper (eqSAT ==> eqSAT ==> eqSAT) prodSAT.
+do 3 red; intros.
+apply inclSAT_eq.
+ apply prodSAT_mono.
+  apply eqSAT_incl; symmetry; trivial.
+  apply eqSAT_incl; trivial.
+
+ apply prodSAT_mono.
+  apply eqSAT_incl; trivial.
+  apply eqSAT_incl; symmetry; trivial.
 Qed.
 
   Definition interSAT (A:Type) (F:A -> SAT) : SAT :=
     exist _ (Inter A (fun x => proj1_sig (F x)))
       (is_can_Inter _ _ (fun x => proj2_sig (F x))).
 
-  Lemma interSAT_morph : forall A A' (F:A->SAT) (G:A'->SAT),
-    indexed_relation eqSAT F G ->
-    eqSAT (interSAT F) (interSAT G).
-intros A A' F G sim_FG.
-unfold eqSAT, interSAT; simpl.
-apply eq_can_Inter; trivial.
-Qed.
-
-  Lemma interSAT_intro : forall A F u,
-    A ->
+  Lemma interSAT_intro_gen A F u :
+    sn u ->
     (forall x:A, inSAT u (F x)) ->
     inSAT u (interSAT F).
-unfold inSAT, interSAT, Inter; simpl; intros.
-split; intros; trivial.
-apply (incl_sn _ (proj2_sig (F X))); trivial.
-Qed.
-
-Lemma interSAT_intro' : forall A (P:A->Prop) F t,
-  sn t ->
-  (forall x, P x -> inSAT t (F x)) ->
-  inSAT t (interSAT (fun p:sig P => F (proj1_sig p))).
 split; trivial.
-destruct x; simpl.
-apply H0; trivial.
 Qed.
 
   Lemma interSAT_elim : forall A F u,
@@ -228,6 +238,55 @@ Qed.
 unfold inSAT, interSAT, Inter; simpl; intros.
 destruct H; trivial.
 Qed.
+  Global Opaque interSAT.
+
+  Lemma interSAT_intro' : forall A (P:A->Prop) F t,
+      sn t ->
+      (forall x, P x -> inSAT t (F x)) ->
+      inSAT t (interSAT (fun p:sig P => F (proj1_sig p))).
+intros.
+apply interSAT_intro_gen; auto.
+destruct x; simpl; auto.
+Qed.
+
+  Lemma interSAT_mono A (F G:A->SAT):
+    (forall x, inclSAT (F x) (G x)) ->
+    inclSAT (interSAT F) (interSAT G).
+red; intros.
+apply interSAT_intro_gen; intros.
+ apply sat_sn in H0; trivial.
+apply H.
+apply interSAT_elim with (1:=H0).
+Qed.
+
+  Lemma interSAT_morph A A' (F:A->SAT) (G:A'->SAT) :
+    indexed_relation eqSAT F G ->
+    eqSAT (interSAT F) (interSAT G).
+intros (eqv1,eqv2).
+split; intros.
+ apply interSAT_intro_gen; intros.
+  apply sat_sn in H; trivial.
+ destruct eqv2 with x as (x',?).
+ rewrite <- H0.
+ apply interSAT_elim with (1:=H); trivial. 
+
+ apply interSAT_intro_gen; intros.
+  apply sat_sn in H; trivial.
+ destruct eqv1 with x as (x',?).
+ rewrite H0.
+ apply interSAT_elim with (1:=H); trivial. 
+Qed.
+
+  Lemma interSAT_intro : forall A F u,
+    A ->
+    (forall x:A, inSAT u (F x)) ->
+    inSAT u (interSAT F).
+intros.
+apply interSAT_intro_gen; trivial.
+eapply sat_sn.
+apply (H X).
+Qed.
+
 
 Lemma incl_interSAT_l A (F:A->SAT) x :
   inclSAT (interSAT F) (F x).
@@ -244,16 +303,6 @@ split; intros.
  apply interSAT_elim; trivial.
 Qed.
 
-  Lemma interSAT_mono A (F G:A->SAT):
-    (forall x, inclSAT (F x) (G x)) ->
-    inclSAT (interSAT F) (interSAT G).
-red; intros.
-split; intros.
- apply sat_sn in H0; trivial.
-apply H.
-apply interSAT_elim with (1:=H0).
-Qed.
-
 End SatSet.
 
 Export SatSet.
@@ -261,14 +310,6 @@ Export SatSet.
 Global Opaque inSAT.
 
 (** Derived facts *)
-
-Instance eqSAT_equiv : Equivalence eqSAT.
-split; red; intros.
- rewrite eqSAT_def; reflexivity.
- rewrite eqSAT_def in H|-*; symmetry; trivial.
- rewrite eqSAT_def in H,H0|-*; intros;
-   transitivity (inSAT t y); trivial.
-Qed.
 
   Instance inclSAT_morph : Proper (eqSAT==>eqSAT==>iff) inclSAT.
 apply morph_impl_iff2; auto with *.

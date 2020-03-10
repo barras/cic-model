@@ -252,7 +252,7 @@ Let oordlt := fun o olt => isOrd_inv _ o oord olt.
       isOrd o -> o ∈ ord ->
       is_cc_fun (T o) f -> Q o f ->
       is_cc_fun (T (osucc o)) (F o f) /\ Q (osucc o) (F o f);
-    (** The step function is "stage" irrelevant" *)
+    (** The step function is "stage irrelevant" *)
     rec_body_irrel : stage_irrelevance
   }.
 

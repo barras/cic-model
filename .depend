@@ -26,7 +26,6 @@ GenModelNat.vo GenModelNat.glob GenModelNat.v.beautified: GenModelNat.v Models.v
 GenModelSN.vo GenModelSN.glob GenModelSN.v.beautified: GenModelSN.v Sat.vo Models.vo SnModels.vo TypModels.vo ObjectSN.vo
 GenModelSyntax.vo GenModelSyntax.glob GenModelSyntax.v.beautified: GenModelSyntax.v Models.vo TypeJudge.vo GenModel.vo
 GenRealSN.vo GenRealSN.glob GenRealSN.v.beautified: GenRealSN.v basic.vo Sat.vo Models.vo SnModels.vo TypModels.vo ObjectSN.vo
-GenRealSN2.vo GenRealSN2.glob GenRealSN2.v.beautified: GenRealSN2.v basic.vo Sat.vo Models.vo SnModels.vo TypModels.vo ObjectSN.vo
 HF.vo HF.glob HF.v.beautified: HF.v
 HFcoc.vo HFcoc.glob HFcoc.v.beautified: HFcoc.v HFrelation.vo
 HFrelation.vo HFrelation.glob HFrelation.v.beautified: HFrelation.v HF.vo
@@ -108,10 +107,7 @@ ZFdef.vo ZFdef.glob ZFdef.v.beautified: ZFdef.v basic.vo Sublogic.vo
 ZFecc.vo ZFecc.glob ZFecc.v.beautified: ZFecc.v ZF.vo ZFpairs.vo ZFnats.vo ZFgrothendieck.vo ZFrelations.vo ZFcoc.vo
 ZFfix.vo ZFfix.glob ZFfix.v.beautified: ZFfix.v ZF.vo ZFrelations.vo ZFwfr.vo ZFnats.vo ZFord.vo ZFstable.vo
 ZFfixfun.vo ZFfixfun.glob ZFfixfun.v.beautified: ZFfixfun.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo
-ZFfixfunlim.vo ZFfixfunlim.glob ZFfixfunlim.v.beautified: ZFfixfunlim.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFlimit.vo
-ZFfixrec-old.vo ZFfixrec-old.glob ZFfixrec-old.v.beautified: ZFfixrec-old.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFfunext.vo
 ZFfixrec.vo ZFfixrec.glob ZFfixrec.v.beautified: ZFfixrec.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFfunext.vo
-ZFfixrec0.vo ZFfixrec0.glob ZFfixrec0.v.beautified: ZFfixrec0.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFfunext.vo
 ZFfixrec1.vo ZFfixrec1.glob ZFfixrec1.v.beautified: ZFfixrec1.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFfunext.vo
 ZFfixrec2.vo ZFfixrec2.glob ZFfixrec2.v.beautified: ZFfixrec2.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFfunext.vo ZFfixrec.vo
 ZFfixrec3.vo ZFfixrec3.glob ZFfixrec3.v.beautified: ZFfixrec3.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFfunext.vo ZFfixrec.vo
@@ -133,7 +129,7 @@ ZFind_wbot2.vo ZFind_wbot2.glob ZFind_wbot2.v.beautified: ZFind_wbot2.v ZF.vo ZF
 ZFind_wd.vo ZFind_wd.glob ZFind_wd.v.beautified: ZFind_wd.v ZF.vo ZFpairs.vo ZFrelations.vo ZFord.vo ZFstable.vo ZFind_w.vo ZFfixfun.vo
 ZFind_wnup.vo ZFind_wnup.glob ZFind_wnup.v.beautified: ZFind_wnup.v ZF.vo ZFpairs.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFstable.vo ZFlist.vo ZFfixfun.vo ZFind_w.vo ZFiso.vo ZFlimit.vo ZFgrothendieck.vo
 ZFind_wpaths.vo ZFind_wpaths.glob ZFind_wpaths.v.beautified: ZFind_wpaths.v ZF.vo ZFpairs.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFfix.vo ZFstable.vo ZFgrothendieck.vo ZFtarski.vo ZFcofix.vo ZFfixfun.vo
-ZFiso.vo ZFiso.glob ZFiso.v.beautified: ZFiso.v basic.vo ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcont.vo ZFord.vo ZFfix.vo ZFfunext.vo ZFfixrec0.vo ZFfixfun.vo
+ZFiso.vo ZFiso.glob ZFiso.v.beautified: ZFiso.v basic.vo ZF.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFcont.vo ZFord.vo ZFfix.vo ZFfunext.vo ZFfixrec.vo ZFfixfun.vo
 ZFlambda.vo ZFlambda.glob ZFlambda.v.beautified: ZFlambda.v Lambda.vo ZF.vo ZFpairs.vo ZFnats.vo ZFord.vo ZFgrothendieck.vo ZFfix.vo Sat.vo
 ZFlimit.vo ZFlimit.glob ZFlimit.v.beautified: ZFlimit.v ZF.vo ZFpairs.vo ZFnats.vo ZFord.vo
 ZFlist.vo ZFlist.glob ZFlist.v.beautified: ZFlist.v ZF.vo ZFpairs.vo ZFnats.vo ZFrepl.vo ZFord.vo ZFfix.vo
@@ -169,9 +165,6 @@ ZFwf.vo ZFwf.glob ZFwf.v.beautified: ZFwf.v basic.vo ZF.vo ZFrepl.vo
 ZFwfr.vo ZFwfr.glob ZFwfr.v.beautified: ZFwfr.v ZF.vo ZFrepl.vo
 ZFwpaths.vo ZFwpaths.glob ZFwpaths.v.beautified: ZFwpaths.v ZF.vo ZFpairs.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFtarski.vo ZFstable.vo ZFgrothendieck.vo ZFlist.vo ZFcoc.vo ZFord.vo ZFcofix.vo ZFfix.vo ZFfixfun.vo
 basic.vo basic.glob basic.v.beautified: basic.v
-funext.vo funext.glob funext.v.beautified: funext.v hott.vo
-hEns-old.vo hEns-old.glob hEns-old.v.beautified: hEns-old.v ZFskol.vo Sublogic.vo paths.vo hott.vo EnsZ.vo
 hEns.vo hEns.glob hEns.v.beautified: hEns.v ZFskol.vo Sublogic.vo paths.vo hott.vo EnsZ.vo
-hEnsRel.vo hEnsRel.glob hEnsRel.v.beautified: hEnsRel.v ZFskol.vo Sublogic.vo hott.vo
 hott.vo hott.glob hott.v.beautified: hott.v Sublogic.vo paths.vo
 paths.vo paths.glob paths.v.beautified: paths.v Sublogic.vo
