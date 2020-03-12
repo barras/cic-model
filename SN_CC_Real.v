@@ -5,6 +5,7 @@ Require Import ZFlambda.
 Require Import Models SnModels.
 Require GenRealSN.
 Set Implicit Arguments.
+Module Lc := Lambda.
 
 (** Strong normalization proof of the Calculus of Constructions.
     It is based on GenRealSN, so it does support strong eliminations.
@@ -78,6 +79,43 @@ rewrite Real_int_prod.
  red; intros.
  symmetry; apply El_morph; apply int_cons_lift_eq.
 Qed.
+
+
+Lemma int_Prod_intro0 dom F0 f t :
+  morph1 F0 ->
+  f ∈ (Π x ∈ El dom, El(F0 x)) ->
+  (forall x u, [x,u] \real dom ->
+   app f x ∈ El (F0 x) ->
+   inSAT (Lc.App t u) (Real (F0 x) (app f x))) ->
+  [f,t] \real prod dom F0.
+split.
+ red; rewrite El_prod; trivial.
+ do 2 red; intros; apply H; trivial.
+
+ rewrite Real_prod; auto.
+  apply piSAT0_intro'; intros.
+   apply H1; auto.
+   apply cc_prod_elim with (1:=H0); trivial.
+
+   exists empty; auto.
+
+  rewrite El_prod; trivial.
+  do 2 red; intros; apply H; trivial.
+Qed.
+
+
+Lemma int_Prod_intro A0 B0 f t i :
+  f ∈ (Π x ∈ El(int A0 i), El(int B0 (V.cons x i))) ->
+  (forall x u, [x,u] \real (int A0 i) ->
+   app f x ∈ El(int B0 (V.cons x i)) ->
+   inSAT (Lc.App t u) (Real (int B0 (V.cons x i)) (app f x))) ->
+  [f,t] \real int (Prod A0 B0) i.
+intros.
+apply int_Prod_intro0; trivial.
+do 2 red; intros.
+rewrite H1; reflexivity.
+Qed.
+
 
 Lemma kind_ok_trivial T : kind_ok T.
 exists nil.

@@ -1,7 +1,7 @@
 (** Specialized version of transfinite recursion where the case of limit
    ordinals is union and the stage ordinal is fed to the step function.  *)
 
-Require Import ZF ZFrelations ZFnats ZFord ZFfunext ZFcoc.
+Require Import ZF ZFrelations ZFnats ZFord ZFfunext.
 
 Section TransfiniteIteration.
 
@@ -634,6 +634,7 @@ Qed.
 
 End REC_Eqn.
 
+(*
 Definition rec X U F f o :=
   (* typing *)
   (forall o', isOrd o' -> o' ⊆ o -> f o' ∈ Π x ∈ cc_bot (X o'), U o' x) /\
@@ -648,7 +649,7 @@ Definition rec X U F f o :=
   (forall o' n, isOrd o' -> o' ∈ o ->
     n ∈ X (osucc o') ->
     cc_app (f (osucc o')) n == cc_app (F o' (f o')) n).
-
+*)
 
   Lemma REC_ind : forall P x,
     Proper (eq_set==>eq_set==>eq_set==>iff) P ->

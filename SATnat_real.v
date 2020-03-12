@@ -12,109 +12,43 @@ Set Implicit Arguments.
 
 (** An abstract strong normalization model of natural numbers, set-
     theoretical interpretation. *)
-Module Type SizedNats.
-  Parameter NATf': set -> set.
-  Parameter NATf'_mono : Proper (incl_set ==> incl_set) NATf'.
-  Existing Instance NATf'_mono.
+Module Type Nats.
 
   Parameter zero : set.
   Parameter succ : set -> set.
   Parameter succ_morph : morph1 succ.
   Existing Instance succ_morph.
 
-  (** Constructors produce non-neutral values *)
-  Parameter zero_typ : forall X, zero ∈ NATf' X.
-  Parameter succ_typ : forall X n, n ∈ cc_bot X -> succ n ∈ NATf' X.
+  (** Constructors produce neutral values *)
+  Parameter zero_nmt : ~ zero == empty.
+  Parameter succ_nmt : forall n, ~ succ n == empty.
+  
+  Parameter natcase : set -> (set -> set) -> set -> set.
+  Parameter natcase_morph : Proper (eq_set==>(eq_set==>eq_set)==>eq_set==>eq_set) natcase.
+  Parameter natcase_zero : forall b0 bS,
+      natcase b0 bS zero == b0.
+  Parameter natcase_succ : forall n b0 bS,
+      morph1 bS ->
+      natcase b0 bS (succ n) == bS n.
+  Parameter natcase_outside : forall b0 bS n,
+      n == empty ->
+      natcase b0 bS n == empty.
 
-  Parameter NATf'_elim : forall n X,
-    n ∈ NATf' X ->
-    n == zero \/ exists2 x, x ∈ cc_bot X & n == succ x.
-  Parameter neutr_dec' : forall n o,
-    isOrd o ->
-    n ∈ cc_bot (TI NATf' o) ->
-    n ∈ TI NATf' o \/ ~ exists Y, n ∈ NATf' Y.
+  Definition isNat X n := n==zero \/ exists2 m, m ∈ cc_bot X & n == succ m.
 
-  Parameter NAT_eqn : TI NATf' omega == NATf' (TI NATf' omega).
-
-  Parameter G_NATf' : forall U X,
-    grot_univ U ->
-    X ∈ U -> NATf' X ∈ U.
-
-Parameter natcase : set -> (set -> set) -> set -> set.
-Parameter natcase_morph : Proper (eq_set==>(eq_set==>eq_set)==>eq_set==>eq_set) natcase.
-Parameter natcase_zero : forall b0 bS,
-  natcase b0 bS zero == b0.
-Parameter natcase_succ : forall n b0 bS,
-  morph1 bS ->
-  natcase b0 bS (succ n) == bS n.
-Parameter natcase_outside : forall b0 bS n,
-  (forall X, ~ n ∈ NATf' X) ->
-  natcase b0 bS n == empty.
-
-Parameter natfix : (set -> set -> set) -> set -> set.
-Parameter natfix_morph : Proper ((eq_set ==> eq_set ==> eq_set) ==> eq_set ==> eq_set) natfix.
-
-(*Parameter natfix_hyps : set -> (set -> set -> set) -> (set -> set -> set) -> Prop.*)
-Require Import ZFfunext.
-  Record natfix_hyps O M U : Prop := natfix_intro {
-    Wo : isOrd O;
-    WMm : morph2 M;
-    WUm : morph2 U;
-    WU_mt : forall o x, empty ∈ U o x;
-    WMtyp : forall o,
-        o ∈ osucc O ->
-        forall f,
-        f ∈ (Π x ∈ cc_bot (TI NATf' o), U o x) ->
-        M o f
-        ∈ (Π x ∈ cc_bot (TI NATf' (osucc o)), U (osucc o) x);
-    WMirr : forall o o' f g,
-        isOrd o ->
-        o ⊆ o' ->
-        o' ∈ osucc O ->
-        f ∈ (Π x ∈ cc_bot (TI NATf' o), U o x) ->
-        g ∈ (Π x ∈ cc_bot (TI NATf' o'), U o' x) ->
-        fcompat (cc_bot (TI NATf' o)) f g ->
-        fcompat (cc_bot (TI NATf' (osucc o))) (M o f) (M o' g);
-    WUmono : forall o o' x,
-        isOrd o ->
-        o ⊆ o' ->
-        o' ∈ osucc O ->
-        x ∈ cc_bot (TI NATf' o) ->
-        U o x ⊆ U o' x
-  }.
-
-  Parameter natfix_typ : forall O M U,
-    natfix_hyps O M U ->
-    forall o, isOrd o -> o ⊆ O ->
-    natfix M o ∈ (Π x ∈ cc_bot (TI NATf' o), U o x).
-  Parameter natfix_irr : forall O M U,
-    natfix_hyps O M U ->
-    forall o o' x, isOrd o -> isOrd o' -> o ⊆ o' -> o' ⊆ O ->
-    x ∈ cc_bot (TI NATf' o) ->
-    cc_app (natfix M o) x == cc_app (natfix M o') x.
-  Parameter natfix_eqn : forall O M U,
-    natfix_hyps O M U ->
-    forall o n, isOrd o -> o ⊆ O ->
-    n ∈ TI NATf' o ->
-    cc_app (natfix M o) n == cc_app (M o (natfix M o)) n.
-(*  Parameter natfix_def : forall O M U,
-    natfix_hyps O M U ->
-    forall o n, isOrd o -> o ∈ O ->
-    n ∈ TI NATf' (osucc o) ->
-    cc_app (natfix M (osucc o)) n == cc_app (M o (natfix M o)) n.*)
-  Parameter natfix_strict : forall O M U n,
-    natfix_hyps O M U ->
-    ~ (exists X, n ∈ NATf' X) ->
-    forall o,
-       isOrd o -> o ⊆ O -> cc_app (natfix M o) n == empty.
-
-
-End SizedNats.
+End Nats.
 
 (** Derived properties *)
-Module NatFacts (M:SizedNats).
+Module NatFacts (M:Nats).
 Import M.
 
+Lemma isNat_nmt X n : isNat X n -> ~ n == empty.
+destruct 1.
+ rewrite H; apply zero_nmt.
+
+ destruct H as (m,?,?).
+ rewrite H0; apply succ_nmt.
+Qed. 
 
 Definition NATf2sum n :=
   natcase (inl empty) inr n.
@@ -126,121 +60,61 @@ apply inr_morph.
 Qed.
 
 Lemma zero_inv_typ : forall n x X,
-  n ∈ NATf' X -> NATf2sum n == inl x ->
+  isNat X n -> NATf2sum n == inl x ->
   n == zero.
 intros.
-apply NATf'_elim in H; destruct H; trivial.
-destruct H.
+destruct H as [?|(m,?,?)];[trivial|].
 rewrite H1 in H0.
 unfold NATf2sum in H0; rewrite natcase_succ in H0; auto with *.
 symmetry in H0; apply discr_sum in H0; contradiction.
 Qed.
 Lemma succ_inv_typ : forall n x X,
-  n ∈ NATf' X -> NATf2sum n == inr x ->
+  isNat X n -> NATf2sum n == inr x ->
   x ∈ cc_bot X /\ n == succ x.
 intros.
-apply NATf'_elim in H; destruct H; trivial.
+destruct H as [?|(m,?,?)].
  rewrite H in H0.
- unfold NATf2sum in H0; rewrite natcase_zero in H0.
+ unfold NATf2sum in H0; rewrite natcase_zero in H0; auto with *.
  apply discr_sum in H0; contradiction.
-
- destruct H.
  rewrite H1 in H0.
  unfold NATf2sum in H0; rewrite natcase_succ in H0; auto with *.
  apply inr_inj in H0.
  rewrite <- H0; auto.
 Qed.
 
-Lemma natcase_ext o b0 b0' bS bS' n n' :
+Lemma natcase_ext X b0 b0' bS bS' n n' :
  morph1 bS ->
  morph1 bS' ->
- isOrd o ->
- n ∈ cc_bot (TI NATf' (osucc o)) ->
+ n == empty \/ isNat X n ->
  n == n' ->
  b0 == b0' ->
- ZF.eq_fun (cc_bot (TI NATf' o)) bS bS' ->
+ ZF.eq_fun (cc_bot X) bS bS' ->
  natcase b0 bS n == natcase b0' bS' n'.
-intros.
-rewrite <- H3.
-apply neutr_dec' in H2; auto.
-destruct H2.
- rewrite TI_mono_succ in H2; auto with *.
- apply NATf'_elim in H2.
- destruct H2 as [?|(m,?,?)].
-  rewrite H2, !natcase_zero; trivial.
-
-  rewrite H6, !natcase_succ; auto with *.
-
- rewrite natcase_outside.
+intros mS mS' tyn eqn eq0 eqS.
+destruct tyn as [?|[?|(m,tym,?)]].
+ rewrite natcase_outside; trivial.
  rewrite natcase_outside.
   reflexivity.
+  rewrite <- eqn; trivial.
+  
+ rewrite <- eqn, H, !natcase_zero; trivial.
 
-  red; intros; apply H2; econstructor; eauto.
-  red; intros; apply H2; econstructor; eauto.
-Qed.
-
-Require Import ZFfunext.
-
-Lemma natfix_ext F F' U U' o o' :
-  isOrd o ->
-  isOrd o' ->
-  o ⊆ o' ->
-  natfix_hyps o F U ->
-  natfix_hyps o' F' U' ->
-  (forall z, isOrd z -> z ⊆ o ->
-   forall f f',
-   f ∈ (Π x ∈ cc_bot (TI NATf' z), U z x) ->
-   f' ∈ (Π x ∈ cc_bot (TI NATf' o'), U' o' x) ->
-   fcompat (cc_bot (TI NATf' z)) f f' ->
-   fcompat (TI NATf' (osucc z)) (F z f) (F' o' f')) -> 
-  fcompat (cc_bot (TI NATf' o)) (natfix F o) (natfix F' o').
-intros oo oo' ole oko oko' eqF.
-elim oo using isOrd_ind; intros.
-red; intros.
-apply neutr_dec' in H2; trivial.
-destruct H2.
- apply TI_inv in H2; auto with *.
- destruct H2 as (o'',?,?).
- assert (o_o'' : isOrd o'') by eauto using isOrd_inv.
- assert (o''_y : osucc o'' ⊆ y).
-  red; intros; apply le_lt_trans with o''; auto.
- rewrite natfix_eqn with (1:=oko'); auto with *.
-  transitivity (cc_app (F o'' (natfix F o'')) x).
-   rewrite natfix_eqn with (1:=oko); auto with *.
-    symmetry; apply (WMirr oko); auto with *.
-     apply ole_lts; trivial.
-     apply natfix_typ with (1:=oko); auto with *.
-     apply natfix_typ with (1:=oko); auto with *.
-
-     red; intros.
-     apply natfix_irr with (1:=oko); auto with *.
-
-    revert H3; apply TI_mono; auto with *.
-
-   red in eqF; apply eqF; auto with *.
-    apply natfix_typ with (1:=oko); auto with *.
-    apply natfix_typ with (1:=oko'); auto with *.
-
-  revert H3; apply TI_mono; auto with *.
-  transitivity y; trivial.
-  transitivity o; trivial.
-
- rewrite natfix_strict with (1:=oko); auto with *.
- rewrite natfix_strict with (1:=oko'); auto with *.
-Qed.
+ rewrite <- eqn, H, !natcase_succ; trivial.
+ apply eqS; auto with *.
+Qed.  
 
 End NatFacts.
 
 (** NAT *)
 
-Module Make (M:SizedNats).
+Module Make (M:Nats).
 Export M.
 
 Module NF := NatFacts M.
 Export NF.
 
 Definition fNAT (A:set->SAT) (n:set) : SAT :=
-  condSAT (exists X, n ∈ NATf' X)
+  condSAT (~ n == empty)
           (sumReal (fun _ => unitSAT) A (NATf2sum n)).
 
 Lemma fNAT_morph :
@@ -248,8 +122,7 @@ Lemma fNAT_morph :
 do 3 red; intros.
 unfold fNAT.
 apply condSAT_morph; auto.
- apply ex_morph.
- red; intros; rewrite H0; reflexivity.
+ rewrite H0; reflexivity.
 unfold sumReal.
 apply interSAT_morph.
 apply indexed_relation_id.
@@ -292,7 +165,7 @@ Lemma Real_ZERO_gen A :
   inSAT ZE (fNAT A zero).
 unfold fNAT, NATf2sum.
 rewrite condSAT_ok.
-2:exists empty; apply zero_typ.
+2:apply zero_nmt.
 apply Real_inl with empty.
  do 2 red; reflexivity.
 
@@ -311,7 +184,7 @@ Lemma Real_SUCC_gen A n t :
 intros.
 unfold fNAT, NATf2sum.
 rewrite condSAT_ok.
-2:exists (singl n); apply succ_typ; apply cc_bot_intro; apply singl_intro.
+2:apply succ_nmt.
 apply Real_inr with n; trivial.
 apply natcase_succ; auto with *.
 Qed.
@@ -337,7 +210,7 @@ Qed.
 
 Lemma Real_NATCASE_gen X A C n nt ft gt:
   Proper (eq_set ==> eqSAT) C ->
-  n ∈ NATf' X ->
+  isNat X n ->
   inSAT nt (fNAT A n) ->
   inSAT ft (C zero) ->
   inSAT gt (piSAT0 (fun x => x ∈ cc_bot X) A (fun x => C (succ x))) ->
@@ -345,7 +218,8 @@ Lemma Real_NATCASE_gen X A C n nt ft gt:
 intros Cm nty nreal freal greal.
 apply Real_sum_case with (NATf2sum n) (fun _ => unitSAT) A; trivial.
  unfold fNAT in nreal; rewrite condSAT_ok in nreal; eauto.
-
+ apply isNat_nmt in nty ;trivial.
+ 
  apply piSAT0_intro.
   apply Lc.sn_abs.
   apply Lc.sn_lift.
@@ -355,6 +229,7 @@ apply Real_sum_case with (NATf2sum n) (fun _ => unitSAT) A; trivial.
   apply inSAT_exp; [right; apply sat_sn in ureal;trivial|].
   unfold Lc.subst; rewrite Lc.simpl_subst; auto.
   rewrite Lc.lift0; trivial.
+
   rewrite zero_inv_typ with (1:=nty) (2:=eqn); trivial.
 
  apply piSAT0_intro.
@@ -375,8 +250,6 @@ apply fixSAT_morph; auto.
 apply fNAT_morph.
 Qed.
 
-Hint Resolve NATf'_mono.
-
 Lemma cNAT_eq x :
   eqSAT (cNAT x) (fNAT cNAT x).
 intros.
@@ -385,12 +258,13 @@ apply fNAT_mono.
 Qed. 
 
 Lemma cNAT_neutral x :
-  ~ (exists X, x ∈ NATf' X) ->
+  x == empty ->
   eqSAT (cNAT x) neuSAT.
 intros.
 rewrite cNAT_eq.
 apply neuSAT_ext.
 apply condSAT_neutral; trivial.
+intro; auto.
 Qed.
 
 Lemma Real_ZERO :
@@ -400,46 +274,30 @@ rewrite cNAT_eq; trivial.
 apply Real_ZERO_gen.
 Qed.
 
-Lemma Real_SUCC o n t :
-  isOrd o ->
-  n ∈ cc_bot (TI NATf' o) ->
+Lemma Real_SUCC n t :
   inSAT t (cNAT n) ->
   inSAT (SU t) (cNAT (succ n)).
 intros.
 rewrite cNAT_eq.
 unfold SU, fNAT.
 rewrite condSAT_ok.
-2:exists (TI NATf' o); apply succ_typ; trivial.
+2:apply succ_nmt.
 apply Real_inr with n; auto with *.
 unfold NATf2sum; apply natcase_succ; auto with *.
 Qed.
 
-Lemma Real_NATCASE o C n nt ft gt:
-  isOrd o ->
+Lemma Real_NATCASE X C n nt ft gt:
   Proper (eq_set ==> eqSAT) C ->
-  n ∈ TI NATf' (osucc o) ->
+  isNat X n ->
   inSAT nt (cNAT n) ->
   inSAT ft (C zero) ->
-  inSAT gt (piSAT0 (fun x => x ∈ cc_bot (TI NATf' o)) cNAT (fun x => C (succ x))) ->
+  inSAT gt (piSAT0 (fun x => x ∈ cc_bot X) cNAT (fun x => C (succ x))) ->
   inSAT (NCASE ft gt nt) (C n).
-intros oo Cm nty nreal freal greal.
+intros Cm nty nreal freal greal.
 rewrite cNAT_eq in nreal; trivial.
-rewrite TI_mono_succ in nty; auto.
 apply Real_NATCASE_gen with (2:=nty) (3:=nreal); auto.
 Qed.
 
-
-(** Introducing the fixpoint of NATf' *)
-
-Definition NAT' := TI NATf' omega.
-
-Lemma Real_SUCC_cNAT n t :
-  n ∈ cc_bot NAT' ->
-  inSAT t (cNAT n) ->
-  inSAT (SU t) (cNAT (succ n)).
-intros.
-apply Real_SUCC with (o:=omega); auto.
-Qed.
 
 (** * Structural fixpoint: *)
 
@@ -469,30 +327,27 @@ intros.
 apply WHEN_SUM_INR.
 Qed.
 
-Lemma NATFIX_sat o m X :
-  let FIX_ty o := piSAT0 (fun n => n ∈ cc_bot (TI NATf' o)) cNAT (X o) in
-  let FIX_ty' o := piSAT0 (fun n => n ∈ TI NATf' o) cNAT (X o) in
+Lemma NATFIX_sat o m X U :
+  (forall y n, isOrd y -> n ∈ X y -> exists2 y', y' ∈ y & n ∈ X (osucc y'))->
+  let FIX_ty o := piSAT0 (fun n => n ∈ cc_bot (X o)) cNAT (U o) in
+  let FIX_ty' o := piSAT0 (fun n => n ∈ X o) cNAT (U o) in
   isOrd o ->
-  (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ TI NATf' y ->
-   inclSAT (X y n) (X y' n)) ->
+  (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ X y ->
+   inclSAT (U y n) (U y' n)) ->
   inSAT m (piSAT0 (fun o' => o' ∈ o)
              (fun o1 => FIX_ty o1) (fun o1 => FIX_ty' (osucc o1))) ->
   inSAT m (prodSAT (FIX_ty empty) snSAT) ->
   inSAT (NATFIX m) (FIX_ty o).
-intros FIX_ty FIX_ty' oo Xmono msat mneutr.
+intros Xinv FIX_ty FIX_ty' oo Umono msat mneutr.
 apply FIXP_sat
-   with (T:=TI NATf') (U:=fun o => cc_bot (TI NATf' o)) (RT:=cNAT); trivial.
+   with (T:=X) (U:=fun o => cc_bot (X o)) (RT:=cNAT); trivial.
  intros.
- apply neutr_dec' in H1; trivial.
- destruct H1.
-  right.
-  apply TI_elim in H1; auto with *.
-  destruct H1 as (z,zty,xty).
-  exists z; trivial.
-  rewrite TI_mono_succ; auto with *.
-  apply isOrd_inv with y; trivial.
+ apply cc_bot_ax in H1; destruct H1.
+  left.
+  apply cNAT_neutral; trivial.
 
-  left; apply cNAT_neutral; trivial.
+  right.
+  apply Xinv; trivial.
 
  exists empty; trivial.
 
@@ -502,91 +357,67 @@ apply FIXP_sat
  apply neuSAT_def; trivial.
 
  intros.
- apply TI_elim in H0; auto with *.
- destruct H0 as (z,zty,xty).
- assert (oz: isOrd z).
-  apply isOrd_inv with o0; auto.
- assert (xty' := xty).
- rewrite <-TI_mono_succ in xty'; auto.
  rewrite cNAT_eq in H1.
  apply condSAT_smaller in H1.
  apply WHEN_SUM_sat with (1:=H1) (2:=H2); trivial.
 Qed.
 
-Lemma NATREC_sat o F RF U RU :
+Require Import ZFrecbot.  
+Lemma NATREC_sat o X F RF U RU natfix :
+  morph1 X ->
+  (forall o, isOrd o -> X o == sup o (fun o' => X (osucc o'))) ->
+  rec X U F natfix o ->
+  (forall y n, isOrd y -> n ∈ X y -> exists2 y', y' ∈ y & n ∈ X (osucc y'))->
   Proper (eq_set ==> eq_set ==> eq_set ==> eqSAT) RU ->
   isOrd o ->
-  natfix_hyps o F U ->
   (forall o' o'' x y y',
       isOrd o' ->
       isOrd o'' ->
       o' ⊆ o'' ->
       o'' ⊆ o ->
-      x ∈ TI NATf' o' -> y ∈ U o' x -> y == y' -> inclSAT (RU o' x y) (RU o'' x y')) ->
+      x ∈ X o' -> y ∈ U o' x -> y == y' -> inclSAT (RU o' x y) (RU o'' x y')) ->
   let FIX_ty o' f:=
-      piSAT0 (fun n => n ∈ cc_bot (TI NATf' o')) cNAT (fun n => RU o' n (cc_app f n)) in
+      piSAT0 (fun n => n ∈ cc_bot (X o')) cNAT (fun n => RU o' n (cc_app f n)) in
   (forall o' f u,
       isOrd o' ->
       o' ∈ cc_bot o ->
-      f ∈ (Π w ∈ cc_bot (TI NATf' o'), U o' w) ->
+      f ∈ (Π w ∈ cc_bot (X o'), U o' w) ->
       inSAT u (FIX_ty o' f) -> inSAT (Lc.App RF u) (FIX_ty (osucc o') (F o' f))) ->
-  inSAT (NATFIX RF) (FIX_ty o (natfix F o)).
-intros RUm oo ty RUmono FIX_ty satF.
+  inSAT (NATFIX RF) (FIX_ty o (natfix o)).
+intros Xm Xcont isrec Xinv RUm oo RUmono FIX_ty satF.
 eapply NATFIX_sat with
-   (X:=fun o n => RU o n (cc_app (natfix F o) n)); trivial.
- intros.
+   (U:=fun o n => RU o n (cc_app (natfix o) n)); trivial.
+{intros.
  apply RUmono; auto.
-  apply cc_prod_elim with (dom := cc_bot (TI NATf' y)) (F := U y); auto.
-  apply natfix_typ with (1:=ty); trivial.
+  apply cc_prod_elim with (dom := cc_bot (X y)) (F := U y); auto.
+  apply rec_typ with (1:=isrec); auto.
   transitivity y'; trivial.
 
-  eapply natfix_irr with (1:=ty); auto.
-
- apply piSAT0_intro.
-  assert (inSAT (Lc.App RF daimon) (FIX_ty (osucc empty) (F empty (natfix F empty)))).
-  apply satF; auto.
-   apply natfix_typ with (1:=ty); auto.
-
-   apply varSAT.
-
+  apply rec_irr with (3:=isrec); auto. }
+{apply piSAT0_intro.
+  assert (inSAT (Lc.App RF daimon) (FIX_ty (osucc empty) (F empty (natfix empty)))).
+   apply satF; auto.
+    apply rec_typ with (1:=isrec); auto.
+    apply varSAT.
   apply sat_sn in H.
   apply Lc.subterm_sn with (Lc.App RF daimon); auto.
  intros.
  assert (xo : isOrd x) by eauto using isOrd_inv.
-(* apply olts_le in H.*)
- assert (Wty : natfix F x ∈ Π w ∈ cc_bot (TI NATf' x), U x w).
-  apply natfix_typ with (1:=ty); trivial.
+ assert (Wty : natfix x ∈ Π w ∈ cc_bot (X x), U x w).
+  apply rec_typ with (1:=isrec); trivial.
   red; intros; apply isOrd_trans with x; auto.
  specialize satF with (1:=xo)(2:=cc_bot_intro _ _ H)(3:=Wty)(4:=H0).
  revert satF; apply piSAT0_mono with (f:=fun x=>x); auto with *.
  intros.
- rewrite natfix_eqn with (1:=ty); auto with *.
- 2:red; intros; apply le_lt_trans with x; auto.
- assert (aux := WMirr ty).
- red in aux.
- rewrite aux with (o':=osucc x) (g:=natfix F (osucc x)); auto.
-  reflexivity.
+ rewrite rec_eqn_succ with (2:=isrec); auto with *. }
 
-  red; intros; apply isOrd_trans with x; auto.
-
-  apply lt_osucc_compat; auto.
-
-  apply natfix_typ with (1:=ty); auto.
-  red; intros; apply le_lt_trans with x; auto.
-
-  red; intros.
-  apply natfix_irr with (1:=ty); auto.
-   red; intros; apply isOrd_trans with x; auto.
-
-   red; intros; apply le_lt_trans with x; auto.
-
- apply prodSAT_intro'; intros.
- assert (inSAT (Lc.App RF v) (FIX_ty (osucc empty) (F empty (natfix F empty)))).
+{apply prodSAT_intro'; intros.
+ assert (inSAT (Lc.App RF v) (FIX_ty (osucc empty) (F empty (natfix empty)))).
   apply satF; auto.
-  apply natfix_typ with (1:=ty); auto.
+  apply rec_typ with (1:=isrec); auto.
 
   apply snSAT_intro.
-  apply sat_sn with (1:=H0).
+  apply sat_sn with (1:=H0). }
 Qed.
 
 End Make.

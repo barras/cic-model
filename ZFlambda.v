@@ -369,6 +369,19 @@ split; intros.
  apply snSAT_intro; trivial.
 Qed.
 
+Lemma sSAT_mt : eqSAT (sSAT empty) neuSAT.
+unfold sSAT,complSAT.
+apply neuSAT_ext.
+red; intros.
+assert (h : forall t, sn t -> iLAM t ∈ empty -> inSAT t neuSAT).
+ intros.
+ apply empty_ax in H1; contradiction.
+assert (H' := fun h => interSAT_elim H (exist _ neuSAT h));
+   clear H; simpl in H'.
+auto.
+Qed.
+
+
 Definition SATset :=
   subset (power CCLam) (fun S => iSAT(sSAT S)==S).
 

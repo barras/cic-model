@@ -878,10 +878,9 @@ destruct xty0 as [?|(y',?,?)].
 
   trivial.
 Qed.
-
 End FIXP_Reducibility.
 
-(** Fixpoint *)
+  (** Fixpoint *)
 
 Definition monoFam (A:(set->SAT)->set->SAT) :=
   forall X X', inclFam X X' -> inclFam (A X) (A X').
@@ -914,7 +913,6 @@ apply interSAT_morph_subset; simpl.
  apply Px; trivial.
 Qed.
 
-
 Lemma fixSAT_lower_bound A X :
   Proper (eq_set==>eqSAT) X ->
   inclFam (A X) X ->
@@ -945,8 +943,6 @@ apply Amono with (X:=fixSAT A); trivial.
 apply fixSAT_lower_bound; trivial.
 Qed.
 
-
-
 Lemma pre_fix_lfp A :
   Proper ((eq_set==>eqSAT)==>eq_set==>eqSAT) A ->
   monoFam A ->
@@ -970,22 +966,3 @@ split.
  apply post_fix_lfp; trivial.
 Qed.
 
-
-(** Transfinite iteration: UNUSED *)
-
-Require Import ZFfixrec.
-Require Import ZFrelations.
-Require Import ZFord ZFfix.
-
-(* –> ZFlambda (unused) *)
-Lemma sSAT_mt : eqSAT (sSAT empty) neuSAT.
-unfold sSAT,complSAT.
-apply neuSAT_ext.
-red; intros.
-assert (h : forall t, sn t -> iLAM t ∈ empty -> inSAT t neuSAT).
- intros.
- apply empty_ax in H1; contradiction.
-assert (H' := fun h => interSAT_elim H (exist _ neuSAT h));
-   clear H; simpl in H'.
-auto.
-Qed.
