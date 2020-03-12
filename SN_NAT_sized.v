@@ -80,12 +80,21 @@ Lemma NATf'm : morph1 (TI NATf').
 apply TI_morph; auto.
 Qed.
 
-Lemma NATf'_cont o : isOrd o -> TI NATf' o == ZF.sup o (fun o' => TI NATf' (osucc o')).
-intros.
+Lemma NATf'_cont : ZFfixrec.continuous (TI NATf').
+red; intros.
 apply TI_mono_eq; auto with *.
 Qed.
 
-Hint Resolve NATf'm NATf'_cont.
+Lemma NATf'_nmt o : isOrd o -> ~ empty ∈ TI NATf' o.
+red; intros.
+apply TI_elim in H0; auto with *.
+destruct H0 as (o',?,Hmt).
+apply NATf'_elim in Hmt.
+apply isNat_nmt in Hmt.
+apply Hmt; reflexivity.
+Qed.
+
+Hint Resolve NATf'm NATf'_cont NATf'_nmt.
 
 (** NAT *)
 
@@ -1138,7 +1147,10 @@ intros.
 assert (Oo: isOrd (int O i)).
  apply ty_O with (1:=H).
 apply natfix_rec.
-split; trivial.
+split; auto.
+ intros.
+ apply Usub with (1:=H); trivial.
+
  intros; apply Mty with (2:=H); trivial.
   apply isOrd_inv with (osucc (int O i)); auto.  
 
@@ -1149,9 +1161,6 @@ split; trivial.
 
  intros.
  apply Mirr with (1:=H); trivial.
-
- intros.
- apply Usub with (1:=H); trivial.
 Qed.
 
 Lemma typ_natfix :
@@ -1308,7 +1317,7 @@ change
   app (int (subst O (subst (lift 1 (NatFix O M)) M)) i) (int N i)).
 do 2 rewrite <- int_subst_eq.
 rewrite int_cons_lift_eq.
-apply rec_eqn with (3:=Mok H); eauto with *.
+apply rec_eqn with (1:=Mok H); eauto with *.
 red in tyN; specialize tyN with (1:=H).
 apply in_int_not_kind in tyN.
 2:discriminate.
@@ -1333,7 +1342,7 @@ change
   app (int (subst O (subst (lift 1 (NatFix O M)) M)) i) (int N i)).
 do 2 rewrite <- int_subst_eq.
 rewrite int_cons_lift_eq.
-apply rec_eqn with (3:=Mok H); eauto with *.
+apply rec_eqn with (1:=Mok H); auto with *.
 red in tyN; specialize tyN with (1:=H).
 apply in_int_not_kind in tyN.
 2:discriminate.
@@ -1370,7 +1379,7 @@ assert (inclo: int O i ⊆ int O i').
  apply subO in H; trivial.
 clear subO.
 simpl.
-apply rec_ext with (9:=Mok isval) (10:=Mok isval'); auto with *.
+apply rec_ext with (5:=Mok isval) (6:=Mok isval'); auto with *.
 intros.
 red; intros.
 do 2 red in stab; eapply stab.

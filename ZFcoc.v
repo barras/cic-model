@@ -529,6 +529,27 @@ split; intros.
  exists z; auto with *.
 Qed.
 
+Lemma squash_nmt f x :
+  ~ x == empty ->
+  cc_app (squash f) x == cc_app f x.
+intros Hnmt.
+apply eq_set_ax; intros z.
+rewrite <- couple_in_app.
+rewrite squash_ax, fst_def.
+rewrite couple_in_app.
+split;[destruct 1; trivial|auto].
+Qed.
+
+Lemma squash_mt f :
+  cc_app (squash f) empty == empty.
+apply empty_ext.
+red; intros.  
+rewrite <- couple_in_app in H.
+rewrite squash_ax, fst_def in H.
+destruct H.
+apply H0; reflexivity.
+Qed.
+
 Lemma squash_eq  A B f :
   ~ empty ∈ A ->
   f ∈ cc_prod (cc_bot A) B ->
@@ -570,29 +591,6 @@ apply cc_prod_intro; intros.
  apply cc_prod_elim with (1:=H1).
  apply cc_bot_intro; trivial.
 Qed.
-
-Lemma squash_beta A B f x :
-  ~ empty ∈ A ->
-  f ∈ cc_prod (cc_bot A) B ->
-  x ∈ A ->
-  cc_app (squash f) x == cc_app f x.
-intros.
-rewrite squash_eq with (2:=H0); trivial.
-rewrite cc_beta_eq; auto with *.
-do 2 red; intros; apply cc_app_morph; auto with *.
-Qed.
-
-Lemma squash_mt A B f :
-  ~ empty ∈ A ->
-  f ∈ cc_prod (cc_bot A) B ->
-  cc_app (squash f) empty == empty.
-intros.
-apply cc_app_outside_domain with A; trivial.
-rewrite squash_eq with (2:=H0); trivial.
-apply is_cc_fun_lam.
-do 2 red; intros; apply cc_app_morph; auto with *.
-Qed.
-
 
 (** #<a name="EquivTTColl"/># *)
 (** * Correspondance between ZF universes and (Coq + TTColl) universes *)

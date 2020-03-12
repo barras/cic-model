@@ -414,6 +414,7 @@ split; intros.
  do 2 red; intros; apply sigma_morph; auto with *.
  red; intros; apply Wi_morph; auto.
 
+ red; intros.
  rewrite <- ZFcont.sigma_cont.
   apply sigma_ext; auto with *.
   intros.

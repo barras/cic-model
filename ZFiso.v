@@ -2009,14 +2009,8 @@ Qed.
 constructor; intros.
  apply TI_morph.
 
- rewrite TI_eq; auto.
- apply sup_morph; auto with *.
  red; intros.
- rewrite TI_mono_succ; auto with *.
-  apply Fm.
-  apply TI_morph; trivial.
-
-  rewrite <- H1; apply isOrd_inv with o; trivial.
+ apply TI_mono_eq; auto.
 
  revert H3; apply iso_fun_ext; auto with *.
   apply cc_app_morph; reflexivity.
@@ -2250,6 +2244,7 @@ constructor; intros.
  do 2 red; intros; apply sigma_morph; auto with *.
  red; intros; apply TIF_morph; auto with *.
 
+ red; intros.
  rewrite <- sigma_cont.
  2:do 3 red; intros; apply TIF_morph; auto with *.
  2:apply osucc_morph; trivial.

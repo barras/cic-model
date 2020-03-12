@@ -394,17 +394,6 @@ apply cc_prod_intro; intros; auto.
  apply Uext; trivial.
 Qed.
 
-
-Lemma NATi_cont : forall o,
-   isOrd o -> NATi o == sup o (fun o' => NATi (osucc o')).
-intros.
-unfold NATi; rewrite TI_eq; auto.
-apply sup_morph; auto with *.
-red; intros.
-rewrite <- TI_mono_succ; eauto using isOrd_inv.
-apply TI_morph; apply osucc_morph; trivial.
-Qed.
-
 Let Qm :
    forall o o',
    isOrd o ->
@@ -470,7 +459,7 @@ Hint Resolve Firrel_NAT.
 constructor; trivial.
  apply TI_morph.
 
- apply NATi_cont.
+ red; intros; apply TI_mono_eq; auto.
 Qed.
 
  Hint Resolve NAT_recursor.

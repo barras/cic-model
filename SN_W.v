@@ -190,8 +190,8 @@ Lemma WFm i : morph1 (TI (WF i)).
 apply TI_morph; auto.
 Qed.
 
-Lemma WF_cont i o' : isOrd o' -> TI (WF i) o' == ZF.sup o' (fun w => TI (WF i) (osucc w)).
-intros.
+Lemma WF_cont i : ZFfixrec.continuous (TI (WF i)).
+red; intros.
 apply TI_mono_eq; auto with *.
 Qed.
 
@@ -1100,15 +1100,26 @@ destruct tyord_inv with (3:=ty_O)(4:=H) as (Oo,_); trivial.
 apply WREC_rec; auto.
  apply Bw_morph; reflexivity.
 split; trivial.
+ apply WFm.
+
+ apply WF_cont.
+
+ red; intros.
+ apply mt_not_in_W_F in H1; auto.
+  apply H1; reflexivity.
+
+  do 2 red; intros.
+  rewrite H2; reflexivity.
+
+ intros.
+ apply Usub with (1:=H); trivial.
+  
  unfold U'; auto.
 
  intros; apply Mty with (1:=H); trivial.
 
  intros.
  apply Mirr with (1:=H); trivial.
-
- intros.
- apply Usub with (1:=H); trivial.
 Qed.
 
 Lemma typ_wfix :
@@ -1277,14 +1288,14 @@ apply isOrd_inv with y; trivial.
  apply rec_typ with (1:=WREC_ok H); trivial.
 
  red; intros. 
- apply rec_irr with (3:=WREC_ok H); auto.
+ apply rec_irr with (1:=WREC_ok H); auto.
 
  red; intros.
  assert (yo: isOrd y) by eauto using isOrd_inv.
  assert (leo : osucc y ⊆ int O i).
   red; intros.
   apply le_lt_trans with y; auto.
- rewrite rec_eqn with (3:=WREC_ok H); auto.
+ rewrite rec_eqn with (1:=WREC_ok H); auto.
 
  symmetry; apply Mirr with (1:=H); auto.
   red; intros; apply isOrd_trans with y; auto with *.
@@ -1298,7 +1309,7 @@ apply isOrd_inv with y; trivial.
   apply rec_typ with (1:=WREC_ok H); auto.
 
   red; intros.
-  apply rec_irr with (3:=WREC_ok H); auto.
+  apply rec_irr with (1:=WREC_ok H); auto.
   red; intros; apply isOrd_trans with y; auto with *.
 
   unfold Wi; auto.
@@ -1329,7 +1340,7 @@ rewrite cc_bot_ax in H0; destruct H0.
  simpl in H0.
  symmetry in H0; apply discr_mt_mkw in H0; contradiction.
 destruct tyord_inv with (3:=ty_O)(4:=H); trivial.
-apply rec_eqn with (3:=WREC_ok H); auto with *.
+apply rec_eqn with (1:=WREC_ok H); auto with *.
 Qed.
 
 Lemma TIeq: forall i i' j j' o',
@@ -1389,7 +1400,7 @@ clear subO.
 assert (aeq : El (int A i) == El (int A i')).
  apply El_morph.
  apply Aeq with (1:=H); trivial.
-eapply rec_ext with (9:=WREC_ok isval) (10:=WREC_ok isval'); auto.
+eapply rec_ext with (5:=WREC_ok isval) (6:=WREC_ok isval'); auto.
  intros; apply eq_incl.
  apply TI_morph_gen; auto with *.
  red; intros.
@@ -1763,14 +1774,6 @@ Proof REC'_morph.
     rec (TI (W_F A B)) U M (WREC M) O.
 intros.
 apply REC_rec; auto.
- apply TI_morph.
-
- apply TI_mono_eq; auto with *.
- apply W_F_mono; trivial.
-
- red; intros.
- apply mt_not_in_W_F' in H2; auto.
- apply H2; reflexivity.
 Qed.
 
 End W_Model.

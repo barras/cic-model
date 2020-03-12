@@ -393,7 +393,7 @@ eapply NATFIX_sat with
   apply rec_typ with (1:=isrec); auto.
   transitivity y'; trivial.
 
-  apply rec_irr with (3:=isrec); auto. }
+  apply rec_irr with (1:=isrec); auto. }
 {apply piSAT0_intro.
   assert (inSAT (Lc.App RF daimon) (FIX_ty (osucc empty) (F empty (natfix empty)))).
    apply satF; auto.

@@ -3,6 +3,9 @@
 
 Require Import ZF ZFrelations ZFnats ZFord ZFfunext.
 
+Definition continuous (T:set->set) :=
+  forall o, isOrd o -> T o == sup o (fun o' => T (osucc o')).
+
 Section TransfiniteIteration.
 
   (** (F o x) produces value for stage o+1 given x the value for stage o *)
@@ -233,8 +236,7 @@ Let oordlt := fun o olt => isOrd_inv _ o oord olt.
   Record recursor := mkRecursor {
     rec_dom_m    : morph1 T;
     (** Domain is continuous *)
-    rec_dom_cont : forall o, isOrd o ->
-      T o == sup o (fun o' => T (osucc o'));
+    rec_dom_cont : continuous T;
     (** [Q o f] depends upon [f] only within domain [T o] *)
     rec_inv_m : forall o o',
       isOrd o -> o ⊆ ord -> o == o' ->
@@ -270,7 +272,7 @@ Let oordlt := fun o olt => isOrd_inv _ o oord olt.
   Lemma Tmono : forall o o', isOrd o -> o' ∈ o ->
     T (osucc o') ⊆ T o.
 red; intros.
-rewrite Tcont; trivial.
+red in Tcont; rewrite Tcont; trivial.
 rewrite sup_ax.
  exists o'; trivial.
 
@@ -321,7 +323,7 @@ Lemma fty_step : forall o, isOrd o ->
   Ty o (REC F o).
 intros o oo ole tylt incrlt.
 assert (is_cc_fun (T o) (REC F o)).
- rewrite Tcont; trivial.
+ red in Tcont; rewrite Tcont; trivial.
  rewrite REC_eq; trivial.
  apply prd_union; auto; intros.
   red; red; intros; apply Tm.
@@ -353,7 +355,7 @@ Lemma finc_ext x z :
   z ⊆ x ->
   fcompat (T z) (REC F z) (REC F x).
 intros xo zo zle tylt incrlt inc.
-rewrite Tcont; trivial.
+red in Tcont; rewrite Tcont; trivial.
 rewrite REC_eq with (o:=z); auto.
 apply prd_sup_lub; intros; auto with *.
  red; red; intros; apply Tm.
@@ -474,7 +476,7 @@ Lemma REC_step : forall o o',
 intros.
 destruct REC_inv with o'; trivial.
 rewrite REC_eq with (o:=o) at 1; trivial.
-rewrite Tcont; trivial.
+red in Tcont; rewrite Tcont; trivial.
 (*assert (o ⊆ osucc o').
  admit.*)
 (* red; intros; apply isOrd_trans with o; auto.*)
@@ -721,7 +723,7 @@ split; trivial.
 red; intros.
 rewrite cc_beta_eq; trivial.
 2:do 2 red; intros; apply cc_app_morph; auto with *.
-rewrite Tcont in H4; trivial.
+red in Tcont; rewrite Tcont in H4; trivial.
 rewrite sup_ax in H4.
  2:do 2 red; intros; apply Tm; apply osucc_morph; trivial.
 destruct H4.
@@ -842,14 +844,12 @@ Section HigherRecursor.
   (* The domain of the function to build: *)
   Variable T : set -> set.
   Hypothesis Tm : morph1 T.
-  Hypothesis Tcont : forall o,
-    isOrd o ->
-    T o == sup o (fun o' => T (osucc o')).
+  Hypothesis Tcont : continuous T.
 
   Lemma Tmono' : forall o o', isOrd o -> o' ∈ o ->
     T (osucc o') ⊆ T o.
 red; intros.
-rewrite Tcont; trivial.
+red in Tcont; rewrite Tcont; trivial.
 rewrite sup_ax.
  exists o'; trivial.
 
@@ -1110,7 +1110,7 @@ symmetry.
 apply RECf_step; eauto using isOrd_inv with *.
 assert (oo:isOrd o).
  eauto using isOrd_inv.
-rewrite Tcont in H2; trivial.
+red in Tcont; rewrite Tcont in H2; trivial.
 rewrite sup_ax in H2;[destruct H2|].
  revert H3; apply Tmono'; auto.
  eauto using isOrd_inv.
@@ -1163,7 +1163,7 @@ intros.
   apply Fm; trivial.
   apply cc_app_morph; reflexivity.
 
-  rewrite Tcont in H4; trivial.
+  red in Tcont; rewrite Tcont in H4; trivial.
   rewrite sup_ax in H4.
    destruct H4.
    revert H6; apply Tmono'; auto.
@@ -1242,7 +1242,7 @@ apply eq_intro; intros.
   apply RECf_indep; auto.
    apply osup2_lt; auto.
 
-   rewrite Tcont in H0; trivial.
+   red in Tcont; rewrite Tcont in H0; trivial.
    rewrite sup_ax in H0.
     destruct H0.
     revert H1; apply Tmono'; auto.
@@ -1260,7 +1260,7 @@ apply eq_intro; intros.
   apply RECf_indep; auto.
    apply osup2_lt; auto.
 
-   rewrite Tcont in H0; trivial.
+   red in Tcont; rewrite Tcont in H0; trivial.
    rewrite sup_ax in H0.
     destruct H0.
     revert H1; apply Tmono'; auto.
@@ -1275,7 +1275,7 @@ Qed.
 
   Lemma RECF_eqn x : x ∈ T ord -> RECF x == F RECF x.
 intros.
-rewrite Tcont in H; trivial.
+red in Tcont; rewrite Tcont in H; trivial.
 rewrite sup_ax in H.
  destruct H as (o,?,?).
  assert (oo : isOrd o).

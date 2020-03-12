@@ -396,8 +396,6 @@ Lemma NATREC'_rec o M U :
     rec_hyps (TI NATf') U M o -> rec (TI NATf') U M (REC' M) o.
 intros ok.
 apply REC_rec; auto with *.
-red; intros.
-apply mt_not_in_NATf' in H0; auto with *.
 Qed.
 
 (** * Universe facts: NAT' belongs to any Grothendieck universes that

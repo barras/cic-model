@@ -1,5 +1,17 @@
 Require Import ZFfunext ZFfixrec ZFrelations ZFcoc ZFord.
 
+Lemma cont_is_mono X :
+  morph1 X -> continuous X -> increasing X.
+intros Xm Xcont o o' oo oo' leo.
+rewrite (Xcont o'); trivial.
+apply sup_lub; intros.
+ do 2 red; intros.
+ rewrite H0; reflexivity.
+rewrite (Xcont o); trivial.
+apply sup_incl with (F:=fun o'=>X(osucc o')); auto.
+do 2 red; intros.
+rewrite H1; reflexivity.
+Qed.
 
 Section Recursor.
 
@@ -8,23 +20,6 @@ Section Recursor.
   (** The co-domain *)
   Variable U : set -> set -> set.
 
-Hypothesis Xm : morph1 X.
-Hypothesis Xcont : forall o, isOrd o ->
-      X o == sup o (fun o' => X (osucc o')).
-
-Lemma cont_is_mono : increasing X.
-red; intros.
-rewrite (Xcont y); trivial.
-apply sup_lub; intros.
- do 2 red; intros.
- rewrite H3; reflexivity.
-rewrite (Xcont x); trivial.
-apply sup_incl with (F:=fun o'=>X(osucc o')); auto.
-do 2 red; intros.
-rewrite H4; reflexivity.
-Qed.
-  Let Xmono := cont_is_mono.
-     
 Section RecursorSpecification.
 
   (** The recursive definition *)
@@ -36,23 +31,33 @@ Section RecursorSpecification.
   Hypothesis oo : isOrd o.
   
   (** The condition expressing that [f] satisfies the recursive equation [F] up to [o]. *)
-  Definition rec0 :=
+  Record rec0 := mkrec0 {
+    RXm : morph1 X;
+    (* Domain is continuous *)
+    RXcont : continuous X;
     (* typing *)
-    (forall o', isOrd o' -> o' ⊆ o -> f o' ∈ Π x ∈ X o', U o' x) /\
+    Rtyp : forall o', isOrd o' -> o' ⊆ o -> f o' ∈ Π x ∈ X o', U o' x;
     (* equation *)
-    (forall o1 o2 n,
+    Reqn : forall o1 o2 n,
         isOrd o1 -> isOrd o2 -> o1 ⊆ o -> o2 ⊆ o ->
         n ∈ X o1 ->
         n ∈ X (osucc o2) ->
-        cc_app (f o1) n == cc_app (F o2 (f o2)) n).
+        cc_app (f o1) n == cc_app (F o2 (f o2)) n
+  }.
 
   Hypothesis isrec : rec0.
 
+  Let Xm := RXm isrec.
+  Let Xcont := RXcont isrec.
+  Let Req := Reqn isrec.
+
+  Let Xmono := cont_is_mono _ Xm Xcont.
+  
   Lemma rec0_typ o' :
     isOrd o' ->
     o' ⊆ o ->
     f o' ∈ (Π x ∈ X o', U o' x).
-apply isrec.
+apply (Rtyp isrec).
 Qed.
 
   Lemma rec0_eqn_succ o' x :
@@ -61,8 +66,7 @@ Qed.
     cc_app (f (osucc o')) x == cc_app (F o' (f o')) x.
 intros.
 assert (oo' : isOrd o') by eauto using isOrd_inv.
-destruct isrec as (_ & fx_eqn).
-apply fx_eqn; auto.
+apply Req; auto.
 red; intros; apply isOrd_plump with o'; auto.
  apply isOrd_inv with (osucc o'); auto.
  apply olts_le; auto.
@@ -73,9 +77,8 @@ Qed.
     x ∈ X o1 ->
     cc_app (f o1) x == cc_app (f o2) x.
 intros.
-destruct isrec as (_ & fx_eqn).
-rewrite fx_eqn with (o1:=o2) (o2:=o2); auto.
- rewrite fx_eqn with (o1:=o1) (o2:=o2); auto with *.
+rewrite Req with (o1:=o2) (o2:=o2); auto.
+ rewrite Req with (o1:=o1) (o2:=o2); auto with *.
   transitivity o2; trivial.
 
   revert H3; apply Xmono; auto.
@@ -92,8 +95,7 @@ Qed.
     x ∈ X o' ->
     cc_app (f o') x == cc_app (F o' (f o')) x.
 intros.
-destruct isrec as (_ & fx_eqn).
-apply fx_eqn; auto.
+apply Req; auto.
 revert H1; apply Xmono; auto with *.
 apply ord_lt_le; auto; apply lt_osucc; auto.
 Qed.
@@ -108,22 +110,28 @@ Section RecursorDef.
   Variable O : set.
 
 Record rec0_hyps : Prop := rec0_intro {
+    RHXm : morph1 X;
+    (* Domain is continuous *)
+    RHXcont : continuous X;
     Oo : isOrd O;
-    Um : morph2 U;
-    Umono : forall o o' x,
+    RHUm : morph2 U;
+    (* Co-domain is monotonic *)
+    RHUmono : forall o o' x,
         isOrd o ->
         o ⊆ o' ->
         o' ∈ osucc O ->
         x ∈ X o ->
         U o x ⊆ U o' x;
-    Fm : morph2 F;
-    Ftyp : forall o,
+    RHm : morph2 F;
+    (* Recursive equation is well-typed *)
+    RHtyp : forall o,
         o ∈ O ->
         forall f,
         f ∈ (Π x ∈ X o, U o x) ->
         F o f
-        ∈ (Π x ∈ X (osucc o), U (osucc o) x);
-    Firr : forall o o' f g,
+          ∈ (Π x ∈ X (osucc o), U (osucc o) x);
+    (* Recursive equation is stage irrelevant *)
+    RHirr : forall o o' f g,
         isOrd o ->
         o ⊆ o' ->
         o' ∈ osucc O ->
@@ -135,9 +143,12 @@ Record rec0_hyps : Prop := rec0_intro {
 
 Hypothesis hyps : rec0_hyps.
 
+Let Xm := RHXm hyps.
+Let Xcont := RHXcont hyps.
+Let Xmono := cont_is_mono _ Xm Xcont.
 Let Oo : isOrd O := Oo hyps.
-Let Um_ := Um hyps.
-Let Fm_ := Fm hyps.
+Let Um := RHUm hyps.
+Let Fm := RHm hyps.
 
   Let Q' o f := forall x, x ∈ X o -> cc_app f x ∈ U o x.
 
@@ -169,10 +180,11 @@ Let Q'm :
    o == o' -> forall f f', fcompat (X o) f f' -> Q' o f -> Q' o' f'.
 intros.
 unfold Q' in H3|-*; intros.
+generalize Xm; intros. (* ? *)
 rewrite <- H1 in H4.
 specialize H3 with (1:=H4).
 red in H2; rewrite <- H2; trivial.
-revert H3; apply (Umono hyps); auto with *.
+revert H3; apply (RHUmono hyps); auto with *.
  rewrite <- H1; reflexivity.
  rewrite <- H1; apply ole_lts; trivial.
 Qed.
@@ -185,11 +197,11 @@ Let Q'cont : forall o f : set,
  (forall o' : set, o' ∈ o -> Q' (osucc o') f) -> Q' o f.
 intros.
 red; intros.
-rewrite Xcont in H3; trivial.
+red in Xcont; rewrite Xcont in H3; trivial.
 apply sup_ax in H3.
  destruct H3 as (o',?,?).
 generalize (H2 _ H3 _ H4).
-apply (Umono hyps); eauto using isOrd_inv with *.
+apply (RHUmono hyps); eauto using isOrd_inv with *.
  red; intros.
  apply isOrd_plump with o'; eauto using isOrd_inv.
  apply olts_le in H5; trivial.
@@ -205,7 +217,7 @@ Let Q'typ : forall o f,
 intros.
 assert (isOrd o) by eauto using isOrd_inv.
 apply Qty; auto.
-apply (Ftyp hyps); trivial.
+apply (RHtyp hyps); trivial.
 apply Qty; auto.
 Qed.
 
@@ -216,7 +228,7 @@ split; intros; auto.
  red; intros.
  destruct H1 as (?,?).
  destruct H2 as (?,?).
- apply (Firr hyps); auto.
+ apply (RHirr hyps); auto.
   apply ole_lts; auto.
 
   apply Qty; auto.
@@ -229,7 +241,7 @@ Qed.
 
 Lemma REC0_rec :
   rec0 F (REC F) O.
-split; intros.
+split; intros; trivial.
  apply Qty; auto.
  apply REC0_is_rec with (o' := o'); trivial.
 
@@ -245,7 +257,7 @@ split; intros.
  2:apply isOrd_osup2; auto.
  2:apply osup2_incl1; auto.
  symmetry.
- apply (Firr hyps); auto.
+ apply (RHirr hyps); auto.
   apply osup2_incl2; auto. 
   apply ole_lts; auto.
    apply isOrd_osup2; auto.
@@ -393,9 +405,6 @@ End RecursorDef.
 
 (** With bottom *)
 
-Hypothesis Xmt : forall o, isOrd o -> ~ empty ∈ X o.
-
-
 Section BotRecursorSpecification.
 
   (** The recursive definition *)
@@ -407,26 +416,38 @@ Section BotRecursorSpecification.
   Hypothesis oo : isOrd o.
   
   (** The condition expressing that [f] satisfies the recursive equation [F] up to [o]. *)
-  Definition rec :=
+  Record rec := mkrec {
+    RbXm : morph1 X;
+    (* Domain is continuous and does not contain the bottom value *)
+    RbXcont : continuous X;
+    RbXmt : forall o, isOrd o -> ~ empty ∈ X o;
     (* typing *)
-    (forall o', isOrd o' -> o' ⊆ o -> f o' ∈ Π x ∈ cc_bot (X o'), U o' x) /\
+    Rbtyp : forall o',
+        isOrd o' -> o' ⊆ o -> f o' ∈ Π x ∈ cc_bot (X o'), U o' x;
     (* strict *)
-    (forall o',
-     isOrd o' -> o' ⊆ o -> cc_app (f o') empty == empty) /\
+    Rbstr : forall o',
+        isOrd o' -> o' ⊆ o -> cc_app (f o') empty == empty;
     (* equation *)
-    (forall o1 o2 n,
+    Rbeqn: forall o1 o2 n,
         isOrd o1 -> isOrd o2 -> o1 ⊆ o -> o2 ⊆ o ->
         n ∈ X o1 ->
         n ∈ X (osucc o2) ->
-        cc_app (f o1) n == cc_app (F o2 (f o2)) n).
+        cc_app (f o1) n == cc_app (F o2 (f o2)) n
+                  }.
 
   Hypothesis isrec : rec.
 
+  Let Xm := RbXm isrec.
+  Let Xcont := RbXcont isrec.
+  Let Req := Rbeqn isrec.
+
+  Let Xmono := cont_is_mono _ Xm Xcont.
+  
   Lemma rec_typ o' :
     isOrd o' ->
     o' ⊆ o ->
     f o' ∈ (Π x ∈ cc_bot (X o'), U o' x).
-apply isrec.
+apply (Rbtyp isrec).
 Qed.
 
   Lemma rec_strict o' n :
@@ -436,7 +457,7 @@ Qed.
     cc_app (f o') n == empty.
 intros.
 rewrite H1.
-apply isrec; trivial.
+apply (Rbstr isrec); trivial.
 Qed.
 
   Lemma rec_eqn_succ o' x :
@@ -445,8 +466,7 @@ Qed.
     cc_app (f (osucc o')) x == cc_app (F o' (f o')) x.
 intros.
 assert (oo' : isOrd o') by eauto using isOrd_inv.
-destruct isrec as (_ & _ & fx_eqn).
-apply fx_eqn; auto.
+apply Req; auto.
 red; intros; apply isOrd_plump with o'; auto.
  apply isOrd_inv with (osucc o'); auto.
  apply olts_le; auto.
@@ -457,14 +477,13 @@ Qed.
     x ∈ cc_bot (X o1) ->
     cc_app (f o1) x == cc_app (f o2) x.
 intros.
-destruct isrec as (_ & fx_mt & fx_eqn).
 apply cc_bot_ax in H3; destruct H3.
  rewrite rec_strict with (o':=o2); auto.
  rewrite rec_strict with (o':=o1); auto with *.
  transitivity o2; auto.
 
- rewrite fx_eqn with (o1:=o2) (o2:=o2); auto.
-  rewrite fx_eqn with (o1:=o1) (o2:=o2); auto with *.
+ rewrite Req with (o1:=o2) (o2:=o2); auto.
+  rewrite Req with (o1:=o1) (o2:=o2); auto with *.
    transitivity o2; trivial.
 
    revert H3; apply Xmono; auto.
@@ -481,8 +500,7 @@ Qed.
     x ∈ X o' ->
     cc_app (f o') x == cc_app (F o' (f o')) x.
 intros.
-destruct isrec as (_ & _ & fx_eqn).
-apply fx_eqn; auto.
+apply Req; auto.
 revert H1; apply Xmono; auto with *.
 apply ord_lt_le; auto; apply lt_osucc; auto.
 Qed.
@@ -497,39 +515,48 @@ Section BotRecursorDef.
   Variable O : set.
 
 Record rec_hyps : Prop := rec_intro {
-    Wo : isOrd O;
-    WMm : morph2 F;
-    WUm : morph2 U;
-    WU_mt : forall o x, empty ∈ U o x;
-    WFtyp : forall o,
+    RHbXm : morph1 X;
+    (* Domain is continuous and does not contain the bottom value *)
+    RHbXcont : continuous X;
+    RHbXmt : forall o, isOrd o -> ~ empty ∈ X o;
+    RHbord : isOrd O;
+    RHbUm : morph2 U;
+    RHbUmono : forall o o' x,
+        isOrd o ->
+        o ⊆ o' ->
+        o' ∈ osucc O ->
+        x ∈ cc_bot (X o) ->
+        U o x ⊆ U o' x;
+    RHbUmt : forall o x, empty ∈ U o x;
+    RHbm : morph2 F;
+    RHbtyp : forall o,
         o ∈ O ->
         forall f,
         f ∈ (Π x ∈ cc_bot (X o), U o x) ->
         F o f
         ∈ (Π x ∈ cc_bot (X (osucc o)), U (osucc o) x);
-    WFirr : forall o o' f g,
+    RHbirr : forall o o' f g,
         isOrd o ->
         o ⊆ o' ->
         o' ∈ osucc O ->
         f ∈ (Π x ∈ cc_bot (X o), U o x) ->
         g ∈ (Π x ∈ cc_bot (X o'), U o' x) ->
         fcompat (cc_bot (X o)) f g ->
-        fcompat (cc_bot (X (osucc o))) (F o f) (F o' g);
-    WUmono : forall o o' x,
-        isOrd o ->
-        o ⊆ o' ->
-        o' ∈ osucc O ->
-        x ∈ cc_bot (X o) ->
-        U o x ⊆ U o' x
+        fcompat (cc_bot (X (osucc o))) (F o f) (F o' g)
   }.
 
 Hypothesis hyps : rec_hyps.
 
-Let Oo : isOrd O := Wo hyps.
-Let Um := WUm hyps.
-Let Fm := WMm hyps.
+Let Xm := RHbXm hyps.
+Let Xcont := RHbXcont hyps.
+Let Xmono := cont_is_mono _ Xm Xcont.
+Let Oo : isOrd O := RHbord hyps.
+Let Um := RHbUm hyps.
+Let Fm := RHbm hyps.
+Let Xmt := RHbXmt hyps.
 
-Definition F' o' f := squash (F o' f).
+Let F' o' f := squash (F o' f).
+
 Definition REC' := REC F'.
 
 Let F'm : morph2 F'.
@@ -537,7 +564,7 @@ do 3 red; intros.
 apply squash_morph; apply Fm; trivial.
 Qed.
 
-  Lemma ext_fun_ty : forall o,
+  Let ext_fun_ty : forall o,
     ext_fun (cc_bot (X o)) (U o).
 do 2 red; intros.
 apply Um; auto with *.
@@ -549,11 +576,9 @@ Lemma prod_ext_mt o f :
   f ∈ cc_prod (cc_bot (X o)) (U o).
 intros oo fty.
 apply cc_prod_ext_mt in fty; trivial.
- apply ext_fun_ty.
+ apply (RHbUmt hyps).
 
- apply (WU_mt hyps).
-
- apply Xmt; trivial.
+ apply RHbXmt; trivial.
 Qed.
 
 Let F'typ : forall o,
@@ -563,24 +588,8 @@ intros.
 assert (oo : isOrd o) by eauto using isOrd_inv.
 unfold F'.
 apply squash_typ; auto.
- apply ext_fun_ty.
-apply (WFtyp hyps); trivial.
+apply (RHbtyp hyps); trivial.
 apply prod_ext_mt; auto.
-Qed.
-
-(* TODO -> ZFcoc *)
-Lemma squash_nmt_eq f x :
-  ~ x == empty ->
-  cc_app (squash f) x == cc_app f x.
-intros Hnmt.
-apply eq_set_ax; intros z.
-unfold squash.
-rewrite <- couple_in_app.
-rewrite subset_ax.
-rewrite <- couple_in_app.
-split;[destruct 1; trivial|split; trivial].
-exists (couple x z); auto with *.
-rewrite fst_def; trivial.
 Qed.
 
 Let F'irr : forall o o' f g,
@@ -595,9 +604,9 @@ assert (oo' : isOrd o') by eauto using isOrd_inv.
 unfold F'.
 assert (xnmt : ~ x == empty).
  intros h; revert H5; rewrite h; apply Xmt; auto.
-rewrite squash_nmt_eq; trivial.
-rewrite squash_nmt_eq; trivial.
-apply (WFirr hyps); auto.
+rewrite squash_nmt; trivial.
+rewrite squash_nmt; trivial.
+apply (RHbirr hyps); auto.
  apply prod_ext_mt; auto.
  apply prod_ext_mt; auto.
 red; intros.
@@ -613,11 +622,11 @@ Lemma REC_rec0 :
     rec0 F' (REC') O.
 apply REC0_rec.
 split; auto.
-intros; apply (WUmono hyps); auto.
+intros; apply (RHbUmono hyps); auto.
 Qed.
 
 Lemma REC_rec : rec F REC' O.
-split;[|split];intros.
+split;intros; auto.
  apply prod_ext_mt; auto.
  apply rec0_typ  with (1:=REC_rec0); auto.
 
@@ -626,11 +635,10 @@ split;[|split];intros.
  apply cc_prod_is_cc_fun in ty.
  rewrite cc_app_outside_domain with (1:=ty); auto with *.
 
- destruct REC_rec0 as (_,eqn).
- rewrite eqn with (o1:=o1)(o2:=o2); auto.
+ rewrite (Reqn _ _ _ REC_rec0) with (o1:=o1)(o2:=o2); auto.
  unfold F'.
  specialize rec0_typ with (1:=REC_rec0) (2:=H0) (3:=H2); intros ty2.
- eapply squash_nmt_eq.
+ eapply squash_nmt.
  intros h; revert H3; rewrite h; apply Xmt; auto.
 Qed.
 
@@ -649,8 +657,6 @@ Qed.
 
 (** Unicity of recursor *)
 Lemma rec_ext0 X X' F F' U U' g g' o :
-  morph1 X ->
-  (forall o, isOrd o -> X o == sup o (fun o' => X (osucc o'))) ->
   isOrd o ->
   (forall o', isOrd o' -> o' ⊆ o -> X o' ⊆ X' o') ->
   rec X U F g o ->
@@ -662,16 +668,16 @@ Lemma rec_ext0 X X' F F' U U' g g' o :
    fcompat (cc_bot (X z)) f f' ->
    fcompat (X (osucc z)) (F z f) (F' z f')) -> 
   fcompat (cc_bot (X o)) (g o) (g' o).
-intros Xm Xcont oo Xincl oko oko' eqF.
+intros oo Xincl oko oko' eqF.
 elim oo using isOrd_ind; intros.
 red; intros.
 apply cc_bot_ax in H2; destruct H2.
  rewrite rec_strict with (1:=oko); auto with *.
  rewrite rec_strict with (1:=oko'); auto with *.
 
- destruct oko as (tyo&_&eqno).
- destruct oko' as (tyo'&_&eqno').
- rewrite Xcont in H2; trivial.
+ destruct oko as (Xm,Xcont,_,tyo,_,eqno).
+ destruct oko' as (_,_,_,tyo',_,eqno').
+ red in Xcont; rewrite Xcont in H2; trivial.
  apply sup_ax in H2.
  2:do 2red; intros; apply Xm; apply osucc_morph; trivial.
  destruct H2 as (o'',?,?).
@@ -691,10 +697,6 @@ apply cc_bot_ax in H2; destruct H2.
 Qed.
 
 Lemma rec_ext X X' F F' U U' g g' o o' :
-  morph1 X ->
-  (forall o, isOrd o -> X o == sup o (fun o' => X (osucc o'))) ->
-  morph1 X' ->
-  (forall o, isOrd o -> X' o == sup o (fun o' => X' (osucc o'))) ->
   isOrd o ->
   isOrd o' ->
   o ⊆ o' ->
@@ -708,15 +710,15 @@ Lemma rec_ext X X' F F' U U' g g' o o' :
    fcompat (cc_bot (X z)) f f' ->
    fcompat (X (osucc z)) (F z f) (F' z f')) -> 
   fcompat (cc_bot (X o)) (g o) (g' o').
-intros Xm Xcont X'm X'cont oo oo' ole Xincl oko oko' eqF n tyn.
+intros oo oo' ole Xincl oko oko' eqF n tyn.
 assert (oko'o: rec X' U' F' g' o).
- destruct oko' as (?&?&?).
+destruct oko' as (?,?,?,?,?,?).
  assert (forall o1, o1 ⊆ o -> o1 ⊆ o').
   intros; transitivity o; trivial.
  split; intros; auto.
 transitivity (cc_app (g' o) n).  
-{apply rec_ext0 with (5:=oko) (6:=oko'o); auto. }
-{apply rec_irr with (3:=oko'); auto with *.
+{apply rec_ext0 with (3:=oko) (4:=oko'o); auto. }
+{apply rec_irr with (1:=oko'); auto with *.
  revert tyn; apply cc_bot_mono.
  apply Xincl; auto with *. }
 Qed. 

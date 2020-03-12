@@ -286,13 +286,6 @@ Require Import ZFrecbot.
     rec (TI W_F') U M (REC' M) O.
 intros.
 apply REC_rec; auto.
- apply TI_morph.
-
- apply TI_mono_eq; auto with *.
-
- red; intros.
- apply mt_not_in_W_F' in H1; auto.
- apply H1; reflexivity.
 Qed.
 
 
