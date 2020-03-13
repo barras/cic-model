@@ -2003,7 +2003,7 @@ apply cc_app_morph; auto with *.
 Qed.
 
   Lemma TI_iso_recursor ord :
-    recursor ord (TI F)
+    recursor_hyps ord (TI F)
       (fun o f => iso_fun (TI F o) (TI G o) (cc_app f))
       (fun o f => cc_lam (F (TI F o)) (g (cc_app f))).
 constructor; intros.
@@ -2236,7 +2236,7 @@ Qed.
   Variable oo : isOrd o.
 
   Lemma TIF_iso_recursor :
-    recursor o (fun o => sigma A (fun a' => TIF A F o a'))
+    recursor_hyps o (fun o => sigma A (fun a' => TIF A F o a'))
       (fun o f => forall a, a ∈ A -> iso_fun (TIF A F o a) (TIF A G o a) (fun x => cc_app f (couple a x)))
       (fun o f =>  cc_lam (sigma A (fun a' => TIF A F (osucc o) a'))
             (fun p => g (fun x y => cc_app f (couple x y)) (fst p) (snd p))).

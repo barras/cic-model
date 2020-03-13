@@ -65,7 +65,8 @@ Module Type PartialNats.
   Parameter natfix_morph : Proper ((eq_set ==> eq_set ==> eq_set) ==> eq_set ==> eq_set) natfix.
 
   Parameter natfix_rec : forall o M U,
-    rec_hyps (TI NATf') U M o -> rec (TI NATf') U M (natfix M) o.
+      typed_bot_recursor_hyps (TI NATf') U M o ->
+      typed_bot_recursor_spec (TI NATf') U M (natfix M) o.
 End PartialNats.
 
 Module Make (M:PartialNats).
@@ -1142,7 +1143,7 @@ Qed.
 
 Lemma Mok i j :
   val_ok e i j ->
-  rec (TI NATf') (U' i) (F' i) (natfix (F' i)) (int O i).
+  typed_bot_recursor_spec (TI NATf') (U' i) (F' i) (natfix (F' i)) (int O i).
 intros.
 assert (Oo: isOrd (int O i)).
  apply ty_O with (1:=H).
@@ -1379,7 +1380,7 @@ assert (inclo: int O i ⊆ int O i').
  apply subO in H; trivial.
 clear subO.
 simpl.
-apply rec_ext with (5:=Mok isval) (6:=Mok isval'); auto with *.
+apply typed_bot_rec_ext with (5:=Mok isval) (6:=Mok isval'); auto with *.
 intros.
 red; intros.
 do 2 red in stab; eapply stab.
@@ -2462,7 +2463,8 @@ Lemma natfix_morph : Proper ((eq_set ==> eq_set ==> eq_set) ==> eq_set ==> eq_se
 Proof REC'_morph.
 
 Lemma natfix_rec: forall o M U,
-  ZFrecbot.rec_hyps (TI NATf') U M o -> rec (TI NATf') U M (natfix M) o.
+    typed_bot_recursor_hyps (TI NATf') U M o ->
+    typed_bot_recursor_spec (TI NATf') U M (natfix M) o.
 Proof NATREC'_rec.
 
 (** Universes *)

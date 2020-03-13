@@ -455,7 +455,7 @@ apply Firrel; trivial.
 Qed.
 Hint Resolve Firrel_NAT.
 
-  Lemma NAT_recursor : recursor ord NATi Q F.
+  Lemma NAT_recursor : recursor_hyps ord NATi Q F.
 constructor; trivial.
  apply TI_morph.
 

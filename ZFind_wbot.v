@@ -282,10 +282,10 @@ Qed.
 Require Import ZFrecbot.
 
   Lemma WREC'_rec U M O :
-    rec_hyps (TI W_F') U M O ->
-    rec (TI W_F') U M (REC' M) O.
+    typed_bot_recursor_hyps (TI W_F') U M O ->
+    typed_bot_recursor_spec (TI W_F') U M (REC' M) O.
 intros.
-apply REC_rec; auto.
+apply REC'_typed_bot_recursor_spec; auto.
 Qed.
 
 

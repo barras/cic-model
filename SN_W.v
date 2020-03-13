@@ -67,8 +67,8 @@ Module Type W_PartialModel.
   Parameter WREC_morph : Proper ((eq_set==>eq_set==>eq_set)==>eq_set==>eq_set) WREC.
   Parameter WREC_rec : forall A B U M O,
       morph1 B ->
-      rec_hyps (TI (W_F A B)) U M O ->
-      rec (TI (W_F A B)) U M (WREC M) O.
+      typed_bot_recursor_hyps (TI (W_F A B)) U M O ->
+      typed_bot_recursor_spec (TI (W_F A B)) U M (WREC M) O.
 
 End W_PartialModel.
 
@@ -1094,7 +1094,7 @@ Qed.
 
 Lemma WREC_ok i j :
   val_ok e i j ->
-  rec (TI (WF A B i)) (U' i) (F' i) (WREC (F' i)) (int O i).
+  typed_bot_recursor_spec (TI (WF A B i)) (U' i) (F' i) (WREC (F' i)) (int O i).
 intros.
 destruct tyord_inv with (3:=ty_O)(4:=H) as (Oo,_); trivial.
 apply WREC_rec; auto.
@@ -1400,7 +1400,7 @@ clear subO.
 assert (aeq : El (int A i) == El (int A i')).
  apply El_morph.
  apply Aeq with (1:=H); trivial.
-eapply rec_ext with (5:=WREC_ok isval) (6:=WREC_ok isval'); auto.
+eapply typed_bot_rec_ext with (5:=WREC_ok isval) (6:=WREC_ok isval'); auto.
  intros; apply eq_incl.
  apply TI_morph_gen; auto with *.
  red; intros.
@@ -1770,10 +1770,10 @@ Proof REC'_morph.
 
   Lemma WREC_rec : forall A B U M O,
     morph1 B ->
-    rec_hyps (TI (W_F A B)) U M O ->
-    rec (TI (W_F A B)) U M (WREC M) O.
+    typed_bot_recursor_hyps (TI (W_F A B)) U M O ->
+    typed_bot_recursor_spec (TI (W_F A B)) U M (WREC M) O.
 intros.
-apply REC_rec; auto.
+apply REC'_typed_bot_recursor_spec; auto.
 Qed.
 
 End W_Model.

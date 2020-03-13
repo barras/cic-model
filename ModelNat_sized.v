@@ -556,9 +556,11 @@ Qed.
 
   Hint Resolve morph_fix_body ext_fun_ty ty_fix_body fix_codom_mono fix_body_irrel.
 
+  Require Import ZFfixrec.
+
   Lemma fix_recursor i :
     val_ok e i ->
-    ZFfixrec.recursor (int O i) NATi
+    recursor_hyps (int O i) NATi
       (fun o f => forall x, x ∈ NATi o -> cc_app f x ∈ int U (V.cons x (V.cons o i)))
       (F i).
 intros.
@@ -569,11 +571,11 @@ apply isOrd_trans with (int O i); auto.
 Qed.
   Lemma fix_is_rec i :
     val_ok e i ->
-    ZFfixrec.is_rec NATi
+    is_rec NATi
       (fun o f => forall x, x ∈ NATi o -> cc_app f x ∈ int U (V.cons x (V.cons o i)))
       (F i) (NATREC (F i)) (int O i).
 intros.
-apply ZFfixrec.REC_stage; trivial.
+apply REC_stage; trivial.
  apply ty_O; trivial.
 
  apply fix_recursor; auto.

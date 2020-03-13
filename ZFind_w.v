@@ -841,7 +841,7 @@ apply Firrel; trivial.
  apply WREC_typing; trivial. 
 Qed.
 
-  Lemma WREC_recursor : recursor ord (TI W_F) Q F.
+  Lemma WREC_recursor : recursor_hyps ord (TI W_F) Q F.
 split; auto.
  apply TI_morph.
 

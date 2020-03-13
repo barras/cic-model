@@ -366,7 +366,7 @@ Require Import ZFrecbot.
 Lemma NATREC_sat o X F RF U RU natfix :
   morph1 X ->
   (forall o, isOrd o -> X o == sup o (fun o' => X (osucc o'))) ->
-  rec X U F natfix o ->
+  typed_bot_recursor_spec X U F natfix o ->
   (forall y n, isOrd y -> n ∈ X y -> exists2 y', y' ∈ y & n ∈ X (osucc y'))->
   Proper (eq_set ==> eq_set ==> eq_set ==> eqSAT) RU ->
   isOrd o ->

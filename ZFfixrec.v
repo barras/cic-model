@@ -6,6 +6,19 @@ Require Import ZF ZFrelations ZFnats ZFord ZFfunext.
 Definition continuous (T:set->set) :=
   forall o, isOrd o -> T o == sup o (fun o' => T (osucc o')).
 
+Lemma cont_is_mono X :
+  morph1 X -> continuous X -> increasing X.
+intros Xm Xcont o o' oo oo' leo.
+rewrite (Xcont o'); trivial.
+apply sup_lub; intros.
+ do 2 red; intros.
+ rewrite H0; reflexivity.
+rewrite (Xcont o); trivial.
+apply sup_incl with (F:=fun o'=>X(osucc o')); auto.
+do 2 red; intros.
+rewrite H1; reflexivity.
+Qed.
+
 Section TransfiniteIteration.
 
   (** (F o x) produces value for stage o+1 given x the value for stage o *)
@@ -201,7 +214,7 @@ Existing Instance REC_morph.
   sup o F ∈ U o.
 *)
 
-Section Recursor.
+Section RecursorWithInvariant.
 
   (** The maximal ordinal we are allowed to iterate over *)
   Variable ord : set.
@@ -223,6 +236,88 @@ Let oordlt := fun o olt => isOrd_inv _ o oord olt.
   (** The step function *)
   Variable F : set -> set -> set.
 
+
+  (** Definition of the properties of a recursor *)
+  Section Spec.
+
+  Variable f : set -> set.
+  (** The condition expressing that [f] satisfies the recursive equation [F] up to [o]. *)
+  Record recursor_spec := mkRecSpec {
+    RXm : morph1 T;
+    (* Domain is continuous *)
+    RXcont : continuous T;
+    (* typing *)
+    Rtyp : forall o',
+        isOrd o' -> o' ⊆ ord ->
+        is_cc_fun (T o') (f o') /\ Q o' (f o');
+    (* equation *)
+    Reqn : forall o1 o2 n,
+        isOrd o1 -> isOrd o2 -> o1 ⊆ ord -> o2 ⊆ ord ->
+        n ∈ T o1 ->
+        n ∈ T (osucc o2) ->
+        cc_app (f o1) n == cc_app (F o2 (f o2)) n
+  }.
+
+  Hypothesis isrec : recursor_spec.
+
+  Let Xm := RXm isrec.
+  Let Xcont := RXcont isrec.
+  Let Req := Reqn isrec.
+
+  Let Xmono := cont_is_mono _ Xm Xcont.
+  
+  Lemma rec_spec_typ o' :
+    isOrd o' ->
+    o' ⊆ ord ->
+    is_cc_fun (T o') (f o') /\ Q o' (f o').
+apply (Rtyp isrec).
+Qed.
+
+  Lemma rec_spec_eqn_succ o' x :
+    o' ∈ ord ->
+    x ∈ T (osucc o') ->
+    cc_app (f (osucc o')) x == cc_app (F o' (f o')) x.
+intros.
+assert (oo' : isOrd o') by eauto using isOrd_inv.
+apply Req; auto.
+red; intros; apply isOrd_plump with o'; auto.
+ apply isOrd_inv with (osucc o'); auto.
+ apply olts_le; auto.
+Qed.
+
+  Lemma rec_spec_irr o1 o2 x :
+    isOrd o1 -> isOrd o2 -> o1 ⊆ o2 -> o2 ⊆ ord ->
+    x ∈ T o1 ->
+    cc_app (f o1) x == cc_app (f o2) x.
+intros.
+rewrite Req with (o1:=o2) (o2:=o2); auto.
+ rewrite Req with (o1:=o1) (o2:=o2); auto with *.
+  transitivity o2; trivial.
+
+  revert H3; apply Xmono; auto.
+  apply ord_lt_le; auto; apply ole_lts; auto.
+
+ revert H3; apply Xmono; auto.
+
+ revert H3; apply Xmono; auto.
+ apply ord_lt_le; auto; apply ole_lts; auto.
+Qed.
+
+  Lemma rec_spec_eqn o' x :
+    isOrd o' -> o' ⊆ ord ->
+    x ∈ T o' ->
+    cc_app (f o') x == cc_app (F o' (f o')) x.
+intros.
+apply Req; auto.
+revert H1; apply Xmono; auto with *.
+apply ord_lt_le; auto; apply lt_osucc; auto.
+Qed.
+
+  End Spec.
+
+  (** Next section establishes conditions for the existence of a recursor *) 
+  Section RecursorDef.
+  
   (** NB: [osucc o] may exceed ord. What if we use [osucc o ∩ ord] instead? *)
   Definition stage_irrelevance :=
     forall o o' f g,
@@ -233,7 +328,7 @@ Let oordlt := fun o olt => isOrd_inv _ o oord olt.
     fcompat (T (osucc o)) (F o f) (F o' g).
 
   (** Assumptions *)
-  Record recursor := mkRecursor {
+  Record recursor_hyps := mkRecursor {
     rec_dom_m    : morph1 T;
     (** Domain is continuous *)
     rec_dom_cont : continuous T;
@@ -258,7 +353,7 @@ Let oordlt := fun o olt => isOrd_inv _ o oord olt.
     rec_body_irrel : stage_irrelevance
   }.
 
-  Hypothesis Hrecursor : recursor.
+  Hypothesis Hrecursor : recursor_hyps.
   Let Tm := rec_dom_m Hrecursor.
   Let Tcont := rec_dom_cont Hrecursor.
   Let Qm := rec_inv_m Hrecursor.
@@ -467,34 +562,35 @@ split.
   apply H0; trivial.
 Qed.
 
-Lemma REC_step : forall o o',
+Lemma REC_step : forall o o' x,
   isOrd o ->
   isOrd o' ->
   o ⊆ o' ->
   o' ⊆ ord ->
-  fcompat (T o) (REC F o) (F o' (REC F o')).
+  x ∈ T o ->
+  cc_app (REC F o) x == cc_app (F o' (REC F o')) x.
 intros.
 destruct REC_inv with o'; trivial.
 rewrite REC_eq with (o:=o) at 1; trivial.
-red in Tcont; rewrite Tcont; trivial.
+red in Tcont; rewrite Tcont in H3; trivial.
 (*assert (o ⊆ osucc o').
  admit.*)
 (* red; intros; apply isOrd_trans with o; auto.*)
-apply prd_sup_lub; intros; auto.
+revert x H3; apply prd_sup_lub; intros; auto.
  red; red; intros; apply Tm.
  rewrite H6; reflexivity.
 
  apply Ftyp'; auto.
  apply REC_inv; eauto using isOrd_inv.
 
- red; intros; apply H4.
+ red; intros; apply H5.
   apply isOrd_trans with o; auto.
   apply ole_lts; auto.
   apply isOrd_trans with o; auto.
   apply ole_lts; auto.
 
  red; intros.
- apply H4.
+ apply H5.
   apply isOrd_trans with o; auto.
   apply ole_lts; auto.
 
@@ -529,9 +625,49 @@ transitivity (cc_app (F o' (REC F o')) x).
 Qed.
 *)
 
+Lemma REC_ord_irrel o o' x:
+    isOrd o ->
+    isOrd o' ->
+    o ⊆ o' ->
+    o' ⊆ ord ->
+    x ∈ T o ->
+    cc_app (REC F o) x == cc_app (REC F o') x.
+intros.
+apply finc_ext; intros; trivial.
+ apply REC_inv; eauto using isOrd_inv.
+
+ apply fincr_cont; intros; trivial.
+ apply REC_inv; eauto using isOrd_inv.
+Qed.
+
+Lemma REC_recursor_spec :
+  recursor_spec (REC F).
+split; intros; trivial.
+ apply REC_inv; trivial.
+
+ pose (o' := o1⊔o2).
+ assert (oo' : isOrd o') by (apply isOrd_osup2; trivial).
+ assert (le1 : o1 ⊆ o') by (apply osup2_incl1; trivial).
+ assert (le2 : o2 ⊆ o') by (apply osup2_incl2; trivial).
+ assert (leo : o' ⊆ ord) by (apply osup2_lub; trivial).
+ rewrite REC_ord_irrel with (o':=o1⊔o2); trivial.
+ rewrite REC_step with (o':=o1⊔o2); auto with *.
+ symmetry.
+ apply Firrel; auto.
+  apply REC_inv; auto.
+  apply REC_inv; auto.
+
+  red; intros.
+  apply REC_ord_irrel; trivial.
+
+ revert H3; apply cont_is_mono; auto.
+Qed. 
+  
+
+(* TODO: deprecate the following (or prove them as consequence of recursor_spec... *)
   Lemma REC_expand : forall x,
     x ∈ T ord -> cc_app (REC F ord) x == cc_app (F ord (REC F ord)) x.
-apply REC_step; auto with *.
+intros; apply REC_step; auto with *.
 Qed.
 
   Lemma REC_eqn :
@@ -555,20 +691,6 @@ Qed.
 apply REC_wt.
 Qed.
 
-  Lemma REC_ord_irrel o o' x:
-    isOrd o ->
-    isOrd o' ->
-    o ⊆ o' ->
-    o' ⊆ ord ->
-    x ∈ T o ->
-    cc_app (REC F o) x == cc_app (REC F o') x.
-intros.
-apply finc_ext; intros; trivial.
- apply REC_inv; eauto using isOrd_inv.
-
- apply fincr_cont; intros; trivial.
- apply REC_inv; eauto using isOrd_inv.
-Qed.
 
   (* Assumptions allow to proof the fix equation up to the succ of ord. *)
 (*  Lemma REC_unfold : REC F (osucc ord) == F ord (REC F ord).
@@ -663,7 +785,7 @@ Definition rec X U F f o :=
     P ord x (cc_app (REC F ord) x).
 intros.
 revert x H1; apply isOrd_ind with (2:=oord); intros.
-rewrite (REC_step y ord H1 oord H2 (fun _ x => x) x); trivial.
+rewrite (REC_step y ord x H1 oord H2 (fun _ x => x)); trivial.
 apply H0; trivial.
 intros.
 assert (fcompat (T o') (REC F o') (REC F ord)).
@@ -754,8 +876,9 @@ red in H0; rewrite H0 with (o':=x0) (x:=x); auto.
  do 2 red; intros; apply cc_app_morph; auto with *.
 Qed.
   
+End RecursorDef.
 
-End Recursor.
+End RecursorWithInvariant.
 
 Global Instance REC_morph_gen : Proper ((eq_set==>eq_set==>eq_set)==>eq_set==>eq_set) REC.
 do 4 red; intros.
@@ -767,6 +890,217 @@ red; intros.
 apply H; trivial.
 apply H1; trivial.
 Qed.
+
+(** Case where the invariant is just a typing condition *)
+
+Section TypedRecursor.
+
+  (** The domain, indexed by ordinals *)
+  Variable X : set -> set.
+  (** The co-domain *)
+  Variable U : set -> set -> set.
+
+  Let Q' o f := forall x, x ∈ X o -> cc_app f x ∈ U o x.
+
+  Let Qty o f :
+    morph2 U ->
+    isOrd o ->
+    (is_cc_fun (X o) f /\ Q' o f <-> f ∈ cc_prod (X o) (U o)).
+intros Um.
+split; intros.
+ destruct H0.
+ rewrite cc_eta_eq' with (1:=H0).
+ apply cc_prod_intro; auto.
+  do 2 red; intros; apply cc_app_morph; auto with *.
+
+  do 2 red; intros; apply Um; auto with *.
+
+ split.
+  rewrite cc_eta_eq with (1:=H0).
+  apply is_cc_fun_lam.
+  do 2 red; intros; apply cc_app_morph; auto with *.
+
+  red; intros.
+  apply cc_prod_elim with (1:=H0); trivial.
+Qed.
+
+Section RecursorSpecification.
+
+  Hypothesis F : set -> set -> set.
+  Hypothesis f : set -> set.
+  Hypothesis o : set.
+  Hypothesis oo : isOrd o.
+
+  Definition typed_recursor_spec :=
+    recursor_spec o X Q' F f.
+
+(*  Lemma mkTypedRecSpec F f o :
+    morph1 X ->
+    continuous X ->
+    (forall o', isOrd o' -> o' ⊆ o -> f o' ∈ Π x ∈ X o', U o' x) ->
+    (forall o1 o2 n,
+        isOrd o1 -> isOrd o2 -> o1 ⊆ o -> o2 ⊆ o ->
+        n ∈ X o1 ->
+        n ∈ X (osucc o2) ->
+        cc_app (f o1) n == cc_app (F o2 (f o2)) n) ->
+    morph2 U ->
+    typed_recursor_spec F f o.
+intros Xm Xcont Ftyp Firr Um.
+split; trivial.
+intros.
+apply Qty; auto.
+Qed.*)
+  
+  Hypothesis isrec : typed_recursor_spec.
+
+  Lemma typed_rec_typ o' :
+    morph2 U ->
+    isOrd o' ->
+    o' ⊆ o ->
+    f o' ∈ (Π x ∈ X o', U o' x).
+intros.
+apply Qty; auto.
+apply (Rtyp _ _ _ _ _ isrec); trivial.
+Qed.
+
+  Lemma typed_rec_eqn_succ o' x :
+    o' ∈ o ->
+    x ∈ X (osucc o') ->
+    cc_app (f (osucc o')) x == cc_app (F o' (f o')) x.
+intros.
+assert (oo' : isOrd o') by eauto using isOrd_inv.
+apply (Reqn _ _ _ _ _ isrec); auto.
+red; intros; apply isOrd_plump with o'; auto.
+ apply isOrd_inv with (osucc o'); auto.
+ apply olts_le; auto.
+Qed.
+
+  Lemma typed_rec_eqn o' x :
+    isOrd o' -> o' ⊆ o ->
+    x ∈ X o' ->
+    cc_app (f o') x == cc_app (F o' (f o')) x.
+intros.
+apply (Reqn _ _ _ _ _ isrec); auto.
+revert H1; apply (cont_is_mono _ (RXm _ _ _ _ _ isrec) (RXcont _ _ _ _ _ isrec)); auto with *.
+apply ord_lt_le; auto; apply lt_osucc; auto.
+Qed.
+
+End RecursorSpecification.
+
+Section RecursorDefinition.
+  
+  Hypothesis F : set -> set -> set.
+  Hypothesis O : set.
+  Hypothesis Oo : isOrd O.
+  
+  Definition typed_recursor_hyps :=
+    recursor_hyps O X Q' F.
+
+  Section Constructor. 
+
+    Hypothesis
+    (RHXm : morph1 X)
+    (* Domain is continuous *)
+    (RHXcont : continuous X)
+(*    (Oo : isOrd O)*)
+    (RHUm : morph2 U)
+    (* Co-domain is monotonic *)
+    (RHUmono : forall o o' x,
+        isOrd o ->
+        o ⊆ o' ->
+        o' ∈ osucc O ->
+        x ∈ X o ->
+        U o x ⊆ U o' x)
+    (RHm : morph2 F)
+    (* Recursive equation is well-typed *)
+    (RHtyp : forall o,
+        o ∈ O ->
+        forall f,
+        f ∈ (Π x ∈ X o, U o x) ->
+        F o f
+          ∈ (Π x ∈ X (osucc o), U (osucc o) x))
+    (* Recursive equation is stage irrelevant *)
+    (RHirr : forall o o' f g,
+        isOrd o ->
+        o ⊆ o' ->
+        o' ∈ osucc O ->
+        f ∈ (Π x ∈ X o, U o x) ->
+        g ∈ (Π x ∈ X o', U o' x) ->
+        fcompat (X o) f g ->
+        fcompat (X (osucc o)) (F o f) (F o' g)).
+
+Let Q'm :
+   forall o o',
+   isOrd o ->
+   o ⊆ O ->
+   o == o' -> forall f f', fcompat (X o) f f' -> Q' o f -> Q' o' f'.
+intros.
+unfold Q' in H3|-*; intros.
+generalize RHXm; intros. (* ? *)
+rewrite <- H1 in H4.
+specialize H3 with (1:=H4).
+red in H2; rewrite <- H2; trivial.
+revert H3; apply RHUmono; auto with *.
+ rewrite <- H1; reflexivity.
+ rewrite <- H1; apply ole_lts; trivial.
+Qed.
+
+Let Q'cont : forall o f : set,
+ isOrd o ->
+ o ⊆ O ->
+ is_cc_fun (X o) f ->
+ (forall o' : set, o' ∈ o -> Q' (osucc o') f) -> Q' o f.
+intros.
+red; intros.
+red in RHXcont; rewrite RHXcont in H3; trivial.
+apply sup_ax in H3.
+ destruct H3 as (o',?,?).
+generalize (H2 _ H3 _ H4).
+apply RHUmono; eauto using isOrd_inv with *.
+ red; intros.
+ apply isOrd_plump with o'; eauto using isOrd_inv.
+ apply olts_le in H5; trivial.
+
+ apply ole_lts; auto.
+do 2 red; intros; apply RHXm; apply osucc_morph; trivial.
+Qed.
+
+Let Q'typ : forall o f,
+ isOrd o ->
+ o ∈ O ->
+ is_cc_fun (X o) f ->
+ Q' o f -> is_cc_fun (X (osucc o)) (F o f) /\ Q' (osucc o) (F o f).
+intros.
+assert (isOrd o) by eauto using isOrd_inv.
+apply Qty; auto.
+apply RHtyp; trivial.
+apply Qty; auto.
+Qed.
+    
+  Lemma mkTypedRec : typed_recursor_hyps.
+split; trivial.
+ red; intros.
+ destruct H1 as (?,?).
+ destruct H2 as (?,?).
+ apply RHirr; auto.
+  apply ole_lts; auto.
+
+  apply Qty; auto.
+  apply Qty; auto.
+Qed.
+
+End Constructor.
+
+  Lemma typed_recursor :
+    typed_recursor_hyps ->
+    typed_recursor_spec F (REC F) O.
+apply REC_recursor_spec; trivial.
+Qed.
+
+End RecursorDefinition.
+
+End TypedRecursor.
+  
 
 (* begin hide *)
 Module Hidden.
@@ -1010,7 +1344,7 @@ Qed.
 
   Hint Resolve Qm' Qcont' Ftyp''' Firrel' RECf_b_morph.
 
-  Lemma RECf_recursor : forall w, w ∈ ord -> recursor w T
+  Lemma RECf_recursor : forall w, w ∈ ord -> recursor_hyps w T
     (fun o f => Q o (cc_app f))
     (fun o f => cc_lam (T (osucc o)) (F (cc_app f))).
 intros.

@@ -408,7 +408,7 @@ apply Ftyp; trivial.
   reflexivity.
 Qed.
 
-    Lemma recur o : isOrd o -> recursor o (fun o => Σ ia ∈ Arg', Wi o ia) Q WF.
+    Lemma recur o : isOrd o -> recursor_hyps o (fun o => Σ ia ∈ Arg', Wi o ia) Q WF.
 intros.
 split; intros.
  do 2 red; intros; apply sigma_morph; auto with *.
