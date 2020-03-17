@@ -348,8 +348,6 @@ Qed.
   Hypothesis Ftyp : forall o f, isOrd o -> o ∈ ord ->
     f ∈ Ty o -> F o f ∈ Ty (osucc o).
 
-  Let Q o f := forall x, x ∈ NATi o -> cc_app f x ∈ U o x.
-
   Definition NAT_ord_irrel :=
     forall o o' f g,
     isOrd o' -> o' ⊆ ord -> isOrd o -> o ⊆ o' ->
@@ -359,7 +357,7 @@ Qed.
 
   Hypothesis Firrel : NAT_ord_irrel.
 
-  Definition NATREC := ZFfixrec.REC F.
+  Definition NATREC := REC F.
 
 Lemma Umorph : forall o o', isOrd o' -> o' ⊆ ord -> o == o' ->
     forall x x', x ∈ NATi o -> x == x' -> U o x == U o' x'. 
@@ -377,135 +375,68 @@ apply incl_eq.
   symmetry; trivial.
 Qed.
 
-Lemma Uext : forall o, isOrd o -> o ⊆ ord -> ext_fun (NATi o) (U o).
-red; red; intros.
-apply Umorph; auto with *.
-Qed.
-
-
-  Lemma NATREC_typing : forall o f, isOrd o -> o ⊆ ord -> 
-    is_cc_fun (NATi o) f -> Q o f -> f ∈ Ty o.
-intros.
-rewrite cc_eta_eq' with (1:=H1).
-apply cc_prod_intro; intros; auto.
- do 2 red; intros.
- rewrite H4; reflexivity.
-
- apply Uext; trivial.
-Qed.
-
-Let Qm :
-   forall o o',
-   isOrd o ->
-   o ⊆ ord ->
-   o == o' -> forall f f', fcompat (NATi o) f f' -> Q o f -> Q o' f'.
-intros.
-unfold Q in H3|-*; intros.
-rewrite <- H1 in H4.
-specialize H3 with (1:=H4).
-red in H2; rewrite <- H2; trivial.
-revert H3; apply Umono; auto with *.
- rewrite <- H1; trivial.
- rewrite <- H1; trivial.
- rewrite <- H1; reflexivity.
-Qed.
-
-Let Qcont : forall o f : set,
- isOrd o ->
- o ⊆ ord ->
- is_cc_fun (NATi o) f ->
- (forall o' : set, o' ∈ o -> Q (osucc o') f) -> Q o f.
-intros.
-red; intros.
-apply TI_elim in H3; auto.
-destruct H3.
-rewrite <- TI_mono_succ in H4; eauto using isOrd_inv.
-generalize (H2 _ H3 _ H4).
-apply Umono; eauto using isOrd_inv with *.
-red; intros.
-apply isOrd_plump with x0; eauto using isOrd_inv.
-apply olts_le in H5; trivial.
-Qed.
-
-Let Qtyp : forall o f,
- isOrd o ->
- o ∈ ord ->
- is_cc_fun (NATi o) f ->
- Q o f -> is_cc_fun (NATi (osucc o)) (F o f) /\ Q (osucc o) (F o f).
-intros.
-assert (F o f ∈ Ty (osucc o)).
- apply Ftyp; trivial.
- apply NATREC_typing; trivial.
- red; intros; apply isOrd_trans with o; auto.
-split.
- apply cc_prod_is_cc_fun in H3; trivial.
-
- red; intros.
- apply cc_prod_elim with (1:=H3); trivial.
-Qed.
-
-  Lemma Firrel_NAT : stage_irrelevance ord NATi Q F.
-red; red; intros.
-destruct H1 as (oo,(ofun,oty)); destruct H2 as (o'o,(o'fun,o'ty)).
-apply Firrel; trivial.
- apply NATREC_typing; trivial. 
- transitivity o'; trivial.
- 
- apply NATREC_typing; trivial. 
-Qed.
-Hint Resolve Firrel_NAT.
-
-  Lemma NAT_recursor : recursor_hyps ord NATi Q F.
-constructor; trivial.
+  Lemma NAT_recursor_hyps : typed_recursor_hyps NATi U F ord.
+apply mkTypedRec; trivial.
  apply TI_morph.
 
  red; intros; apply TI_mono_eq; auto.
+
+ intros.
+ apply Umono; auto. 
+  eauto using isOrd_inv.
+  apply olts_le; auto. 
+
+ intros.
+ apply Ftyp; auto. 
+ eauto using isOrd_inv.
+
+ intros.
+ apply Firrel; auto. 
+  eauto using isOrd_inv.
+  apply olts_le; auto. 
 Qed.
 
- Hint Resolve NAT_recursor.
-
-  (* Main properties of NATREC: typing and equation *)
-  Lemma NATREC_wt : NATREC ord ∈ Ty ord.
-intros.
-refine ((fun h => NATREC_typing
-          ord (NATREC ord) oord (reflexivity _) (proj1 h) (proj2 h)) _).
-apply REC_wt with (T:=NATi) (Q:=Q); auto.
-Qed.
-
-  Lemma NATREC_ord_irrel o o' x:
-    isOrd o ->
-    isOrd o' ->
-    o ⊆ o' ->
-    o' ⊆ ord ->
-    x ∈ NATi o ->
-    cc_app (NATREC o) x == cc_app (NATREC o') x.
-intros.
-apply REC_ord_irrel with (2:=NAT_recursor); auto with *.
-Qed.
-
-
-  Lemma NATREC_ext G :
-    is_cc_fun (NATi ord) G ->
-    (forall o', o' ∈ ord ->
-     NATREC o' == cc_lam (NATi o') (cc_app G) ->
-     fcompat (NATi (osucc o')) G (F o' (cc_lam (NATi o') (cc_app G)))) ->
-    NATREC ord == G.
-intros.
-apply REC_ext with (T:=NATi) (Q:=Q); auto.
-Qed.
-
-  Lemma NATREC_expand : forall n,
-    n ∈ NATi ord -> cc_app (NATREC ord) n == cc_app (F ord (NATREC ord)) n.
-intros.
-apply REC_expand with (T:=NATi) (Q:=Q); auto.
-Qed.
-
-  Lemma NATREC_eqn :
-    NATREC ord == cc_lam (NATi ord) (cc_app (F ord (NATREC ord))).
-apply REC_eqn with (Q:=Q); auto with *.
+  Lemma NAT_recursor : typed_recursor_spec NATi U F NATREC ord.
+apply typed_recursor; auto.
+apply NAT_recursor_hyps.
 Qed.
 
 End Recursor.
+
+Section RecursorProperties.
+
+  Variable ord : set.
+  Hypothesis oord : isOrd ord.
+
+  Variable F : set -> set -> set.
+  Variable U : set -> set -> set.
+  Hypothesis Uext : ext_fun (NATi ord) (U ord).
+  Let Ty o := cc_prod (NATi o) (U o).
+  Hypothesis isrec : typed_recursor_spec NATi U F (NATREC F) ord.
+
+  (* Main properties of NATREC: typing and equation *)
+  Lemma NATREC_wt : NATREC F ord ∈ Ty ord.
+intros.
+apply typed_rec_typ with (1:=isrec); auto with *.
+Qed.
+
+  Lemma NATREC_expand : forall n,
+    n ∈ NATi ord -> cc_app (NATREC F ord) n == cc_app (F ord (NATREC F ord)) n.
+intros.
+apply typed_rec_eqn with (1:=isrec); auto with *.
+Qed.
+
+  Lemma NATREC_eqn :
+    NATREC F ord == cc_lam (NATi ord) (cc_app (F ord (NATREC F ord))).
+transitivity (cc_lam (NATi ord) (cc_app (NATREC F ord))).
+apply cc_eta_eq with (1:=NATREC_wt).
+apply cc_lam_ext; auto with *.
+red; intros.
+rewrite <- H0.
+apply NATREC_expand; trivial.
+Qed.
+
+End RecursorProperties.
 
 
 Instance NATREC_morph :

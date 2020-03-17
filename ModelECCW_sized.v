@@ -3,7 +3,7 @@
 
 Require Import List Bool Models TypModels.
 Require Import ZF ZFsum ZFnats ZFrelations ZFord ZFfix ZFgrothendieck.
-Require Import ZFfunext ZFind_w.
+Require Import ZFfunext ZFind_w ZFfixrec.
 Require Import ModelCC ModelECC.
 
 
@@ -573,120 +573,32 @@ Qed.
 
   Hint Resolve morph_fix_body ext_fun_ty ty_fix_body fix_codom_mono fix_body_irrel.
 
-
-Let fix_typ o i:
+Lemma WREC_ok i :
   val_ok e i ->
-  isOrd o ->
-  isOrd (int O i) ->
-  o ⊆ int O i ->
-  WREC (F i) o ∈ cc_prod (Wi i o) (U' i o).
+  typed_recursor_spec (TI (WF' A B i)) (U' i) (F i) (WREC (F i)) (int O i).
 intros.
-eapply WREC_wt with (U:=U' i); trivial.
- do 2 red; intros.
- apply Bw_morph; auto with *.
+assert (isOrd (int O i)).
+ apply ty_O in H.
+ apply isOrd_inv with infty; auto.
+apply typed_recursor; auto.
+apply mkTypedRec; auto with *.
+ apply TI_morph; auto with *.
 
- intros.
- apply fix_codom_mono with (1:=H); trivial.
- transitivity o; auto.
+ red; intros; apply TI_mono_eq; auto with *.
 
- intros.
- apply ty_fix_body with (1:=H); trivial.
- apply ole_lts; trivial.
- transitivity o; trivial.
- apply ord_lt_le; auto.
- 
- red; intros; apply fix_body_irrel with (1:=H); trivial.
- transitivity o; trivial.
+ intros; apply fix_codom_mono; auto.
+  eauto using isOrd_inv.
+  apply olts_le; auto. 
+
+ intros; apply ty_fix_body; auto.
+ apply isOrd_trans with (int O i); auto.
+
+ intros; apply fix_body_irrel; auto.
+  eauto using isOrd_inv.
+  apply olts_le; auto. 
 Qed.
 
-
-  Lemma fix_irr i o o' x :
-    val_ok e i ->
-    isOrd o ->
-    isOrd o' ->
-    isOrd (int O i) ->
-    o ⊆ o' ->
-    o' ⊆ int O i ->
-    x ∈ Wi i o ->
-    cc_app (WREC (F i) o) x == cc_app (WREC (F i) o') x.
-intros.
-assert (WRECi := WREC_irrel).
-red in WRECi.
-apply WRECi with 
-  (A:=int A i) (B:=fun x=>int B (V.cons x i))
-  (ord:=int O i) (U:=U' i); auto with *.
- do 2 red; intros; apply Bw_morph; auto with *.
-
- intros.
- apply ty_fix_body with (1:=H); trivial.
- apply ole_lts; trivial.
- apply ord_lt_le; auto.
-Qed.
-
-Lemma fix_eqn0 : forall i o,
-  val_ok e i ->
-  isOrd o ->
-  isOrd (int O i) ->
-  o ⊆ int O i ->
-  WREC (F i) (osucc o) == F i o (WREC (F i) o).
-intros.
-unfold WREC at 1.
-rewrite ZFfixrec.REC_eq; auto with *.
-rewrite eq_set_ax; intros z.
-rewrite sup_ax; auto with *.
-split; intros.
- destruct H3 as (o',o'lt,zty).
- assert (o'o : isOrd o') by eauto using isOrd_inv.
- assert (o'le : o' ⊆ o) by (apply olts_le; auto).
- assert (o'le' : o' ⊆ int O i) by (transitivity o; trivial).
- assert (F i o' (WREC (F i) o') ∈ cc_prod (TI (WF' A B i) (osucc o')) (U' i (osucc o'))).
-  apply ty_fix_body with (1:=H); trivial.
-   apply ole_lts; auto.
-
-   apply fix_typ with (1:=H); trivial.
- assert (F i o (WREC (F i) o) ∈ cc_prod (TI (WF' A B i) (osucc o)) (U' i (osucc o))).
-  apply ty_fix_body with (1:=H); trivial.
-   apply ole_lts; auto.
-
-   apply fix_typ with (1:=H); trivial.
- rewrite cc_eta_eq with (1:=H3) in zty.
- rewrite cc_eta_eq with (1:=H4).
- rewrite cc_lam_def in zty|-*.
- 2:intros ? ? _ eqn; rewrite eqn; reflexivity.
- 2:intros ? ? _ eqn; rewrite eqn; reflexivity.
- destruct zty as (n', n'ty, (y, yty, eqz)).
- exists n'.
-  revert n'ty; apply TI_mono; auto with *.
-  apply osucc_mono; auto.
- exists y; trivial.
- revert yty; apply eq_elim.
- assert (firrel := fix_body_irrel).
- do 2 red in firrel.
- apply firrel with (1:=H); auto.
-  apply fix_typ with (1:=H); auto.
-  apply fix_typ with (1:=H); auto.
-
-  clear firrel.
-  red; intros.
-  apply fix_irr with (1:=H); trivial.
-
- exists o;[apply lt_osucc;trivial|trivial].
-Qed.
-
-Lemma fix_eqn : forall i o n,
-  val_ok e i ->
-  isOrd o ->
-  isOrd (int O i) ->
-  o ⊆ int O i ->
-  n ∈ TI (WF' A B i) (osucc o) ->
-  cc_app (WREC (F i) (osucc o)) n ==
-  cc_app (F i o (WREC (F i) o)) n.
-intros.
-rewrite fix_eqn0 with (1:=H); trivial.
-unfold F.
-reflexivity.
-Qed.
-
+  
 Lemma typ_wfix :
   typ e (WFix O M) (Prod (WI A B O) (subst_rec O 1 U)).
 red; intros.
@@ -694,7 +606,7 @@ destruct tyord_inv with (2:=ty_O)(3:=H); trivial.
 apply in_int_el.
 eapply eq_elim.
 2:simpl.
-2:apply fix_typ with (1:=H); auto with *.
+2:apply typed_rec_typ with (1:=WREC_ok _ H); auto with *.
 2:reflexivity.
 apply cc_prod_ext.
  reflexivity.
@@ -726,24 +638,7 @@ apply in_int_not_kind in tyN.
 2:discriminate.
 destruct tyord_inv with (2:=ty_O)(3:=H); trivial.
 simpl in tyN.
-apply TI_elim in tyN; auto.
-destruct tyN as (o,oly,nty).
-assert (oo: isOrd o) by eauto using isOrd_inv.
-rewrite <- TI_mono_succ in nty; auto with *.
-rewrite <- fix_irr with (1:=H)(o:=osucc o); auto with *.
-2:apply olts_le.
-2:apply lt_osucc_compat; auto.
-rewrite fix_eqn with (1:=H); auto with *.
-eapply fix_body_irrel with (1:=H); auto with *.
- apply fix_typ with (1:=H); trivial.
- red; intros; apply isOrd_trans with o; trivial.
-
- simpl.
- apply fix_typ with (1:=H); auto with *.
-
- red; simpl; intros.
- apply fix_irr with (1:=H); auto with *.
- reflexivity.
+apply rec_spec_eqn with (1:=WREC_ok _ H); auto with *.
 Qed.
 
 
@@ -761,48 +656,29 @@ assert (oo': isOrd (int O i')).
 assert (inclo: int O i ⊆ int O i').
  apply subO in H; trivial.
 clear subO.
+assert (aeq : int A i == int A i').
+ apply Aeq with (1:=H); trivial.
 change (cc_app (WREC (F i) (int O i)) x == cc_app (WREC (F i') (int O i')) x).
 revert x H0.
 change (int (WI A B O) i) with (Wi i (int O i)).
-elim oo using isOrd_ind; intros.
-simpl in H3; apply TI_elim in H3; auto.
-destruct H3 as (o',?,?).
-assert (o_o' : isOrd o') by eauto using isOrd_inv.
-assert (o'_y : osucc o' ⊆ y).
- red; intros; apply le_lt_trans with o'; auto.
-rewrite <- TI_mono_succ in H4; auto.
-rewrite <- fix_irr with (1:=isval) (o:=osucc o'); auto.
-rewrite fix_eqn with (1:=isval); auto.
- assert (TIeq: forall o', isOrd o' -> TI (WF' A B i) o' == TI (WF' A B i') o').
-  intros; apply TI_morph_gen; auto with *.
-  red; intros.
-  apply W_F_ext; trivial.
-   apply (Aeq _ _ H).
+eapply typed_recursor_ext with (3:=WREC_ok _ isval) (4:=WREC_ok _ isval'); auto with *.
+ intros; apply eq_incl.
+ apply TI_morph_gen; auto with *.
+ red; intros.
+ apply W_F_ext; auto.
+ red; intros.
+ eapply Beq.
+ apply val_push_var with (1:=H); trivial.
+ rewrite <- H4, <- aeq; trivial.
 
-   red; intros.
-   eapply Beq.
-   apply val_push_var with (1:=H); trivial.
-    rewrite (Aeq _ _ H) in H7.
-    rewrite H8 in H7; trivial.
+ red; intros.
+ do 2 red in stab; eapply stab.
+  apply val_mono_1 with (1:=H); auto with *.
+  transitivity (int O i); trivial.
 
-assert (x ∈ TI (WF' A B i') (osucc o')).
- rewrite <- TIeq; auto.
-rewrite <- fix_irr with (1:=isval') (o:=osucc o'); auto with *.
-2:red; intros; apply le_lt_trans with o' ;auto.
-2:apply inclo; apply H1; trivial.
-rewrite fix_eqn with (1:=isval'); auto.
-assert (irr := stab).
-do 2 red in irr.
-eapply irr.
-2:rewrite El_int_W_lift; trivial.
-apply val_mono_1 with (1:=H); auto with *.
-do 2 red; intros.
-rewrite H2; trivial.
-symmetry; apply fix_irr with (1:=proj1(proj2 H)); auto with *.
-revert H6; apply eq_elim.
-apply TIeq; trivial.
+  rewrite El_int_W_lift.
+  simpl; auto.
 Qed.
-
 
 Lemma wfix_equals :
   var_equals E O ->

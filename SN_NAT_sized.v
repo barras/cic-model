@@ -1124,12 +1124,13 @@ rewrite El_def in H7; trivial.
 Qed.
 Let Usub : forall i j,
  val_ok e i j ->
- forall o' o'' x,
+ forall o' o'' x x',
  isOrd o' ->
  o' ⊆ o'' ->
  o'' ∈ osucc (int O i) ->
  x ∈ Nati o' ->
- U' i o' x ⊆ U' i o'' x.
+ x == x' ->
+ U' i o' x ⊆ U' i o'' x'.
 intros.
 destruct ty_O with (1:=H) as (Oo,_).
 assert (o'' ⊆ int O i).

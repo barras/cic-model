@@ -124,13 +124,14 @@ Record typed_bot_recursor_hyps : Prop := rec_intro {
     RHbXcont : continuous X;
     RHbXmt : forall o, isOrd o -> ~ empty ∈ X o;
     RHbord : isOrd O;
-    RHbUm : morph2 U;
-    RHbUmono : forall o o' x,
+(*    RHbUm : morph2 U;*)
+    RHbUmono : forall o o' x x',
         isOrd o ->
         o ⊆ o' ->
         o' ∈ osucc O ->
         x ∈ cc_bot (X o) ->
-        U o x ⊆ U o' x;
+        x == x' ->
+        U o x ⊆ U o' x';
     RHbUmt : forall o x, empty ∈ U o x;
     RHbm : morph2 F;
     RHbtyp : forall o,
@@ -155,7 +156,6 @@ Let Xm := RHbXm hyps.
 Let Xcont := RHbXcont hyps.
 Let Xmono := cont_is_mono _ Xm Xcont.
 Let Oo : isOrd O := RHbord hyps.
-Let Um := RHbUm hyps.
 Let Fm := RHbm hyps.
 Let Xmt := RHbXmt hyps.
 
@@ -169,17 +169,25 @@ apply squash_morph; apply Fm; trivial.
 Qed.
 
   Let ext_fun_ty : forall o,
+    isOrd o ->
+    o ⊆ O ->
     ext_fun (cc_bot (X o)) (U o).
 do 2 red; intros.
-apply Um; auto with *.
+apply incl_eq; apply (RHbUmono hyps); auto with *.
+ apply ole_lts; trivial.
+ apply ole_lts; trivial.
+ rewrite <- H2; trivial.
 Qed.
 
 Lemma prod_ext_mt o f :
   isOrd o ->
+  o ⊆ O ->
   f ∈ cc_prod (X o) (U o) ->
   f ∈ cc_prod (cc_bot (X o)) (U o).
-intros oo fty.
+intros oo leO fty.
 apply cc_prod_ext_mt in fty; trivial.
+ apply ext_fun_ty; auto.
+
  apply (RHbUmt hyps).
 
  apply RHbXmt; trivial.
@@ -192,8 +200,13 @@ intros.
 assert (oo : isOrd o) by eauto using isOrd_inv.
 unfold F'.
 apply squash_typ; auto.
-apply (RHbtyp hyps); trivial.
-apply prod_ext_mt; auto.
+ apply ext_fun_ty; auto.
+ red; intros; apply isOrd_plump with o; auto.
+   eauto using isOrd_inv.
+   apply olts_le; auto.
+
+ apply (RHbtyp hyps); trivial.
+ apply prod_ext_mt; auto.
 Qed.
 
 Let F'irr : forall o o' f g,
@@ -212,7 +225,10 @@ rewrite squash_nmt; trivial.
 rewrite squash_nmt; trivial.
 apply (RHbirr hyps); auto.
  apply prod_ext_mt; auto.
+ transitivity o'; auto.
+ apply olts_le; auto.
  apply prod_ext_mt; auto.
+ apply olts_le; auto.
 red; intros.
 apply cc_bot_ax in H6; destruct H6; auto.
 rewrite H6.
@@ -234,7 +250,10 @@ assert (isrec := REC'_typed_recursor_spec).
 split;intros; auto.
  apply prod_ext_mt; auto.
  apply typed_rec_typ with (1:=isrec); auto.
-
+ red; red; intros; apply ext_fun_ty; auto.
+ 
+ assert (Um : ext_fun (X o') (U o')).
+  red; red; intros; apply ext_fun_ty; auto.
  specialize typed_rec_typ with (1:=isrec) (2:=Um) (3:=H) (4:=H0).
  intros ty.
  apply cc_prod_is_cc_fun in ty.
@@ -242,6 +261,8 @@ split;intros; auto.
 
  rewrite (Reqn _ _ _ _ _ isrec) with (o1:=o1)(o2:=o2); auto.
  unfold F'.
+ assert (Um : ext_fun (X o2) (U o2)).
+  red; red; intros; apply ext_fun_ty; auto.
  specialize typed_rec_typ with (1:=isrec) (2:=Um) (3:=H0) (4:=H2); intros ty2.
  eapply squash_nmt.
  intros h; revert H3; rewrite h; apply Xmt; auto.
@@ -316,6 +337,7 @@ Lemma typed_bot_rec_ext X X' F F' U U' g g' o o' :
    fcompat (X (osucc z)) (F z f) (F' z f')) -> 
   fcompat (cc_bot (X o)) (g o) (g' o').
 intros oo oo' ole Xincl oko oko' eqF n tyn.
+red; intros.
 assert (oko'o: typed_bot_recursor_spec X' U' F' g' o).
 destruct oko' as (?,?,?,?,?,?).
  assert (forall o1, o1 ⊆ o -> o1 ⊆ o').

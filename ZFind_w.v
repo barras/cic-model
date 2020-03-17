@@ -726,11 +726,6 @@ Qed.
   Hypothesis Ftyp : forall o f, isOrd o -> o ∈ ord ->
     f ∈ Ty o -> F o f ∈ Ty (osucc o).
 
-  Let Q o f := forall x, x ∈ TI W_F o -> cc_app f x ∈ U o x.
-
-Definition fcompat2 domf domg f g :=
-  forall x : set, x ∈ domf -> x ∈ domg -> cc_app f x == cc_app g x.
-
   Definition Wi_ord_irrel :=
     forall o o' f g,
     isOrd o' -> o' ⊆ ord -> isOrd o -> o ⊆ o' ->
@@ -742,6 +737,7 @@ Definition fcompat2 domf domg f g :=
 
   Definition WREC := REC F.
 
+  (*
 Lemma Umorph : forall o o', isOrd o' -> o' ⊆ ord -> o == o' ->
     forall x x', x ∈ TI W_F o -> x == x' -> U o x == U o' x'. 
 intros.
@@ -840,68 +836,60 @@ apply Firrel; trivial.
 
  apply WREC_typing; trivial. 
 Qed.
-
-  Lemma WREC_recursor : recursor_hyps ord (TI W_F) Q F.
-split; auto.
+*)
+  Lemma WREC_recursor_hyps : typed_recursor_hyps (TI W_F) U F ord.
+apply mkTypedRec; auto.
  apply TI_morph.
 
- apply Firrel_W.
-Qed.
-Hint Resolve WREC_recursor.
+ red; intros; apply TI_mono_eq; auto.
 
+ intros.
+ apply Umono; auto. 
+  eauto using isOrd_inv.
+  apply olts_le; auto. 
 
-  Lemma WREC_is_rec : is_rec (TI W_F) Q F WREC ord.
-apply REC_stage; trivial.
-Qed.    
+ intros.
+ apply Ftyp; auto. 
+ eauto using isOrd_inv.
 
-  (* Main properties of WREC: typing and equation *)
-  Lemma WREC_wt : WREC ord ∈ Ty ord.
-intros.
-destruct (rec_typ _ _ _ _ _ (WREC_is_rec _ oord (fun _ h => h))).
-apply WREC_typing; auto with *.
-(*apply REC_wt with (1:=oord) (2:=WREC_recursor).
- apply REC_wt with (1:=oord) (2:=WREC_recursor).*)
-Qed.
-
-  Lemma WREC_ind : forall P x,
-    Proper (eq_set==>eq_set==>eq_set==>iff) P ->
-    (forall o x, isOrd o -> lt o ord ->
-     x ∈ W_F (TI W_F o) ->
-     (forall y, y ∈ TI W_F o -> P o y (cc_app (WREC ord) y)) ->
-     forall w, isOrd w -> w ⊆ ord -> lt o w ->
-     P w x (cc_app (F ord (WREC ord)) x)) ->
-    x ∈ TI W_F ord ->
-    P ord x (cc_app (WREC ord) x).
-intros.
-unfold WREC.
-apply REC_ind with (2:=WREC_recursor); auto.
-intros.
-apply TI_elim in H4; auto with *.
-destruct H4 as (o',?,?).
-apply H0 with o'; eauto using isOrd_inv.
-red; auto.
+ intros.
+ apply Firrel; auto. 
+  eauto using isOrd_inv.
+  apply olts_le; auto. 
 Qed.
 
-  Lemma WREC_expand : forall n,
-    n ∈ TI W_F ord -> cc_app (WREC ord) n == cc_app (F ord (WREC ord)) n.
-intros.
-apply (rec_expand _ _ _ _ _ (WREC_is_rec _ oord (fun _ h => h))); trivial.
-(*apply REC_expand with (2:=WREC_recursor) (Q:=Q); auto.*)
-Qed.
-
-  Lemma WREC_irrel o o' :
-    isOrd o ->
-    isOrd o' ->
-    o ⊆ o' ->
-    o' ⊆ ord ->
-    eq_fun (TI W_F o) (cc_app (WREC o)) (cc_app (WREC o')).
-red; intros.
-rewrite <- H4.
-apply (rec_irr _ _ _ _ _ (WREC_is_rec _ H0 H2)); trivial.
-(*apply REC_ord_irrel with (2:=WREC_recursor); auto with *.*)
+  Lemma WREC_recursor : typed_recursor_spec (TI W_F) U F WREC ord.
+apply typed_recursor; auto.
+apply WREC_recursor_hyps.
 Qed.
 
 End Recursor.
+
+Section RecursorProperties.
+
+  (* Main properties of WREC: typing and equation *)
+
+  Variable ord : set.
+  Hypothesis oord : isOrd ord.
+
+  Variable F : set -> set -> set.
+  Variable U : set -> set -> set.
+  Hypothesis Uext : ext_fun (TI W_F ord) (U ord).
+  Let Ty o := cc_prod (TI W_F o) (U o).
+  Hypothesis isrec : typed_recursor_spec (TI W_F) U F (WREC F) ord.
+
+  Lemma WREC_wt : WREC F ord ∈ Ty ord.
+intros.
+apply typed_rec_typ with (1:=isrec); auto with *.
+Qed.
+
+  Lemma WREC_expand : forall n,
+    n ∈ TI W_F ord -> cc_app (WREC F ord) n == cc_app (F ord (WREC F ord)) n.
+intros.
+apply typed_rec_eqn with (1:=isrec); auto with *.
+Qed.
+
+End RecursorProperties.
 
 Section SimpleRecursor.
 
@@ -919,94 +907,78 @@ Section SimpleRecursor.
     fcompat (TI W_F o) f g ->
     fcompat (TI W_F (osucc o)) (F f) (F g).
     
-  Definition W_REC := WREC (fun o fct => λ w ∈ TI W_F (osucc o), cc_app (F fct) w) W_ord.
+  Let F' := fun o fct => λ w ∈ TI W_F (osucc o), cc_app (F fct) w.
 
-  Lemma W_REC_eqn w :
+  Definition W_REC := WREC F' W_ord.
+
+  Lemma W_REC_recursor_hyps : typed_recursor_hyps (TI W_F) (fun o => U) F' W_ord.
+apply mkTypedRec; auto with *.
+ apply TI_morph; auto with *.
+ red; intros; apply TI_mono_eq; auto with *.
+
+ intros.
+ rewrite H3; reflexivity.
+
+ do 3 red; intros.
+ apply cc_lam_morph; intros.
+  rewrite H; reflexivity.
+
+  red; intros.
+  rewrite H0, H1; reflexivity.
+
+ intros.
+ apply cc_prod_intro.
+  do 2 red; intros; apply cc_app_morph; auto with *.
+  do 2 red; intros; auto.
+  intros.
+  apply Ftyp with o; trivial.
+   apply isOrd_inv with W_ord; auto.  
+  intros.
+  apply cc_prod_elim with (1:=H0); trivial.
+
+ red; red; intros.
+ assert (oo' : isOrd o') by eauto using isOrd_inv.
+ unfold F'.
+ rewrite cc_beta_eq; trivial.
+  rewrite cc_beta_eq. 
+  red in Firr.
+  eapply Firr with o; trivial.
+
+  do 2 red; intros.
+  rewrite H7; reflexivity.
+
+ revert H5; apply TI_mono; eauto with *.
+ apply osucc_mono; auto.
+
+ do 2 red; intros.
+ rewrite H7; reflexivity.
+Qed.
+
+
+  Lemma W_REC_recursor : typed_recursor_spec (TI W_F) (fun o => U) F' (REC F') W_ord.
+apply typed_recursor with (2:=W_REC_recursor_hyps); auto.
+Qed.
+  
+ Lemma W_REC_eqn w :
     w ∈ W ->
     cc_app W_REC w == cc_app (F W_REC) w.
 intros.
 unfold W_REC.
-rewrite WREC_expand with (U:=fun _ w => U w); trivial.
- rewrite cc_beta_eq; trivial.
-  reflexivity.
-
-  do 2 red; intros.
-  rewrite H1; reflexivity.
-
-  rewrite TI_mono_succ; auto with *.
-  fold W.
-  rewrite <- W_eqn; trivial.
-  
-  do 3 red; intros.
-  apply cc_lam_ext.
-   rewrite H0; reflexivity.
-
-   red; intros.
-   apply cc_app_morph; auto.
-
- intros.
- rewrite H5; reflexivity.
-
- intros.
- apply cc_prod_intro.
-  do 2 red; intros; apply cc_app_morph; auto with *.
-  do 2 red; intros; auto.
-  intros.
-  apply Ftyp with o; trivial.
-  intros.
-  apply cc_prod_elim with (1:=H2); trivial.
-
- red; red; intros.
- rewrite cc_beta_eq; trivial.
-  rewrite cc_beta_eq. 
-  red in Firr.
-  eapply Firr with o; trivial.
-
-  do 2 red; intros.
-  rewrite H9; reflexivity.
-
- revert H7; apply TI_mono; auto with *.
- apply osucc_mono; auto.
+rewrite WREC_expand with (2:=W_REC_recursor); auto.
+unfold F' at 1.
+rewrite cc_beta_eq; trivial.
+ reflexivity.
 
  do 2 red; intros.
- rewrite H9; reflexivity.
+ rewrite H1; reflexivity.
+
+ rewrite TI_mono_succ; auto with *.
+ fold W.
+ rewrite <- W_eqn; trivial.
 Qed.
 
   Lemma W_REC_typ : W_REC ∈ cc_prod W U.
-apply WREC_wt with (U:=fun _ w => U w); trivial.
- do 3 red; intros.
- apply cc_lam_ext.
-  rewrite H; reflexivity.
-
-  red; intros.
-  apply cc_app_morph; auto.
-
- intros.
- rewrite H4; reflexivity.
-
- intros.
- apply cc_prod_intro.
-  do 2 red; intros; apply cc_app_morph; auto with *.
-  do 2 red; intros; auto.
-  intros.
-  apply Ftyp with o; trivial.
-  intros.
-  apply cc_prod_elim with (1:=H1); trivial.
-
- red; red; intros.
- rewrite cc_beta_eq; trivial.
-  rewrite cc_beta_eq. 
-  red in Firr.
-  eapply Firr with o; trivial.
-
-  do 2 red; intros.
-  rewrite H8; reflexivity.
-
- revert H6; apply TI_mono; auto with *.
- apply osucc_mono; auto.
-
- do 2 red; intros.
- rewrite H8; reflexivity.
+apply WREC_wt with (3:=W_REC_recursor); auto.
 Qed.
 
   Lemma W_REC_unicity :
@@ -1056,15 +1028,6 @@ apply H.
 trivial.
 Qed.
     
-  (*
-  Lemma W_REC_ind : forall P x,
-    Proper (eq_set==>eq_set==>iff) P ->
-    (forall x,
-     x ∈ W ->
-     (forall y, y ∈ W -> P y (cc_app WREC y)) ->
-     P x (cc_app (F WREC) x)) ->
-    x ∈ W -> P x (cc_app WREC x).
-*)
 End SimpleRecursor.
 
 Section PrimRecursor.

@@ -408,9 +408,13 @@ apply Ftyp; trivial.
   reflexivity.
 Qed.
 
-    Lemma recur o : isOrd o -> recursor_hyps o (fun o => Σ ia ∈ Arg', Wi o ia) Q WF.
+
+  Lemma recur o :
+    isOrd o ->
+    typed_recursor_spec (fun o => Σ ia ∈ Arg', Wi o ia) (fun o p => P (fst p) (snd p)) WF (REC WF) o.
 intros.
-split; intros.
+apply typed_recursor; trivial.
+apply mkTypedRec; auto with *.
  do 2 red; intros; apply sigma_morph; auto with *.
  red; intros; apply Wi_morph; auto.
 
@@ -438,59 +442,34 @@ split; intros.
   do 3 red; intros.
   rewrite H1,H2; reflexivity.
 
- red in H4|-*; intros.
- red in H3.
- rewrite <- H3.
- apply H4.
- revert H5; apply eq_elim; apply sigma_morph; auto with *.
- red; intros.
- apply Wi_morph; auto with *.
- revert H5; apply eq_elim; apply sigma_morph; auto with *.
- red; intros.
- apply Wi_morph; auto with *.
+ intros.  
+ rewrite <- H4; reflexivity.
 
- red; intros.
- red in H3.
- assert (pfst := fst_typ_sigma _ _ _ H4).
- assert (psnd : snd p ∈ Wi o0 (fst p)).
-  apply snd_typ_sigma with (3:=reflexivity _) in H4; auto.
- unfold Wi, W0.Wi in psnd.
- apply TIF_elim in psnd; auto.
- destruct psnd as (o',?,?).
- apply H3 with o'; trivial.
- rewrite surj_pair with (1:=subset_elim1 _ _ _  H4).
- apply couple_intro_sigma; auto.
- rewrite Wi_succ; auto.
- apply isOrd_inv with o0; auto.
-  apply W0.W_Fd_morph; auto.
-
- apply WFm.  
-
- split.
-  apply is_cc_fun_lam.
+ intros.
+ apply cc_prod_intro.
   do 2 red; intros.
   apply WFm1; auto with *.
 
-  red; intros.
-  unfold WF.
-  rewrite cc_beta_eq; trivial.
-   apply Ftyp' with o0; trivial.
+  do 2 red; intros.
+  rewrite H3; reflexivity.
+ intros.
+ apply Ftyp' with (o:=o0); auto.
+  eauto using isOrd_inv.
 
-   do 2 red; intros.
-   apply WFm1; auto with *.
+  red; intros.
+  apply cc_prod_elim with (1:=H1); trivial.
 
  red; red; intros.
  unfold WF.
- destruct H2; destruct H3.
  rewrite cc_beta_eq; trivial.
  rewrite cc_beta_eq; trivial.
-  apply succ_elim in H5; trivial.
-  destruct H5 as (x_eta & mty & ity & aty & bty).
+ apply succ_elim in H6; trivial.
+  destruct H6 as (x_eta & mty & ity & aty & bty).
   apply Fm; auto with *.
   apply cc_lam_ext; auto with *.
   red; intros.
-  rewrite <- H8.
-  apply H4.
+  rewrite <- H7.
+  apply H5.
    apply couple_intro_sigma; auto.
     apply couple_intro_sigma; auto.
      apply jtyp; auto.
@@ -500,18 +479,20 @@ split; intros.
 
     apply bty; trivial.
 
- do 2 red; intros.
- apply WFm1; auto with *.
+  do 2 red; intros.
+  apply WFm1; auto with *.
 
- revert H5; apply sigma_mono; auto with *.
- intros.
- rewrite <- H8.
- apply TIF_mono; auto with *.
-  apply W0.W_Fd_morph; auto.
-  apply osucc_mono; auto.
+  revert H6; apply sigma_mono; auto with *.
+  intros.
+  rewrite <- H7.
+  apply TIF_mono; auto with *.
+   apply W0.W_Fd_morph; auto.
+   eauto using isOrd_inv.
+   apply osucc_mono; auto.
+   eauto using isOrd_inv.
 
- do 2 red; intros.
- apply WFm1; auto with *.
+  do 2 red; intros.
+  apply WFm1; auto with *.
 Qed.
 
     Lemma W_REC_typ i a w :
@@ -522,17 +503,17 @@ Qed.
 intros.
 unfold W_REC.
 pose (X:=fun o => Π p ∈ (Σ ia ∈ Arg', Wi o ia), P (fst p) (snd p)).
-specialize REC_typing with (1:=W_o_o) (2:= recur _ W_o_o).  
-unfold Q.
-intro.
-generalize (H2 (couple (couple i a) w)).
- rewrite fst_def, snd_def; intros.
-apply H3.
-apply couple_intro_sigma; auto.
+assert (REC WF W_ord ∈ X W_ord).
+ apply typed_rec_typ with (1:= recur _ W_o_o); auto with *.
+  do 2 red; intros.
+  rewrite <- H3; reflexivity. 
+
+  apply W_o_o.
+assert (couple (couple i a) w ∈ Σ ia ∈ Arg', W ia).
+ apply couple_intro_sigma; auto with *.
  apply couple_intro_sigma; auto.
-(*
- rewrite W_def in H1; trivial.
- apply couple_intro_sigma; auto.*)
+specialize cc_prod_elim with (1:=H2) (2:=H3).
+rewrite fst_def, snd_def; trivial.
 Qed.
                                                  
 Lemma W_REC_eqn i a x y :
@@ -550,16 +531,13 @@ assert (tyw : couple (couple i a) (couple x y) ∈ (Σ ia ∈ Arg', Wi W_ord ia)
 
   apply W_intro; try assumption.
 unfold W_REC at 1.
-rewrite REC_eqn with (1:=W_o_o) (2:= recur _ W_o_o).  
-rewrite cc_beta_eq; trivial.
- unfold WF at 1.
- rewrite cc_beta_eq.
-
+rewrite rec_spec_eqn with (1:= recur _ W_o_o) (2:=W_o_o); auto with *.
+unfold WF at 1; rewrite cc_beta_eq; trivial.
  apply Fm.
- rewrite fst_def,fst_def; reflexivity.
- rewrite fst_def,snd_def; reflexivity.
- rewrite snd_def,fst_def; reflexivity.
- rewrite snd_def,snd_def; reflexivity.
+  rewrite fst_def,fst_def; reflexivity.
+  rewrite fst_def,snd_def; reflexivity.
+  rewrite snd_def,fst_def; reflexivity.
+  rewrite snd_def,snd_def; reflexivity.
  apply cc_lam_ext.
   rewrite snd_def,!fst_def; reflexivity.
  red; intros.
@@ -595,9 +573,6 @@ revert tyw; apply sigma_mono; auto.
 
   apply lt_osucc.
   apply W_o_o.
-
-do 2 red; intros.
-rewrite H5; reflexivity.
 Qed.
 
   End Recursor.

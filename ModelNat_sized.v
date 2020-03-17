@@ -1,5 +1,5 @@
 Require Import List Bool Models.
-Require Import ZFfunext ZFecc ZFind_nat.
+Require Import ZFfunext ZFecc ZFind_nat ZFfixrec.
 Import ZF ZFsum ZFnats ZFrelations ZFord ZFfix ZFgrothendieck.
 Require ModelCC.
 
@@ -442,6 +442,7 @@ Section NatFixRules.
     M.
 
   Let F i := fun o' f => int M (V.cons f (V.cons o' i)).
+  Let U' i := fun o' x => int U (V.cons x (V.cons o' i)).
 
   Lemma morph_fix_body : forall i, morph2 (F i).
 unfold F; do 3 red; intros.
@@ -449,8 +450,8 @@ rewrite H; rewrite H0; reflexivity.
 Qed.
 
   Lemma ext_fun_ty : forall o i,
-    ext_fun (NATi o) (fun x => int U (V.cons x (V.cons o i))).
-do 2 red; intros.
+    ext_fun (NATi o) (U' i o).
+unfold U'; do 2 red; intros.
 rewrite H0;reflexivity.
 Qed.
 
@@ -482,14 +483,49 @@ intros [|[|k]].
  rewrite <- minus_n_O.
  reflexivity.
 Qed.
+
+  Lemma val_mono_1 i i' y y' f g:
+    val_mono E i i' ->
+    isOrd (int O i) ->
+    isOrd (int O i') ->
+    int O i ⊆ int O i' ->
+    isOrd y ->
+    isOrd y' ->
+    y ⊆ int O i ->
+    y' ⊆ int O i' ->
+    y ⊆ y' ->
+    f ∈ cc_prod (NATi y) (U' i y) ->
+    g ∈ cc_prod (NATi y') (U' i' y') ->
+    fcompat (NATi y) f g ->
+    val_mono (push_fun (push_ord E (OSucc O)) (NatI (Ref 0)) U)
+      (V.cons f (V.cons y i)) (V.cons g (V.cons y' i')).
+intros is_val Oo Oo' oo' yo y'o yO y'O yy' fty gty eqfg.
+apply val_push_fun.
+ apply val_push_ord; auto.
+  apply ole_lts; trivial.
+
+  apply ole_lts; trivial.
+
+ revert fty; apply eq_elim; apply cc_prod_ext; intros.
+  reflexivity.
+
+  apply ext_fun_ty.
+
+ revert gty; apply eq_elim; apply cc_prod_ext; intros.
+  reflexivity.
+
+  apply ext_fun_ty.
+
+ trivial.
+Qed.
   
   Lemma ty_fix_body : forall i o f,
     val_ok e i ->
     o < osucc (int O i) ->
     f ∈ prod (NATi o) (fun x => int U (V.cons x (V.cons o i))) ->
     F i o f ∈
-    prod (NATi (osucc o)) (fun x => int U (V.cons x (V.cons (osucc o) i))).
-unfold F; intros.
+    prod (NATi (osucc o)) (U' i (osucc o)).
+unfold U', F; intros.
 specialize (ty_O _ H); simpl in ty_O.
 assert (isOrd (int O i)).
  auto.
@@ -507,8 +543,8 @@ Qed.
 
   Lemma fix_body_irrel : forall i,
     val_ok e i ->
-    NAT_ord_irrel (int O i) (F i) (fun o' x => int U (V.cons x (V.cons o' i))).
-red; red; intros.
+    NAT_ord_irrel (int O i) (F i) (U' i).
+unfold U'; red; red; intros.
 assert (isOrd (int O i)).
  auto.
 red in stab.
@@ -532,8 +568,8 @@ Qed.
    o ⊆ o' ->
    x ∈ NATi o ->
    x == x' ->
-   int U (V.cons x (V.cons o i)) ⊆ int U (V.cons x' (V.cons o' i)).
-intros.
+   U' i o x ⊆ U' i o' x'.
+unfold U'; intros.
 apply var_mono_U.
 apply val_push_var; simpl; auto.
  apply val_push_ord; simpl; auto; change (int O (fun k => i k)) with (int O i).
@@ -556,47 +592,15 @@ Qed.
 
   Hint Resolve morph_fix_body ext_fun_ty ty_fix_body fix_codom_mono fix_body_irrel.
 
-  Require Import ZFfixrec.
-
   Lemma fix_recursor i :
     val_ok e i ->
-    recursor_hyps (int O i) NATi
-      (fun o f => forall x, x ∈ NATi o -> cc_app f x ∈ int U (V.cons x (V.cons o i)))
-      (F i).
+    typed_recursor_spec NATi (U' i) (F i) (NATREC (F i)) (int O i).
 intros.
 apply NAT_recursor; auto.
 intros.
 apply ty_fix_body; trivial.
 apply isOrd_trans with (int O i); auto.
 Qed.
-  Lemma fix_is_rec i :
-    val_ok e i ->
-    is_rec NATi
-      (fun o f => forall x, x ∈ NATi o -> cc_app f x ∈ int U (V.cons x (V.cons o i)))
-      (F i) (NATREC (F i)) (int O i).
-intros.
-apply REC_stage; trivial.
- apply ty_O; trivial.
-
- apply fix_recursor; auto.
-Qed.
-
-  Lemma nat_fix_eqn : forall i,
-    val_ok e i ->
-    NATREC (F i) (int O i) ==
-    cc_lam (NATi (int O i))
-      (fun x => cc_app (F i (int O i) (NATREC (F i) (int O i))) x).
-intros.
-assert (oi : isOrd (int O i)).
- auto.
-apply NATREC_eqn with
-  (ord:=int O i)
-  (U:=fun o x => int U (V.cons x (V.cons o i))); auto.
-intros.
-apply ty_fix_body; trivial.
-apply ole_lts; auto.
-Qed.
-
 
   Lemma typ_nat_fix : typ e (NatFix O M) (Prod (NatI O) (subst_rec O 1 U)).
 red; intros.
@@ -604,10 +608,10 @@ simpl.
 assert (isOrd (int O i)).
  auto.
 apply eq_elim with
-   (prod (NATi (int O i)) (fun x => int U (V.cons x (V.cons (int O i) i)))).
+   (prod (NATi (int O i)) (U' i (int O i))).
  apply prod_ext.
   reflexivity.
-  red; intros.
+  unfold U'; red; intros.
   rewrite int_subst_rec_eq.
   rewrite V.shift_cons.
   rewrite <- V.cons_lams.
@@ -616,11 +620,7 @@ apply eq_elim with
 
    do 2 red; intros.
    rewrite H3; reflexivity.
-apply NATREC_wt with (F:=F i)
-  (ord := int O i)
-  (U:=fun o x => int U (V.cons x (V.cons o i))); intros; auto.
-apply ty_fix_body; trivial.
-apply isOrd_trans with (int O i); auto.
+apply NATREC_wt with (3:=fix_recursor _ H); auto.
 Qed.
 
 
@@ -639,12 +639,8 @@ simpl.
 change (int O (fun k => i k)) with (int O i).
 assert (O_lt := @ty_O _ H0).
 simpl in O_lt.
-rewrite nat_fix_eqn; trivial.
-rewrite beta_eq.
+rewrite rec_spec_eqn with (1:=fix_recursor _ H0); auto with *.
  reflexivity.
-
- red; intros.
- rewrite H2; reflexivity.
 
  apply H; trivial.
 Qed.
@@ -663,100 +659,16 @@ assert (oo': isOrd (int O i')).
 assert (inclo: int O i ⊆ int O i').
  apply subO in H; trivial.
 clear subO.
-assert (tyfx' :
-  NATREC (F i') (int O i') ∈
-  prod (NATi (int O i')) (fun x1 => int U (V.cons x1 (V.cons (int O i') i')))).
-{ apply NATREC_wt with
-   (ord := int O i')
-   (U:=fun o x => int U (V.cons x (V.cons o i'))); intros; auto.
- apply ty_fix_body; trivial.
- apply ole_lts; trivial.
- apply ord_lt_le; trivial. }
-assert (NATREC (F i) (int O i) ==
-  cc_lam (NATi (int O i)) (cc_app (NATREC (F i') (int O i')))).
-{apply NATREC_ext with  (ord := int O i)
-  (U:=fun o x => int U (V.cons x (V.cons o i))); intros; auto.
-  apply ty_fix_body; trivial.
-  apply isOrd_trans with (int O i); auto.
+change (cc_app (NATREC (F i) (int O i)) x == cc_app (NATREC (F i') (int O i')) x).
+revert x H0.
+change (int (NatI O) i) with (NATi (int O i)).
+eapply typed_recursor_ext with (3:=fix_recursor _ isval) (4:=fix_recursor _ isval'); auto with *.
+red; intros.
+do 2 red in stab; eapply stab.
+ apply val_mono_1 with (1:=H); auto with *.
+ transitivity (int O i); trivial.
 
-  apply is_cc_fun_lam.
-  do 2 red; intros; apply cc_app_morph; auto with *.
-
-  red; intros.
-  rewrite cc_beta_eq.
-  eapply transitivity.
-   apply cc_app_morph;[|reflexivity].
-   apply nat_fix_eqn; trivial.
-  rewrite cc_beta_eq.
-   symmetry; apply stab.
-   apply val_push_fun; trivial.
-    apply val_push_ord; simpl; auto.
-     apply isOrd_trans with (int O i); auto.
-
-     apply lt_osucc; auto.
-
-    apply cc_prod_intro; intros.
-     do 2 red; intros; apply cc_app_morph; auto with *.
-
-     do 2 red; intros.
-     rewrite H5; reflexivity.
-
-     rewrite cc_beta_eq; trivial.
-      assert (tyfx1 : NATREC (F i) o' ∈
-         prod (NATi o') (fun x1 => int U (V.cons x1 (V.cons o' i)))).
-       destruct (fix_is_rec _ isval o'); auto.
-        apply isOrd_inv with (int O i); trivial.
-       apply NATREC_typing with (ord:=int O i)(U:=fun o x => int U (V.cons x (V.cons o i))); auto.
-        apply isOrd_inv with (int O i); trivial.
-
-        apply rec_typ.
-        apply rec_typ.
-      rewrite H2 in tyfx1.
-      specialize cc_prod_elim with (1:=tyfx1) (2:=H4); intro.
-      rewrite cc_beta_eq in H5; trivial.
-       rewrite cc_beta_eq in H5; trivial.
-         do 2 red; intros; apply cc_app_morph; auto with *.
-
-         revert H4; simpl; apply TI_incl; auto.
-
-        do 2 red; intros; apply cc_app_morph; auto with *.
-
-       do 2 red; intros; apply cc_app_morph; auto with *.
-
-      revert H4; simpl; apply TI_incl; auto.
-
-    red; intros.
-    rewrite cc_beta_eq; auto.
-     rewrite cc_beta_eq; auto with *.
-      do 2 red; intros; apply cc_app_morph; auto with *.
-
-      revert H4; simpl; apply TI_incl; auto. 
-
-     do 2 red; intros; apply cc_app_morph; auto with *.
-
-     rewrite int_Nplus; simpl; trivial.
-
-   do 2 red; intros; apply cc_app_morph; auto with *.
-
-   revert H3; apply TI_mono; auto. 
-    eauto using isOrd_inv.
-
-    red; intros.
-    apply inclo.
-    apply isOrd_plump with o'; eauto using isOrd_inv, olts_le.
-
-  do 2 red; intros; apply cc_app_morph; auto with *.
-
-  revert H3; apply TI_mono; auto. 
-   eauto using isOrd_inv.
-
-   red; intros.
-   apply isOrd_plump with o'; eauto using isOrd_inv, olts_le. }
-simpl in H1|-*; unfold F in H1 at 1; rewrite H1.
-rewrite cc_beta_eq; auto with *.
- reflexivity.
-
- do 2 red; intros; apply cc_app_morph; auto with *.
+ simpl; auto.
 Qed.
 
   Lemma var_eq_fix :

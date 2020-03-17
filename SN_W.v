@@ -1042,44 +1042,16 @@ assert (val_mono (push_fun (push_ord E (OSucct O)) (WIL 1 (Ref 0)) U)
 apply stab in H6.
 rewrite El_int_W_lift in H6; trivial.
 Qed.
-(*Let Mirr : forall i j,
- val_ok e i j ->
- forall o' o'' f g,
- isOrd o' ->
- o' ⊆ o'' ->
- o'' ∈ int O i ->
- f ∈ cc_prod (Wi i o') (U' i o') ->
- g ∈ cc_prod (Wi i o'') (U' i o'') ->
- fcompat (Wi i o') f g ->
- fcompat (Wi i (osucc o')) (int M (V.cons f (V.cons o' i))) (int M (V.cons g (V.cons o'' i))).
-intros.
-assert (Oo: isOrd (int O i)).
- destruct tyord_inv with (3:=ty_O)(4:=H); trivial.
-assert (o'' ⊆ int O i).
- red; intros.
- apply isOrd_trans with o''; trivial.
- (*apply olts_le in H2; trivial.*)
-assert (val_mono (push_fun (push_ord E (OSucct O)) (WIL 1 (Ref 0)) U)
-         (V.cons f (V.cons o' i)) (I.cons daimon (I.cons daimon j))
-         (V.cons g (V.cons o'' i)) (I.cons daimon (I.cons daimon j))).
- apply val_mono_1; auto with *.
-  apply val_mono_refl; trivial.
-
-  eauto using isOrd_inv.
-
-  transitivity o''; auto.
-apply stab in H7.
-rewrite El_int_W_lift in H7; trivial.
-Qed.*)
 
 Let Usub : forall i j,
  val_ok e i j ->
- forall o' o'' x,
+ forall o' o'' x x',
  isOrd o' ->
  o' ⊆ o'' ->
  o'' ∈ osucc (int O i) ->
  x ∈ Wi i o' ->
- U' i o' x ⊆ U' i o'' x.
+ x == x' ->
+ U' i o' x ⊆ U' i o'' x'.
 intros.
 assert (Oo: isOrd (int O i)).
  destruct tyord_inv with (3:=ty_O)(4:=H); trivial.
@@ -1157,7 +1129,6 @@ eapply inSAT_morph;[reflexivity| |].
  (RF:= Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j))))
  (RU:= fun o w => Real (int U (V.cons w (V.cons o i)))).
 (*
-
 2:apply WREC_sat_gen with (6:=WREC_ok H)
  (RA:=Real(int A i))(RB:=fun x =>Real(int B(V.cons x i)))
  (RF:= Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j))))
