@@ -277,17 +277,6 @@ rewrite W_fix'.
 revert H3; apply W_F'_mono; auto.
 Qed.
 
-(** Recursor on W *)
-
-Require Import ZFrecbot.
-
-  Lemma WREC'_rec U M O :
-    typed_bot_recursor_hyps (TI W_F') U M O ->
-    typed_bot_recursor_spec (TI W_F') U M (REC' M) O.
-intros.
-apply REC'_typed_bot_recursor_spec; auto.
-Qed.
-
 
 (** * Universe facts: when A and B belong to a given (infinite) universe, then so does W(A,B). *)
 

@@ -390,14 +390,6 @@ Qed.
 
 Hint Resolve NATREC_dom_ext NATREC_dom_cont.
 
-Require Import ZFrecbot.
-
-Lemma NATREC'_rec o M U :
-    typed_bot_recursor_hyps (TI NATf') U M o -> typed_bot_recursor_spec (TI NATf') U M (REC' M) o.
-intros ok.
-apply REC'_typed_bot_recursor_spec; auto with *.
-Qed.
-
 (** * Universe facts: NAT' belongs to any Grothendieck universes that
       is contains omega.
  *)

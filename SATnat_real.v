@@ -327,97 +327,12 @@ intros.
 apply WHEN_SUM_INR.
 Qed.
 
-Lemma NATFIX_sat o m X U :
-  (forall y n, isOrd y -> n ∈ X y -> exists2 y', y' ∈ y & n ∈ X (osucc y'))->
-  let FIX_ty o := piSAT0 (fun n => n ∈ cc_bot (X o)) cNAT (U o) in
-  let FIX_ty' o := piSAT0 (fun n => n ∈ X o) cNAT (U o) in
-  isOrd o ->
-  (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ X y ->
-   inclSAT (U y n) (U y' n)) ->
-  inSAT m (piSAT0 (fun o' => o' ∈ o)
-             (fun o1 => FIX_ty o1) (fun o1 => FIX_ty' (osucc o1))) ->
-  inSAT m (prodSAT (FIX_ty empty) snSAT) ->
-  inSAT (NATFIX m) (FIX_ty o).
-intros Xinv FIX_ty FIX_ty' oo Umono msat mneutr.
-apply FIXP_sat
-   with (T:=X) (U:=fun o => cc_bot (X o)) (RT:=cNAT); trivial.
- intros.
- apply cc_bot_ax in H1; destruct H1.
-  left.
-  apply cNAT_neutral; trivial.
-
-  right.
-  apply Xinv; trivial.
-
- exists empty; trivial.
-
- intros.
- apply neuSAT_def.
- apply WHEN_SUM_neutral; trivial.
- apply neuSAT_def; trivial.
-
- intros.
- rewrite cNAT_eq in H1.
- apply condSAT_smaller in H1.
- apply WHEN_SUM_sat with (1:=H1) (2:=H2); trivial.
-Qed.
-
-Require Import ZFrecbot.  
-Lemma NATREC_sat o X F RF U RU natfix :
-  morph1 X ->
-  (forall o, isOrd o -> X o == sup o (fun o' => X (osucc o'))) ->
-  typed_bot_recursor_spec X U F natfix o ->
-  (forall y n, isOrd y -> n ∈ X y -> exists2 y', y' ∈ y & n ∈ X (osucc y'))->
-  Proper (eq_set ==> eq_set ==> eq_set ==> eqSAT) RU ->
-  isOrd o ->
-  (forall o' o'' x y y',
-      isOrd o' ->
-      isOrd o'' ->
-      o' ⊆ o'' ->
-      o'' ⊆ o ->
-      x ∈ X o' -> y ∈ U o' x -> y == y' -> inclSAT (RU o' x y) (RU o'' x y')) ->
-  let FIX_ty o' f:=
-      piSAT0 (fun n => n ∈ cc_bot (X o')) cNAT (fun n => RU o' n (cc_app f n)) in
-  (forall o' f u,
-      isOrd o' ->
-      o' ∈ cc_bot o ->
-      f ∈ (Π w ∈ cc_bot (X o'), U o' w) ->
-      inSAT u (FIX_ty o' f) -> inSAT (Lc.App RF u) (FIX_ty (osucc o') (F o' f))) ->
-  inSAT (NATFIX RF) (FIX_ty o (natfix o)).
-intros Xm Xcont isrec Xinv RUm oo RUmono FIX_ty satF.
-eapply NATFIX_sat with
-   (U:=fun o n => RU o n (cc_app (natfix o) n)); trivial.
-{intros.
- apply RUmono; auto.
-  apply cc_prod_elim with (dom := cc_bot (X y)) (F := U y); auto.
-  apply rec_typ with (1:=isrec); auto.
-  transitivity y'; trivial.
-
-  apply rec_irr with (1:=isrec); auto. }
-{apply piSAT0_intro.
-  assert (inSAT (Lc.App RF daimon) (FIX_ty (osucc empty) (F empty (natfix empty)))).
-   apply satF; auto.
-    apply rec_typ with (1:=isrec); auto.
-    apply varSAT.
-  apply sat_sn in H.
-  apply Lc.subterm_sn with (Lc.App RF daimon); auto.
- intros.
- assert (xo : isOrd x) by eauto using isOrd_inv.
- assert (Wty : natfix x ∈ Π w ∈ cc_bot (X x), U x w).
-  apply rec_typ with (1:=isrec); trivial.
-  red; intros; apply isOrd_trans with x; auto.
- specialize satF with (1:=xo)(2:=cc_bot_intro _ _ H)(3:=Wty)(4:=H0).
- revert satF; apply piSAT0_mono with (f:=fun x=>x); auto with *.
- intros.
- rewrite rec_eqn_succ with (2:=isrec); auto with *. }
-
-{apply prodSAT_intro'; intros.
- assert (inSAT (Lc.App RF v) (FIX_ty (osucc empty) (F empty (natfix empty)))).
-  apply satF; auto.
-  apply rec_typ with (1:=isrec); auto.
-
-  apply snSAT_intro.
-  apply sat_sn with (1:=H0). }
+Lemma WHEN_SUM_satnat x t m X :
+ inSAT t (cNAT x) -> inSAT m X -> inSAT (Lc.App2 WHEN_SUM t m) X.
+intros.
+rewrite cNAT_eq in H.
+apply condSAT_smaller in H; auto.
+apply WHEN_SUM_sat with (1:=H); trivial.
 Qed.
 
 End Make.

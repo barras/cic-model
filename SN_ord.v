@@ -8,6 +8,7 @@ Module Lc := Lambda.
 
 (** * Ordinals *)
 
+(** The type of ordinals < o (o independent of context) *)
 Definition Ordt (o:set) : term :=
   SN.T.cst (mkTY o (fun _ => snSAT)) Lc.K (fun _ _ => eq_refl) (fun _ _ _ => eq_refl).
 
@@ -33,47 +34,33 @@ rewrite cc_bot_ax in H0; destruct H0; trivial.
 rewrite H0; trivial.
 Qed.
 
-Definition OMin (O1 O2:term) : term.
+(** The type of ordinals < o *)
+Definition Oty (o : term) : term.
 (*begin show*)
-left; exists (fun i => int O1 i ∩ int O2 i) (fun j => Lc.App2 Lc.K (tm O1 j) (tm O2 j)).
+left; exists (fun i => mkTY (int o i) (fun _ => snSAT)) (fun j => tm o j).
 (*end show*)
  do 2 red; intros.
+ apply mkTY_ext; auto with *.
  rewrite H; reflexivity.
  (**)
  do 2 red; intros.
  rewrite H; reflexivity.
  (**)
  red; intros.
- unfold Lc.App2; simpl.
- f_equal.
- 2:apply tm_liftable.
- f_equal.
  apply tm_liftable.
  (**)
  red; intros.
- unfold Lc.App2; simpl.
- f_equal.
- 2:apply tm_substitutive.
- f_equal.
  apply tm_substitutive.
 Defined.
 
-Definition OSucc (o:term) : term.
-(*begin show*)
-left; exists (fun i => osucc (int o i)) (fun j => tm o j).
-(*end show*)
- do 2 red; intros.
- rewrite H; reflexivity.
- (**)
- do 2 red; intros.
- rewrite H; reflexivity.
- (**)
- red; intros.
- apply tm_liftable.
- (**)
- red; intros.
- apply tm_substitutive.
-Defined.
+Lemma El_int_oty O' i :
+  El (int (Oty O') i) == cc_bot (int O' i).
+simpl; rewrite El_def; reflexivity.
+(*apply eq_intro; intros; auto.
+rewrite cc_bot_ax in H; destruct H; trivial.
+rewrite H.
+apply ole_lts; auto.*)
+Qed.
 
 (** The type of ordinals <= o *)
 Definition OSucct (o : term) : term.
@@ -102,6 +89,51 @@ rewrite cc_bot_ax in H; destruct H; trivial.
 rewrite H.
 apply ole_lts; auto.
 Qed.
+
+
+(** The ordinal o^+ *)
+Definition OSucc (o:term) : term.
+(*begin show*)
+left; exists (fun i => osucc (int o i)) (fun j => tm o j).
+(*end show*)
+ do 2 red; intros.
+ rewrite H; reflexivity.
+ (**)
+ do 2 red; intros.
+ rewrite H; reflexivity.
+ (**)
+ red; intros.
+ apply tm_liftable.
+ (**)
+ red; intros.
+ apply tm_substitutive.
+Defined.
+
+(** The ordinal o1∩o2 *)
+Definition OMin (O1 O2:term) : term.
+(*begin show*)
+left; exists (fun i => int O1 i ∩ int O2 i) (fun j => Lc.App2 Lc.K (tm O1 j) (tm O2 j)).
+(*end show*)
+ do 2 red; intros.
+ rewrite H; reflexivity.
+ (**)
+ do 2 red; intros.
+ rewrite H; reflexivity.
+ (**)
+ red; intros.
+ unfold Lc.App2; simpl.
+ f_equal.
+ 2:apply tm_liftable.
+ f_equal.
+ apply tm_liftable.
+ (**)
+ red; intros.
+ unfold Lc.App2; simpl.
+ f_equal.
+ 2:apply tm_substitutive.
+ f_equal.
+ apply tm_substitutive.
+Defined.
 
 Lemma tyord_inv : forall e i j o o',
   isOrd o' ->

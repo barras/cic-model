@@ -65,8 +65,8 @@ Module Type PartialNats.
   Parameter natfix_morph : Proper ((eq_set ==> eq_set ==> eq_set) ==> eq_set ==> eq_set) natfix.
 
   Parameter natfix_rec : forall o M U,
-      typed_bot_recursor_hyps (TI NATf') U M o ->
-      typed_bot_recursor_spec (TI NATf') U M (natfix M) o.
+      typed_bot_recursor_hyps (singl empty) (TI NATf') U M o ->
+      typed_bot_recursor_spec (singl empty) (TI NATf') U M (natfix M) o.
 End PartialNats.
 
 Module Make (M:PartialNats).
@@ -900,6 +900,9 @@ Section NatFixRules.
     (NatI (OSucc (Ref 1)))
     M.
 
+  Hypothesis fx_sub_U :
+    fx_sub (push_var (push_ord E (OSucct O)) (NatI (OSucc (Ref 0)))) U.
+
   Let Nati o := cc_bot (TI NATf' o).
   Let F i := fun o' f => squash (int M (V.cons f (V.cons o' i))).
   Let U' i := fun o' x => El (int U (V.cons x (V.cons o' i))).
@@ -921,10 +924,49 @@ rewrite H0;reflexivity.
 Qed.
   Hint Resolve U'morph morph_fix_body ext_fun_ty.
 
+  Lemma val_ok_1 i j o ot f u :
+    val_ok e i j ->
+    isOrd (int O i) ->
+    isOrd o ->
+    o ∈ cc_bot (int O i) ->
+    f ∈ (Π w ∈ Nati o, U' i o w) ->
+    Lc.sn ot ->
+    inSAT u
+          (piSAT0 (fun n => n ∈ Nati o) cNAT
+                  (fun n => Real (int U (V.cons n (V.cons o i))) (cc_app f n))) ->
+    val_ok (Prod (NatI (Ref 0)) U::OSucct O::e)
+            (V.cons f (V.cons o i)) (I.cons u (I.cons ot j)).
+intros ok Oo oo tyo tyf sato satu.
+apply vcons_add_var.
+3:discriminate.
+ apply vcons_add_var; trivial.
+ 2:discriminate.
+ split; simpl.
+  red; rewrite El_def.
+  revert tyo; apply cc_bot_mono.
+  red; intros; apply isOrd_trans with (int O i); auto.
 
-  Hypothesis fx_sub_U :
-    fx_sub (push_var (push_ord E (OSucct O)) (NatI (OSucc (Ref 0)))) U.
+  rewrite Real_def; auto.
+   reflexivity.
+  revert tyo; apply cc_bot_mono.
+  red; intros; apply isOrd_trans with (int O i); auto.
 
+ apply int_Prod_intro.
+  revert tyf; apply eq_set_ax.
+  apply cc_prod_ext.
+   apply El_int_NatI; auto with *.
+
+   red; intros.
+   unfold U'.
+   rewrite H0; reflexivity.
+
+  intros.
+  destruct H.
+  red in H; rewrite El_int_NatI in H.
+  rewrite Real_int_NatI in H1; trivial.
+  apply piSAT0_elim' in satu.
+  apply satu; trivial.
+Qed.
 
   Lemma val_mono_1 i i' j j' y y' f g:
     val_mono E i j i' j' ->
@@ -1144,12 +1186,16 @@ Qed.
 
 Lemma Mok i j :
   val_ok e i j ->
-  typed_bot_recursor_spec (TI NATf') (U' i) (F' i) (natfix (F' i)) (int O i).
+  typed_bot_recursor_spec (singl empty) (TI NATf') (U' i) (F' i) (natfix (F' i)) (int O i).
 intros.
 assert (Oo: isOrd (int O i)).
  apply ty_O with (1:=H).
 apply natfix_rec.
 split; auto.
+ intros.
+ apply singl_elim in H1; rewrite H1 in H2.
+ apply NATf'_nmt with o'; trivial.
+
  intros.
  apply Usub with (1:=H); trivial.
 
@@ -1175,7 +1221,7 @@ discriminate.
 apply and_split; intros.
  red; rewrite El_int_prod.
  eapply eq_elim.
- 2:simpl; apply rec_typ with (1:=Mok H); auto with *.
+ 2:simpl; apply typed_bot_rec_typ with (1:=Mok H); auto with *.
  apply cc_prod_ext.
   simpl; rewrite El_def; reflexivity.
 
@@ -1207,13 +1253,26 @@ apply and_split; intros.
    intros [|[|k]]; reflexivity.
  }
 assert (ok := Mok H).
-eapply NATREC_sat with (X:=TI NATf') (o:=int O i)
- (F:= F' i)
- (RF:= Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j))))
- (U:= U' i)
- (RU:= fun o w => Real (int U (V.cons w (V.cons o i)))); auto with *.
+eapply recursor_sat with (6:=Mok H)
+   (RU:= fun o w => Real (int U (V.cons w (V.cons o i)))); auto with *.
+ apply WHEN_SUM_neutral2.
+
  intros.
- apply TI_inv; auto with *.
+ apply WHEN_SUM_satnat with (1:=H5); trivial.
+
+ (* *)
+ intros.
+ apply union2_ax in H5; destruct H5.
+  apply singl_elim in H5.
+  left.
+  apply cNAT_neutral; trivial.
+
+  right.
+  apply TI_inv in H5; auto with *.
+  
+ (* *)
+ intros; exists empty.
+ apply union2_intro1; apply singl_intro.
 
  (**)
  do 4 red; intros; apply Real_morph; auto with *.
@@ -1234,50 +1293,19 @@ eapply NATREC_sat with (X:=TI NATf') (o:=int O i)
  (**)
  intros.
  apply inSAT_exp;[right;apply sat_sn in H6;trivial|].
-  replace (Lc.subst u (tm M (Lc.ilift (I.cons (tm O j) j)))) with
+ replace (Lc.subst u (tm M (Lc.ilift (I.cons (tm O j) j)))) with
      (tm M (I.cons u (I.cons (tm O j) j))).
-  2:unfold Lc.subst; rewrite <- tm_substitutive.
-  2:apply tm_morph; auto with *.
-  2:intros [|[|k]]; unfold Lc.ilift,I.cons; simpl.
-  2:rewrite Lc.lift0; reflexivity.
-  2:rewrite Lc.simpl_subst; trivial.
-  2:rewrite Lc.lift0; trivial.
-  2:rewrite Lc.simpl_subst; trivial.
-  2:rewrite Lc.lift0; trivial.
-  assert (ok': val_ok (Prod (NatI (Ref 0)) U::OSucct O::e)
+ 2:unfold Lc.subst; rewrite <- tm_substitutive.
+ 2:apply tm_morph; auto with *.
+ 2:intros [|[|k]]; unfold Lc.ilift,I.cons; simpl.
+ 2:rewrite Lc.lift0; reflexivity.
+ 2:rewrite Lc.simpl_subst; trivial.
+ 2:rewrite Lc.lift0; trivial.
+ 2:rewrite Lc.simpl_subst; trivial.
+ 2:rewrite Lc.lift0; trivial.
+ assert (ok': val_ok (Prod (NatI (Ref 0)) U::OSucct O::e)
             (V.cons f (V.cons o' i)) (I.cons u (I.cons (tm O j) j))).
-  {apply vcons_add_var.
-    apply vcons_add_var; trivial.
-     split; simpl.
-      red; rewrite El_def.
-      revert H4; apply cc_bot_mono.
-      red; intros; apply isOrd_trans with (int O i); auto.
-
-      rewrite Real_def; auto.
-       reflexivity.
-       revert H4; apply cc_bot_mono.
-       red; intros; apply isOrd_trans with (int O i); auto.
-
-     discriminate.
-
-    apply int_Prod_intro.
-     revert H5; apply eq_set_ax.
-     apply cc_prod_ext.
-      rewrite El_int_NatI; auto with *.
-      reflexivity.
-
-      red; intros.
-      unfold U'.
-      rewrite H7; reflexivity.
-
-     intros.
-     destruct H7.
-     red in H7; rewrite El_int_NatI in H7.
-     rewrite Real_int_NatI in H9; trivial.
-     apply piSAT0_elim' in H6.
-     apply H6; trivial.
-
-    discriminate. }
+  apply val_ok_1; trivial.
  assert (ty_M' := ty_M _ _ ok').
  apply in_int_not_kind in ty_M'.
  2:discriminate.
@@ -1319,7 +1347,7 @@ change
   app (int (subst O (subst (lift 1 (NatFix O M)) M)) i) (int N i)).
 do 2 rewrite <- int_subst_eq.
 rewrite int_cons_lift_eq.
-apply rec_eqn with (1:=Mok H); eauto with *.
+apply typed_bot_rec_eqn with (1:=Mok H); eauto with *.
 red in tyN; specialize tyN with (1:=H).
 apply in_int_not_kind in tyN.
 2:discriminate.
@@ -1344,7 +1372,7 @@ change
   app (int (subst O (subst (lift 1 (NatFix O M)) M)) i) (int N i)).
 do 2 rewrite <- int_subst_eq.
 rewrite int_cons_lift_eq.
-apply rec_eqn with (1:=Mok H); auto with *.
+apply typed_bot_rec_eqn with (1:=Mok H); auto with *.
 red in tyN; specialize tyN with (1:=H).
 apply in_int_not_kind in tyN.
 2:discriminate.
@@ -1381,7 +1409,7 @@ assert (inclo: int O i ⊆ int O i').
  apply subO in H; trivial.
 clear subO.
 simpl.
-apply typed_bot_rec_ext with (5:=Mok isval) (6:=Mok isval'); auto with *.
+apply typed_bot_rec_ext with (6:=Mok isval) (7:=Mok isval'); auto with *.
 intros.
 red; intros.
 do 2 red in stab; eapply stab.
@@ -1409,13 +1437,13 @@ specialize fxs with (1:=H0).
 apply fcompat_typ_eq with (3:=fxs).
  rewrite El_int_NatI.
  eapply cc_prod_is_cc_fun.
- apply rec_typ with (1:=Mok isval); auto with *.
+ apply typed_bot_rec_typ with (1:=Mok isval); auto with *.
 
  rewrite El_int_NatI.
  simpl.
  rewrite H in Oo|-*.
  eapply cc_prod_is_cc_fun.
- apply rec_typ with (1:=Mok isval'); auto with *.
+ apply typed_bot_rec_typ with (1:=Mok isval'); auto with *.
 Qed.
 
 End NatFixRules.
@@ -2458,15 +2486,17 @@ Qed.
 
   (** Fixpoint *)
 
-Definition natfix : (set -> set -> set) -> set -> set := REC'.
+Definition natfix : (set -> set -> set) -> set -> set := REC' (singl empty).
 
 Lemma natfix_morph : Proper ((eq_set ==> eq_set ==> eq_set) ==> eq_set ==> eq_set) natfix.
-Proof REC'_morph.
+apply REC'_morph; reflexivity.
+Qed.
 
 Lemma natfix_rec: forall o M U,
-    typed_bot_recursor_hyps (TI NATf') U M o ->
-    typed_bot_recursor_spec (TI NATf') U M (natfix M) o.
-Proof NATREC'_rec.
+    typed_bot_recursor_hyps (singl empty) (TI NATf') U M o ->
+    typed_bot_recursor_spec (singl empty) (TI NATf') U M (natfix M) o.
+intros; apply REC'_typed_bot_recursor_spec; auto with *.
+Qed.
 
 (** Universes *)
 Lemma G_NATf' : forall U X, grot_univ U -> X ∈ U -> NATf' X ∈ U.

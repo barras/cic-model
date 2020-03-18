@@ -8,6 +8,9 @@ Require Models.
 
 (** The abstract set-theoretical model of W-types, upon which the realizability
     interpretation is built.
+
+    We only assume the existence of a cartesian product (only isomorphic to
+    the construction in ZFpairs).
  *)
 (*
 Module Type CCforWaddon (Import S:Models.CC_Model).
@@ -245,8 +248,6 @@ Lemma Real_WC (*X*) a b x f :
   inSAT f (piSAT0 (fun i => i ∈ B a) (RB a) (fun i => rWi (cc_app b i))) ->
   inSAT (WC x f) (rWi (mkw a b)).
 intros.
-(*assert (mkw a b ∈ WF X).
- apply W_F_intro; trivial.*)
 rewrite rWi_eq.
 eapply Real_WC_gen (*with (X:=X)*); auto with *.
 Qed.
@@ -264,7 +265,6 @@ Lemma Real_WCASE X C n nt bt:
 intros Cm nty nreal breal.
 rewrite rWi_eq in nreal; trivial.
 destruct nty as [nmt|(ty1&ty2&n_eq)].
-(*apply cc_bot_ax in nty; destruct nty as [nmt|nty].*)
  rewrite nmt, rW_neutral, neuSAT_def in nreal.
  unfold WCASE.
  apply prodSAT_elim with (2:=breal); trivial.
@@ -273,18 +273,6 @@ destruct nty as [nmt|(ty1&ty2&n_eq)].
 Qed.
 
 (** * Structural fixpoint: *)
-
-Lemma G_sat' x t m (U:SAT):
-  inSAT t (rWi x) ->
-  inSAT m U ->
-  inSAT (Lc.App2 WHEN_COUPLE t m) U.
-intros xsat msat.
-rewrite rWi_eq in xsat; trivial.
-apply condSAT_smaller in xsat.
-eapply WHEN_COUPLE_sat with (1:=xsat); trivial.
-Qed.
-
-(* specialized fix *)
 
 Definition WFIX := FIXP WHEN_COUPLE.
 
@@ -296,118 +284,12 @@ apply WHEN_COUPLE_iota; trivial.
 unfold is_couple, WC, COUPLE; eauto.
 Qed.
 
-Lemma WFIX_sat o X U m :
-  (forall y n, isOrd y -> n ∈ X y -> exists2 y', y' ∈ y & n ∈ X (osucc y'))->
-  let FIX_ty o := piSAT0 (fun n => n ∈ cc_bot (X o)) rWi (U o) in
-  let FIX_ty' o := piSAT0 (fun n => n ∈ X o) rWi (U o) in
-  isOrd o ->
-  (forall y y' n, isOrd y -> isOrd y' -> y ⊆ y' -> y' ⊆ o -> n ∈ X y ->
-   inclSAT (U y n) (U y' n)) ->
-  inSAT m (piSAT0 (fun o' => o' ∈ o)
-                  (fun o1 => FIX_ty o1) (fun o1 => FIX_ty' (osucc o1))) ->
-  inSAT m (prodSAT (FIX_ty empty) snSAT) ->
-  inSAT (WFIX m) (FIX_ty o).
-intros Xmono FIX_ty FIX_ty' oo Umono msat mneutr.
-unfold WFIX.
-eapply FIXP_sat with (RT := rWi) (7:=msat); trivial; intros.
- rewrite cc_bot_ax in H1; destruct H1.
-  left; rewrite H1; apply rWi_neutral; trivial.
-
-  right; auto.
-
- exists empty; trivial.
-
- intros; apply neuSAT_def;
-   apply WHEN_COUPLE_neutral; apply neuSAT_def; trivial.
-
- apply G_sat' with (x:=x); auto with *.
-Qed.
-
-Lemma WREC_sat o X F RF U RU wrec :
-  Proper (eq_set==>eq_set==>eq_set==>eqSAT) RU ->
-  (forall y n, isOrd y -> n ∈ X y -> exists2 y', y' ∈ y & n ∈ X (osucc y'))->
-  isOrd o ->
-  (forall o' o'' x y y', isOrd o' -> isOrd o'' -> o' ⊆ o'' -> o'' ⊆ o ->
-   x ∈ X o' ->
-   y ∈ U o' x ->
-   y == y' ->
-   inclSAT (RU o' x y) (RU o'' x y')) ->
-  let FIX_ty o' f :=
-      piSAT0 (fun n => n ∈ cc_bot (X o'))
-             rWi
-             (fun n => RU o' n (cc_app f n)) in
-  (forall o' f u,
-   o' ∈ o ->
-   f ∈ (Π w ∈ cc_bot (X o'), U o' w) ->
-   inSAT u (FIX_ty o' f) ->
-   inSAT (Lc.App RF u) (FIX_ty (osucc o') (F o' f))) ->
-  inSAT RF (prodSAT (FIX_ty empty (wrec empty)) snSAT) ->
-  (forall y, isOrd y -> y ⊆ o ->
-   wrec y ∈ cc_prod (cc_bot (X y)) (U y)) ->
-  (forall y y', isOrd y -> isOrd y' -> y ⊆ o -> y' ⊆ y ->
-   ZFfunext.fcompat (cc_bot (X y')) (wrec y') (wrec y)) ->
-  (forall y, y ∈ o ->
-   ZFfunext.fcompat (X (osucc y)) (wrec (osucc y)) (F y (wrec y))) ->
-(*  (forall x, x ∈ X (osucc o) ->
-             cc_app (wrec o) x == cc_app (F o (wrec o)) x) ->*)
-  inSAT (WFIX RF) (FIX_ty o (wrec o)).
-intros RUm Xincr oo RUmono FIX_ty satF Fneutr wrec_ty wrec_irr wrec_eqn.
-eapply WFIX_sat with (U:=fun o n => RU o n (cc_app (wrec o) n)); trivial.
- intros.
- apply RUmono; auto.
-  apply cc_prod_elim with (dom := cc_bot (X y)) (F := U y); auto.
-  apply wrec_ty; auto.
-  transitivity y'; trivial.
-
-  apply wrec_irr; auto.
-
- apply piSAT0_intro; intros.
-  apply sat_sn in Fneutr; trivial.
- assert (xo : isOrd x) by eauto using isOrd_inv.
- assert (leo : x ⊆ o).
-  red; intros; apply isOrd_trans with x; trivial.
- assert (Wty : wrec x ∈ Π w ∈ cc_bot (X x), U x w).
-  apply wrec_ty; trivial.
- specialize satF with (1:=H) (2:=Wty) (3:=H0).
- revert satF; apply piSAT0_mono with (f:=fun x=>x); auto with *.
- intros.
- red in wrec_eqn.
- rewrite wrec_eqn; auto with *.
-Qed.
-
-Lemma WREC_sat_gen o X F RF U RU wrec :
-  Proper (eq_set==>eq_set==>eq_set==>eqSAT) RU ->
-  (forall y n, isOrd y -> n ∈ X y -> exists2 y', y' ∈ y & n ∈ X (osucc y'))->
-  isOrd o ->
-  (forall o' o'' x y y', isOrd o' -> isOrd o'' -> o' ⊆ o'' -> o'' ⊆ o ->
-   x ∈ X o' ->
-   y ∈ U o' x ->
-   y == y' ->
-   inclSAT (RU o' x y) (RU o'' x y')) ->
-  let FIX_ty o' f :=
-      piSAT0 (fun n => n ∈ cc_bot (X o'))
-             rWi
-             (fun n => RU o' n (cc_app f n)) in
-  (forall o' f u,
-   o' ∈ cc_bot o ->
-   f ∈ (Π w ∈ cc_bot (X o'), U o' w) ->
-   inSAT u (FIX_ty o' f) ->
-   inSAT (Lc.App RF u) (FIX_ty (osucc o') (F o' f))) ->
-  (forall y, isOrd y -> y ⊆ o ->
-   wrec y ∈ cc_prod (cc_bot (X y)) (U y)) ->
-  (forall y y', isOrd y -> isOrd y' -> y ⊆ o -> y' ⊆ y ->
-   ZFfunext.fcompat (cc_bot (X y')) (wrec y') (wrec y)) ->
-  (forall y, y ∈ o ->
-   ZFfunext.fcompat (X (osucc y)) (wrec (osucc y)) (F y (wrec y))) ->
-(*  (forall x, x ∈ X (osucc o) ->
-             cc_app (wrec o) x == cc_app (F o (wrec o)) x) ->*)
-  inSAT (WFIX RF) (FIX_ty o (wrec o)).
-intros RUm Xincr oo RUmono FIX_ty satF wrec_ty wrec_irr wrec_eqn.
-eapply WREC_sat; eauto.
-apply prodSAT_intro'; intros.
-apply snSAT_intro.
-eapply sat_sn.
-eapply satF with (o':=empty) (f:=wrec empty); auto.
+Lemma WHEN_COUPLE_satw x t m X :
+ inSAT t (rWi x) -> inSAT m X -> inSAT (Lc.App2 WHEN_COUPLE t m) X.
+intros.
+rewrite rWi_eq in H.
+apply condSAT_smaller in H.
+apply WHEN_COUPLE_sat with (1:=H); trivial.
 Qed.
 
 End Wtypes.
@@ -426,26 +308,6 @@ intros Ym Ym' eqX.
 intros.
 unfold rWi.
 unfold fixSAT.
-(*assert (eqW: W' X Y == W' X' Y').
- unfold W'.
- apply incl_eq.
- transitivity (TI (W_F X' Y') (W_ord X Y)).
-  apply eq_incl.
-  apply TI_morph_gen; auto with *.
-   red; intros.
-   apply W_F_ext; auto.
-
-  apply W_stages; trivial.
-  apply W_ord_ord; trivial.
-
- transitivity (TI (W_F X Y) (W_ord X' Y')).
-  apply eq_incl; symmetry.
-  apply TI_morph_gen; auto with *.
-   red; intros.
-   apply W_F_ext; auto.
-
-  apply W_stages; trivial.
-  apply W_ord_ord; trivial.*)
 apply interSAT_morph_subset; simpl; intros.
  apply and_iff_morphism; [reflexivity|].
  apply fa_morph; intros w.
@@ -456,17 +318,6 @@ apply interSAT_morph_subset; simpl; intros.
   apply condSAT_morph_gen; auto with *.
    rewrite eqX; reflexivity.
   intros (wnmt,ty1).
-(*  assert (ty1 : w1 w ∈ X).
-admit.*) (*
-   assert (ext_fun X Y).
-    apply eq_fun_ext in H0; trivial.
-   apply cc_bot_ax in tyw; destruct tyw.
-    elim wnmt; auto with *.
-   apply TI_elim in H5; auto with *.
-   2:apply W_ord_ord; trivial.
-   destruct H5 as (ooo,?,?).
-   apply W_F_elim in H6; trivial.
-   apply H6.*)
   apply cartSAT_morph.
    apply H0; reflexivity.
 

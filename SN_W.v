@@ -67,8 +67,8 @@ Module Type W_PartialModel.
   Parameter WREC_morph : Proper ((eq_set==>eq_set==>eq_set)==>eq_set==>eq_set) WREC.
   Parameter WREC_rec : forall A B U M O,
       morph1 B ->
-      typed_bot_recursor_hyps (TI (W_F A B)) U M O ->
-      typed_bot_recursor_spec (TI (W_F A B)) U M (WREC M) O.
+      typed_bot_recursor_hyps (singl empty) (TI (W_F A B)) U M O ->
+      typed_bot_recursor_spec (singl empty) (TI (W_F A B)) U M (WREC M) O.
 
 End W_PartialModel.
 
@@ -709,35 +709,7 @@ exists (fun i => WREC (fun o' f => int M (V.cons f (V.cons o' i))) (int O i))
   reflexivity.
 Defined.
 
-
 (** Typing rules of WFix *)
-(** The type of ordinals < o *)
-Definition Oty (o : term) : term.
-(*begin show*)
-left; exists (fun i => mkTY (int o i) (fun _ => snSAT)) (fun j => tm o j).
-(*end show*)
- do 2 red; intros.
- apply mkTY_ext; auto with *.
- rewrite H; reflexivity.
- (**)
- do 2 red; intros.
- rewrite H; reflexivity.
- (**)
- red; intros.
- apply tm_liftable.
- (**)
- red; intros.
- apply tm_substitutive.
-Defined.
-
-Lemma El_int_oty O' i :
-  El (int (Oty O') i) == cc_bot (int O' i).
-simpl; rewrite El_def; reflexivity.
-(*apply eq_intro; intros; auto.
-rewrite cc_bot_ax in H; destruct H; trivial.
-rewrite H.
-apply ole_lts; auto.*)
-Qed.
 
 Section WFixRules.
 
@@ -763,6 +735,8 @@ Section WFixRules.
     (WIL 2 (OSucc (Ref 1)))
     M.
 
+  Hypothesis fx_sub_U :
+    fx_sub (push_var (push_ord E (OSucct O)) (WIL 1 (OSucc (Ref 0)))) U.
 
   Let Wi i o := cc_bot (TI (WF A B i) o).
   Let F i := fun o' f => squash (int M (V.cons f (V.cons o' i))).
@@ -784,11 +758,6 @@ do 2 red; intros.
 rewrite H0;reflexivity.
 Qed.
   Hint Resolve U'morph morph_fix_body ext_fun_ty.
-
-
-  Hypothesis fx_sub_U :
-    fx_sub (push_var (push_ord E (OSucct O)) (WIL 1 (OSucc (Ref 0)))) U.
-
 Lemma El_int_W_lift O' n i :
   El (int (WIL n O') i) == cc_bot (TI (WF A B (V.shift n i)) (int O' i)).
 unfold WIL; rewrite El_int_W.
@@ -867,6 +836,46 @@ unfold WF; apply W_F_ext; auto with *.
  rewrite H1; reflexivity.
 
 (* rewrite H; reflexivity.*)
+Qed.
+
+  Lemma val_ok_1 i j o ot f u :
+    val_ok e i j ->
+    isOrd (int O i) ->
+    isOrd o ->
+    o ∈ cc_bot (int O i) ->
+    f ∈ (Π w ∈ Wi i o, U' i o w) ->
+    Lc.sn ot ->
+    inSAT u
+          (piSAT0 (fun n => n ∈ Wi i o) (RW A B i)
+                  (fun n => Real (int U (V.cons n (V.cons o i))) (cc_app f n))) ->
+    val_ok (Prod (WIL 1 (Ref 0)) U::Oty O::e)
+            (V.cons f (V.cons o i)) (I.cons u (I.cons ot j)).
+intros ok Oo oo tyo tyf sato satu.
+apply vcons_add_var.
+3:discriminate.
+ apply vcons_add_var; trivial.
+ 2:discriminate.
+ split; simpl.
+  red; rewrite El_def; trivial.
+
+  rewrite Real_def; auto.
+  reflexivity.
+
+ apply int_Prod_intro.
+  revert tyf; apply eq_set_ax.
+  apply cc_prod_ext.
+   apply El_int_W_lift.
+
+   red; intros.
+   unfold U'.
+   rewrite H0; reflexivity.
+
+  intros.
+  destruct H.
+  red in H; rewrite El_int_W_lift in H.
+  rewrite Real_int_W_lift in H1; trivial.
+  apply piSAT0_elim' in satu.
+  apply satu; trivial.
 Qed.
 
   Lemma val_mono_1 i i' j j' y y' f g:
@@ -1066,7 +1075,7 @@ Qed.
 
 Lemma WREC_ok i j :
   val_ok e i j ->
-  typed_bot_recursor_spec (TI (WF A B i)) (U' i) (F' i) (WREC (F' i)) (int O i).
+  typed_bot_recursor_spec (singl empty) (TI (WF A B i)) (U' i) (F' i) (WREC (F' i)) (int O i).
 intros.
 destruct tyord_inv with (3:=ty_O)(4:=H) as (Oo,_); trivial.
 apply WREC_rec; auto.
@@ -1076,12 +1085,11 @@ split; trivial.
 
  apply WF_cont.
 
- red; intros.
- apply mt_not_in_W_F in H1; auto.
-  apply H1; reflexivity.
-
-  do 2 red; intros.
-  rewrite H2; reflexivity.
+ intros.
+ apply singl_elim in H1.
+ apply mt_not_in_W_F in H2; auto.
+ do 2 red; intros.
+ rewrite H3; reflexivity.
 
  intros.
  apply Usub with (1:=H); trivial.
@@ -1105,7 +1113,7 @@ apply and_split; intros.
  red; rewrite El_int_prod.
  eapply eq_elim.
  2:simpl.
- 2:apply rec_typ with (1:=WREC_ok H); auto with *.
+ 2:apply typed_bot_rec_typ with (1:=WREC_ok H); auto with *.
  apply cc_prod_ext.
   rewrite El_int_W.
   reflexivity.
@@ -1123,16 +1131,9 @@ rewrite Real_prod; auto with *.
 2:intros ? ? ? h; rewrite h; reflexivity.
 unfold piSAT.
 eapply inSAT_morph;[reflexivity| |].
-2:apply WREC_sat_gen with (F:=F' i) (U:=U' i) (X:=fun o => TI (WF A B i) o)
-        (A:=El(int A i))   (B:=fun x => El(int B (V.cons x i)))
- (RA:=Real(int A i))(RB:=fun x =>Real(int B(V.cons x i)))
- (RF:= Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j))))
- (RU:= fun o w => Real (int U (V.cons w (V.cons o i)))).
-(*
-2:apply WREC_sat_gen with (6:=WREC_ok H)
- (RA:=Real(int A i))(RB:=fun x =>Real(int B(V.cons x i)))
- (RF:= Lc.Abs (tm M (Lc.ilift (I.cons (tm O j) j))))
- (RU:= fun o w => Real (int U (V.cons w (V.cons o i)))); auto with *.*)
+2:apply recursor_sat with (6:=WREC_ok H)
+ (RT:=RW A B i)
+ (RU:= fun o w => Real (int U (V.cons w (V.cons o i)))); auto.
  apply piSAT0_morph.
   red; intros.
   rewrite El_def.
@@ -1156,25 +1157,40 @@ eapply inSAT_morph;[reflexivity| |].
 
  reflexivity.
 
- apply Bwi_morph.
-
- apply RAwi_morph.
-
- apply RBwi_morph.
-
- do 4 red; intros; apply Real_morph; auto with *.
- apply int_morph; auto with *.
- repeat apply V.cons_morph; auto with *.
-
-intros.
-apply TI_elim in H4; auto.
-destruct H4 as (o',?,?); exists o'; trivial.
-rewrite TI_mono_succ; auto.
-apply isOrd_inv with y; trivial.
-
- exact H0.
+ (**)
+ apply WHEN_COUPLE_neutral2.
 
  (**)
+ intros.
+ apply WHEN_COUPLE_satw with (4:=H5); trivial.
+  apply Bwi_morph.
+  apply RAwi_morph.
+  apply RBwi_morph.
+
+ (*cont*)
+ intros.
+ apply union2_ax in H5; destruct H5.
+  apply singl_elim in H5.
+  left.
+  rewrite H5.
+  apply rWi_neutral.  
+   apply Bwi_morph.
+   apply RAwi_morph.
+   apply RBwi_morph.
+
+  right.
+  apply TI_inv in H5; auto with *.
+
+ (*dom nont empty*)
+ intros; exists empty.
+ apply union2_intro1.
+ apply singl_intro.
+
+ (* RU morph *) 
+ do 4 red; intros.
+ rewrite H3,H4,H5; reflexivity.
+ 
+ (*U mono*) 
  red; intros.
  apply fx_sub_U with (V.cons x (V.cons o' i))
      (I.cons daimon (I.cons daimon j)) (I.cons daimon (I.cons daimon j)).
@@ -1187,56 +1203,28 @@ apply isOrd_inv with y; trivial.
 
  (**)
  intros.
- apply inSAT_exp;[right;apply sat_sn in H5;trivial|].
-  replace (Lc.subst u (tm M (Lc.ilift (I.cons (tm O j) j)))) with
+ apply inSAT_exp;[right;apply sat_sn in H6;trivial|].
+ replace (Lc.subst u (tm M (Lc.ilift (I.cons (tm O j) j)))) with
      (tm M (I.cons u (I.cons (tm O j) j))).
-  2:unfold Lc.subst; rewrite <- tm_substitutive.
-  2:apply tm_morph; auto with *.
-  2:intros [|[|k]]; unfold Lc.ilift,I.cons; simpl.
-  2:rewrite Lc.lift0; reflexivity.
-  2:rewrite Lc.simpl_subst; trivial.
-  2:rewrite Lc.lift0; trivial.
-  2:rewrite Lc.simpl_subst; trivial.
-  2:rewrite Lc.lift0; trivial.
-  assert (val_ok (Prod (WIL 1 (Ref 0)) U::Oty O::e)
+ 2:unfold Lc.subst; rewrite <- tm_substitutive.
+ 2:apply tm_morph; auto with *.
+ 2:intros [|[|k]]; unfold Lc.ilift,I.cons; simpl.
+ 2:rewrite Lc.lift0; reflexivity.
+ 2:rewrite Lc.simpl_subst; trivial.
+ 2:rewrite Lc.lift0; trivial.
+ 2:rewrite Lc.simpl_subst; trivial.
+ 2:rewrite Lc.lift0; trivial.
+ assert (val_ok (Prod (WIL 1 (Ref 0)) U::Oty O::e)
             (V.cons f (V.cons o' i)) (I.cons u (I.cons (tm O j) j))).
-   apply vcons_add_var.
-    apply vcons_add_var; trivial.
-     split; simpl.
-      red; rewrite El_def; trivial.
-
-      rewrite Real_def; auto.
-       apply snSAT_intro; apply H1.
-       reflexivity.
-
-     discriminate.
-
-    apply int_Prod_intro.
-     revert H4; apply eq_set_ax.
-     apply cc_prod_ext.
-      rewrite El_int_W_lift; auto with *.
-      reflexivity.
-
-      red; intros.
-      unfold U'.
-      rewrite H6; reflexivity.
-
-     intros.
-     destruct H6.
-     red in H6; rewrite El_int_W_lift in H6.
-     rewrite Real_int_W_lift in H8; trivial.
-     apply piSAT0_elim' in H5.
-     apply H5; trivial.
-
-    discriminate.
-
- assert (ty_M' := ty_M _ _ H6).
+  apply val_ok_1; trivial.
+  apply H1.
+ assert (ty_M' := ty_M _ _ H7).
  apply in_int_not_kind in ty_M'.
  2:discriminate.
  destruct ty_M'.
- red in H7; rewrite El_int_prod in H7.
- rewrite Real_int_prod in H8; trivial.
- revert H8; apply piSAT0_morph.
+ red in H8; rewrite El_int_prod in H8.
+ rewrite Real_int_prod in H9; trivial.
+ revert H9; apply piSAT0_morph.
   red; intros.
   rewrite El_int_W_lift; auto.
 
@@ -1253,37 +1241,6 @@ apply isOrd_inv with y; trivial.
   intros [|[|k]]; try reflexivity.
   unfold V.cons, V.lams,V.shift; simpl.
   replace (k-0) with k; auto with *.
-
- (* WREC props *)
- intros. 
- apply rec_typ with (1:=WREC_ok H); trivial.
-
- red; intros. 
- apply rec_irr with (1:=WREC_ok H); auto.
-
- red; intros.
- assert (yo: isOrd y) by eauto using isOrd_inv.
- assert (leo : osucc y ⊆ int O i).
-  red; intros.
-  apply le_lt_trans with y; auto.
- rewrite rec_eqn with (1:=WREC_ok H); auto.
-
- symmetry; apply Mirr with (1:=H); auto.
-  red; intros; apply isOrd_trans with y; auto with *.
-
-  apply ole_lts; auto.
-  
-  apply rec_typ with (1:=WREC_ok H); trivial.
-  red; intros.  
-  apply isOrd_trans with y; auto.
-
-  apply rec_typ with (1:=WREC_ok H); auto.
-
-  red; intros.
-  apply rec_irr with (1:=WREC_ok H); auto.
-  red; intros; apply isOrd_trans with y; auto with *.
-
-  unfold Wi; auto.
 Qed.
 
 (** Fixpoint equation holds only when applied to a constructor,
@@ -1311,7 +1268,7 @@ rewrite cc_bot_ax in H0; destruct H0.
  simpl in H0.
  symmetry in H0; apply discr_mt_mkw in H0; contradiction.
 destruct tyord_inv with (3:=ty_O)(4:=H); trivial.
-apply rec_eqn with (1:=WREC_ok H); auto with *.
+apply typed_bot_rec_eqn with (1:=WREC_ok H); auto with *.
 Qed.
 
 Lemma TIeq: forall i i' j j' o',
@@ -1371,7 +1328,7 @@ clear subO.
 assert (aeq : El (int A i) == El (int A i')).
  apply El_morph.
  apply Aeq with (1:=H); trivial.
-eapply typed_bot_rec_ext with (5:=WREC_ok isval) (6:=WREC_ok isval'); auto.
+eapply typed_bot_rec_ext with (6:=WREC_ok isval) (7:=WREC_ok isval'); auto with *.
  intros; apply eq_incl.
  apply TI_morph_gen; auto with *.
  red; intros.
@@ -1410,13 +1367,13 @@ specialize fxs with (1:=H0).
 apply fcompat_typ_eq with (3:=fxs).
  rewrite El_int_W.
  eapply cc_prod_is_cc_fun.
- apply rec_typ with (1:=WREC_ok isval); auto with *.
+ apply typed_bot_rec_typ with (1:=WREC_ok isval); auto with *.
 
  rewrite El_int_W.
  rewrite TIeq with (1:=H0); trivial.
  rewrite H in Oo|-*.
  eapply cc_prod_is_cc_fun.
- apply rec_typ with (1:=WREC_ok isval'); auto with *.
+ apply typed_bot_rec_typ with (1:=WREC_ok isval'); auto with *.
 Qed.
 
 End WFixRules.
@@ -1735,14 +1692,15 @@ Qed.
   Definition G_W_ord := G_W_ord'.
   Definition G_W_F := G_W_F'.
 
-  Definition WREC := REC'.
+  Definition WREC := REC' (singl empty).
   Lemma WREC_morph : Proper ((eq_set==>eq_set==>eq_set)==>eq_set==>eq_set) WREC.
-Proof REC'_morph.
-
+apply REC'_morph; reflexivity.
+Qed.
+  
   Lemma WREC_rec : forall A B U M O,
     morph1 B ->
-    typed_bot_recursor_hyps (TI (W_F A B)) U M O ->
-    typed_bot_recursor_spec (TI (W_F A B)) U M (WREC M) O.
+    typed_bot_recursor_hyps (singl empty) (TI (W_F A B)) U M O ->
+    typed_bot_recursor_spec (singl empty) (TI (W_F A B)) U M (WREC M) O.
 intros.
 apply REC'_typed_bot_recursor_spec; auto.
 Qed.
