@@ -259,6 +259,21 @@ Definition sumReal (X Y:set->SAT) (a:set) : SAT :=
     (prodSAT (piSAT0 (fun x => a==inr x) Y (fun _ => C))
      C)).
 
+Lemma sumReal_morph :
+  Proper ((eq_set==>eqSAT)==>(eq_set==>eqSAT)==>eq_set==>eqSAT) sumReal.
+do 4 red; intros.
+apply interSAT_morph .
+apply indexed_relation_id; intros C.
+apply prodSAT_morph.
+ apply piSAT0_morph; intros; auto with *.
+ intros a.
+ rewrite H1; reflexivity.
+apply prodSAT_morph; auto with *.
+apply piSAT0_morph; intros; auto with *.
+intros b.
+rewrite H1; reflexivity.
+Qed.
+
 Lemma sumReal_mono X X' Y Y':
   inclFam X X' ->
   inclFam Y Y' ->
@@ -406,6 +421,7 @@ apply Real_sum_case with (1:=tsat); auto.
  apply ID_intro0.
 Qed.
 
+Global Opaque sumReal.
 
 (** * Sigma-types *)
 
@@ -552,7 +568,9 @@ unfold subst; simpl.
 rewrite lift0; trivial.
 Qed.
 
-(* Deprecated: sigmaReal *)
+Global Opaque cartSAT.
+
+
 Definition sigmaReal (X:set->SAT) (Y:set->set->SAT) (a:set) : SAT :=
   cartSAT (X (fst a)) (Y (fst a) (snd a)).
 
@@ -572,6 +590,15 @@ Instance sigmaReal_morph X Y :
 intros; apply sigmaReal_morph_gen; auto with *.
 Qed.
 
+Lemma sigmaReal_mono X X' Y Y':
+  inclFam X X' ->
+  (forall x, inclFam (Y x) (Y' x)) ->
+  inclFam (sigmaReal X Y) (sigmaReal X' Y').
+intros inclX inclY c.
+apply cartSAT_mono; auto.
+apply inclY.
+Qed.
+  
 Lemma Real_couple x y X Y t1 t2 :
   Proper (eq_set ==> eqSAT) X ->
   Proper (eq_set ==> eq_set ==> eqSAT) Y ->
@@ -606,15 +633,14 @@ rewrite <- eqa in H3.
 trivial.
 Qed.
 
-
   (** Fixpoint *)
 
 Definition monoFam (A:(set->SAT)->set->SAT) :=
   forall X X', inclFam X X' -> inclFam (A X) (A X').
 
 Definition fixSAT (A:(set->SAT)->set->SAT) (x:set) : SAT :=
-  interSAT (fun X:{X|Proper(eq_set==>eqSAT)X /\ inclFam (A X) X} =>
-            proj1_sig X x).
+  depSAT (fun X => Proper(eq_set==>eqSAT)X /\ inclFam (A X) X)
+         (fun X => X x).
 
 Instance fixSAT_morph0 A :
   Proper (eq_set ==> eqSAT) (fixSAT A).
@@ -692,6 +718,8 @@ split.
  apply pre_fix_lfp; trivial.
  apply post_fix_lfp; trivial.
 Qed.
+
+Global Opaque fixSAT.
 
 (** * Structural fixpoint. *)
 

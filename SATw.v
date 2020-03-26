@@ -122,8 +122,11 @@ Lemma rW_mono : monoFam rW.
 red; intros X X' Xmono x.
 apply condSAT_ext; trivial.
 intros _ xnmt.
-apply cartSAT_mono; auto with *.
-eapply piSAT0_mono with (f:=fun x => x); auto with *.
+apply sigmaReal_mono; auto with *.
+ red; reflexivity.
+
+ intros a f.
+ apply piSAT0_mono with (f:=fun x => x); auto with *.
 Qed.
 
 Lemma rW_neutral X :
@@ -307,6 +310,31 @@ Lemma rWi_ext X X' Y Y' RX RX' RY RY' x x' :
 intros Ym Ym' eqX.
 intros.
 unfold rWi.
+apply fixSAT_morph; trivial.
+do 2 red; intros.
+unfold rW.
+apply condSAT_morph_gen; auto with *.
+ rewrite H4, eqX; reflexivity.
+intros (nmt, ty1).
+Transparent sigmaReal.
+(*unfold sigmaReal.
+apply cartSAT_morph; trivial.*)
+(*Lemma sigmaReal_ext :
+  (eq_set ==> eqSAT)%signature A A' ->
+  eqSAT (B (fst x) (snd x)) (B' (fst x') (snd x')) ->
+  
+  x==x' ->
+  (eq_set==>eqSAT)%signature (sigmaReal A B) (sigmaReal A' B')
+  eq_fun 
+  
+apply sigmaReal_morph_gen; trivial.
+ do 2 red; intros.
+ apply piSAT0_morph; intros.
+  intros i; apply in_set_morph; auto with *.
+  apply H.
+   rewrite 
+ apply 
+
 unfold fixSAT.
 apply interSAT_morph_subset; simpl; intros.
  apply and_iff_morphism; [reflexivity|].
@@ -318,21 +346,24 @@ apply interSAT_morph_subset; simpl; intros.
   apply condSAT_morph_gen; auto with *.
    rewrite eqX; reflexivity.
   intros (wnmt,ty1).
-  apply cartSAT_morph.
-   apply H0; reflexivity.
+ *)
+unfold sigmaReal.
+apply cartSAT_morph.
+ apply H0; rewrite H4; reflexivity.
 
-   apply piSAT0_morph; intros.
-    red; intros.
-    apply in_set_morph; auto with *.
-    apply H; auto with *.
-    rewrite fst_def; trivial.
+ apply piSAT0_morph; intros.
+  red; intros.
+  rewrite !fst_def.
+  apply in_set_morph; auto with *.
+  apply H; auto with *.
+  apply w1_morph; trivial.
 
-    apply H1; auto with *.
-    rewrite fst_def; trivial.
+  apply H1; auto with *.
+   rewrite fst_def; trivial.
+   rewrite H4; reflexivity.
 
-    reflexivity.
-
- apply Px; trivial.
+  apply H3.
+  rewrite H4; reflexivity.
 Qed.
 
 Instance rWi_morph_gen : Proper

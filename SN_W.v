@@ -572,6 +572,7 @@ Qed.
 End Wtypes_typing.
 Hint Resolve WFm WF_cont.
 Hint Resolve WF_mono.
+Existing Instance RW_morph.
 
 Lemma typ_WI_type n eps e A B O :
   isOrd eps ->

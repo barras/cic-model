@@ -123,32 +123,13 @@ do 3 red; intros.
 unfold fNAT.
 apply condSAT_morph; auto.
  rewrite H0; reflexivity.
-unfold sumReal.
-apply interSAT_morph.
-apply indexed_relation_id.
-intros.
-apply prodSAT_morph.
- apply piSAT0_morph; intros; auto with *.
- red; intros; rewrite H0; reflexivity.
+apply sumReal_morph; auto with *.
+ red; intros; reflexivity.
 
- apply prodSAT_morph; auto with *.
- apply piSAT0_morph; intros; auto with *.
- red; intros; rewrite H0; reflexivity.
+ rewrite H0; reflexivity.
 Qed.
 Hint Resolve fNAT_morph.
 
-Lemma sumReal_mono X X' Y Y':
-  inclFam X X' ->
-  inclFam Y Y' ->
-  inclFam (sumReal X Y) (sumReal X' Y').
-red; intros.
-unfold sumReal.
-apply interSAT_mono; intros C.
-apply prodSAT_mono.
- red; apply piSAT0_mono with (f:=fun x=>x); auto with *.
-apply prodSAT_mono; auto with *.
-red; apply piSAT0_mono with (f:=fun x=>x); auto with *.
-Qed.
 Lemma fNAT_mono : monoFam fNAT.
 red; red; intros.
 unfold fNAT.

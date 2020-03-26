@@ -347,6 +347,7 @@ apply interSAT_morph; red; split; intros.
  exists (exist P x (proj2 (H x) q)); auto.
 Qed.
 
+
   Definition neuSAT := interSAT(fun S=>S).
 
   Lemma neuSAT_def u :
@@ -427,21 +428,31 @@ apply prodSAT_elim with snSAT; auto.
 apply varSAT.
 Qed.
 
-  Lemma omega_sn_when_A_is_A_to_B A B :
-    let delta := Abs (App (Ref 0) (Ref 0)) in
-    eqSAT A (prodSAT A B) -> inSAT (App delta delta) B.
-intros.
-assert (inSAT delta A).
- rewrite H.
+Section Paradox.
+  Definition term_delta := Abs (App (Ref 0) (Ref 0)).
+  Definition term_omega := App term_delta term_delta.
+  
+  Variable A B : SAT.
+  Hypothesis AB_eq_A : eqSAT (prodSAT A B) A.
+
+  Lemma omega_in_B : inSAT term_omega B.
+assert (inSAT term_delta (prodSAT A B)).
  apply prodSAT_intro; intros.
  unfold subst; simpl.
  rewrite lift0.
  apply prodSAT_elim with A; trivial.
- rewrite <- H; trivial.
+ rewrite AB_eq_A; trivial.
 apply prodSAT_elim with A; trivial.
-rewrite <- H; trivial.
+rewrite <- AB_eq_A; trivial.
+Qed.
+  
+  Lemma AB_is_not_A : False.
+specialize sat_sn with (1:=omega_in_B).
+apply omega_not_sn.    
 Qed.
 
+End Paradox.
+  
 (** Dealing with type dependencies *)
 
 Definition depSAT A (P:A->Prop) F :=
@@ -481,6 +492,28 @@ split; trivial.
 
  intros (x,?); simpl.
  apply (H0 x); trivial.
+Qed.
+
+(** Union *)
+Definition unionSAT {A:Type} (F:A->SAT) : SAT :=
+  depSAT (fun C => forall x, inclSAT (F x) C) (fun C => C).
+
+Lemma unionSAT_intro A F (x:A) :
+  inclSAT (F x) (unionSAT F).
+red; intros.
+apply depSAT_intro; auto.
+ apply sat_sn in H; trivial.
+
+ intros.
+ apply (H0 x); trivial.
+Qed.
+
+Lemma unionSAT_elim A (F:A->SAT) X :
+  (forall x, inclSAT (F x) X) ->
+  inclSAT (unionSAT F) X.
+red; intros.
+apply depSAT_elim' in H0.
+apply H0; trivial.
 Qed.
 
 (** Conditional saturated set *)

@@ -262,9 +262,8 @@ red in H; specialize H with (1:=vok).
 apply Real_morph in H.
 simpl in H.
 rewrite Real_prod in H.
-apply omega_sn_when_A_is_A_to_B in H.
-apply sat_sn in H.
-apply Lc.omega_not_sn in H; trivial.
+symmetry in H.
+apply AB_is_not_A in H; trivial.
 Qed.
 
  (* Well-formed types: terms typed by a sort *)
