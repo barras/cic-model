@@ -316,37 +316,6 @@ unfold rW.
 apply condSAT_morph_gen; auto with *.
  rewrite H4, eqX; reflexivity.
 intros (nmt, ty1).
-Transparent sigmaReal.
-(*unfold sigmaReal.
-apply cartSAT_morph; trivial.*)
-(*Lemma sigmaReal_ext :
-  (eq_set ==> eqSAT)%signature A A' ->
-  eqSAT (B (fst x) (snd x)) (B' (fst x') (snd x')) ->
-  
-  x==x' ->
-  (eq_set==>eqSAT)%signature (sigmaReal A B) (sigmaReal A' B')
-  eq_fun 
-  
-apply sigmaReal_morph_gen; trivial.
- do 2 red; intros.
- apply piSAT0_morph; intros.
-  intros i; apply in_set_morph; auto with *.
-  apply H.
-   rewrite 
- apply 
-
-unfold fixSAT.
-apply interSAT_morph_subset; simpl; intros.
- apply and_iff_morphism; [reflexivity|].
- apply fa_morph; intros w.
-  apply fa_morph; intros u.
-  apply impl_morph;[|reflexivity].
-  apply inSAT_morph; trivial.
-  unfold rW.
-  apply condSAT_morph_gen; auto with *.
-   rewrite eqX; reflexivity.
-  intros (wnmt,ty1).
- *)
 unfold sigmaReal.
 apply cartSAT_morph.
  apply H0; rewrite H4; reflexivity.
