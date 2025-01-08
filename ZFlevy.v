@@ -236,7 +236,13 @@ Lemma levy_thin2 x y vars k n A :
 intros; apply levy_thin_vars with (1:=H).
 red; destruct 1; simpl; auto.
 Qed.
-Hint Resolve levy_thin1 levy_thin2 : core.
+Lemma levy_thin3 x y z vars k n A :
+  levy (push_var z (push_var y vars)) k n A ->
+  levy (push_var z (push_var y (push_var x vars))) k n A.
+intros; apply levy_thin_vars with (1:=H).
+red; destruct 1 as [?|[?|?]]; simpl; auto.
+Qed.
+Hint Resolve levy_thin1 levy_thin2 levy_thin3 : core.
 
   Lemma levy_dummy_ex vars n A :
     levy vars Prd n     A ->
@@ -519,24 +525,77 @@ split; [exists a; split; auto with *|destruct 1 as (y,(?,?))].
 rewrite <- H0; trivial.
 Qed.
     
-  Lemma levy_cut v k n P y a :
-    (Proper (eq_set==>iff) P) ->
-    (P y -> y ∈ a) ->
-    is_var a v ->
-    (forall x, levy (x::v) k n (x==y)) ->
-    (forall x, levy (x::v) k n (P x)) ->
-    levy v k n (P y).
-intros Pm Pa va lve lvp.                              
-apply F_ext with (exists z, z ∈ a /\ z==y /\ P z).
-*split.
-  destruct 1 as (z&_&eqz&?).
-  rewrite <- eqz; trivial.
- intros.
- exists y; auto with *.
-*constructor;[trivial|].
- constructor; trivial.
+    
+Lemma ex_eq_delta v n a P :
+  Proper (eq_set==>iff) P ->
+  levy_set_eq v Sig (S n) a ->
+  (forall k x, levy (push_var x v) k (S n) (P x)) ->
+  forall k, levy v k (S n) (exists x, x==a /\ P x).
+intros.
+destruct k.
+*apply F_ex_sig; constructor;[apply H0|apply H1].
+*apply F_ext with (forall x, x==a -> P x).
+ {apply forall_eq_intro; intros.
+  split;[ exists x';auto|destruct 1].
+  destruct H3.
+  rewrite H2,<-H3; trivial. }
+ apply F_fa_prd; intros.
+ constructor.
+ apply H0. 
+ apply H1.
 Qed.
 
+Lemma fa_in_delta v n a P :
+  Proper (eq_set ==> iff) P ->
+  levy_set_eq v Sig (S n) a ->
+  (forall k x, levy (push_var x v) k (S n) (P x)) ->
+  forall k, levy v k (S n) (forall x, x ∈ a -> P x).
+intros Pm lva lvP k.
+apply F_ext with (exists y, y==a /\ forall x, x∈y -> P x).
+{split; intros.
+ *destruct H as (y,(eqy,?)).
+  rewrite <-eqy in H0; auto.
+ *exists a; split; [reflexivity|trivial]. }
+apply  ex_eq_delta; trivial.
+*intros ?? h; apply fa_morph; intro; rewrite h; reflexivity.
+*intros.
+ constructor; [simpl; auto|].
+ intros.
+ apply levy_thin2; auto.
+Qed.
+Lemma ex_in_delta v n a P :
+  Proper (eq_set ==> iff) P ->
+  levy_set_eq v Sig (S n) a ->
+  (forall k x, levy (push_var x v) k (S n) (P x)) ->
+  forall k, levy v k (S n) (exists x, x ∈ a /\ P x).
+intros Pm lva lvP k.
+apply F_ext with (exists y, y==a /\ exists x, x∈y /\ P x).
+{split; intros.
+ *destruct H as (y,(eqy,(x,(?,?)))).
+  rewrite eqy in H; eauto.
+ *exists a; split; [reflexivity|trivial]. }
+apply  ex_eq_delta; trivial.
+*intros ?? h; apply ex_morph; intro; rewrite h; reflexivity.
+*intros.
+ constructor; [simpl; auto|].
+ intros.
+ apply levy_thin2; auto.
+Qed.
+
+Lemma levy_cut_delta (v : var_set) (n : nat) (P : set -> Prop) (y : set) :
+  Proper (eq_set ==> iff) P ->
+  levy_set_eq v Sig (S n) y ->
+  (forall x k, levy (x :: v) k (S n) (P x)) ->
+  forall k, levy v k (S n) (P y).
+intros Pm lvy lvP k.
+apply F_ext with (exists x:set, x==y /\ P x).
+{split;intros;[|exists y; auto with *].
+ destruct H as (x&eqx&?); rewrite <-eqx; trivial. }
+apply ex_eq_delta; trivial.
+Qed.
+
+
+  
 
 (* Some Δ_0 formlulae *)
   Lemma levy_empty v k n : levy_set v k n empty.
@@ -731,103 +790,6 @@ apply levy_eq_set.
   Qed.
  *)
   
-  Require Import ZFwfr.
-(*
- forall Rsub : set -> set,
-       morph1 Rsub ->
-       forall (F : (set -> set) -> set -> set) (xx : set),
-       (forall (x x' : set) (f f' : set -> set),
-        ZFrepl.WFRle Rsub x xx ->
-        (forall y y' : set, y ∈ Rsub x -> y == y' -> f y == f' y') -> x == x' -> F f x == F f' x') ->
-       Acc (fun x y : set => x ∈ Rsub y) xx -> WFR Rsub F xx == F (WFR Rsub F) xx
-  *)
-  (**)
-(*  Lemma levy_pair_eq v k n x a b :
-    (forall z, levy (z::v) k n (z==a)) ->
-    (forall z, levy (z::v) k n (z==b)) ->
-    is_var x v ->
-    levy v k n (x==pair a b).
-intros lva lvb xv.
-apply levy_cut with (a:=x) (P:=fun a' => x == pair a' b) (y:=a); auto.
-*do 2 red; intros; rewrite H; reflexivity.
-*intros.
- rewrite H; auto. 
-*constructor; simpl; auto.
-*intros a'.
- apply levy_cut with (a:=x) (P:=fun b' => x == pair a' b') (y:=b); auto.
-+do 2 red; intros; rewrite H; reflexivity.
-+intros.
- rewrite H; auto. 
-+constructor; simpl; auto.
-+intros b'.
- eapply levy_thin_vars; [apply lvb|].
- destruct 1; simpl; auto 10.
-+intros b'.
- apply d0_levy.
- eapply levy_thin_vars; [apply d0_pair_eq|].
- destruct 1 as [?|[?|[?|[ ]]]]; simpl; auto 10.
- rewrite H in xv; auto.
-Qed.
-*)
-
-    
-Lemma ex_eq_delta v n a P :
-  Proper (eq_set==>iff) P ->
-  levy_set_eq v Sig (S n) a ->
-  (forall k x, levy (push_var x v) k (S n) (P x)) ->
-  forall k, levy v k (S n) (exists x, x==a /\ P x).
-intros.
-destruct k.
-*apply F_ex_sig; constructor;[apply H0|apply H1].
-*apply F_ext with (forall x, x==a -> P x).
- {apply forall_eq_intro; intros.
-  split;[ exists x';auto|destruct 1].
-  destruct H3.
-  rewrite H2,<-H3; trivial. }
- apply F_fa_prd; intros.
- constructor.
- apply H0. 
- apply H1.
-Qed.
-
-Lemma fa_in_delta v n a P :
-  Proper (eq_set ==> iff) P ->
-  levy_set_eq v Sig (S n) a ->
-  (forall k x, levy (push_var x v) k (S n) (P x)) ->
-  forall k, levy v k (S n) (forall x, x ∈ a -> P x).
-intros Pm lva lvP k.
-apply F_ext with (exists y, y==a /\ forall x, x∈y -> P x).
-{split; intros.
- *destruct H as (y,(eqy,?)).
-  rewrite <-eqy in H0; auto.
- *exists a; split; [reflexivity|trivial]. }
-apply  ex_eq_delta; trivial.
-*intros ?? h; apply fa_morph; intro; rewrite h; reflexivity.
-*intros.
- constructor; [simpl; auto|].
- intros.
- apply levy_thin2; auto.
-Qed.
-Lemma ex_in_delta v n a P :
-  Proper (eq_set ==> iff) P ->
-  levy_set_eq v Sig (S n) a ->
-  (forall k x, levy (push_var x v) k (S n) (P x)) ->
-  forall k, levy v k (S n) (exists x, x ∈ a /\ P x).
-intros Pm lva lvP k.
-apply F_ext with (exists y, y==a /\ exists x, x∈y /\ P x).
-{split; intros.
- *destruct H as (y,(eqy,(x,(?,?)))).
-  rewrite eqy in H; eauto.
- *exists a; split; [reflexivity|trivial]. }
-apply  ex_eq_delta; trivial.
-*intros ?? h; apply ex_morph; intro; rewrite h; reflexivity.
-*intros.
- constructor; [simpl; auto|].
- intros.
- apply levy_thin2; auto.
-Qed.
-
-
 
   Require Import ZFpairs.
 
@@ -1051,12 +1013,8 @@ split; intros.
 rewrite H with (1:=H0).
  apply singl_intro.
 Qed. 
-(*
-Lemma fa_props_iff :
-  (forall z, z∈props -> P z) <->
-    (forall x, x∈z 
-*)
-  Lemma levy_props k v n : levy_set v k n props.
+
+Lemma levy_props k v n : levy_set v k n props.
 intros z.
 rewrite props_def.
 constructor; [simpl; auto|].
@@ -1103,8 +1061,8 @@ Transparent func dep_func cc_prod app cc_app.
 
 
 Lemma levy_rel v k n a b :
-    is_var a v (*levy_set v k n a*) ->
-    is_var b v (*levy_set v k n b*) ->
+    is_var a v ->
+    is_var b v ->
     levy_set v k n (rel a b).
 intros lva lvb x.
 setoid_replace (x ∈ rel a b) with (x ⊆ prodcart a b).
@@ -1161,6 +1119,7 @@ apply levy_couple_eq.
  intro; apply levy_thin2; apply lvy.
  constructor; simpl; auto.
 Qed.
+
 Lemma levy_cc_app_eq v k n x y :
   is_var x v ->
   (forall k', levy_set_eq v k' n y) ->
@@ -1198,72 +1157,6 @@ split; intros.
  rewrite H2; eauto. 
 Qed.
 
-(*
-Lemma cc_lam_alt_def a f uf z :
-  ext_fun a f -> 
-  uf == sup a f ->
-  z ∈ cc_lam a f <->
-    exists x, x ∈ a /\ exists y, y ∈ uf /\ y ∈ f x /\ z == couple x y.
-intros fext uf_def.  
-rewrite cc_lam_def; [|trivial].
-rewrite ex_ex2.
-apply ex_morph; intros x.
-apply and_iff_morphisml;[reflexivity|intros tyx _].
-rewrite ex_ex2.
-apply ex_morph; intros y.
-rewrite uf_def, sup_ax; trivial.
-split; intros.
-*destruct H.
- split; auto.
- exists x; trivial. 
-*destruct H; auto.
-Qed.
-
-Lemma fa_cc_lam_iff_ub a f uf P :
-  Proper (eq_set ==> iff) P ->
-  ext_fun a f -> 
-  uf == sup a f ->
-  (forall z, z ∈ cc_lam a f -> P z) <->
-    (forall x, x ∈ a -> forall y, y ∈ uf -> y ∈ f x -> P (couple x y)).
-intros Pm fext uf_def.  
-split; intros.
-*apply H.
- apply cc_lam_alt_def with (uf:=uf); trivial.
- exists x; split;[trivial|].
- exists y; split;[trivial|auto with *].
-*apply cc_lam_alt_def with (uf:=uf) in H0; trivial.
- destruct H0 as (x&?&y&?&?&?).
- rewrite H3; eauto. 
-Qed.
-*)
-
-Lemma levy_cc_lam_delta v n x f :
-  ext_fun x f ->
-  is_var x v ->
-  (forall y, levy_set_eq (push_var y v) Sig (S n) (f y)) ->
-  forall k, levy_set v k (S n) (λ y ∈ x, f y).
-intros fext xv lvf k z.
-rewrite cc_lam_def; trivial.
-rewrite ex_ex2.
-constructor;[simpl;auto|].
-intros.
-rewrite ex_ex2.
-revert k; apply ex_in_delta.
-*intros ?? h; rewrite h; reflexivity.
-*intro; eapply levy_thin_vars; [apply lvf|].
- destruct 1 as [?|[?|?]]; simpl; auto. 
-*intros.
- apply levy_str with z; simpl; auto 10.
- apply levy_couple_eq; constructor; simpl; auto.
-Qed.
-
-(*
- Lemma levy_cc_lam_delta_eq v n x f :
-  is_var x v ->
-  (forall k y, levy_set_eq (push_var y v) k (S n) (f y)) ->
-  forall k, levy_set_eq v k (S n) (λ y ∈ x, f y).
-red; intros.
-  *)
  
 Lemma cc_prod_def f a b :
   ext_fun a b ->
@@ -1341,7 +1234,7 @@ Qed.
 Lemma levy_cc_prod v k n a b :
   ext_fun a b ->
   is_var a v ->
-  (forall x v' P, (*Proper (eq_set==>iff) P ->*)
+  (forall x v' P,
    is_var x v' /\ incl_vars v v' ->
    (forall y, levy (push_var y v') k n (P y)) ->
    levy v' k n (exists y, y ∈ b x /\ P y)) ->         
@@ -1351,17 +1244,12 @@ rewrite cc_prod_def;[|trivial].
 constructor.
 *constructor;[simpl;auto|].
  constructor;[simpl;auto|].
- intros; apply lvb;
-   [(*intros ?? h;apply ex_morph;intro;rewrite h;reflexivity|*)unfold incl_vars;simpl;auto|].
+ intros; apply lvb; [unfold incl_vars;simpl;auto|].
  constructor;[simpl;auto|].
  intros; apply levy_str with x; simpl; auto 10.
  apply levy_couple_eq; constructor; simpl; auto 10.
 *constructor;[simpl;auto|].
- intros; apply lvb; [(*|*)unfold incl_vars;simpl;auto|].
- (*{intros ?? h;apply and_iff_morphism.
-  *apply fa_morph; intros y'; rewrite h; reflexivity.
-  *apply fa_morph; intros p; apply fa_morph; intros _; apply fa_morph; intros _.
-   apply ex_morph; intros y'; rewrite h; reflexivity. }*)
+ intros; apply lvb; [unfold incl_vars;simpl;auto|].
  constructor.
  +constructor;[simpl; auto|].
   intros; rewrite in_set_def.
@@ -1380,7 +1268,7 @@ Qed.
 Lemma levy_cc_prod_eq v n a b :
   ext_fun a b ->
   is_var a v ->
-  (forall k x v' P, (*Proper (eq_set==>iff) P ->*)
+  (forall k x v' P,
    is_var x v' /\ incl_vars v v' ->
    (forall y, levy (push_var y v') k (S n) (P y)) ->
    levy v' k (S n) (exists y, y ∈ b x /\ P y)) ->         
@@ -1391,239 +1279,18 @@ apply levy_eq_set; unfold incl_set.
  apply levy_cc_prod; simpl; auto.
  intros.
  apply lvb; auto.
- destruct H(*0*); split; auto.
- red in H1(*2*); red; intros; apply H1(*2*); simpl;auto. 
+ destruct H; split; auto.
+ red in H1; red; intros; apply H1; simpl;auto. 
 *apply F_fa_prd; intros f.
  constructor;[|constructor; simpl; auto]. 
  apply levy_cc_prod; simpl; auto.
  intros.
  apply lvb; auto.
- destruct H(*0*); split; auto.
- red in H1(*2*); red; intros; apply H1(*2*); simpl;auto. 
+ destruct H; split; auto.
+ red in H1; red; intros; apply H1; simpl;auto. 
 Qed.
 
- 
-Lemma levy_cc_prod_app v k n a b :
-  is_var a v ->
-  is_var b v ->
-  levy_set v k n (cc_prod a (cc_app b)).
-intros va vb.
-apply levy_cc_prod;[intros ??? h; rewrite h; reflexivity|trivial|].
-intros.
-destruct H.
-red in H1.
-rewrite ex_cc_app_iff.
-constructor;[simpl;auto|].
-constructor;[simpl;auto|].
-constructor;[simpl;auto|].
-constructor.
-*apply levy_str with x0; [simpl;auto 10|].
- apply levy_couple_eq; constructor; simpl; auto 10.
-*do 2 apply levy_thin2; trivial.
-Qed.
-
-Lemma cc_prod_def_ub f a b ub :
-  ext_fun a b ->
-  (forall x, x ∈ a -> b x ⊆ ub) ->
-  f ∈ cc_prod a b <->
-        (forall p, p ∈ f -> exists x, x ∈ a /\ exists y, y ∈ ub /\ y ∈ b x /\
-                              exists y', y' ∈ y /\ p == couple x y') /\
-          (forall x, x∈a -> exists y, y ∈ ub /\ y ∈ b x /\
-                              (forall y', y' ∈ y -> couple x y' ∈ f) /\
-                     forall p, p ∈ f -> x == fst p ->
-                               exists y', y' ∈ y /\ p == couple x y').
-intros bext ub_def.
-unfold cc_prod.
-rewrite replf_ax.  
-split; intros.
-*destruct H as (f',tyf',eqf).
- split ;intros.
- +rewrite eqf in H.
-  rewrite cc_lam_def in H.
-  destruct H as (x,tyx,(y',?,eqp)).
-  exists x; split ;[trivial|].
-  assert (app f' x ∈ b x).
-  {apply dep_func_elim with (1:=tyf'); trivial. }
-  exists (app f' x); split; [|split;[trivial|]].
-   apply (ub_def x); trivial.
-  exists y'; auto.  
-  {do 2 red; intros. rewrite H1; reflexivity. }
- +assert (aux : app f' x ∈ b x).
-  {apply dep_func_elim with (1:=tyf'); trivial. }
-  exists (app f' x); split; [|split;[trivial|]].
-   apply (ub_def x); trivial.
-  split; intros.  
-  ++rewrite eqf.
-    rewrite cc_lam_def.
-    2:do 2 red; intros ??? h; rewrite h; reflexivity.
-    exists x; [trivial|].
-    exists y'; auto with *.
-  ++rewrite eqf in H0.
-    rewrite cc_lam_def in H0.
-    2:do 2 red; intros ??? h; rewrite h; reflexivity.
-    destruct H0 as (x',?,(y',?,eqp)).
-    assert (eqx: x==x').
-    {rewrite H1,eqp,fst_def; reflexivity. }
-    rewrite <-eqx in H2,eqp; eauto.
-*destruct H.
- exists (lam a (cc_app f)).
- apply dep_func_intro; trivial.
-  do 2 red; intros; apply cc_app_morph; auto with *.
- +intros.
-  destruct H0 with (1:=H1) as (y&_&?&?&?).
-  assert (eqy : y == cc_app f x).
-  {apply eq_set_ax; intros z.
-   rewrite <- couple_in_app.
-   split; [auto|].
-   intros.
-   destruct H4 with (1:=H5); [rewrite fst_def; reflexivity|].
-   destruct H6.
-   apply couple_injection in H7; destruct H7.
-   rewrite <-H8 in H6; trivial.  }
-  rewrite <-eqy; trivial.
- +transitivity (cc_lam a (cc_app f)).
-  ++apply cc_eta_eq'.
-    red; intros.
-    destruct H with (1:=H1).
-    destruct H2 as (?&y&_&?&?&?&?).
-    rewrite H5,fst_def,snd_def; auto with *.
-  ++apply cc_lam_ext;[reflexivity|].
-    intros z z' tyz eqz.
-    rewrite beta_eq; auto.
-     rewrite eqz; reflexivity.    
-     do 2 red; intros ??? h; rewrite h; reflexivity.
-     rewrite <-eqz; trivial.
-*do 2 red; intros.
- apply cc_lam_ext;[reflexivity|].
- red; intros.
- rewrite H0,H2; reflexivity.
-Qed.
-
-Lemma levy_cc_prod_ub v k n a b ub :
-  is_var a v ->
-  is_var ub v ->
-  ext_fun a b ->
-  (forall x, x ∈ a -> b x ⊆ ub) ->
-  (forall x z, levy (push_var z (push_var x v)) k n (z ∈ b x)) ->
-  levy_set v k n (cc_prod a b).
-intros va vub bext ub_def lvb z.
-rewrite cc_prod_def_ub with (ub:=ub); trivial.
-constructor.
-*constructor;[simpl;auto|].
- constructor;[simpl;auto|].
- constructor;[simpl;auto|].
- intros z'.
- constructor.
-  apply levy_thin_vars with (1:=lvb x0 z').
-  destruct 1 as [?|[?|?]]; simpl; auto.
- constructor;[simpl;auto|].
- intros.
- apply levy_thin_vars with (push_var x (push_var x0 (push_var x1 nil)));
-   [apply levy_couple_eq;constructor; simpl;auto|].
- destruct 1 as [?|[?|[?|[ ]]]]; simpl; auto.
-*constructor;[simpl;auto|].
- constructor;[simpl;auto|].
- intros z'.
- constructor.
-  apply levy_thin_vars with (1:=lvb x z').
-  destruct 1 as [?|[?|?]]; simpl; auto.
- constructor.
-  constructor;[simpl;auto|].
-  intros; rewrite in_set_def; constructor;[simpl;auto|].
-  apply levy_couple_eq; constructor; simpl; auto.
-
-  constructor;[simpl;auto|].
-  constructor.
-   apply levy_thin_vars with (push_var x (push_var x0 nil)).
-   apply levy_fst_eq; simpl; auto.
-   destruct 1 as [?|[?|[ ]]]; simpl; auto.
-
-   constructor;[simpl;auto|].
-   intros.
-   apply levy_thin_vars with (push_var x0 (push_var x (push_var x1 nil))).
-    apply levy_couple_eq; constructor; simpl; auto.
-    destruct 1 as [?|[?|[?|[ ]]]]; simpl; auto.
-Qed.
-
-Lemma levy_cc_prod_ub' v k n a b ub :
-  is_var a v ->
-  is_var ub v ->
-  ext_fun a b ->
-  (forall x z, levy (push_var z (push_var x v)) k n (z ∈ b x)) ->
-  levy_set v k n (cc_prod a (fun x => ub ∩ b x)).
-intros.
-apply levy_cc_prod_ub with (ub:=ub); trivial.
-*do 2 red; intros.
- rewrite (H1 x x'); auto with *.
-*intros.
- apply inter2_incl1.
-*intros.
- rewrite inter2_def.
- constructor.
-  constructor; simpl; auto.
-  auto.
-Qed.  
-
-Lemma levy_cc_arr_ub v k n a b :
-  is_var a v ->
-  is_var b v ->
-  levy_set v k n (cc_arr a b).
-intros va vb.
-apply levy_cc_prod_ub with (ub:=b); auto with *.
-constructor; simpl; auto.
-Qed.
-  
-Lemma levy_cc_prod_eq_ub v n a b ub :
-  is_var a v ->
-  is_var ub v ->
-  ext_fun a b ->
-  (forall x, x ∈ a -> b x ⊆ ub) ->
-  (* z∈b(x) is Δ_{n+1} *)
-  (forall k x z, levy (push_var z (push_var x v)) k (S n) (z ∈ b x)) ->
-  levy_set_eq v Prd (S n) (cc_prod a b).
-intros va vub bext ub_def lvb z.
-apply levy_eq_set.
-*constructor; [simpl;auto|].
- apply levy_cc_prod_ub with (ub:=ub); simpl; auto.
- intros x z'; eapply levy_thin_vars; [apply (lvb Prd x z')|].
- destruct 1 as [?|[?|?]]; simpl; auto.
-*apply F_fa_prd.
- constructor.
-  apply levy_cc_prod_ub with (ub:=ub); simpl; auto.
-  intros x' z'; eapply levy_thin_vars; [apply (lvb Sig x' z')|].
-  destruct 1 as [?|[?|?]]; simpl; auto.
- constructor; simpl; auto.
-Qed.
-
-Lemma levy_cc_prod_eq_ub' v n a b ub :
-  is_var a v ->
-  is_var ub v ->
-  ext_fun a b ->
-  (* z∈b(x) is Δ_{n+1} *)
-  (forall k x z, levy (push_var z (push_var x v)) k (S n) (z ∈ b x)) ->
-  levy_set_eq v Prd (S n) (cc_prod a (fun x => ub ∩ b x)).
-intros.
-apply levy_cc_prod_eq_ub with (ub:=ub); trivial.
-*do 2 red; intros.
- rewrite (H1 x x'); auto with *.
-*intros.
- apply inter2_incl1.
-*intros.
- rewrite inter2_def.
- constructor.
-  constructor; simpl; auto.
-  auto.
-Qed.  
-
-
-Lemma levy_cc_arr_eq_ub v n a b :
-  is_var a v ->
-  is_var b v ->
-  levy_set_eq v Prd (S n) (cc_arr a b).
-intros va vb.
-apply levy_cc_prod_eq_ub with (ub:=b); auto with *.
-constructor; simpl; auto.
-Qed.
+(* non-dependent standard functions *)
 
 Lemma func_def f a b :
   f ∈ func a b <->
@@ -1707,13 +1374,6 @@ split; intros.
  exists (snd p); [reflexivity|trivial].
 Qed.
 
-(*Lemma fa_ex_iff :
-  (forall x, (exists y, P x y) -> Q x) <-> (forall 
-
-
-                                 Lemma fa_ex_iff :
-  (forall x, (P x <-> exists y, y ∈ a /\ P' x y )) ->
-  (forall x, P x -> Q x) <-> (forall *)
 Lemma fa_app_iff f x P :
   (forall z, z ∈ app f x -> P z) <->
     (forall p, p ∈ f -> p==couple x (snd p) -> forall z, z∈snd p -> P z).
@@ -1725,61 +1385,6 @@ split; intros.
  destruct H0 as (p&?&?&?); eauto.
 Qed.
 
-
-(*Definition bounded v x :=
-  is_var x v \/ 
-  x == empty \/
-  (exists a b, x == pair a b) \/
-  (exists a, x == union a) \/
-  (exists a P, x == subset a P) \/
-  (exists a F, x == replf a F). 
-*)
-(*inductive bounded*)
-(*
-Lemma F_fa_bounded v k n x P :
-  Proper (eq_set==>iff) P ->
-  bounded v x ->
-  (forall z, levy (push_var z v) k n (P z)) ->
-  levy v k n (forall z, z∈x -> P z).
-intros Pm bx lvP.
-destruct bx as [?|[?|[(a&b&?)|[(a,?)|[(a&Q&?)|(a&F&?)]]]]].
-*constructor; simpl; auto.
-*apply F_ext with True;[|constructor].
- split; [intros|trivial].
- rewrite H in H1; apply empty_ax in H1; contradiction.
-*admit. (*setoid_replace (forall z, z∈x->P z)
-   with (forall z, z∈pair a b ->z==P z).
- 2:apply fa_morph; intros z; rewrite H; reflexivity.
- rewrite fa_pair_iff; [|trivial].
- constructor.
-         *)
-*setoid_replace (forall z, z∈x->P z)
-   with (forall z, z∈union a ->P z).
- 2:apply fa_morph; intros z; rewrite H; reflexivity.
- rewrite fa_union_iff.
- constructor; [simpl;auto|]. admit. (* Hrec... *)
- intros y.
- constructor; [simpl;auto|auto].
-*setoid_replace (forall z, z∈x->P z)
-   with (forall z, z∈subset a Q ->P z).
- 2:apply fa_morph; intros z; rewrite H; reflexivity.
- rewrite fa_subset_iff.
-2:admit. (* Qm *)
-constructor; [simpl;auto|]. admit. (* Hrec... *)
- intros y.
- constructor; auto.
- admit. (* Q levy opp *)
-*setoid_replace (forall z, z∈x->P z)
-   with (forall z, z∈replf a F ->P z).
- 2:apply fa_morph; intros z; rewrite H; reflexivity.
- rewrite fa_replf_iff; trivial.
-2:admit. (* Fext *)
-constructor; [simpl;auto|]. admit. (* Hrec... *)
- intros y.
- constructor; auto.
- admit. (* Q levy opp *)
-*
- *)
 
   Lemma levy_app_eq v k n f x :
     is_var f v ->
@@ -1813,33 +1418,199 @@ apply levy_eq_set.
   constructor; simpl; auto 10.    
 Qed.
  
-  
-Lemma prod_ub_sup A A' ub B :
-  ext_fun A B ->
-  A==A' ->
-  ub == sup A B ->
-  (Π x ∈ A', B x) == (Π x ∈ A, ub ∩ B x).
-intros; symmetry; apply cc_prod_ext;[trivial|].
-red; intros.
-rewrite H1.
-apply eq_set_ax; intros z.
-rewrite inter2_def.
-rewrite sup_ax; trivial.
-rewrite <- (H x x'); trivial.
-split;[destruct 1;trivial|split;trivial].   
-exists x; trivial.
+
+Lemma levy_cc_app_in_comp v n a b :
+  levy_set_eq v Sig (S n) a ->
+  levy_set_eq v Sig (S n) b ->
+  forall k, levy_set v k (S n) (cc_app a b).
+intros lva lvb k z.
+revert k; apply levy_cut_delta with (P:=fun x=>z∈cc_app x b)(y:=a).
+{intros ?? h; rewrite h; reflexivity. }
+{intro; apply levy_thin2; trivial. }
+intros a'.
+apply levy_cut_delta with (P:=fun x=>z∈cc_app a' x)(y:=b).
+{intros ?? h; rewrite h; reflexivity. }
+{intro; do 2 apply levy_thin2; trivial. }
+intros b' k. 
+apply levy_str with z; simpl; auto.
+apply levy_cc_app;[|constructor]; simpl; auto.
+Qed.
+Lemma levy_cc_app_comp v n a b :
+  levy_set_eq v Sig (S n) a ->
+  levy_set_eq v Sig (S n) b ->
+  forall k, levy_set_eq v k (S n) (cc_app a b).
+intros lva lvb k z.
+revert k; apply levy_cut_delta with (P:=fun x=>z==cc_app x b)(y:=a).
+{intros ?? h; rewrite h; reflexivity. }
+{intro; apply levy_thin2; trivial. }
+intros a'.
+apply levy_cut_delta with (P:=fun x=>z==cc_app a' x)(y:=b).
+{intros ?? h; rewrite h; reflexivity. }
+{intro; do 2 apply levy_thin2; trivial. }
+intros b' k. 
+apply levy_str with z; simpl; auto.
+apply levy_cc_app_eq;[|constructor]; simpl; auto.
+Qed.
+
+Lemma levy_cc_lam_in_comp v n a b :
+  morph1 b ->
+  levy_set_eq v Sig (S n) a ->
+  (forall x, levy_set_eq (push_var x v) Sig (S n) (b x)) ->
+  forall k, levy_set v k (S n) (cc_lam a b).
+intros bm lva lvb k z.
+rewrite cc_lam_def; [|auto].
+rewrite ex_ex2.
+revert k; apply ex_in_delta.  
++intros ?? h; apply ex2_morph; intro;rewrite h; reflexivity.
++intro; apply levy_thin2; apply lva.
++intros k x.
+ rewrite ex_ex2.
+ revert k; apply ex_in_delta.  
+ ++intros ?? h; rewrite h; reflexivity.
+ ++intro; apply levy_thin3; apply lvb.
+ ++intros k y.
+   apply levy_str with z; simpl; auto 10.
+   apply levy_couple_eq; constructor; simpl; auto.
+Qed.
+
+Lemma levy_cc_lam_comp v n a b :
+  morph1 b ->
+  levy_set_eq v Sig (S n) a ->
+  (forall x, levy_set_eq (push_var x v) Sig (S n) (b x)) ->
+  forall k, levy_set_eq v k (S n) (cc_lam a b).
+intros bm lva lvb k z.
+apply levy_eq_set.
+*constructor;[simpl;auto|].
+ intros.
+ apply levy_thin2.
+ apply levy_cc_lam_in_comp; trivial.
+*unfold incl_set.
+ rewrite fa_cc_lam_iff;[|intros ?? h; rewrite h; reflexivity|auto].
+ revert k; apply fa_in_delta.
+ +intros ?? h; apply fa_morph; intro; rewrite h; reflexivity.
+ +intro; apply levy_thin2; apply lva.
+ +intros k x.
+  revert k; apply fa_in_delta.
+  ++intros ?? h; rewrite h; reflexivity.
+  ++intro; apply levy_thin3; apply lvb.
+  ++intros k y.
+    rewrite in_set_def.
+    constructor; [simpl;auto|intros].
+    apply levy_str with x0; simpl; auto 10.
+    apply levy_couple_eq; constructor; simpl; auto.
 Qed.
 
 
-Lemma levy_in_eq v k n A :
-levy_set v k n A ->
-(forall x, (*levy_set v k n A ->*) levy (push_var x v) k n (forall z, z ∈ A -> z ∈ x)) ->
-levy_set v k n A /\ levy_set_eq v k n A.
-split; trivial.
-intros z.
-apply levy_eq_set; unfold incl_set;[|auto].
-constructor; [simpl; auto|].
-intros; apply levy_thin2; trivial.
+Lemma levy_ho_cut_delta (v : var_set) (n : nat) (P : (set->set) -> Prop) (f : set->set)(dom:set) :
+  morph1 f ->
+  Proper (eq_fun dom ==> iff) P ->
+  levy_set_eq v Sig (S n) dom ->
+  (forall x, levy_set_eq (push_var x v) Sig (S n) (f x)) ->
+  (forall f k, levy (f :: v) k (S n) (P (cc_app f))) ->
+  forall k, levy v k (S n) (P f).
+intros fm Pm lvdom lvf lvP k.
+apply F_ext with (exists x:set, x==cc_lam dom f /\ P (cc_app x)).
+{split;intros.
+ *destruct H as (g&eqg&?).
+  revert H; apply Pm.
+  intros x x' tyx e.
+  rewrite <-e; clear x' e.
+  rewrite eqg, cc_beta_eq; auto with *.
+ *exists (cc_lam dom f); split;[reflexivity|].
+  revert H; apply Pm.
+  intros x x' tyx e.
+  rewrite <-e; clear x' e.
+  rewrite cc_beta_eq; auto with *. }
+apply ex_eq_delta;[| |intros; apply lvP].
+*intros g h eqgh.
+ apply Pm; red; intros; apply cc_app_morph; trivial.
+*clear k; apply levy_cc_lam_comp;[apply fm|apply lvdom|apply lvf].
+Qed.
+
+
+Lemma levy_cc_prod_in_comp v n a b :
+  morph1 b ->
+  levy_set_eq v Sig (S n) a ->
+  (forall x, levy_set_eq (push_var x v) Sig (S n) (b x)) ->
+  forall k, levy_set v k (S n) (cc_prod a b).
+intros bm lva lvb k z.
+rewrite cc_prod_def;[|auto].
+constructor.
+*constructor;[simpl;auto|].
+ intros x; revert k; apply ex_in_delta.
+ {intros ?? h; apply ex_morph; intro; apply and_iff_morphism;[rewrite h; reflexivity|].
+  apply ex_morph; intro; rewrite h; reflexivity. }
+ {intro; do 2 apply levy_thin2; apply lva. }
+ intros k y; revert k; apply ex_in_delta.
+ {intros ?? h; apply ex_morph; intro; rewrite h; reflexivity. }
+ {intro; do 2 apply levy_thin3; apply lvb. }
+ intros k b'.
+ constructor;[simpl;auto|].
+ intros; apply levy_str with x; simpl; auto 10.
+ apply levy_couple_eq; constructor; simpl; auto 10.
+*revert k;apply fa_in_delta.
+ {intros ?? h; apply ex_morph; intro; apply and_iff_morphism;[rewrite h; reflexivity|].
+  apply and_iff_morphism; apply fa_morph; intro;[rewrite h; reflexivity|].
+  apply impl_morph;[reflexivity|intros].
+  apply impl_morph;[rewrite h;reflexivity|intros].
+  apply ex_morph; intro; rewrite h; reflexivity. }
+ {intro; apply levy_thin2; apply lva. }
+ intros k x; revert k; apply ex_in_delta.
+ {intros ?? h; apply and_iff_morphism; apply fa_morph; intro;[rewrite h; reflexivity|].
+  apply impl_morph;[reflexivity|intros].
+  apply impl_morph;[reflexivity|intros].
+  apply ex_morph; intro; rewrite h; reflexivity. }
+ {intro; apply levy_thin3; apply lvb. }
+ intros k y.
+ constructor.
+ +constructor;[simpl;auto|].
+  intros; rewrite in_set_def.
+  constructor;[simpl;auto|].
+  apply levy_couple_eq; constructor; simpl; auto 10.
+ +constructor;[simpl;auto|].
+  constructor.
+  ++apply levy_str with x; simpl; auto 10.
+    apply levy_fst_eq; simpl; auto 10.
+  ++constructor;[simpl;auto 10|].
+    intros; apply levy_str with x0; simpl; auto 10.
+    apply levy_couple_eq; constructor; simpl; auto 10.
+Qed.
+
+
+Lemma levy_cc_prod_comp v n a b :
+  morph1 b ->
+  levy_set_eq v Sig (S (S n)) a ->
+  (forall x, levy_set_eq (push_var x v) Sig (S (S n)) (b x)) ->
+  forall k, levy_set_eq v k (S (S n)) (cc_prod a b).
+intros bm lva lvb k z.
+apply levy_eq_set.
+*constructor;[simpl;auto|].
+ intros.
+ apply levy_thin2.
+ apply levy_cc_prod_in_comp; trivial.
+*unfold incl_set.
+ revert k; apply levy_cut_delta with (P:=fun a=>forall z', z'∈cc_prod a b->z'∈z)(y:=a).
+ {intros ?? h; apply fa_morph; intros; apply impl_morph;[|reflexivity].
+  apply in_set_morph;[reflexivity|].
+  apply cc_prod_ext;[trivial|red;auto]. }
+ {intro; apply levy_thin2; apply lva. }
+ intros a' k.  
+ revert k; apply levy_ho_cut_delta with (P:=fun f=>forall z',z'∈cc_prod a' f->z'∈z)
+                                        (dom:=a')(f:=b); auto.
+ +intros ?? h; apply fa_morph; intros; apply impl_morph;[|reflexivity].
+  apply in_set_morph;[reflexivity|].
+  apply cc_prod_ext;[reflexivity|red;auto].
+ +constructor; simpl; auto.
+ +intros x z'; do 2 apply levy_thin3; apply lvb.
+ +intros b' k.
+  apply levy_lift with Prd. 
+  apply F_fa_prd.
+  intros f; constructor;[|constructor;simpl;auto].
+  apply levy_cc_prod_in_comp; trivial.
+  ++intros ?? h; rewrite h; reflexivity.
+  ++constructor; simpl; auto.
+  ++intros x z'.
+    apply levy_cc_app_eq;[|constructor];simpl; auto.
 Qed.
 
 
@@ -1873,267 +1644,47 @@ Lemma d2_app M N k :
   levy_int N k ->
   levy_int (App M N) k.
 split; simpl; intros z.
-*apply F_ext with
-   (exists x, x==int M i /\
-    exists y, y==int N i /\ z ∈ cc_app x y).
- +split; intros.
-   destruct H2 as (x&?&y&?&?).
-   rewrite H2,H3 in H4; trivial.
-   exists (int M i); split;[reflexivity|].   
-   exists (int N i); split;[reflexivity|].   
-   trivial.
- +apply ex_eq_delta.
-   intros ?? h; apply ex_morph; intro; rewrite h; reflexivity.
-   apply H; simpl; auto.  
-  intros ??; apply ex_eq_delta.
-   intros ?? h; rewrite h; reflexivity.
-   apply H0; simpl; auto.  
-  intros.
-  apply levy_str with z; simpl; auto.
-  apply levy_cc_app; simpl; auto.
-  constructor; simpl; auto.
-*apply F_ext with
-   (exists x, x==int M i /\
-    exists y, y==int N i /\ z == cc_app x y).
- +split; intros.
-   destruct H2 as (x&?&y&?&?).
-   rewrite H2,H3 in H4; trivial.
-   exists (int M i); split;[reflexivity|].   
-   exists (int N i); split;[reflexivity|].   
-   trivial.
- +apply ex_eq_delta.
-   intros ?? h; apply ex_morph; intro; rewrite h; reflexivity.
-   apply H; simpl; auto.  
-  intros ??; apply ex_eq_delta.
-   intros ?? h; rewrite h; reflexivity.
-   apply H0; simpl; auto.  
-  intros.
-  apply levy_str with z; simpl; auto.
-  apply levy_cc_app_eq; simpl; auto.
-  constructor; simpl; auto.
+*apply levy_cc_app_in_comp.
+  apply H; simpl; auto.
+  apply H0; simpl; auto.
+*apply levy_cc_app_comp.
+  apply H; simpl; auto.
+  apply H0; simpl; auto.
 Qed.
-  
+
 Lemma d2_abs M N k :
   levy_int M k ->
   levy_int N (S k) ->
   levy_int (Abs M N) k.
-red; intros; apply levy_in_eq; simpl; intros z.
-*rewrite cc_lam_def.
- 2:intros ??? h; rewrite h; reflexivity.
- rewrite ex_ex2.
- apply ex_in_delta.  
- +intros ?? h; apply ex2_morph; intro; rewrite h; reflexivity.
+split; simpl; intros z.
+*apply levy_cc_lam_in_comp.
+ +intros ?? h; rewrite h; reflexivity.
  +apply H; simpl; auto.
- +intros.
-  rewrite ex_ex2.
-  apply ex_in_delta.  
-  ++intros ?? h; rewrite h; reflexivity.
-  ++apply H0.
-    destruct k1; simpl; auto with arith.
-  ++intros.
-    apply levy_str with z; simpl; auto 10.
-    apply levy_couple_eq; constructor; simpl; auto.
-*(*intros _.*)
- rewrite fa_cc_lam_iff.
- 2:intros ?? h; rewrite h; reflexivity.
- 2:intros ??? h; rewrite h; reflexivity.
- apply fa_in_delta.
- +intros ?? h; apply fa_morph; intro; rewrite h; reflexivity.
+ +intros; apply H0.
+  destruct k0; simpl; auto with arith.
+*apply levy_cc_lam_comp.
+ +intros ?? h; rewrite h; reflexivity.
  +apply H; simpl; auto.
- +intros.
-  apply fa_in_delta.
-  ++intros ?? h; rewrite h; reflexivity.
-  ++apply H0.
-    destruct k1; simpl; auto with arith.
-  ++intros.
-    rewrite in_set_def.
-    constructor; [simpl;auto|intros].
-    apply levy_str with x1; simpl; auto 10.
-    apply levy_couple_eq; constructor; simpl; auto.
+ +intros; apply H0.
+  destruct k0; simpl; auto with arith.
 Qed.
 
 Lemma d2_prod M N k :
   levy_int M k ->
   levy_int N (S k) ->
   levy_int (Prod M N) k.
-red; intros; apply levy_in_eq; simpl; intros z.
-*rewrite cc_prod_def.
- 2:intros ??? h; rewrite h; reflexivity.
- constructor.
- +constructor;[simpl;auto|].
-  intros; apply ex_in_delta.
-  ++intros ?? h; apply ex_morph; intro; apply and_iff_morphism;[rewrite h; reflexivity|].
-    apply ex_morph; intro; rewrite h; reflexivity.
-  ++apply H; simpl; auto.
-  ++intros; revert k0; apply ex_in_delta.
-    +++intros ?? h; apply ex_morph; intro; rewrite h; reflexivity.
-    +++apply H0.
-       destruct k0; simpl; auto with arith.
-    +++intros.
-       constructor;[simpl;auto|].
-       intros.
-       apply levy_str with x; simpl; auto 10.
-       apply levy_couple_eq; constructor; simpl; auto 10.
- +apply fa_in_delta.
-  ++intros ?? h; apply ex_morph; intro; apply and_iff_morphism;[rewrite h; reflexivity|].
-    apply and_iff_morphism; apply fa_morph; intro;[rewrite h; reflexivity|].
-    apply impl_morph;[reflexivity|intros].
-    apply impl_morph;[rewrite h;reflexivity|intros].
-    apply ex_morph; intro; rewrite h; reflexivity.
-  ++apply H; simpl; auto.
-  ++intros; revert k0; apply ex_in_delta.
-    +++intros ?? h; apply and_iff_morphism; apply fa_morph; intro;[rewrite h; reflexivity|].
-       apply impl_morph;[reflexivity|intros].
-       apply impl_morph;[reflexivity|intros].
-       apply ex_morph; intro; rewrite h; reflexivity.
-    +++apply H0.
-       destruct k0; simpl; auto with arith.
-    +++intros.
-       constructor.
-        constructor;[simpl;auto|].
-        intros; rewrite in_set_def.
-        constructor;[simpl;auto|].
-        apply levy_couple_eq; constructor; simpl; auto 10.
-
-        constructor;[simpl;auto|].
-        constructor.
-         apply levy_str with x; simpl; auto 10.
-         apply levy_fst_eq; simpl; auto 10.
-
-         constructor;[simpl;auto 10|].
-         intros; apply levy_str with x1; simpl; auto 10.
-         apply levy_couple_eq; constructor; simpl; auto 10.
-*apply F_ext with
-   (exists m, m == int M i /\
-    exists nf, nf == cc_lam m (fun x => int N (V.cons x i)) /\
-    forall f, f ∈ cc_prod m (cc_app nf) -> f ∈ z).
- {split; intros.
-  *destruct H2 as (m&eqm&nf&eqnf&?).
-   apply H2.
-   revert H3; apply eq_elim.   
-   symmetry; apply cc_prod_ext;[trivial|].
-   intros ??? h.
-   rewrite eqnf, cc_beta_eq; auto with *.
-    rewrite h; reflexivity.
-    intros ??? h'; rewrite h'; reflexivity.
-  *exists (int M i); split;[reflexivity|].    
-   eexists;split;[reflexivity|].
-   intros; apply H2.
-   revert H3; apply eq_elim.
-   apply cc_prod_ext;[reflexivity|].   
-   intros ??? h.
-   rewrite cc_beta_eq; auto with *.
-    rewrite h; reflexivity.
-    intros ??? h'; rewrite h'; reflexivity. }
- apply ex_eq_delta.
- +intros ?? h; apply ex_morph; intro.
-  apply and_iff_morphism.
-   apply eq_set_morph; [reflexivity|]. 
-   apply cc_lam_ext;[trivial|].
-   intros ??? h'; rewrite h'; reflexivity.
-
-   apply fa_morph; intro f.
-   rewrite h; reflexivity.
- +apply H; simpl; auto.
- +intros; revert k0; apply ex_eq_delta.
-  ++intros ?? h; apply fa_morph; intro; rewrite h; reflexivity.
-  ++intro.
-    apply levy_eq_set; unfold incl_set.
-    {constructor; [simpl;auto|].
-     apply levy_cc_lam_delta; simpl; auto.
-      intros ??? h; rewrite h; reflexivity.
-     intros; apply H0.
-     destruct k0; simpl; auto 10 with arith. }
-    {rewrite fa_cc_lam_iff.
-     *constructor; [simpl;auto|].
-      intros; apply fa_in_delta.
-      +intros ?? h; rewrite h; reflexivity.
-      +apply H0.
-       destruct k0; simpl;auto 10 with arith.
-      +intros; rewrite in_set_def.
-       constructor; [simpl;auto 10|].
-       apply levy_couple_eq; constructor; simpl; auto 10.
-     *intros ?? h; rewrite h; reflexivity.
-     *intros ??? h; rewrite h; reflexivity. }
-  ++intros; apply levy_lift with Prd. 
-    apply F_fa_prd.
-    constructor;[|constructor; simpl;auto]. 
-    apply levy_cc_prod_app; simpl; auto.
-Qed.
-
-(*
-  Lemma d2_arr_ub M N k :
-  d2_int M k ->
-  d2_int N k ->
-  d2_int (Prod M (lift 1 N)) k.
 split; simpl; intros z.
-*apply F_ext with
-   (exists x, x==int M i /\
-    exists y, y==int N i /\
-    z ∈ cc_arr x y).
- +split; intros.
-   destruct H2 as (x&?&y&?&?).
-   revert H4; apply eq_elim.
-   apply cc_prod_ext;[trivial|].
-   intros ??? h.
-   rewrite simpl_int_lift1; trivial.
-
-   exists (int M i); split;[reflexivity|].   
-   exists (int N i); split;[reflexivity|].   
-   revert H2; apply eq_incl.
-   apply cc_prod_ext;[reflexivity|].
-   intros ??? h.
-   rewrite simpl_int_lift1; reflexivity.
-
- +apply ex_eq_delta.
-   intros ?? h.
-   apply ex_morph; intro.
-   rewrite h; reflexivity.
-
-   apply H; simpl; auto.  
-  intros.
-  apply ex_eq_delta.
-   intros ?? h.
-   rewrite h; reflexivity.
-   apply H0; simpl; auto.  
-  intros.
-  apply levy_str with z; simpl; auto.
-  apply levy_cc_arr_ub; simpl; auto.
-*apply F_ext with
-   (exists x, x==int M i /\
-    exists y, y==int N i /\
-    z == cc_arr x y).
- +split; intros.
-   destruct H2 as (x&?&y&?&?).
-   rewrite H4.
-   apply cc_prod_ext;[trivial|].
-   intros ??? h.
-   rewrite simpl_int_lift1; trivial.
-
-   exists (int M i); split;[reflexivity|].   
-   exists (int N i); split;[reflexivity|].   
-   rewrite H2.
-   apply cc_prod_ext;[reflexivity|].
-   intros ??? h.
-   rewrite simpl_int_lift1; reflexivity.
-
- +apply ex_eq_delta.
-   intros ?? h.
-   apply ex_morph; intro.
-   rewrite h; reflexivity.
-
-   apply H; simpl; auto.  
-  intros.
-  apply ex_eq_delta.
-   intros ?? h.
-   rewrite h; reflexivity.
-   apply H0; simpl; auto.  
-  intros.
-  apply levy_str with z; simpl; auto.
-  apply levy_lift with Prd.
-  apply levy_cc_arr_eq_ub; simpl; auto.
+*apply levy_cc_prod_in_comp.
+ +intros ?? h; rewrite h; reflexivity.
+ +apply H; simpl; auto.
+ +intros; apply H0.
+  destruct k0; simpl; auto with arith.
+*apply levy_cc_prod_comp.
+ +intros ?? h; rewrite h; reflexivity.
+ +apply H; simpl; auto.
+ +intros; apply H0.
+  destruct k0; simpl; auto with arith.
 Qed.
-*)
 
 End Sigma2.
 
@@ -2164,266 +1715,46 @@ Lemma d2_app M N k :
   d2_int N k ->
   d2_int (App M N) k.
 split; simpl; intros z.
-*apply F_ext with
-   (exists x, x==int M i /\
-    exists y, y==int N i /\ z ∈ cc_app x y).
- +split; intros.
-   destruct H2 as (x&?&y&?&?).
-   rewrite H2,H3 in H4; trivial.
-   exists (int M i); split;[reflexivity|].   
-   exists (int N i); split;[reflexivity|].   
-   trivial.
- +apply ex_eq_delta.
-   intros ?? h; apply ex_morph; intro; rewrite h; reflexivity.
-   apply H; simpl; auto.  
-  intros ??; apply ex_eq_delta.
-   intros ?? h; rewrite h; reflexivity.
-   apply H0; simpl; auto.  
-  intros.
-  apply levy_str with z; simpl; auto.
-  apply levy_cc_app; simpl; auto.
-  constructor; simpl; auto.
-*apply F_ext with
-   (exists x, x==int M i /\
-    exists y, y==int N i /\ z == cc_app x y).
- +split; intros.
-   destruct H2 as (x&?&y&?&?).
-   rewrite H2,H3 in H4; trivial.
-   exists (int M i); split;[reflexivity|].   
-   exists (int N i); split;[reflexivity|].   
-   trivial.
- +apply ex_eq_delta.
-   intros ?? h; apply ex_morph; intro; rewrite h; reflexivity.
-   apply H; simpl; auto.  
-  intros ??; apply ex_eq_delta.
-   intros ?? h; rewrite h; reflexivity.
-   apply H0; simpl; auto.  
-  intros.
-  apply levy_str with z; simpl; auto.
-  apply levy_cc_app_eq; simpl; auto.
-  constructor; simpl; auto.
+*apply levy_cc_app_in_comp.
+  apply H; simpl; auto.
+  apply H0; simpl; auto.
+*apply levy_cc_app_comp.
+  apply H; simpl; auto.
+  apply H0; simpl; auto.
 Qed.
   
 Lemma d2_abs M N k :
   d2_int M k ->
   d2_int N (S k) ->
   d2_int (Abs M N) k.
-red; intros; apply levy_in_eq; simpl; intros z.
-*rewrite cc_lam_def.
- 2:intros ??? h; rewrite h; reflexivity.
- rewrite ex_ex2.
- apply ex_in_delta.  
- +intros ?? h; apply ex2_morph; intro; rewrite h; reflexivity.
+split; simpl; intros z.
+*apply levy_cc_lam_in_comp.
+ +intros ?? h; rewrite h; reflexivity.
  +apply H; simpl; auto.
- +intros.
-  rewrite ex_ex2.
-  apply ex_in_delta.  
-  ++intros ?? h; rewrite h; reflexivity.
-  ++apply H0.
-    destruct k2; simpl; auto with arith.
-  ++intros.
-    apply levy_str with z; simpl; auto 10.
-    apply levy_couple_eq; constructor; simpl; auto.
-*(*intros _.*)
- rewrite fa_cc_lam_iff.
- 2:intros ?? h; rewrite h; reflexivity.
- 2:intros ??? h; rewrite h; reflexivity.
- apply fa_in_delta.
- +intros ?? h; apply fa_morph; intro; rewrite h; reflexivity.
+ +intros; apply H0.
+  destruct k1; simpl; auto with arith.
+*apply levy_cc_lam_comp.
+ +intros ?? h; rewrite h; reflexivity.
  +apply H; simpl; auto.
- +intros.
-  apply fa_in_delta.
-  ++intros ?? h; rewrite h; reflexivity.
-  ++apply H0.
-    destruct k2; simpl; auto with arith.
-  ++intros.
-    rewrite in_set_def.
-    constructor; [simpl;auto|intros].
-    apply levy_str with x1; simpl; auto 10.
-    apply levy_couple_eq; constructor; simpl; auto.
+ +intros; apply H0.
+  destruct k1; simpl; auto with arith.
 Qed.
-
-
 
 Lemma d2_prod M N k :
   d2_int M k ->
   d2_int N (S k) ->
   d2_int (Prod M N) k.
-red; intros; apply levy_in_eq; simpl; intros z.
-*rewrite cc_prod_def.
- 2:intros ??? h; rewrite h; reflexivity.
- constructor.
- +constructor;[simpl;auto|].
-  intros; revert k0; apply ex_in_delta.
-  ++intros ?? h; apply ex_morph; intro; apply and_iff_morphism;[rewrite h; reflexivity|].
-    apply ex_morph; intro; rewrite h; reflexivity.
-  ++apply H; simpl; auto.
-  ++intros; revert k0; apply ex_in_delta.
-    +++intros ?? h; apply ex_morph; intro; rewrite h; reflexivity.
-    +++apply H0.
-       destruct k0; simpl; auto with arith.
-    +++intros.
-       constructor;[simpl;auto|].
-       intros.
-       apply levy_str with x; simpl; auto 10.
-       apply levy_couple_eq; constructor; simpl; auto 10.
- +revert k0; apply fa_in_delta.
-  ++intros ?? h; apply ex_morph; intro; apply and_iff_morphism;[rewrite h; reflexivity|].
-    apply and_iff_morphism; apply fa_morph; intro;[rewrite h; reflexivity|].
-    apply impl_morph;[reflexivity|intros].
-    apply impl_morph;[rewrite h;reflexivity|intros].
-    apply ex_morph; intro; rewrite h; reflexivity.
-  ++apply H; simpl; auto.
-  ++intros; revert k0; apply ex_in_delta.
-    +++intros ?? h; apply and_iff_morphism; apply fa_morph; intro;[rewrite h; reflexivity|].
-       apply impl_morph;[reflexivity|intros].
-       apply impl_morph;[reflexivity|intros].
-       apply ex_morph; intro; rewrite h; reflexivity.
-    +++apply H0.
-       destruct k0; simpl; auto with arith.
-    +++intros.
-       constructor.
-        constructor;[simpl;auto|].
-        intros; rewrite in_set_def.
-        constructor;[simpl;auto|].
-        apply levy_couple_eq; constructor; simpl; auto 10.
-
-        constructor;[simpl;auto|].
-        constructor.
-         apply levy_str with x; simpl; auto 10.
-         apply levy_fst_eq; simpl; auto 10.
-
-         constructor;[simpl;auto 10|].
-         intros; apply levy_str with x1; simpl; auto 10.
-         apply levy_couple_eq; constructor; simpl; auto 10.
-*apply F_ext with
-   (exists m, m == int M i /\
-    exists nf, nf == cc_lam m (fun x => int N (V.cons x i)) /\
-    forall f, f ∈ cc_prod m (cc_app nf) -> f ∈ z).
- {split; intros.
-  *destruct H2 as (m&eqm&nf&eqnf&?).
-   apply H2.
-   revert H3; apply eq_elim.   
-   symmetry; apply cc_prod_ext;[trivial|].
-   intros ??? h.
-   rewrite eqnf, cc_beta_eq; auto with *.
-    rewrite h; reflexivity.
-    intros ??? h'; rewrite h'; reflexivity.
-  *exists (int M i); split;[reflexivity|].    
-   eexists;split;[reflexivity|].
-   intros; apply H2.
-   revert H3; apply eq_elim.
-   apply cc_prod_ext;[reflexivity|].   
-   intros ??? h.
-   rewrite cc_beta_eq; auto with *.
-    rewrite h; reflexivity.
-    intros ??? h'; rewrite h'; reflexivity. }
- revert k0; apply ex_eq_delta.
- +intros ?? h; apply ex_morph; intro.
-  apply and_iff_morphism.
-   apply eq_set_morph; [reflexivity|]. 
-   apply cc_lam_ext;[trivial|].
-   intros ??? h'; rewrite h'; reflexivity.
-
-   apply fa_morph; intro f.
-   rewrite h; reflexivity.
- +apply H; simpl; auto.
- +intros; revert k0; apply ex_eq_delta.
-  ++intros ?? h; apply fa_morph; intro; rewrite h; reflexivity.
-  ++intro.
-    apply levy_eq_set; unfold incl_set.
-    {constructor; [simpl;auto|].
-     apply levy_cc_lam_delta; simpl; auto.
-      intros ??? h; rewrite h; reflexivity.
-     intros; apply H0.
-     destruct k0; simpl; auto 10 with arith. }
-    {rewrite fa_cc_lam_iff.
-     *constructor; [simpl;auto|].
-      intros; apply fa_in_delta.
-      +intros ?? h; rewrite h; reflexivity.
-      +apply H0.
-       destruct k0; simpl;auto 10 with arith.
-      +intros; rewrite in_set_def.
-       constructor; [simpl;auto 10|].
-       apply levy_couple_eq; constructor; simpl; auto 10.
-     *intros ?? h; rewrite h; reflexivity.
-     *intros ??? h; rewrite h; reflexivity. }
-  ++intros; apply levy_lift with Prd. 
-    apply F_fa_prd.
-    constructor;[|constructor; simpl;auto]. 
-    apply levy_cc_prod_app; simpl; auto.
-Qed.
-
-  Lemma d2_arr_ub M N k :
-  d2_int M k ->
-  d2_int N k ->
-  d2_int (Prod M (lift 1 N)) k.
 split; simpl; intros z.
-*apply F_ext with
-   (exists x, x==int M i /\
-    exists y, y==int N i /\
-    z ∈ cc_arr x y).
- +split; intros.
-   destruct H2 as (x&?&y&?&?).
-   revert H4; apply eq_elim.
-   apply cc_prod_ext;[trivial|].
-   intros ??? h.
-   rewrite simpl_int_lift1; trivial.
-
-   exists (int M i); split;[reflexivity|].   
-   exists (int N i); split;[reflexivity|].   
-   revert H2; apply eq_incl.
-   apply cc_prod_ext;[reflexivity|].
-   intros ??? h.
-   rewrite simpl_int_lift1; reflexivity.
-
- +apply ex_eq_delta.
-   intros ?? h.
-   apply ex_morph; intro.
-   rewrite h; reflexivity.
-
-   apply H; simpl; auto.  
-  intros.
-  apply ex_eq_delta.
-   intros ?? h.
-   rewrite h; reflexivity.
-   apply H0; simpl; auto.  
-  intros.
-  apply levy_str with z; simpl; auto.
-  apply levy_cc_arr_ub; simpl; auto.
-*apply F_ext with
-   (exists x, x==int M i /\
-    exists y, y==int N i /\
-    z == cc_arr x y).
- +split; intros.
-   destruct H2 as (x&?&y&?&?).
-   rewrite H4.
-   apply cc_prod_ext;[trivial|].
-   intros ??? h.
-   rewrite simpl_int_lift1; trivial.
-
-   exists (int M i); split;[reflexivity|].   
-   exists (int N i); split;[reflexivity|].   
-   rewrite H2.
-   apply cc_prod_ext;[reflexivity|].
-   intros ??? h.
-   rewrite simpl_int_lift1; reflexivity.
-
- +apply ex_eq_delta.
-   intros ?? h.
-   apply ex_morph; intro.
-   rewrite h; reflexivity.
-
-   apply H; simpl; auto.  
-  intros.
-  apply ex_eq_delta.
-   intros ?? h.
-   rewrite h; reflexivity.
-   apply H0; simpl; auto.  
-  intros.
-  apply levy_str with z; simpl; auto.
-  apply levy_lift with Prd.
-  apply levy_cc_arr_eq_ub; simpl; auto.
+*apply levy_cc_prod_in_comp.
+ +intros ?? h; rewrite h; reflexivity.
+ +apply H; simpl; auto.
+ +intros; apply H0.
+  destruct k1; simpl; auto with arith.
+*apply levy_cc_prod_comp.
+ +intros ?? h; rewrite h; reflexivity.
+ +apply H; simpl; auto.
+ +intros; apply H0.
+  destruct k1; simpl; auto with arith.
 Qed.
 
 End Delta2.
@@ -2434,8 +1765,33 @@ Import Sigma2.
 
 Require Import ZFnats.
 
+Lemma levy_succ_eq v k n x y :
+  is_var x v ->
+  is_var y v ->
+  levy v k n (x == succ y).
+intros vx vy; apply levy_eq_set; unfold incl_set.
+*constructor;[simpl;auto|].
+ intros z; unfold succ.
+ rewrite union2_ax; constructor; [constructor;simpl;auto|].
+ apply levy_pair; simpl; auto.
+*unfold succ, union2.
+ rewrite fa_union_iff, fa_pair_iff.
+ 2:intros ?? h; apply fa_morph; intro; rewrite h; reflexivity.
+ constructor; [constructor; [simpl;auto|constructor; simpl;auto]|].
+ unfold singl; rewrite fa_pair_iff.
+ 2:intros ?? h; rewrite h; reflexivity.
+ do 2 constructor; simpl; auto.
+Qed.
+
 Definition N_inductive a :=
   empty ∈ a /\ forall x, x ∈ a -> succ x ∈ a.
+
+Instance N_inductive_morph : Proper (eq_set==>iff) N_inductive.
+do 2 red; intros.
+unfold N_inductive.
+apply and_iff_morphism;[rewrite H;reflexivity|].
+apply fa_morph; intro; rewrite H;reflexivity.
+Qed.
 
 (* Being inductive is Δ_0 *)
 Lemma levy_N_inductive v k n x :
@@ -2447,28 +1803,27 @@ constructor.
  intros; apply levy_empty_eq.
 *constructor;[simpl; auto|intros z].
  rewrite in_set_def; constructor;[simpl;auto|].
- intros y.
- unfold succ, union2.
- (**)
- apply levy_eq_set.
- +constructor;[simpl;auto|].
-  intros z'; rewrite union_def.
-  rewrite ex_pair_iff.
-  constructor; [constructor; simpl; auto|].  
-  apply levy_pair; simpl; auto.
-  intros ?? h; rewrite h; reflexivity.
- +unfold incl_set.
-  rewrite fa_union_iff.
-  rewrite fa_pair_iff.
-  constructor.
-  ++constructor; [simpl;auto|].
-    constructor; simpl; auto.
-  ++unfold singl; rewrite fa_pair_iff.
-    constructor; constructor; simpl; auto.
-    intros ?? h; rewrite h; reflexivity.
-  ++intros ?? h.
-    apply fa_morph; intros z'.
-    rewrite h; reflexivity.
+ intros; apply levy_succ_eq; simpl; auto.
+Qed.
+
+Lemma N_induc : N_inductive N.
+split; intros; [apply zero_typ|].
+apply succ_typ; trivial.
+Qed.
+  
+Lemma eq_N_iff x :
+  x == N <-> x ⊆ N /\ N_inductive x.
+split; intros.
+*rewrite H.
+ split;[reflexivity|]. 
+ apply N_induc.  
+*destruct H.
+ apply incl_eq; trivial.
+ red; intros. 
+ elim H1 using N_ind; intros; auto.
+ +rewrite <-H3; trivial.
+ +apply H0.
+ +apply H0; trivial.
 Qed.
 
 Lemma N_case n : n ∈ N -> n==empty \/ exists k, k ∈ n /\ k ∈ N /\ n==succ k.
@@ -2500,135 +1855,27 @@ split; intros.
  apply union2_intro1; trivial.
 Qed.
 
-Lemma eq_N_iff x :
-  x == N <-> x ⊆ N /\ N_inductive x.
-rewrite eq_set_ax.  
-split; intros.
-*split.
- +red; intros; apply H; trivial. 
- +split; intros; [apply H;apply zero_typ|].
-  apply H; apply succ_typ; apply H; trivial.
-  *destruct H as (?&?&?).
-   split;[apply H|].
-   intros h; elim h using N_ind; intros; auto.
-   rewrite <-H3; trivial.
-Qed.
-
-    
-(* If we only have well foundation of transitive sets...
-
-Definition N_elts_aux z :=
-  (forall a, a∈z -> forall b, b∈a -> b∈z) /\
-  (forall y, y∈z -> (forall a, a∈y -> forall b, b∈a -> b ∈y) /\
-                     (y==empty \/ exists y', y' ∈ y /\ y==succ y')).
-Definition N_elts z :=
-  (z==empty \/ exists y, y ∈ z /\ z==succ y) /\ N_elts_aux z.
-
-(*
-Axiom reg :
-  forall x, (exists y, y ∈ x) -> exists y, y ∈ x /\ forall z, z ∈ x -> ~ z ∈ y.
-Axiom nnpp:forall P:Prop,~~P->P.
-Lemma reg_acc x :
-  (forall y z, y ∈ x -> z ∈ y -> z ∈ x) ->
-  Acc in_set x.
-intros xtr.
-constructor; intros.
-apply nnpp; intro nacc.
-destruct reg with (subset x (fun y => ~Acc in_set y)) as (y'&?&?).
-*exists y; apply subset_intro; trivial.
-*apply subset_ax in H0; destruct H0 as (?,(w,?,?)).
- apply H3; constructor; intros.
- rewrite <-H2 in H4.
- apply nnpp; intros nacc'.
- apply (H1 y0); [|trivial].
- apply subset_intro; [eauto|trivial].
-Qed.*)
-
-Lemma N_def z : z ∈ N <-> N_elts z.
-split; intros.
-*unfold N_elts, N_elts_aux.
- split;[destruct N_case with (1:=H) as [?|(k&?&_&?)]; eauto|split; intros].
- +apply lt_trans with a; trivial.
- +split; intros.
-  ++apply lt_trans with a; trivial.
-    clear a H1 b H2.
-    revert y H0; elim H using N_ind; intros.
-     rewrite <-H1 in H3; auto.
-     apply empty_ax in H0; contradiction.
-     apply le_case in H2; destruct H2;[rewrite H2; trivial|auto].
-  ++destruct N_case with y as [?|(k&?&_&?)]; eauto.
-    revert y H0; elim H using N_ind; intros.
-     rewrite <-H1 in H3; auto.
-     apply empty_ax in H0; contradiction.
-     apply le_case in H2; destruct H2;[rewrite H2; trivial|auto].
-*destruct H as (zcase&_(*ztr*)&hered).
- revert zcase hered.
- clear.
- elim z using wf_ax; intros.
- destruct zcase as [eqx|(k&klt&eqx)]; rewrite eqx; [apply zero_typ|apply succ_typ].
- apply H; auto.
-  apply hered; auto.
-
-  intros; apply hered.
-  rewrite eqx.
-  apply union2_intro1; trivial.
-Qed.
-*)
-Lemma levy_succ_eq v k n x y :
-  is_var x v ->
-  is_var y v ->
-  levy v k n (x == succ y).
-intros vx vy; apply levy_eq_set; unfold incl_set.
-*constructor;[simpl;auto|].
- intros z; unfold succ.
- rewrite union2_ax; constructor; [constructor;simpl;auto|].
- apply levy_pair; simpl; auto.
-*unfold succ, union2.
- rewrite fa_union_iff, fa_pair_iff.
- 2:intros ?? h; apply fa_morph; intro; rewrite h; reflexivity.
- constructor; [constructor; [simpl;auto|constructor; simpl;auto]|].
- unfold singl; rewrite fa_pair_iff.
- 2:intros ?? h; rewrite h; reflexivity.
- do 2 constructor; simpl; auto.
-Qed.
-
 Lemma levy_N v k n:
   levy_set v k n N.
 intros z.
 rewrite N_def.
-constructor(*;[|constructor]*).
+constructor.
 *constructor;[apply levy_empty_eq|constructor;[simpl;auto|]].
  intros; apply levy_succ_eq; simpl; auto.
 *constructor; [simpl;auto|].
  constructor;[apply levy_empty_eq|].
  constructor; [simpl;auto|].
  intros; apply levy_succ_eq; simpl; auto.
-(**constructor;[simpl;auto|].
- constructor;[simpl;auto|].
- constructor;simpl;auto.
-*constructor; [simpl;auto|].
- constructor.
- +constructor; [simpl;auto|].
-  constructor; [simpl;auto|].
-  constructor;simpl;auto.   
- +constructor;[apply levy_empty_eq|].
-  constructor; [simpl;auto|].
-  intros; apply levy_succ_eq; simpl; auto. *)
 Qed.
 
 Lemma levy_N_eq v k n:
   levy_set_eq v k n N.
 red; intros.
 rewrite eq_N_iff.
-constructor;[|constructor].
+constructor.
 *constructor; [simpl; auto|].
  intros; apply levy_N.
-*rewrite in_set_def; constructor;[simpl;auto|].
- intros; apply levy_empty_eq.
-*constructor;[simpl;auto|].
- intros; rewrite in_set_def.
- constructor; [simpl;auto|].  
- intros; apply levy_succ_eq; simpl; auto.
+*apply levy_N_inductive; simpl; auto.
 Qed.
 
 
@@ -3568,295 +2815,3 @@ Qed.
   
 End Univ_closure.
   
-
-
-
- (* definable sets *)
-
-  Definition cls := set -> Prop.
-
-  Definition eq_cls (c1 c2 : cls) := (eq_set ==> iff)%signature c1 c2.
-
-  Definition cls_set (a:set) (c : cls) :=
-    forall z, z ∈ a <-> c z.
-
-  Definition is_set (c:cls) := exists a, cls_set a c.
-
-  Definition levy_cls vars k n (c:cls) := forall z, levy (z::vars) k n (c z).
-
-  
-  Definition empty_cls : cls := fun z => False.
-  Definition pair_cls (a b:set) : cls := fun z => z==a \/ z==b.
-  Definition union_cls (a:set) : cls := fun z => exists b, b∈a /\ z∈b.
-  Definition power_cls (a:set) : cls := fun z => forall b, b ∈ z -> b ∈ a.
-  Definition subset_cls (a:set) (P:set->Prop) : cls :=
-    fun z => z∈a /\ exists2 z', z==z' & P z'.
-  Definition repl_cls (a:set) (f:set->cls) : cls :=
-    fun z => exists x, x∈a /\ cls_set z (f x).
-
-  Definition succ_cls (x:set) : cls :=
-    fun p => p==x \/ (x ∈ p /\ forall z, z∈p -> z==x).
-  Definition is_succ (x x':set) : Prop :=
-    x ∈ x' /\ exists p, p ∈ x' /\ x ∈ p /\ forall z, z ∈ p -> z==z.
-  Definition inductive : cls :=
-    fun I => empty ∈ I /\ forall x, x ∈ I -> exists x', x' ∈ I /\ is_succ x x'.  
-  Definition infty_cls : cls :=
-    fun z => forall I, inductive I -> z ∈ I.
-
-  Lemma empty_cls_set : cls_set empty empty_cls.
-split; intros; [|contradiction].
-apply empty_ax in H; trivial.
-Qed.
-  Lemma pair_cls_set a b : cls_set (pair a b) (pair_cls a b).
-red; unfold pair_cls.
-apply pair_ax.
-Qed.
-  Lemma union_cls_set a : cls_set (union a) (union_cls a).
-red; unfold union_cls; intros.
-rewrite union_ax.
-split; destruct 1; eauto.
-destruct H; eauto.
-Qed.
-  Lemma power_cls_set a : cls_set (power a) (power_cls a).
-red; unfold power_cls; intros.
-apply power_ax.
-Qed.
-  Lemma subset_cls_set a P : cls_set (subset a P) (subset_cls a P).
-red; unfold subset_cls; intros.
-apply subset_ax.
-Qed.
-  Lemma succ_cls_def x :
-    exists xx,
-      cls_set xx (pair_cls x x) /\
-        eq_cls (succ_cls x) (pair_cls x xx).
-exists (pair x x).
-split.
-apply pair_cls_set.
-do 2 red; unfold succ_cls.
-split; intros.
-*destruct H0;[left;rewrite <-H;trivial|right].
- destruct H0.
- rewrite H in H0. 
- apply pair_ext; trivial.
- left; apply H1. 
- rewrite H; trivial.
-*destruct H0; [left; rewrite H; trivial|right].
- split; intros.
-  rewrite H,H0; auto.
-  rewrite H,H0 in H1.
-  apply pair_ax in H1; destruct H1; trivial.
-Qed.
-
-
-  Require Import ZFpairs.
-  
-  
-(* We assume a fully existential IZF *)
-Declare Module M : Zermelo_Ex_sig CoqSublogicThms.
-
-Import CoqSublogicThms M.
-
-Instance eq_set_equiv: Equivalence eq_set.
-Proof.
-split; red; intros; rewrite eq_set_ax in *; intros.
- reflexivity.
- symmetry; trivial.
- transitivity (x0 ∈ y); trivial.
-Qed.
-
-Lemma eq_set_morph : Proper (eq_set ==> eq_set ==> iff) eq_set.
-auto with *.
-Qed.
-
-Instance in_set_morph : Proper (eq_set ==> eq_set ==> iff) in_set.
-apply morph_impl_iff2; auto with *.
-do 4 red; intros.
-apply in_reg with x; trivial.
-rewrite eq_set_ax in H0.
-apply H0; trivial.
-Qed.
-
-
-Inductive form : Prop -> qu -> nat -> Prop :=
-| F_eq x y k n : form (x == y) k n
-| F_in x y k n : form (x ∈ y) k n
-| F_T k n : form True k n
-| F_F k n : form False k n
-| F_and A B k n : form A k n -> form B k n -> form (A/\B) k n
-| F_or A B k n : form A k n -> form B k n -> form (A\/B) k n
-| F_imp A B k n : form A (opp k) n -> form B k n -> form (A->B) k n
-| F_bfa A B k n : (forall x, form (B x) k n) -> form (forall x:set, x ∈ A -> B x) k n
-| F_fa_prd B n : (forall x, form (B x) Prd (S n)) -> form (forall x:set, B x) Prd (S n)
-| F_fa_alt B n : (forall x, form (B x) Sig n) -> form (forall x:set, B x) Prd (S n)
-| F_bex A B k n : (forall x, form (B x) k n) -> form (exists x:set, x ∈ A /\ B x) k n
-| F_ex_sig B n : (forall x, form (B x) Sig (S n)) -> form (exists x:set, B x) Sig (S n)
-| F_ex_alt B n : (forall x, form (B x) Prd n) -> form (exists x:set, B x) Sig (S n)
-| F_ext A B k n : (A<->B) -> form A k n -> form B k n.
-
-Instance form_morph : Proper (iff ==> eq ==> eq ==> iff) form.
-do 4 red; intros.
-subst y0 y1.
-split; apply F_ext; auto with *.
-Qed.
-Lemma ex_ex2 A P Q : @ex2 A P Q <-> exists x:A, P x /\ Q x.
-split; destruct 1; [eauto|].
-destruct H; eauto.
-Qed.
-
-Lemma F_bex2 A B k n : (forall x, form (B x) k n) -> form (exists2 x:set, x ∈ A & B x) k n.
-intros.
-rewrite ex_ex2.
-constructor; trivial.
-Qed.
-
-
-
-(*
-Parameter
- (repl_ex : forall a (R:set->set->Prop),
-    (forall x x' y y', x ∈ a -> x == x' -> y == y' -> R x y -> R x' y') ->
-    (forall x y y', x ∈ a -> R x y -> R x y' -> y == y') ->
-    #exists b, forall x, x ∈ b <-> #exists2 y, y ∈ a & R y x).
-*)
-
-Definition is_set_def (P:set->Prop) :=
-  exists2 x, P x & forall y, P y -> x==y.
-
-Lemma is_set_def_ex_fa P Q :
-  Proper (eq_set==>iff) Q ->
-  is_set_def P -> ((forall x, P x -> Q x) <-> (exists2 x, P x & Q x)).
-intros Qm (a,da,ua).
-split; intros; [eauto|].
-destruct H as (a',da',qa').
-rewrite <- ua with (1:=H0).
-rewrite ua with (1:=da'); trivial.
-Qed.
-
-Lemma is_set_def_ext P Q :
-  pointwise_relation _ iff P Q ->
-  is_set_def P <-> is_set_def Q.
-intros Peq; unfold is_set_def.
-apply ex2_morph; intros x; [trivial|].
-apply fa_morph; intros y.
-apply impl_morph; [trivial|].
-intros _.
-reflexivity.
-Qed.
-
-Definition is_pair (isa isb : set -> Prop) c :=
-  exists2 a, isa a & exists2 b, isb b & a ∈ c /\ b ∈ c /\ forall z, z∈c -> (z==a \/ z==b).
-
-Lemma is_set_pair isa isb :
-  is_set_def isa -> is_set_def isb -> is_set_def (is_pair isa isb).
-intros (a, da, ua) (b,db,ub).
-destruct pair_ex with a b as (c,dc).
-exists c.
-*unfold is_pair.
- exists a;[trivial|].
- exists b;[trivial|].
- split;[apply dc;left;reflexivity|].
- split;[apply dc;right;reflexivity|].
- intros.
- apply dc; trivial.
-*intros.
- red in H.
- destruct H as (a',da',(b',db',(?&?&?))).
- apply eq_set_ax.
- intros z.
- rewrite dc.
- rewrite (ua _ da').
- rewrite (ub _ db').
- split;[|auto].
- destruct 1 as [h|h]; rewrite h; trivial.
-Qed.
-
-Lemma pair_form P Q n:
-  (forall a, form (P a) Sig n) ->
-  (forall a, form (Q a) Sig n) ->
-  forall a, form (is_pair P Q a) Sig n.
-intros.
-unfold is_pair.
-rewrite ex_ex2.
-constructor; intros x.
-constructor;[trivial|].
-rewrite ex_ex2.
-constructor; intros y.
-constructor;[trivial|].
-repeat constructor.
-Qed.
-
-
-Definition is_empty x := forall z, z ∈ x -> False.
-
-Lemma is_set_empty : is_set_def is_empty.
-destruct empty_ex as (a,?); exists a; trivial.
-intros.
-apply eq_set_ax; split; intros.
-apply H in H1; contradiction.
-apply H0 in H1; contradiction.
-Qed.
-
-Lemma empty_form k n:
-  forall a, form (is_empty a) k n.
-intros.
-constructor.
-intros; constructor.
-Qed.
-
-Definition is_union isa c :=
-  exists2 a, isa a & forall z, z ∈ c <-> (exists2 y, z ∈ y & y ∈ a).
-
-Lemma is_set_union isa :
-  is_set_def isa -> is_set_def (is_union isa).
-intros (a, da, ua).
-destruct union_ex with a as (c,dc).
-exists c.
-*unfold is_union.
- exists a;trivial.
-*intros.
- red in H.
- destruct H as (a',da',def).
- apply eq_set_ax.
- intros z.
- rewrite dc, def.
- apply ex2_morph; intros b;[reflexivity|].
- rewrite (ua _ da'); reflexivity.
-Qed.
-
-Lemma union_form P n:
-  (forall a, form (P a) Sig n) ->
-  forall a, form (is_union P a) Sig n.
-intros.
-unfold is_union.
-rewrite ex_ex2.
-constructor; intros x.
-constructor;[trivial|].
-apply F_ext with ((forall z, z ∈ a -> exists y, y ∈ x /\ z ∈ y) /\ (forall y, y ∈ x -> forall z, z ∈ y -> z ∈ a)).
-*split; intros.
- destruct H0.
- split; intros.
-  destruct (H0 _ H2) as (?,(?,?)); eauto.   
-  destruct H2; eauto.
- split; intros.
- rewrite H0 in H1.
- destruct H1;eauto.
- rewrite H0.
- eauto.
-*constructor.
- constructor; intros z.
- constructor; intros y.
- constructor.
- repeat constructor.
-Qed.
-
-
-
-Definition is_power isa c :=
-  exists2 a, isa a &
-               forall z, z ∈ c <-> (forall y, y ∈ z -> y ∈ a)) ]
-  
-Inductive replf_form : ((nat->set)->set)->Prop :=
-|
-
-
-Definition t_pair : Prop
