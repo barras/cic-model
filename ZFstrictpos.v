@@ -1136,7 +1136,6 @@ Section InductiveUniverse.
 
   Let Unonmt : empty ∈ U.
 apply G_trans with omega; trivial.
-apply zero_omega.
 Qed.
 
   Inductive pos_universe : positive -> Prop :=
@@ -1199,7 +1198,6 @@ Qed.
 intros p_ok.
 revert x; elim p_ok using pos_rect; simpl; intros.
  apply G_trans with omega; trivial.
- apply zero_omega.
 
  apply G_singl; trivial.
 

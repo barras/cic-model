@@ -125,7 +125,6 @@ elim tya using LISTf_ind; trivial.
 intros.
 apply H1; eauto.
 revert H6; apply TI_incl; auto.
-apply H3; trivial.
 Qed.
 
   Lemma Nil_typ : Nil ∈ List.

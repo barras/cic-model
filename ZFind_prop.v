@@ -365,7 +365,6 @@ intros.
 apply TI_elim in H4; auto with *.
 destruct H4 as (o',?,?).
 apply H0 with o'; eauto using isOrd_inv.
-red; auto.
 Qed.
 
   Lemma WREC_expand : forall n,

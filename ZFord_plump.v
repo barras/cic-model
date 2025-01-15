@@ -163,7 +163,6 @@ apply H with (r:=H5); intros; auto with *.
 apply H0; intros; auto.
 red; intros.
 apply isOrd_trans with z; auto.
-apply H6; trivial.
 Qed.
 
 Lemma lt_antirefl : forall x, isOrd x -> ~ lt x x.
@@ -952,7 +951,6 @@ apply H4; trivial; intros.
 apply H3; trivial; intros.
 apply H4; trivial.
 red; intros; apply isOrd_trans with x; auto.
-apply H7; trivial.
 Qed.
 
   Lemma TR_typ : forall F o X,

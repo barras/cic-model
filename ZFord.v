@@ -266,7 +266,6 @@ apply H2; intros; auto with *.
 
   intros; apply H2; trivial.
   red; intros; apply isOrd_trans with z; auto.
-  red; auto.
 Qed.
 End FirstOrder.
 
@@ -453,7 +452,6 @@ apply H with (r:=H5); intros; auto with *.
 apply H0; intros; auto.
 red; intros.
 apply isOrd_trans with z; auto.
-apply H6; trivial.
 Qed.
 End HigherOrder.
 
@@ -1137,7 +1135,6 @@ do 2 red; intros.
 apply TI_elim in H2; intros; auto with *.
 destruct H2.
 apply TI_intro with x0; auto with *.
-apply H1 in H2; trivial.
 Qed.
 
   Lemma TI_incl : forall o, isOrd o ->
@@ -1830,110 +1827,221 @@ apply isOrd_intro; intros.
  eauto using isOrd_inv.
 Qed.
 
-(** Ordinal omega *)
+(* ω-iteration : f^w(o) *)
 
-Definition omega := sup N (natrec zero (fun _ o => osucc o)).
+Definition w_iter f z := sup N (natrec z (fun _ o => f o)).
 
-Lemma omega_aux_m :
-   morph1 (natrec zero (fun _ o => osucc o)).
+Instance w_iter_morph_gen : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) w_iter.
+do 3 red; intros.
+apply sup_morph; [reflexivity|].
+red; intros.
+apply natrec_morph; auto with *.
+do 2 red; intros; auto.
+Qed.
+
+
+Section W_Iteration.
+
+  Variable f : set -> set.
+  Hypothesis fm : morph1 f.
+  Variable z : set.
+  
+  #[global]Instance w_iter_morph : morph1 (w_iter f).
+  apply w_iter_morph_gen; trivial.
+  Qed.
+  
+Lemma w_iter_aux_m :
+  morph1 (natrec z (fun _ o => f o)).
 do 2 red; intros.
 apply natrec_morph; auto with *.
-do 2 red; intros.
-rewrite H1; reflexivity. 
+do 2 red; intros; auto.
 Qed.
 
-Lemma omega_aux_ext :
-   ext_fun N (natrec zero (fun _ o => osucc o)).
-do 2 red; intros; apply omega_aux_m; trivial.
+Lemma w_iter_aux_ext :
+  ext_fun N (natrec z (fun _ o => f o)).
+do 2 red; intros; apply w_iter_aux_m; trivial.
 Qed.
 
-Lemma omega_aux_ord n :
-  n ∈ N -> isOrd (natrec zero (fun _ o => osucc o) n).
-intros.
+Hint Resolve w_iter_aux_m w_iter_aux_ext : core.
+
+  Section W_Ord_Iteration.
+
+    Hypothesis zo : isOrd z.
+    Hypothesis fo : forall o, isOrd o -> isOrd (f o).
+    
+    Lemma w_iter_aux_ord n :
+      n ∈ N -> isOrd (natrec z (fun _ o => f o) n).
+intros H.
 elim H using N_ind; intros.
 +revert H2; apply isOrd_morph.
- apply omega_aux_m; auto with *.
+ apply w_iter_aux_m; auto with *.
 +rewrite natrec_0; auto.
 +rewrite natrec_S; auto.
- do 3 red; intros.  
- rewrite H3; reflexivity.
+ intros ????? h; rewrite h; reflexivity.
 Qed.
-  Hint Resolve omega_aux_ord omega_aux_m omega_aux_ext : core.
 
-Lemma isOrd_omega : isOrd omega.
+    Hint Resolve zero_typ succ_typ : core.
+    Hint Resolve w_iter_aux_ord : core.
+
+    Section Mono.
+
+      Hypothesis fext : forall o, isOrd o -> o ⊆ f o.
+
+      Lemma isOrd_mono_w_iter : isOrd (w_iter f z).
 apply isOrd_sup; auto.
 intros.
 elim H1 using Nle_ind; trivial.
- +do 2 red; intros.
-  apply incl_set_morph; apply omega_aux_m; auto with *.
- +reflexivity.
- +clear n H0 H1; intros.
-  rewrite natrec_S; trivial.
-   rewrite H1.
-   red; intros.
-   apply isOrd_trans with (2:=H2); auto.
-
-   do 3 red; intros.
-   rewrite H3; reflexivity.
++do 2 red; intros.
+ apply incl_set_morph; apply w_iter_aux_m; auto with *.
++reflexivity.
++clear n H0 H1; intros.
+ rewrite natrec_S; trivial.
+ 2:intros ????? h; rewrite h; reflexivity.
+ rewrite H1.
+ red; intros.
+ apply fext; auto.
 Qed.
-#[global]Hint Resolve isOrd_omega : core.
 
-Lemma zero_omega : lt zero omega.
-apply isOrd_sup_intro with (n:=succ zero); auto.
-*apply succ_typ; apply zero_typ.
-*rewrite natrec_S;[|do 3 red; intros; apply osucc_morph;trivial|apply zero_typ].
- rewrite natrec_0.  
- apply lt_osucc; auto.
+      Lemma w_iter_limitOrd :
+        (forall o z, isOrd o -> z ∈ f o -> osucc z ∈ f o) ->
+        limitOrd (w_iter f z).
+split; [apply isOrd_mono_w_iter|unfold w_iter;intros].
+rewrite sup_ax in H0|-*; trivial.
+destruct H0 as (n,?,?).
+exists (succ n); [auto|].
+rewrite natrec_S;[|intros ????? h; rewrite h; reflexivity|auto].
+apply H;[auto|].
+apply fext; auto.
 Qed.
-#[global]Hint Resolve zero_omega : core.
 
-Lemma osucc_omega : forall n, lt n omega -> lt (osucc n) omega.
-intros.
-apply isOrd_sup_elim in H; trivial.
-destruct H as (k,tyk,?).
-apply isOrd_sup_intro with (succ k); trivial.
-*apply succ_typ; trivial.
-*rewrite natrec_S; trivial.
- apply lt_osucc_compat; auto.
- do 3 red; intros; apply osucc_morph; trivial.
+    End Mono.
+
+    Section StrictMono.
+      
+      Hypothesis f_z : z < f z.
+      Hypothesis f_incr : forall o o', isOrd o -> o' < o -> f o' < f o.
+
+(*    Hypothesis f_incr : forall o, isOrd o -> o < f o.*)
+
+    Let f_ext : forall o, isOrd o -> o ⊆ f o.
+induction 1 using isOrd_ind.
+red; intros.
+assert (isOrd z0) by eauto using isOrd_inv.
+apply isOrd_plump with (f z0); auto.
+apply f_incr; trivial.
 Qed.
-#[global]Hint Resolve osucc_omega : core.
+    
+    Lemma w_iter_intro1 : z ∈ w_iter f z.
+intros; apply sup_ax; trivial.
+exists (succ zero); [auto|].
+rewrite natrec_S;[|intros ????? h; rewrite h; reflexivity|auto].
+rewrite natrec_0; trivial.
+Qed.
+
+    Lemma w_iter_intro2 o : o ∈ w_iter f z -> f o ∈ w_iter f z.
+unfold w_iter; intros.
+rewrite sup_ax in H|-*; auto.
+destruct H as (n,?,?).
+exists (succ n);[apply succ_typ; trivial|].
+rewrite natrec_S; trivial.
+2:intros ????? h; rewrite h; reflexivity.
+apply f_incr; auto.
+Qed.
+
+    Lemma limitOrd_w_iter : limitOrd (w_iter f z).
+assert (isOrd (w_iter f z)) by (apply isOrd_mono_w_iter;trivial).
+split; [trivial|intros].
+assert (isOrd x) by eauto using isOrd_inv.
+unfold w_iter in H0|-*; rewrite sup_ax in H0|-*; auto.
+destruct H0 as (n,?,?).
+exists (succ n);[auto|].
+rewrite natrec_S; auto.
+2:intros ????? h; rewrite h; reflexivity.
+apply lt_osucc_compat in H2;[|auto].
+apply isOrd_plump with (natrec z (fun _ o => f o) n); auto.
+ apply olts_le; trivial.
+clear H2 H1.
+elim H0 using N_ind; intros.
+*assert (Proper (eq_set==>iff) (fun z => z ∈ f z)).
+ {intros ?? h; rewrite h; reflexivity. }
+ revert H3; apply H4.
+ apply natrec_morph; auto with *.
+ intros ??????; auto.
+*rewrite natrec_0; trivial.
+*rewrite natrec_S; auto.
+ 2:intros ??????; auto.
+ apply f_incr; auto.
+Qed.
+
+    End StrictMono.
+  End W_Ord_Iteration.
+End W_Iteration.    
+
+(** Building limit ordinals *)
+
+Definition next_limOrd := w_iter osucc.
+
+Instance next_limOrd_morph : morph1 next_limOrd.
+apply w_iter_morph; auto with *.
+Qed.
+
+Lemma limOrd_next_limOrd z : isOrd z -> limitOrd (next_limOrd z).
+intros; apply limitOrd_w_iter; auto with *.
+intros; apply lt_osucc_compat; trivial.
+Qed.
+
+Lemma next_limOrd_intro1 z : isOrd z -> z ∈ next_limOrd z.
+intros; apply w_iter_intro1; auto with *.
+Qed.
+
+Lemma next_limOrd_intro2 z o : isOrd z -> o ∈ next_limOrd z -> osucc o ∈ next_limOrd z.
+intros; apply w_iter_intro2; auto with *.
+intros; apply lt_osucc_compat; trivial.
+Qed.
+
+Lemma next_limOrd_lub z o :
+  isOrd z ->
+  limitOrd o ->
+  z ∈ o ->
+  next_limOrd z ⊆ o.
+intros oz loo zty w wty.
+apply sup_ax in wty; auto.
+destruct wty as (n,?,?).
+assert (natrec z (fun _ o => osucc o) n ∈ o).
+{elim H using N_ind; intros.
+ *revert H3; apply in_reg; apply natrec_morph; auto with *.
+  do 2 red; intros.
+  rewrite H4; reflexivity.
+ *rewrite natrec_0; trivial.
+ *rewrite natrec_S; auto.
+  2:intros ????? h; rewrite h; reflexivity.
+  apply loo; trivial. }
+apply isOrd_trans with (2:=H0); auto.
+apply w_iter_aux_ext; auto with *.
+Qed.
+
+(** Ordinal omega *)
+
+Definition omega := next_limOrd zero.
+
+Lemma isOrd_omega : isOrd omega.
+apply limOrd_next_limOrd; trivial.
+Qed.
 
 Lemma omega_limit_ord : limitOrd omega.
-split; auto.
-Qed.
-Hint Resolve omega_limit_ord : core.
-
-(* f^w(o) *)
-(*Definition iter_w (f:set->set) o :=
-  ord_sup(nat_rect(fun _=>set) o (fun _ => f)).
-
-Lemma isOrd_iter_w : forall f o,
-  o ⊆ f o ->
-  (forall x y, isOrd x -> isOrd y -> x ⊆ y -> f x ⊆ f y) ->
-  (forall x, isOrd x -> isOrd (f x)) ->
-  isOrd o ->
-  isOrd (iter_w f o).
-intros.
-unfold iter_w.
-apply isOrd_sup.
- induction n; simpl; intros; auto.
-
- induction m; simpl; intros.
-  revert o H H2; elim n; simpl; intros; auto with *.
-  transitivity (f o); trivial.
-  apply H0; auto.
-  elim n0; simpl; auto.
-
-  destruct n; simpl.
-   inversion H3.
-  apply H0; auto with arith.
-   elim m; simpl; auto.
-   elim n; simpl; auto.
+apply limOrd_next_limOrd; trivial.
 Qed.
 
-Definition plus_w := iter_w osucc.
-*)
+Lemma zero_omega : zero ∈ omega.
+apply next_limOrd_intro1; trivial.
+Qed.
+
+Lemma osucc_omega n : n ∈ omega -> osucc n ∈ omega.
+apply next_limOrd_intro2; trivial.
+Qed.
+
+#[global]Hint Resolve isOrd_omega zero_omega osucc_omega omega_limit_ord : core.
+
 (** ** Indexed supremum of arbitrary family *)
 
 Section DirOrdinalSup.

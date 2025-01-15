@@ -31,6 +31,7 @@ Definition lt := in_set.
 Definition le m n := lt m (succ n).
 Infix "<" := lt.
 Infix "<=" := le.
+Hint Unfold le lt : core.
 
 Instance lt_morph : Proper (eq_set ==> eq_set ==> iff) lt.
 exact in_set_morph.

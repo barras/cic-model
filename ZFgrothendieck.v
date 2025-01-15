@@ -1,6 +1,6 @@
 Require Import ZFstable.
 Require Import ZFlist.
-Require Import ZFpairs ZFsum ZFrelations ZFrepl ZFwf ZFord ZFfix ZFfixfun.
+Require Import ZFpairs ZFsum ZFrelations ZFrepl ZFwf ZFnats ZFord ZFfix ZFfixfun.
 Import ZF ZFrelations.
 
 
@@ -388,7 +388,6 @@ Section Infinite.
 
   Lemma G_inf_nontriv : empty ∈ U.
 apply G_trans with omega; trivial.
-apply zero_omega.
 Qed.
   Hint Resolve G_inf_nontriv : core.
 
@@ -422,6 +421,7 @@ assert (ZFnats.N ⊆ TI f omega).
  clear z H.
  induction x; simpl.
   apply TI_intro with empty; trivial.
+  apply zero_omega.
   apply union2_intro1.
   apply singl_intro.
 

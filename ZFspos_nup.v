@@ -516,7 +516,6 @@ Qed.
 
   Let Unonmt : empty ∈ U.
 apply G_trans with omega; trivial.
-apply zero_omega.
 Qed.
 
 Section Universes.

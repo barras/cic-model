@@ -113,7 +113,6 @@ do 2 red; intros.
 apply TIF_elim in H3; intros; auto with *.
 destruct H3.
 apply TIF_intro with x0; auto with *.
-apply H2 in H3; trivial.
 Qed.
 
   Lemma TIF_incl : forall o, isOrd o ->

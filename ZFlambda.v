@@ -158,12 +158,9 @@ destruct H7 as (o,oo,tya).
 elim tya using LAMf_ind; intros; auto.
 *apply H2; eauto.
  revert H7; apply TI_incl; auto.
- apply H5; trivial.
  revert H8; apply TI_incl; auto.
- apply H5; trivial.
 *apply H3; eauto.
  revert H7; apply TI_incl; auto.
- apply H5; trivial.
 Qed.
 
   Lemma Var_typ0 : forall n,

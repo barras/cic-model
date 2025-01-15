@@ -91,7 +91,6 @@ do 2 red; intros.
 apply REC_elim in H2; intros; auto with *.
 destruct H2.
 apply REC_intro with x0; auto with *.
-apply H1 in H2; trivial.
 Qed.
 
   Lemma REC_incl : forall o, isOrd o ->
@@ -1007,7 +1006,6 @@ apply Pcont'; trivial.
 
  intros.
  apply Ftyp; auto.
- apply isOrd_inv with y; trivial.
 Qed.
 End RecGen.
 
@@ -1165,7 +1163,6 @@ intros.
 assert (w_tr : forall y, isOrd y -> y ⊆ w -> y ⊆ ord).
  red; intros.
  apply isOrd_trans with w; auto.
- red; auto.
 split; trivial.
  intros; eapply Qm'; eauto.
 

@@ -935,7 +935,6 @@ Section InductiveUniverse.
 
   Let Unonmt : empty ∈ U.
 apply G_trans with omega; trivial.
-apply zero_omega.
 Qed.
 
   Variable Arg : set.

@@ -326,46 +326,12 @@ exists (x0 ⊔ x1).
  apply osup2_lt; trivial.
 Qed.
 
-(*
-Let N_TI :
-  let f := fun X => union2 (singl zero) (replf X succ) in N ⊆ TI f omega.
-intro f.
-red; intros.
-assert (fm : morph1 f).
- do 2 red; intros.
- apply union2_morph; auto with *.
- apply replf_morph; trivial.
- red; intros; apply succ_morph; trivial.
-apply nat2set_reflect in H.
-destruct H.
-rewrite H.
-clear z H.
-induction x; simpl.
- apply TI_intro with empty; trivial.
- apply union2_intro1.
- apply singl_intro.
-
- apply TI_elim in IHx; trivial.
- destruct IHx.
- apply TI_intro with (osucc x0); auto.
- apply union2_intro2.
- rewrite replf_ax.
- 2:do 2 red; intros; apply succ_morph; trivial.
- exists (ZFnats.nat2set x); auto with *.
- apply TI_intro with x0; auto.
-  eauto using isOrd_inv.
-
-  apply lt_osucc; eauto using isOrd_inv.
-Qed. (* cf ZFgrothendieck *)
-*)
-
 Lemma VN_N : N ⊆ VN omega.
 red; intros.
 elim H using N_ind; simpl; intros.
  rewrite <- H1; trivial.
 
  apply VN_intro; trivial.
- apply zero_omega.
 
  unfold succ.
  apply VN_union; trivial.
@@ -461,7 +427,6 @@ Qed.
  *)
   
 End VN_Universes.
-
 
 (* Regularity and inaccessible cardinals.  *)
 Definition VN_regular o :=

@@ -497,7 +497,6 @@ apply G_sup; trivial.
  apply G_union2; trivial.
   apply G_singl; trivial.
   apply G_trans with omega; auto.
-  apply zero_omega.
 
   apply G_sigma; auto.
   do 2 red; intros.

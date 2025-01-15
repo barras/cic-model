@@ -102,7 +102,6 @@ split; intros.
  apply TI_elim in H0; auto with *.
  destruct H0 as (o,?,?).
  exists (osucc o); auto.
-  apply osucc_omega; trivial.
 
   rewrite TI_mono_succ; auto with *.
   apply isOrd_inv with omega; auto.

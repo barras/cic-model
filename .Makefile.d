@@ -188,8 +188,8 @@ ZFord.vo ZFord.glob ZFord.v.beautified ZFord.required_vo: ZFord.v ZFnats.vo ZFwf
 ZFord.vos ZFord.vok ZFord.required_vos: ZFord.v ZFnats.vos ZFwf.vos ZFwfr.vos ZF.vos ZFpairs.vos
 ZFplump.vo ZFplump.glob ZFplump.v.beautified ZFplump.required_vo: ZFplump.v lib/basic.vo ZF.vo ZFnats.vo ZFrepl.vo
 ZFplump.vos ZFplump.vok ZFplump.required_vos: ZFplump.v lib/basic.vos ZF.vos ZFnats.vos ZFrepl.vos
-ZFgrothendieck.vo ZFgrothendieck.glob ZFgrothendieck.v.beautified ZFgrothendieck.required_vo: ZFgrothendieck.v ZFstable.vo ZFlist.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFrepl.vo ZFwf.vo ZFord.vo ZFfix.vo ZFfixfun.vo
-ZFgrothendieck.vos ZFgrothendieck.vok ZFgrothendieck.required_vos: ZFgrothendieck.v ZFstable.vos ZFlist.vos ZFpairs.vos ZFsum.vos ZFrelations.vos ZFrepl.vos ZFwf.vos ZFord.vos ZFfix.vos ZFfixfun.vos
+ZFgrothendieck.vo ZFgrothendieck.glob ZFgrothendieck.v.beautified ZFgrothendieck.required_vo: ZFgrothendieck.v ZFstable.vo ZFlist.vo ZFpairs.vo ZFsum.vo ZFrelations.vo ZFrepl.vo ZFwf.vo ZFnats.vo ZFord.vo ZFfix.vo ZFfixfun.vo
+ZFgrothendieck.vos ZFgrothendieck.vok ZFgrothendieck.required_vos: ZFgrothendieck.v ZFstable.vos ZFlist.vos ZFpairs.vos ZFsum.vos ZFrelations.vos ZFrepl.vos ZFwf.vos ZFnats.vos ZFord.vos ZFfix.vos ZFfixfun.vos
 ZFinaccessible.vo ZFinaccessible.glob ZFinaccessible.v.beautified ZFinaccessible.required_vo: ZFinaccessible.v ZFnats.vo ZFord.vo ZFrank.vo ZFgrothendieck.vo
 ZFinaccessible.vos ZFinaccessible.vok ZFinaccessible.required_vos: ZFinaccessible.v ZFnats.vos ZFord.vos ZFrank.vos ZFgrothendieck.vos
 ZFuniv_real.vo ZFuniv_real.glob ZFuniv_real.v.beautified ZFuniv_real.required_vo: ZFuniv_real.v Sat.vo ZF.vo ZFcoc.vo ZFord.vo ZFgrothendieck.vo ZFlambda.vo Models.vo SnModels.vo

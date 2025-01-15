@@ -647,7 +647,6 @@ End NatConvergence.
 apply TI_pre_fix; auto.
 apply NATf_size_gen_le; auto with *.
 apply VN_intro; trivial.
-apply zero_omega.
 Qed.
 
   Lemma NAT_typ : forall o, isOrd o -> lt omega o -> NAT ∈ VN o.

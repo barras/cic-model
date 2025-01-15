@@ -905,11 +905,9 @@ red; intros.
 apply TI_elim in H8; trivial.
 destruct H8 as (y',y'o,?).
 apply TI_intro with y'; auto.
- apply H7; trivial.
-
- revert H8; apply H1.
- apply H5; auto with *.
- apply isOrd_inv with y; trivial.
+revert H8; apply H1.
+apply H5; auto with *.
+apply isOrd_inv with y; trivial.
 Qed.
 
 Instance Fstages_morph : Proper ((eq_set==>eq_set)==>eq_set==>eq_set) Fstages. 

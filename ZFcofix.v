@@ -191,7 +191,6 @@ apply COTI_intro; intros; auto.
  revert H3; apply COTI_bound; trivial.
 
  apply COTI_elim with (3:=H3); auto.
- apply H2; trivial.
 Qed.
 
 (** * Elementary properties *)
