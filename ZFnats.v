@@ -714,9 +714,6 @@ apply natrec_typ with (P:=fun _=>N); auto with *.
 intros; apply succ_typ; trivial.
 Qed.
 
-(* Bijection NxN = N *)
-Require Import Arith Lia.
-
 Require Import ZFpairs.
 
 Definition NN2N xy :=

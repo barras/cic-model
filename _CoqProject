@@ -120,6 +120,11 @@ ZFlimit.v
 ZFfunext.v
 ZFlambda.v
 ZFlist.v
+ZFreflect.v
+ZFfo.v
+ZFform.v
+ZFform_int.v
+ZFlevy.v
 
 ZFencode.v
 ZFwdom.v

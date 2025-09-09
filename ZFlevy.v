@@ -2,19 +2,19 @@ Require Import Sublogic.
 Require Import ZFdef.
 Require Import ZF.
 
-Lemma ex_ex2 A P Q : @ex2 A P Q <-> exists x:A, P x /\ Q x.
-split; destruct 1; [eauto|].
-destruct H; eauto.
-Qed.
-
-Definition icons {A:Type} (x:A) (f:nat->A) (k:nat) : A :=
-  match k with 0 => x | S k => f k end.
-
 Lemma ex_set : exists _:set, True.
 exists empty; trivial.
 (*destruct empty_ex; eauto.*)
 Qed.
 
+
+Lemma iff_strengthen : forall A B P:Prop,
+    (A->P) ->
+    (B->P) ->
+    (A<->B) <-> (P -> A<->B).
+split; intros; [trivial|].
+split; intro; apply H1; auto.
+Qed.
 
 
 
@@ -121,6 +121,19 @@ split; intros.
 *rewrite replf_ax in H0; trivial.
  destruct H0 as (z,?,?).
  rewrite H1; auto.
+Qed.
+
+
+  Lemma ex_sup_iff a b P :
+    ext_fun a b ->
+    (exists x, x ∈ sup a b /\ P x) <->
+    (exists y, y ∈ a /\ exists x, x ∈ b y /\ P x).
+split; intros.
+*destruct H0 as (x,(?,?)).
+ rewrite sup_ax in H0; [|trivial].
+ destruct H0; eauto.
+*destruct H0 as (y,(?,(x,(?,?)))); exists x; split;[|trivial].
+ rewrite sup_ax; eauto.
 Qed.
 
 
@@ -594,6 +607,17 @@ apply F_ext with (exists x:set, x==y /\ P x).
 apply ex_eq_delta; trivial.
 Qed.
 
+Lemma levy_cut_sigma (v : var_set) (n : nat) (P : set -> Prop) (y : set) :
+  Proper (eq_set ==> iff) P ->
+  levy_set_eq v Sig (S n) y ->
+  (forall x, levy (x :: v) Sig (S n) (P x)) ->
+  levy v Sig (S n) (P y).
+intros Pm lvy lvP.
+apply F_ext with (exists x:set, x==y /\ P x).
+{split;intros;[|exists y; auto with *].
+ destruct H as (x&eqx&?); rewrite <-eqx; trivial. }
+apply F_ex_sig; constructor;[apply lvy|apply lvP].
+Qed.
 
   
 
@@ -1941,7 +1965,7 @@ split; intros.
  intros h; elim h using List_ind; intros; auto.
  intros ?? e; rewrite e; reflexivity.
 Qed.
-
+(*
 Lemma ex_ub_iff P ub :
   (forall x, P x -> x ∈ ub) ->
   (exists x, P x) <-> exists x, x ∈ ub /\ P x.
@@ -2086,32 +2110,74 @@ intros vx vaub ub_def lva z.
 
       constructor; simpl; auto 10.
 Qed.
-
+*)
+Lemma fa_succ_iff y P :
+  Proper (eq_set==>iff) P ->
+  (forall x, x ∈ succ y -> P x) <-> P y /\ forall x, x ∈ y -> P x.  
+split; intros.
+*split; intros; apply H0.
+ +apply union2_intro2; apply singl_intro.
+ +apply union2_intro1; trivial.
+*destruct H0.
+ apply union2_elim in H1; destruct H1; auto.
+ apply singl_elim in H1; rewrite H1; trivial.
+Qed.
+Lemma ex_succ_iff y P :
+  Proper (eq_set==>iff) P ->
+  (exists x, x ∈ succ y /\ P x) <-> P y \/ exists x, x ∈ y /\ P x.  
+split; intros.
+*destruct H0 as (x&?&?).
+ apply union2_elim in H0; destruct H0;[right;exists x;auto|left].
+ apply singl_elim in H0; rewrite <-H0; trivial. 
+*destruct H0 as [?|(x&?&?)];[exists y|exists x];(split;[|trivial]).
+ +apply union2_intro2; apply singl_intro.
+ +apply union2_intro1; trivial.
+Qed.
 Lemma levy_func_succ v k n x a:
   is_var x v ->
   is_var a v ->
   levy_set v k n (func (succ x) a).
-intros vx va.
-apply levy_func_succ_ub with (aub:=a); auto with *.
-constructor; simpl; auto.
-Qed.
-
-Lemma levy_list v k n a:
-  is_var a v ->
-  levy_set v k n (List a).
-intros va z.
-rewrite List_def.
-constructor;[apply levy_empty_eq|constructor;[simpl;auto|]].
-constructor; [simpl;auto|].
-constructor; [simpl;auto|].
-constructor; [simpl;auto|].
-constructor;[|constructor].
-*apply levy_thin_vars with (push_var x (push_var x1 (push_var x2 nil)));
-   [apply levy_couple_eq;constructor;simpl;auto|].
- destruct 1 as [?|[?|[?|[ ]]]]; simpl;auto.
-*apply levy_thin_vars with (push_var x1 nil);[apply levy_N|].
- destruct 1 as [?|[ ]]; simpl; auto.
-*apply levy_str with z; [|apply levy_func_succ];simpl; auto 10.
+intros vx va z.
+rewrite func_def.
+constructor.
+*constructor;[simpl;auto 10|].
+ intros; rewrite prodcart_def.
+ rewrite ex_succ_iff;
+   [|intros ?? h; apply ex_morph; intro; rewrite h; reflexivity].
+ constructor.
+ +constructor;[simpl;auto|intros].
+   intros; eapply levy_str with x0;[simpl;auto|].
+   apply levy_couple_eq; constructor;simpl; auto.
+ +constructor;[simpl;auto|].
+   constructor;[simpl;auto|intros].
+   intros; eapply levy_str with x0;[simpl;auto|].
+   apply levy_couple_eq; constructor;simpl; auto.
+*rewrite fa_succ_iff.
+ 2:{intros ?? h; apply ex_morph; intro x';apply and_iff_morphism;[reflexivity|].
+    apply and_iff_morphism;[rewrite h; reflexivity|].
+    apply fa_morph; intros y'; rewrite h; reflexivity. }
+ constructor.
+ +constructor;[simpl;auto|intro].
+  constructor.
+  ++rewrite in_set_def.
+    constructor;[simpl;auto|].
+    apply levy_couple_eq; constructor; simpl; auto.   
+  ++constructor;[simpl;auto|].
+    constructor;[|constructor;simpl;auto].
+    rewrite in_set_def.
+    constructor;[simpl;auto|].
+    apply levy_couple_eq; constructor; simpl; auto.   
+ +constructor;[simpl;auto|intro].
+  constructor;[simpl;auto|intro].
+  constructor.
+  ++rewrite in_set_def.
+    constructor;[simpl;auto|].
+    apply levy_couple_eq; constructor; simpl; auto.   
+  ++constructor;[simpl;auto|].
+    constructor;[|constructor;simpl;auto].
+    rewrite in_set_def.
+    constructor;[simpl;auto|].
+    apply levy_couple_eq; constructor; simpl; auto.   
 Qed.
 
 Lemma levy_succ_fst_eq v k n x :
@@ -2188,7 +2254,24 @@ apply levy_eq_set; unfold incl_set.
    apply levy_succ_fst_eq; simpl; auto.
    apply levy_snd_eq; simpl; auto.
 Qed.
- 
+
+Lemma levy_list v k n a:
+  is_var a v ->
+  levy_set v k n (List a).
+intros va z.
+rewrite List_def.
+constructor;[apply levy_empty_eq|constructor;[simpl;auto|]].
+constructor; [simpl;auto|].
+constructor; [simpl;auto|].
+constructor; [simpl;auto|].
+constructor;[|constructor].
+*apply levy_thin_vars with (push_var x (push_var x1 (push_var x2 nil)));
+   [apply levy_couple_eq;constructor;simpl;auto|].
+ destruct 1 as [?|[?|[?|[ ]]]]; simpl;auto.
+*apply levy_thin_vars with (push_var x1 nil);[apply levy_N|].
+ destruct 1 as [?|[ ]]; simpl; auto.
+*apply levy_str with z; [|apply levy_func_succ];simpl; auto 10.
+Qed.
 Lemma levy_list_eq v k n a:
   is_var a v ->
   levy_set_eq v k n (List a).
@@ -2206,17 +2289,214 @@ constructor;[|constructor].
  intros; apply levy_Cons_eq; simpl; auto.
 Qed.
 
+
+
+  Lemma fa_sup_iff a b P :
+    ext_fun a b ->
+    (forall x, x ∈ sup a b -> P x) <->
+    (forall y, y ∈ a -> forall x, x ∈ b y -> P x).
+split; intros.
+*apply H0; rewrite sup_ax; trivial; eauto.
+*rewrite sup_ax in H1; trivial; destruct H1; eauto.
+Qed.
+
 (*
-Lemma Wdom_def a b ub :
-  ext_fun a b ->
-  (forall x, x ∈ a -> b x ⊆ ub) ->
-  w ∈ Wdom a b <->
-   w ⊆ prodcart (sup a b) a /\
-    
-         rel (List (sup A B)) A 
+Lemma levy_list_sup v k n a b:
+  is_var a v ->
+  is_var b v ->
+  levy_set v k n (List (sup a (cc_app b))).
+intros va vb z.
+rewrite List_def.
+constructor;[apply levy_empty_eq|constructor;[simpl;auto|]].
+constructor; [simpl;auto|].
+constructor; [simpl;auto|].
+constructor; [simpl;auto|].
+constructor;[|constructor].
+*apply levy_str with x; [simpl;auto 10|].
+ apply levy_couple_eq;constructor;simpl;auto 10.
+*apply levy_thin1; apply levy_N.
+*
+  rewrite func_def.
+ constructor.  
+ +constructor; [simpl;auto 10|intros p].
+
+  rewrite prodcart_def.
+rewrite ex_succ_iff.  
+2:intros ?? h; apply ex_morph;intro; rewrite h; reflexivity.
+constructor.
+ rewrite ex_sup_iff; [|intros ??? h; rewrite h; reflexivity].
+constructor; [simpl;auto 10|intros y].
+rewrite ex_cc_app_iff.
+constructor; [simpl;auto 10|intros].
+constructor; [simpl;auto 10|intros].
+constructor; [simpl;auto 10|intros].
+ constructor.  
+ apply levy_str with x3;[simpl;auto 10|]; apply levy_couple_eq;constructor;simpl;auto 10.
+ apply levy_str with p;[simpl;auto 10|]; apply levy_couple_eq;constructor;simpl;auto 10.
+
+constructor; [simpl;auto 10|intros].
+ rewrite ex_sup_iff; [|intros ??? h; rewrite h; reflexivity].
+constructor; [simpl;auto 10|intros y].
+rewrite ex_cc_app_iff.
+constructor; [simpl;auto 10|intros].
+constructor; [simpl;auto 10|intros].
+constructor; [simpl;auto 10|intros].
+ constructor.  
+ apply levy_str with x4;[simpl;auto 10|]; apply levy_couple_eq;constructor;simpl;auto 10.
+ apply levy_str with p;[simpl;auto 10|]; apply levy_couple_eq;constructor;simpl;auto 10.
++rewrite fa_succ_iff.
+ 2:{intros ?? h; apply ex_morph;intro; apply and_iff_morphism;[reflexivity|].
+    apply and_iff_morphism;[rewrite h;reflexivity|apply fa_morph; intros y'].
+    rewrite h; reflexivity. }
+constructor.
+ rewrite ex_sup_iff; [|intros ??? h; rewrite h; reflexivity].
+constructor; [simpl;auto 10|intros y].
+rewrite ex_cc_app_iff.
+constructor; [simpl;auto 10|intros].
+constructor; [simpl;auto 10|intros].
+constructor; [simpl;auto 10|intros].
+ constructor.  
+ apply levy_str with x3;[simpl;auto 10|]; apply levy_couple_eq;constructor;simpl;auto 10.
+ constructor.  
+  rewrite in_set_def.
+  constructor; [simpl;auto 10|intros].
+  apply levy_str with x6;[simpl;auto 10|]; apply levy_couple_eq;constructor;simpl;auto 10.
+ rewrite fa_sup_iff; [|intros ??? h; rewrite h; reflexivity].
+constructor; [simpl;auto 10|intros y0].
+rewrite fa_cc_app_iff.
+constructor; [simpl;auto 20|intros].
+constructor; [simpl;auto 20|intros].
+constructor; [simpl;auto 20|intros].
+constructor.
+  apply levy_str with x6;[simpl;auto 20|]; apply levy_couple_eq;constructor;simpl;auto 20.
+constructor.
+  rewrite in_set_def.
+  constructor; [simpl;auto 20|intros].
+  apply levy_str with x9;[simpl;auto 20|]; apply levy_couple_eq;constructor;simpl;auto 20.
+  constructor; simpl;auto 20.
+
+constructor; [simpl;auto 20|intros].
+ rewrite ex_sup_iff; [|intros ??? h; rewrite h; reflexivity].
+constructor; [simpl;auto 20|intros].
+rewrite ex_cc_app_iff.
+constructor; [simpl;auto 10|intros].
+constructor; [simpl;auto 10|intros].
+constructor; [simpl;auto 10|intros].
+constructor.
+  apply levy_str with x5;[simpl;auto 20|]; apply levy_couple_eq;constructor;simpl;auto 20.
+constructor.
+  rewrite in_set_def.
+  constructor; [simpl;auto 20|intros].
+  apply levy_str with x8;[simpl;auto 20|]; apply levy_couple_eq;constructor;simpl;auto 20.
+ rewrite fa_sup_iff; [|intros ??? h; rewrite h; reflexivity].
+constructor; [simpl;auto 20|intros y].
+rewrite fa_cc_app_iff.
+constructor; [simpl;auto 20|intros].
+constructor; [simpl;auto 20|intros].
+constructor; [simpl;auto 20|intros].
+constructor.
+  apply levy_str with x8;[simpl;auto 20|]; apply levy_couple_eq;constructor;simpl;auto 20.
+constructor.
+  rewrite in_set_def.
+  constructor; [simpl;auto 20|intros].
+  apply levy_str with x11;[simpl;auto 20|]; apply levy_couple_eq;constructor;simpl;auto 20.
+  constructor; simpl;auto 20.
+Qed.
+
+Lemma levy_list_sup_eq v k n a b:
+  is_var a v ->
+  is_var b v ->
+  levy_set_eq v k n (List (sup a (cc_app b))).
+intros va vb x.
+rewrite eq_list_iff.
+constructor;[|constructor].
+*constructor; [simpl; auto|].
+ intros; apply levy_list_sup; simpl; auto.
+*rewrite in_set_def; constructor;[simpl;auto|].
+ intros; apply levy_empty_eq.
+*constructor;[simpl;auto|intros l].
+ rewrite fa_sup_iff; [|intros ??? h; rewrite h; reflexivity].
+ constructor;[simpl;auto|intros y].
+ rewrite fa_cc_app_iff.
+constructor; [simpl;auto 10|intros].
+constructor; [simpl;auto 10|intros].
+constructor; [simpl;auto 10|intros].
+constructor.
+  apply levy_str with x0;[simpl;auto 10|]; apply levy_couple_eq;constructor;simpl;auto 10.
+  rewrite in_set_def.
+  constructor; [simpl;auto 10|intros].
+  apply levy_Cons_eq; simpl; auto 10.
+Qed.
+
 *)
 
+Lemma levy_sup_cc_app v k n a b:
+  is_var a v ->
+  is_var b v ->
+  levy_set v k n (sup a (cc_app b)).
+intros va vb z.
+rewrite sup_ax;[|intros ??? h; rewrite h; reflexivity].
+rewrite ex_ex2.
+constructor;[simpl;auto|intros x].
+apply levy_str with z; [ simpl; auto|].
+apply levy_cc_app;[|constructor]; simpl; auto.
+Qed.
 
+Lemma levy_sup_cc_app_eq v k n a b:
+  is_var a v ->
+  is_var b v ->
+  levy_set_eq v k n (sup a (cc_app b)).
+intros va vb z.  
+apply levy_eq_set; unfold incl_set.
+*constructor;[simpl;auto|intros].
+ apply levy_sup_cc_app; simpl; auto.
+*rewrite fa_sup_iff;[|intros ??? h; rewrite h; reflexivity].
+ constructor;[simpl;auto|intros].
+ rewrite fa_cc_app_iff. 
+ constructor;[simpl;auto|intros].
+ constructor;[simpl;auto|intros].
+ constructor;[simpl;auto|intros].
+ constructor.
+ +apply levy_str with x0; [simpl;auto|].
+  apply levy_couple_eq; constructor; simpl; auto 10.
+ +constructor;simpl;auto 10.
+Qed.
+
+Lemma levy_Wdom v k n a b :
+  is_var a v ->
+  is_var b v ->
+  levy_set v k (S n) (Wdom a (cc_app b)).
+intros va vb z.
+unfold Wdom.
+apply levy_cut_delta with (P:=fun L=>z∈rel L a).
+*intros ?? h; rewrite h; reflexivity.
+*intro z'.
+ apply levy_cut_delta with (P:=fun B=>z'==List B).
+ +intros ?? h; rewrite h; reflexivity.
+ +apply levy_sup_cc_app_eq; simpl; auto.
+ +clear k; intros.
+  apply levy_str with z'; simpl; auto.
+  apply levy_list_eq; simpl; auto.
+*clear k; intros.
+ unfold rel.
+ rewrite power_ax.
+ constructor; [simpl;auto|intros y].
+ apply levy_prodcart; simpl; auto.
+Qed.
+
+Lemma levy_Wdom_eq v n a b :
+  is_var a v ->
+  is_var b v ->
+  levy_set_eq v Prd (S n) (Wdom a (cc_app b)).
+intros va vb z.
+apply levy_eq_set; unfold incl_set.
+*constructor;[simpl;auto|].
+ apply levy_Wdom; simpl; auto.
+*apply F_fa_prd; intros w.
+ constructor;[|constructor;simpl;auto].
+ apply levy_Wdom; simpl; auto.
+Qed.
+(* 
 Lemma levy_Wdom v k n a b ulb :
   is_var a v ->
   is_var ulb v ->
@@ -2254,42 +2534,725 @@ constructor.
 *constructor; [simpl;auto 10|].
  intros; apply levy_str with c; [|apply levy_couple_eq;constructor];simpl;auto.
 Qed.
+ *)
 
 Require Import ZFw.
 
+Parameter App : set -> set -> set.
+Parameter App_Nil : forall l, App Nil l == l.
+Parameter App_Cons : forall x l l', App (Cons x l) l' == Cons x (App l l').
+Parameter App_morph : morph2 App.
+Existing Instance App_morph.
+Definition Constl l x := App l (Cons x Nil).
 
-Parameter Form : set.
-Parameter Feq : set -> set -> set.
-Parameter Feq_typ : forall n, n ∈ N -> forall m, m ∈ N -> Feq n m ∈ Form.
-Parameter Fin : set -> set -> set.
-Parameter Fin_typ : forall n, n ∈ N -> forall m, m ∈ N -> Fin n m ∈ Form.
-Parameter Fand For Fimp : set -> set -> set.
-Parameter Fand_typ : forall P Q, P ∈ Form -> Q ∈ Form -> Fand P Q ∈ Form.
-Parameter For_typ : forall P Q, P ∈ Form -> Q ∈ Form -> For P Q ∈ Form.
-Parameter Fimp_typ : forall P Q, P ∈ Form -> Q ∈ Form -> Fimp P Q ∈ Form.
-Parameter Ffa Fex : set -> set.
-Parameter Ffa_typ : forall P, P ∈ Form -> Ffa P ∈ Form.
-Parameter Fex_typ : forall P, P ∈ Form -> Fex P ∈ Form.
+Definition Wspec A B w :=
+  (forall l a a', couple l a ∈ w -> couple l a' ∈ w -> a==a') /\
+  (forall l a,
+      couple l a ∈ w -> forall x l', l' ∈ List (sup A B) -> l==Constl l' x ->  exists a', a' ∈ A /\ couple l' a' ∈ w /\ x ∈ B a').
 
-Parameter Fint_var : set -> set -> set.
-Parameter Fint : set -> set -> Prop.
-Parameter Fint_eq : forall i m n,
-  Fint i (Feq m n) <-> Fint_var i m == Fint_var i n.
-Parameter Fint_in : forall i m n,
-  Fint i (Feq m n) <-> Fint_var i m ∈ Fint_var i n.
-Parameter Fint_and : forall i P Q,
-  Fint i (Fand P Q) <-> (Fint i P /\ Fint i Q).
-Parameter Fint_or : forall i P Q,
-  Fint i (For P Q) <-> (Fint i P \/ Fint i Q).
-Parameter Fint_imp : forall i P Q,
-  Fint i (Fimp P Q) <-> (Fint i P -> Fint i Q).
-Parameter Fint_fa : forall i P,
-  Fint i (Ffa P) <-> (forall x:set, Fint (Cons x i) P).
-Parameter Fint_ex : forall i P,
-  Fint i (Fex P) <-> (exists x:set, Fint (Cons x i) P).
+Lemma Wspec_intro A B x f :
+  ext_fun A B ->
+  x ∈ A ->
+  f ∈ cc_prod (B x) (fun _ => Wdom A B) ->
+  (forall i, i ∈ B x -> Wspec A B (cc_app f i)) ->
+  Wspec A B (Wsup x f).
+intros Bext tyx tyf fspec.
+split; intros.
+*rewrite Wsup_def in H,H0.
+ destruct H as [e|(i&p&y&?&e)]; destruct H0 as [e'|(i'&p'&y'&?&e')];
+ apply couple_injection in e; apply couple_injection in e'; destruct e; destruct e'.
+ +rewrite H0,H2; reflexivity.
+ +rewrite H0 in H2; apply discr_mt_couple in H2; contradiction.
+ +rewrite H2 in H0; apply discr_mt_couple in H0; contradiction.
+ +rewrite H1 in H3; apply couple_injection in H3; destruct H3.
+  clear H1.
+  rewrite <-H3 in H0; clear i' H3.
+  rewrite <-H5 in H0; clear p' H5.
+  rewrite <-H2 in H; rewrite <-H4 in H0; clear y H2 y' H4.
+  assert (i ∈ B x).
+  {apply cc_prod_is_cc_fun in tyf.
+   apply tyf in H.
+   rewrite fst_def in H; apply H. }
+  specialize fspec with (1:=H1).
+  apply cc_prod_elim with (2:=H1) in tyf.
+  destruct fspec as (ffunc,_).
+  apply couple_in_app in H,H0.
+  apply ffunc with (1:=H)(2:=H0).
+*assert (l' == Nil \/ exists x1 l1, l1 ∈ List (sup A B) /\ l' == Cons x1 l1).
+ {elim H0 using List_ind; intros.
+  *intros ?? h; apply or_iff_morphism;[rewrite h; reflexivity|].
+   apply ex_morph; intro x2; apply ex_morph; intro l1; rewrite h; reflexivity.
+  *left; reflexivity.
+  *right; exists x1; exists l0; split;[trivial|reflexivity]. }
+ unfold Constl in H1.
+ rewrite H1 in H.
+ clear l H1 H0.
+ rewrite Wsup_def in H.
+ destruct H as [e|(i1&l1&y1&?&e)]; apply couple_injection in e; destruct e.
+ {destruct H2 as [e'|(x1&l1&_&e')]; rewrite e' in H;
+     [rewrite App_Nil in H|rewrite App_Cons in H];
+     symmetry in H; apply discr_mt_couple in H; contradiction. }
+ {rewrite <-H1 in H; clear y1 H1.
+  destruct H2 as [e'|(x2&l2&l2typ&e')]; rewrite e' in H0;
+    [rewrite App_Nil in H0|rewrite App_Cons in H0];
+    apply couple_injection in H0; destruct H0.
+  *rewrite <-H0,<-H1 in H; clear i1 l1 H0 H1. 
+   exists x; split;[trivial|split].
+   +rewrite Wsup_def; left.
+    rewrite e'; reflexivity.   
+   +apply cc_prod_is_cc_fun in tyf.
+    apply tyf in H.
+    rewrite fst_def in H; apply H.
+  *rewrite <-H0 in H; clear i1 H0.
+   assert (x2 ∈ B x).
+   {apply cc_prod_is_cc_fun in tyf.
+    apply tyf in H.
+    rewrite fst_def in H; apply H. }
+   apply couple_in_app in H.
+   destruct fspec with (1:=H0) as (_,exparent).   
+   destruct exparent with (1:=H)(2:=l2typ)(3:=symmetry H1) as (a'&?&?&?).
+   exists a'; split;[trivial|split;[|trivial]].    
+   rewrite Wsup_def; right.
+   exists x2; exists l2; exists a'; split;[|rewrite e'; reflexivity].
+   apply couple_in_app in H3; trivial. }
+Qed.
 
-Parameter Fint_morph : Proper (eq_set==>eq_set==>iff) Fint.
-Existing Instance Fint_morph.
+Lemma Wspec_elim A B w i :
+  ext_fun A B ->
+  w ∈ Wdom A B ->
+  Wspec A B w ->
+  Wfst w ∈ A ->
+  i ∈ B (Wfst w) ->
+  Wspec A B (Wsnd w i).
+intros Bext wty (wfunc,exparent) wfst idx.
+split; intros.  
+*rewrite Wsnd_def_raw in H,H0.
+ apply wfunc with (1:=H)(2:=H0).
+*rewrite Wsnd_def_raw in H.
+ destruct exparent with (1:=H)(x:=x)(l':=Cons i l') as (a'&?&?&?).
+ +apply Cons_typ; trivial.
+  rewrite sup_ax; trivial.
+  exists (Wfst w);trivial.
+ +unfold Constl; rewrite App_Cons, H1; reflexivity.
+ +exists a'; split;[trivial|split;[|trivial]].
+  rewrite Wsnd_def_raw; trivial.
+Qed.
+
+(******************************************************)
+
+Require Import ZFform.
+
+(* Form is Δ_0 (since it can be implemented as N) *)
+Lemma levy_Form : forall v k n, levy_set v k n Form.
+Proof levy_N.
+Lemma levy_Form_eq : forall v k n, levy_set_eq v k n Form.
+exact levy_N_eq.
+Qed.
+
+(* Recursive definitions. *)
+
+Definition is_recdef o F x y :=
+  exists g, is_cc_fun o g /\
+              (forall x', x' ∈ o -> x' ⊆ x -> cc_app g x' == F (cc_lam x' (cc_app g)) x') /\
+              y == cc_app g x.
+
+  Lemma levy_is_recdef v n o F x y :
+    morph2 F ->
+    is_var o v ->
+    is_var x v ->
+    is_var y v ->
+    (forall z1 z2, levy_set_eq (push_var z1 (push_var z2 v)) Sig (S n) (F z1 z2)) ->
+    levy v Sig (S n) (is_recdef o F x y).
+intros Fm vo vx vy lvF.
+apply F_ex_sig; intros g.
+constructor;[|constructor].
+*unfold is_cc_fun.
+ constructor;[simpl;auto|intros c].
+ constructor.
+ +apply levy_str with c;[simpl;auto|].
+  apply levy_couple_eq.
+  apply levy_fst_eq; simpl; auto.
+  apply levy_snd_eq; simpl; auto.
+ +rewrite in_set_def; constructor;[simpl;auto|].
+  apply levy_fst_eq; simpl; auto.
+*constructor;[simpl;auto|intro x'].
+ constructor;[constructor;[|constructor];simpl;auto|].
+ apply levy_cut_sigma with (P:=fun z => z==F (cc_lam x' (cc_app g)) x')(y:=cc_app g x'). 
+ +intros ?? h; rewrite h; reflexivity.
+ +apply levy_cc_app_eq; [|constructor];simpl; auto.
+ +intros y'; apply levy_cut_sigma with (P:=fun z => y'==F z x').
+  ++intros ?? h; rewrite h; reflexivity. 
+  ++intros z'; apply levy_cc_lam_comp.
+    +++apply cc_app_morph; reflexivity.
+    +++constructor; simpl; auto.
+    +++intros; apply levy_cc_app_eq;[|constructor];simpl;auto.
+  ++intros f'.
+    eapply levy_thin_vars;[apply lvF|].
+    destruct 1 as [?|[?|[?|?]]]; simpl; auto 10.
+*apply levy_str with y; [simpl;auto|].
+ apply levy_cc_app_eq;[|constructor]; simpl; auto.
+Qed.
+
+Lemma recdef_iff o F x y f :
+  morph1 f ->
+  morph2 F ->
+  (forall x y, x ∈ o -> y ∈ x -> y ∈ o) ->
+  (forall x y z, x ∈ o -> y ∈ x -> z ∈ y -> z ∈ x) ->
+  (forall n, n∈o -> f n == F (cc_lam n f) n) ->
+  x ∈ o ->
+  y == f x <-> is_recdef o F x y.
+intros fm Fm tr trtr fdef xty.
+assert (aux : forall g, morph1 (cc_app g)) by (intro;apply cc_app_morph;reflexivity).
+unfold is_recdef; split; intros.
+*exists (cc_lam o f); split;[|split].
+ +apply is_cc_fun_lam;auto.
+ +intros.
+  rewrite cc_beta_eq; auto.   
+  rewrite fdef; trivial.
+  apply Fm;[|reflexivity].
+  apply cc_lam_ext;[reflexivity|red; intros].
+  rewrite cc_beta_eq; auto.  
+  rewrite <-H3.
+  apply tr with x'; trivial.
+ +rewrite cc_beta_eq; auto.
+*destruct H as (g & gfun & grec & ydef); rewrite ydef.
+ clear y ydef.
+ revert xty grec; pattern x; apply wf_ax; clear x; intros.
+ rewrite fdef, grec; auto with *.
+ apply Fm;[|reflexivity].
+ apply cc_lam_ext;[reflexivity|red; intros].
+ rewrite H1 in H0|-*; clear x0 H1.
+ apply H; [trivial|apply tr with x; trivial|].
+ intros.
+ apply grec; trivial.
+ red; intros.
+ apply trtr with x'; trivial.
+ apply H2; trivial.
+Qed.
+
+
+
+(*
+Definition is_recdefK (K:set->Prop) o F x y :=
+  exists g,
+  K g /\ is_cc_fun o g 
+  (forall x', x' ∈ o -> x' ⊆ x -> cc_app g x' == F (λ x ∈ x', cc_app g x) x') /\
+  y == cc_app g x.
+
+Definition FTrK (K:set->Prop) P
+  Form_case (fun i0 j => P2p (Fint_var i i0 == Fint_var i j))
+    (fun i0 j => P2p (Fint_var i i0 ∈ Fint_var i j)) empty
+    (fun A B => f A i ∩ f B i)
+    (fun A B => f A i ∪ f B i)
+    (fun A B => cc_arr (f A i) (f B i))
+    (fun A => P2p (forall x0, p2P (f A (Cons x0 i))))
+    (fun A => P2p (exists x0, p2P (f A (Cons x0 i)))).
+*)
+
+Require Import ZFreflect ZFform.
+
+Definition u_repl (*(K:set->Prop)*) (i:fvs) b :=
+  let a := i 0 in
+  let Rf := i 1 in
+  let l := i 2 in
+  let R x z := UnboundedInterpretation.FTr Rf (Cons x (Cons z l)) in
+  Rf ∈ Form /\ (*->
+  exists b,*) (*K b /\*) forall z, (*K z ->*) z ∈ b <->
+      (exists x, (*K x /\*) x ∈ a /\ R x z /\ forall z', (*K z' ->*) R x z' -> z==z').
+
+
+Definition U M := refl_set VNlim_compl (u_repl::nil) M.
+
+
+
+
+Existing Instance UnboundedInterpretation.FTr_morph.
+
+
+Lemma u_repl_comp P x vs vs' :
+  In P (u_repl :: nil) -> eqfvs 3 vs vs' -> P vs x <-> P vs' x.
+simpl; intros [e|[ ]] evs; subst P.
+assert (e0 : vs 0 == vs' 0) by (apply evs; auto with arith).
+assert (e1 : vs 1 == vs' 1) by (apply evs; auto with arith).
+assert (e2 : vs 2 == vs' 2) by (apply evs; auto with arith).
+clear evs.
+unfold u_repl.
+apply and_iff_morphism; [rewrite e1; reflexivity|].
+apply fa_morph; intro z. 
+apply iff_morph; [reflexivity|intros].
+apply ex_morph; intro y. 
+apply and_iff_morphism; [rewrite e0; reflexivity|].
+apply and_iff_morphism.
+*rewrite e1,e2; reflexivity.
+*apply fa_morph; intros z'. 
+ rewrite e1,e2; reflexivity.
+Qed.
+Hint Resolve u_repl_comp : core.
+Hint Resolve zero_typ succ_typ : core.
+
+Instance auxm : morph2 (fun _ Mi => rstep VNlim_compl (u_repl :: nil) Mi).
+do 3 red; intros.
+apply rstep_morph with (n:=3); auto with *.
+Qed.
+
+Hint Resolve auxm : core.
+
+Lemma U_VNlim M : isVNlim (U M).
+unfold U.
+rewrite refl_set_alt_def with (compl:=VNlim_compl) (Pl:=u_repl::nil) (n:=3)(M0:=M); auto with *.
+*apply VNlim_sup.
+ +do 2 red; intros.
+  apply rstep_morph with (n:=3); auto with *.
+  apply refl_fin_morph with (n:=3); auto with *.
+ +unfold rstep.
+  intros; apply VNlim_compl_ok.  
+ +intros.
+  unfold refl_fin.
+  rewrite <-natrec_S with (g:=fun _ Mi=>rstep VNlim_compl (u_repl::nil) Mi)(n:=k); auto with *.
+  rewrite <-natrec_S
+    with (g:=fun _ Mi=>rstep VNlim_compl (u_repl::nil) Mi)(n:=succ k); auto with *.
+  intro; apply refl_fin_mono with (n:=3); auto with *.
+   apply VNlim_ext.  
+   apply succ_intro2.  
+   apply succ_intro1; reflexivity.
+*apply VNlim_ext.
+Qed.
+ 
+ Require Import ZFord ZFrank ZFgrothendieck.
+
+Lemma fo_form_ex P :
+  fo_form P ->
+  exists A, A ∈ Form /\ forall vs l, (forall k, Fint_var l (nat2set k) == vs k) ->
+                                     P (fun _=>True) vs <-> Fint l A.
+induction 1.
+*destruct IHfo_form as (Q & Qty & Qdef); exists Q;split;[trivial|intros].
+ rewrite <-H; auto.
+*destruct H as (k,?). 
+ destruct H0 as (k',?). 
+ subst  x y.
+ exists (Feq (nat2set k) (nat2set k')); split.
+  apply Feq_typ; apply nat2set_typ. 
+ intros. 
+ rewrite Fint_eq;[|apply nat2set_typ|apply nat2set_typ].
+ rewrite !H; reflexivity.
+*destruct H as (k,?). 
+ destruct H0 as (k',?). 
+ subst  x y.
+ exists (Fin (nat2set k) (nat2set k')); split.
+  apply Fin_typ; apply nat2set_typ. 
+ intros. 
+ rewrite Fint_in;[|apply nat2set_typ|apply nat2set_typ].
+ rewrite !H; reflexivity.
+*exists (Fimp Fbot Fbot); split;[apply Fimp_typ; apply Fbot_typ|]. 
+ intros.  
+ rewrite Fint_imp;[|apply Fbot_typ|apply Fbot_typ].
+ split; intros; trivial.
+*exists Fbot; split; [apply Fbot_typ|intros].
+ split; intros; [contradiction|].
+ apply Fint_bot in H0; trivial.
+*destruct IHfo_form1 as (A'&?&?).
+ destruct IHfo_form2 as (B'&?&?).
+ exists (Fand A' B'); split; [apply Fand_typ; trivial|intros].
+ rewrite Fint_and; trivial.
+ apply and_iff_morphism; auto.
+*destruct IHfo_form1 as (A'&?&?).
+ destruct IHfo_form2 as (B'&?&?).
+ exists (For A' B'); split; [apply For_typ; trivial|intros].
+ rewrite Fint_or; trivial.
+ apply or_iff_morphism; auto.
+*destruct IHfo_form1 as (A'&?&?).
+ destruct IHfo_form2 as (B'&?&?).
+ exists (Fimp A' B'); split; [apply Fimp_typ; trivial|intros].
+ rewrite Fint_imp; trivial.
+ apply impl_morph; auto.
+*destruct IHfo_form as (B'&?&?).
+ exists (Ffa B'); split; [apply Ffa_typ; trivial|intros].
+ rewrite Fint_fa; trivial.
+ apply fa_morph; intros x.
+ rewrite <-H1 with (vs:=icons x vs).
+ +unfold bind; simpl.
+  split; auto.
+ +destruct k; simpl.
+  apply Fiv_0.
+  rewrite Fiv_S; trivial.
+*destruct IHfo_form as (B'&?&?).
+ exists (Fex B'); split; [apply Fex_typ; trivial|intros].
+ rewrite Fint_ex; trivial.
+ apply ex_morph; intros x.
+ rewrite <-H1 with (vs:=icons x vs).
+ +unfold bind; simpl.
+  split; [destruct 1|]; auto.
+ +destruct k; simpl.
+  apply Fiv_0.
+  rewrite Fiv_S; trivial.
+Qed.
+
+ 
+Lemma U_repl M I Rf l :
+  I ∈ U M -> l ∈ U M ->
+  fo_form Rf ->
+  let R x y := Rf (fun _=>True) (icons x (icons y (fun k => Fint_var l (nat2set k)))) in
+  (forall x y , x ∈ I -> R x y -> y ∈ U M) -> 
+  exists b, b∈U M /\ forall z, z ∈ b <->
+                                 exists x, x ∈ I /\ R x z /\ forall z', R x z' -> z==z'.
+Admitted. (*intros tyI tyl foR R Rty.
+destruct (U_VNlim M) as (o,(limo,Udef)).
+assert (oo:isOrd o) by apply limo.
+destruct fo_form_ex with (1:=foR) as (P,(Pty,Pdef)).
+exists (w_iter (fun Mi => VNlim_compl(Mi ∪ supfvs Mi (fun vs => repl (vs 0) (fun x y =>    replf) M)
+
+*exists (repl I (fun x y => R x y /\ forall y', R x y' -> y==y')).
+
+
+destruct refl_set_model with (compl:=VNlim_compl) (Pl:=u_repl::nil) (n:=3)(M0:=M)
+ (vs:=icons I (icons P (fun _=> l)))(P:=u_repl) as (b,(bty,bdef)); auto with *.
+*apply VNlim_ext.
+*fold (U M).
+ destruct k as [|[|k]]; simpl; trivial.   
+ rewrite Udef.
+ elim Pty using N_ind; intros.
+ +rewrite <-H0; trivial.
+ +rewrite Udef in tyI.
+  apply VN_incl with I; trivial.
+ +apply VN_union;[trivial|].
+  apply VNlim_pair;trivial.
+  apply VNlim_pair;trivial.
+*exists (repl I (fun x y => R x y /\ forall y', R x y' -> y==y')).
+ red; simpl; intros.
+ split; [trivial|].
+ intros.
+ rewrite repl_ax.
+ +rewrite ex_ex2.
+  apply ex_morph; intros x.
+  unfold Fint in Pdef.
+  apply and_iff_morphisml; [reflexivity|intros ? _].
+  apply and_iff_morphism.
+  ++apply Pdef.
+    destruct k as [|[|k]]; simpl.
+    apply Fiv_0.
+    rewrite Fiv_S with (k:=0);apply Fiv_0.    
+    rewrite Fiv_S with (k:=S k); simpl.
+    rewrite Fiv_S; reflexivity.
+  ++apply fa_morph; intros z'.
+    apply impl_morph;[|reflexivity].
+    apply Pdef.
+    destruct k as [|[|k]]; simpl.
+    apply Fiv_0.
+    rewrite Fiv_S with (k:=0);apply Fiv_0.    
+    rewrite Fiv_S with (k:=S k); simpl.
+    rewrite Fiv_S; reflexivity.
+ +intros.      
+  revert H2; apply iff_impl.
+  apply and_iff_morphism; [|apply fa_morph; intros y'0].
+  ++apply fo_form_param with (1:=foR); red; [reflexivity|].
+    destruct a as [|[|?]]; simpl; auto with *.
+  ++apply impl_morph;[|rewrite H1;reflexivity].      
+    apply fo_form_param with (1:=foR); red; [reflexivity|].
+    destruct a as [|[|?]]; simpl; auto with *.
+ +intros.
+  destruct H0; destruct H1; auto.
+*destruct bdef as (_,bdef); simpl in bdef.
+  fold (U M) in bty.
+  exists b; split; [trivial|intros].
+  rewrite bdef.
+  apply ex_morph; intros x; simpl.
+  ++apply and_iff_morphisml; [reflexivity|intros ? _].
+    apply and_iff_morphism.
+    **symmetry; apply Pdef.
+      destruct k as [|[|k]]; simpl.
+      apply Fiv_0.
+      rewrite Fiv_S with (k:=0);apply Fiv_0.    
+      rewrite Fiv_S with (k:=S k); simpl.
+      rewrite Fiv_S; reflexivity.
+    **apply fa_morph; intros z'.
+      apply impl_morph;[|reflexivity].
+      symmetry; apply Pdef.
+      destruct k as [|[|k]]; simpl.
+      apply Fiv_0.
+      rewrite Fiv_S with (k:=0);apply Fiv_0.    
+      rewrite Fiv_S with (k:=S k); simpl.
+      rewrite Fiv_S; reflexivity.
+Qed. *)
+
+Print Assumptions U_repl.
+Print Assumptions refl_set_model  .
+
+ Lemma GU M : grot_univ (U M).
+destruct (U_VNlim M) as (o,(limo,?)).
+assert (oo:isOrd o) by apply limo.
+assert (forall I Rf l, I ∈ U M -> l ∈ U M ->
+                      fo_form Rf ->
+                      let R x y := y ∈ U M /\ Rf (fun _=>True) (icons x (icons y (fun k => Fint_var l (nat2set k)))) in
+                      exists b, b∈U M /\ forall z, z ∈ b <->
+                                                     exists x, x ∈ I /\ R x z /\ forall z', R x z' -> z==z').
+{intros.
+ destruct fo_form_ex with (1:=H2) as (P,(Pty,Pdef)).
+destruct refl_set_model with (compl:=VNlim_compl) (Pl:=u_repl::nil) (n:=3)(M0:=M)
+ (vs:=icons I (icons P (fun _=> l)))(P:=u_repl) as (b,(bty,bdef)); auto with *.
+ *apply VNlim_ext.
+ *fold (U M).
+  destruct k as [|[|k]]; simpl; trivial.   
+  rewrite H.
+  admit. (* omega ⊆ o *)
+ *pose (R' x y :=Rf(fun _=>True)(icons x (icons y (fun k=>Fint_var l (nat2set k))))).
+   exists (repl I (fun x y => R' x y /\ forall y', R' x y' -> y==y')).
+   red; simpl; intros.
+   split; [trivial|].
+   intros.
+   rewrite repl_ax.
+   +rewrite ex_ex2.
+    apply ex_morph; intros x.
+    unfold Fint in Pdef.
+    apply and_iff_morphisml; [reflexivity|intros ? _].
+    apply and_iff_morphism.
+    ++apply Pdef.
+      destruct k as [|[|k]]; simpl.
+      apply Fiv_0.
+      rewrite Fiv_S with (k:=0);apply Fiv_0.    
+      rewrite Fiv_S with (k:=S k); simpl.
+      rewrite Fiv_S; reflexivity.
+    ++apply fa_morph; intros z'.
+      apply impl_morph;[|reflexivity].
+      apply Pdef.
+      destruct k as [|[|k]]; simpl.
+      apply Fiv_0.
+      rewrite Fiv_S with (k:=0);apply Fiv_0.    
+      rewrite Fiv_S with (k:=S k); simpl.
+      rewrite Fiv_S; reflexivity.
+   +intros.      
+    revert H6; apply iff_impl.
+    apply and_iff_morphism; [|apply fa_morph; intros y'0].
+    ++apply fo_form_param with (1:=H2); red; [reflexivity|].
+      destruct a as [|[|?]]; simpl; auto with *.
+    ++apply impl_morph;[|rewrite H5;reflexivity].      
+      apply fo_form_param with (1:=H2); red; [reflexivity|].
+      destruct a as [|[|?]]; simpl; auto with *.
+   +intros.
+    destruct H4; destruct H5; auto.
+ *destruct bdef as (_,bdef); simpl in bdef.
+  fold (U M) in bty.
+  exists b; split; [trivial|intros].
+  apply iff_strengthen with (z ∈ U M).
+  {intros; rewrite H in bty|-*.  
+   apply VN_trans with b; trivial. }
+  {intros (x&_&(?,_)&_); trivial. }
+  intros tyz.
+  rewrite bdef.
+  apply ex_morph; intros x; simpl.
+  ++apply and_iff_morphisml; [reflexivity|intros ? _].
+    apply and_iff_morphism.
+    **unfold Fint in Pdef.
+      rewrite <- (Pdef (icons x (icons z (fun k=> Fint_var l (nat2set k))))).
+      unfold R; split;[|destruct 1]; auto.
+      destruct k as [|[|k]]; simpl.
+      apply Fiv_0.
+      rewrite Fiv_S with (k:=0);apply Fiv_0.    
+      rewrite Fiv_S with (k:=S k); simpl.
+      rewrite Fiv_S; reflexivity.
+    **apply fa_morph; intros z'.
+split; intros.
+destruct H5; apply H4.
+revert H6; apply Pdef.
+      destruct k as [|[|k]]; simpl.
+      apply Fiv_0.
+      rewrite Fiv_S with (k:=0);apply Fiv_0.    
+      rewrite Fiv_S with (k:=S k); simpl.
+      rewrite Fiv_S; reflexivity.
+
+apply impl_morph;[|reflexivity].
+      apply Pdef.
+      destruct k as [|[|k]]; simpl.
+      apply Fiv_0.
+      rewrite Fiv_S with (k:=0);apply Fiv_0.    
+      rewrite Fiv_S with (k:=S k); simpl.
+      rewrite Fiv_S; reflexivity.
+
+      with (k:=0).
+      apply Fiv_0.    
+    rewrite <-Pdef.
+    
+    
+    destruct refl_set_model with (compl
+ 
+           fo
+   set
+  R : set -> set -> Prop
+  H0 : ZFrepl.repl_rel I R
+  H1 : I ∈ VN o
+  H2 : forall x y : set, x ∈ I -> R x y -> y ∈ VN o
+  ============================
+  repl I R ∈ VN o
+
+
+rewrite H.
+split; intros.
+*apply VN_trans with x; auto.
+*apply VNlim_pair; auto.
+*apply VNlim_power; auto.
+*apply VN_union; auto.
+* 
+refl_set_model
+
+  exists y, K y /\ e_union K x y.
+Definition 
+
+
+(*
+Lemma so_Form_ind :
+  forall P:set->set->Prop,
+    Proper (eq_set==>eq_set==>iff) P ->
+    (forall i j x, i ∈ N -> j ∈ N -> P (Feq i j) x) ->
+    (forall i j x, i ∈ N -> j ∈ N -> P (Fin i j) x) ->
+    (forall x, P Fbot x) ->
+    (forall A B x, A x ∈ Form -> (forall x, P A x) /\ B x ∈ Form /\ P (B x) x) -> P (Fand (A x) (B x)) x) ->
+    (forall A B x,
+     (forall x, A x ∈ Form /\ P (A x) x /\ B x ∈ Form /\ P (B x) x) -> P (For (A x) (B x)) x) ->
+    (forall A B x,
+     (forall x, A x ∈ Form /\ P (A x) x /\ B x ∈ Form /\ P (B x) x) -> P (Fimp (A x) (B x)) x) ->
+    (forall A x, (forall x, P (A x) x) -> P (Ffa (A x)) x) ->
+    (forall A x, (forall x, P (A x) x) -> P (Fex (A x)) x) ->
+    forall A x, A ∈ Form -> P A x.
+
+    (forall P Q x, p ∈ Form -> Q ∈ Form -> P (Fand P Q)) ->
+*)(*Parameter so_Form*)
+
+Definition FintM : set -> set -> set -> Prop :=
+  fun M i P => boundedInterpretation.FTr M P i.
+Parameter FintM_morph : Proper (eq_set==>eq_set==>eq_set==>iff) FintM.
+Existing Instance FintM_morph.
+Lemma FintM_eq : forall M i m n,
+  (forall i x, x ∈ M -> i ∈ M -> Cons x i ∈ M) ->
+  i ∈ M ->
+  m ∈ N -> n ∈ N ->
+  FintM M i (Feq m n) <-> Fint_var i m == Fint_var i n.
+intros; apply boundedInterpretation.FTr_eq; trivial.
+intros x i'; apply H.  
+Qed.
+Parameter FintM_in : forall M i m n,
+  (forall i x, x ∈ M -> i ∈ M -> Cons x i ∈ M) ->
+  i ∈ M ->
+  m ∈ N -> n ∈ N ->
+  FintM M i (Feq m n) <-> Fint_var i m ∈ Fint_var i n.
+Parameter FintM_bot : forall M i, ~ FintM M i Fbot.
+Parameter FintM_and : forall M i P Q,
+  (forall i x, x ∈ M -> i ∈ M -> Cons x i ∈ M) ->
+  i ∈ M ->
+  P ∈ Form -> Q ∈ Form ->
+  FintM M i (Fand P Q) <-> (FintM M i P /\ FintM M i Q).
+Parameter FintM_or : forall M i P Q,
+  (forall i x, x ∈ M -> i ∈ M -> Cons x i ∈ M) ->
+  i ∈ M ->
+  P ∈ Form -> Q ∈ Form ->
+  FintM M i (For P Q) <-> (FintM M i P \/ FintM M i Q).
+Parameter FintM_imp : forall M i P Q,
+  (forall i x, x ∈ M -> i ∈ M -> Cons x i ∈ M) ->
+  i ∈ M ->
+  P ∈ Form -> Q ∈ Form ->
+  FintM M i (Fimp P Q) <-> (FintM M i P -> FintM M i Q).
+Lemma FintM_fa : forall M i P,
+  (forall i x, x ∈ M -> i ∈ M -> Cons x i ∈ M) ->
+  i ∈ M ->
+  P ∈ Form ->
+  FintM M i (Ffa P) <-> (forall x, x ∈ M -> FintM M (Cons x i) P).
+intros; apply boundedInterpretation.FTr_fa; trivial.
+intros x i'; apply H.  
+Qed.
+Parameter FintM_ex : forall M i P,
+  (forall i x, x ∈ M -> i ∈ M -> Cons x i ∈ M) ->
+  i ∈ M ->
+  P ∈ Form ->
+  FintM M i (Fex P) <-> (exists x, x ∈ M /\ FintM M (Cons x i) P).
+
+
+  Lemma levy_FintM v n M F x y :
+    morph2 F ->
+    is_var M v ->
+    is_var x v ->
+    is_var y v ->
+    (forall z1 z2, levy_set_eq (push_var z1 (push_var z2 v)) Sig (S n) (F z1 z2)) ->
+    levy v Sig (S n) (FintM M x y).
+intros Fm vM vx vy lvF.
+unfold FintM, boundedInterpretation.FTr, boundedInterpretation.Fintrec.
+unfold p2P, prf_trm.
+apply levy_cut_sigma with (P:=fun a => empty ∈ a). 
+*intros ?? h; rewrite h; reflexivity.
+*intros z.
+ rewrite recdef_iff with (o:=N)(F:=fun f x => boundedInterpretation.Tr_body M (snd x) (cc_app f) (fst x)).
+ +apply levy_is_recdef; simpl; auto with *.
+ apply F_ex_sig; intros y0; constructor.
+
+
+levy_is_recdef
+(is_recdef N (fun f x => boundedInterpretation.Tr_body M (snd x) (cc_app f) (fst x)) x y)
+recdef_iff
+
+    
+  Lemma levy_recdefN v n F f x :
+  morph1 f ->
+  morph2 F ->
+  (forall n, n∈N -> f n == F (cc_lam n f) n) ->
+  is_var x v ->
+  (forall z1 z2, levy_set_eq (push_var z1 (push_var z2 v)) Sig (S n) (F z1 z2)) ->
+  levy_set_eq v Sig (S n) (f x).
+intros fm Fm Hrec vx lvF y.
+rewrite recdef_iff with (o:=N)(F:=F); trivial.
+apply F_ext with
+  (exists g, is_cc_fun o g /\
+    (forall x', x' ∈ o -> x' ⊆ x -> cc_app g x' == F (cc_lam x' (cc_app g)) x') /\
+               y == cc_app g x).
+{admit. }
+{apply F_ex_sig; intros g.
+ constructor;[|constructor].
+ *unfold is_cc_fun.
+  constructor;[simpl;auto|intros c].
+  constructor.
+  +apply levy_str with c;[simpl;auto|].
+   apply levy_couple_eq.
+   apply levy_fst_eq; simpl; auto.
+   apply levy_snd_eq; simpl; auto.
+  +rewrite in_set_def; constructor;[simpl;auto|].
+   apply levy_fst_eq; simpl; auto.
+ *constructor;[simpl;auto|intro x'].
+  constructor;[constructor;[|constructor];simpl;auto|].
+  apply levy_cut_sigma with (P:=fun z => z==F (cc_lam x' (cc_app g)) x')(y:=cc_app g x'). 
+  +intros ?? h; rewrite h; reflexivity.
+  +apply levy_cc_app_eq; [|constructor];simpl; auto.
+  +intros y'; apply levy_cut_sigma with (P:=fun z => y'==F z x').
+   ++intros ?? h; rewrite h; reflexivity. 
+   ++intros z'; apply levy_cc_lam_comp.
+     +++apply cc_app_morph; reflexivity.
+     +++constructor; simpl; auto.
+     +++intros; apply levy_cc_app_eq;[|constructor];simpl;auto.
+   ++intros f'.
+     eapply levy_thin_vars;[apply lvF|].
+     destruct 1 as [?|[?|[?|?]]]; simpl; auto 10.
+ *apply levy_str with y; [simpl;auto|].
+  apply levy_cc_app_eq;[|constructor]; simpl; auto.
+ Qed.
+
+
+
+     repeat apply levy_thin3.
+     apply lvF.
+     levy_cc_
+     admit.
+ *apply levy_str with y;[simpl;auto|apply levy_cc_app_eq;[|constructor];simpl;auto]. }
+Qed.
+
+
+Definition FintM_def (F:set->set->set) x y :=
+  exists f, is_cc_fun (y∈Form|y<=x) f /\
+              (forall x', x' ∈ Form -> x'<=x ->
+                          cc_app f x' == F (cc_lam (z∈x') (cc_app f)) x') /\
+              y == F (cc_lam (z∈x) (cc_app f)) x
+  Lemma WFR_iff R F x y :
+  morph1 R -> morph2 F ->
+  y == WFR0 R F x <-> exists f, is_cc_fun (Rclos R x) f /\
+                      (forall y, y ∈ Rclos R x -> cc_app f y == GF R F (cc_app f) y) /\
+                      y==GF R F (cc_app f) x.
+           
+
+
 (*
 Fixpoint list2set (l:list set) : set :=
   match l with
@@ -2336,13 +3299,13 @@ Definition repl' I R := repl I (uniq R).
   
 
 Definition levy_repl k n U :=
-  forall i,
+  forall i, i ∈ U ->
   forall I, I ∈ U ->
-  forall R, R ∈ Form ->
+  forall R, R ∈ U -> R ∈ Form ->
   Levy k n R ->
   (forall x, x ∈ I -> forall y, y ∈ U -> forall y', y' ∈ U ->
-   Fint (Cons y (Cons x i)) R -> Fint (Cons y' (Cons x i)) R -> y==y') ->
-  repl' I (fun x y => y ∈ U /\ Fint (Cons y (Cons x i)) R) ∈ U.
+   FintM U (Cons y (Cons x i)) R -> FintM U (Cons y' (Cons x i)) R -> y==y') ->
+  repl' I (fun x y => y ∈ U /\ FintM U (Cons y (Cons x i)) R) ∈ U.
 
 
 Definition Ug_inductive X U :=
@@ -2378,18 +3341,76 @@ split; intros.
  apply ZFrepl.repl_ext; trivial.
 Qed.
 
+Require Import ZFreflect.
 
+Lemma levy_lift_le vars k n m A :
+  (n<=m)%nat ->
+  levy vars k n A ->
+  levy vars k m A.
+induction 1; [auto|].
+intros; apply levy_lift with k; auto.
+Qed.
 
-Lemma levy_levy_repl v n k m U :
+Lemma fo_form_levy P :
+  fo_form P ->
+  exists n, forall k i v, (forall k, is_var (i k) v) -> levy v k (S n) (P (fun _=>True) i).
+induction 1; intros.
+*destruct IHfo_form as (n&h).
+ exists n; intros.
+ apply F_ext with (A (fun _=>True) i); auto.
+*exists 0; intros.  
+ destruct H as (n,e); destruct H0 as (n',e').
+ subst x y.
+ constructor; trivial. 
+*exists 0; intros.  
+ destruct H as (n,e); destruct H0 as (n',e').
+ subst x y.
+ constructor; trivial. 
+*exists 0; intros.  
+ constructor; trivial. 
+*exists 0; intros.  
+ constructor; trivial. 
+*destruct IHfo_form1 as (n&h);
+ destruct IHfo_form2 as (n'&h').
+ exists (Peano.max n n'); intros.
+ constructor;[apply levy_lift_le with (S n)|apply levy_lift_le with (S n')];
+   auto with arith.
+*destruct IHfo_form1 as (n&h);
+ destruct IHfo_form2 as (n'&h').
+ exists (Peano.max n n'); intros.
+ constructor;[apply levy_lift_le with (S n)|apply levy_lift_le with (S n')];
+   auto with arith.
+*destruct IHfo_form1 as (n&h);
+ destruct IHfo_form2 as (n'&h').
+ exists (Peano.max n n'); intros.
+ constructor;[apply levy_lift_le with (S n)|apply levy_lift_le with (S n')];
+   auto with arith.
+*destruct IHfo_form as (n&h).
+ exists (S n); intros.  
+ apply levy_lift with Prd.
+ apply F_fa_prd; intros.
+ constructor;[constructor|].
+ apply h with (i:=icons x i).
+ destruct k0; simpl; auto.
+*destruct IHfo_form as (n&h).
+ exists (S n); intros.  
+ apply levy_lift with Sig.
+ apply F_ex_sig; intros.
+ constructor;[constructor|].
+ apply h with (i:=icons x i).
+ destruct k0; simpl; auto.
+Qed.
+ 
+ Lemma levy_levy_repl v n k m U :
   is_var U v ->
   levy v Prd (S n) (levy_repl k m U).
 intros vU.
 unfold levy_repl.
-apply F_fa_prd; intros i.
+constructor;[simpl;auto|intros i].
 constructor;[simpl;auto|intros I].
-apply F_fa_prd; intros R.
+constructor;[simpl;auto|intros R].
 constructor.
-{admit. (* ∈Form Σ_1 *) }
+{apply levy_Form. }
 constructor.
 {admit. (* Levy Σ_1 *) }
 constructor.
@@ -2397,9 +3418,9 @@ constructor.
  constructor;[simpl;auto|intros y].
  constructor;[simpl;auto 10|intros y'].
  constructor.
-  admit. (* Fint Π_1 *)
+  admit. (* FintM Π_1 *)
  constructor.
-  admit. (* Fint Π_1 *)
+  admit. (* FintM Π_1 *)
  constructor; simpl; auto. }
 rewrite in_set_def.
 constructor;[simpl;auto|intros y].
@@ -2407,9 +3428,9 @@ unfold repl'; rewrite repl_eq_iff.
 2:apply uniq_repl_rel.
 assert (uniq_iff : forall a b,
 b ∈ U /\
-  Fint (Cons b (Cons a i)) R /\
-  (forall y' : set, y' ∈ U -> Fint (Cons y' (Cons a i)) R -> b == y') <->
-  uniq (fun x y0 => y0 ∈ U /\ Fint (Cons y0 (Cons x i)) R) a b).
+  FintM U (Cons b (Cons a i)) R /\
+  (forall y' : set, y' ∈ U -> FintM U (Cons y' (Cons a i)) R -> b == y') <->
+  uniq (fun x y0 => y0 ∈ U /\ FintM U (Cons y0 (Cons x i)) R) a b).
 {unfold uniq; split; intros.
  destruct H as (?&?&?).
  rewrite H0. 
@@ -2429,17 +3450,17 @@ constructor.
  apply F_ext with (1:=uniq_iff a b).
  constructor;[constructor; simpl; auto 10|].  
  constructor.
-  admit. (* Fint Σ_1 *)
+  admit. (* FintM Σ_1 *)
  constructor;[simpl;auto 10|intros y'].
  constructor;[|constructor;simpl;auto 10].
- admit. (* Fint Π_1 *)
+ admit. (* FintM Π_1 *)
 *constructor;[simpl;auto 10|intros b].
  rewrite ex_ex2.
  constructor;[simpl;auto 10|intros a].
  apply F_ext with (1:=uniq_iff a b).
  constructor;[constructor; simpl; auto 10|].  
  constructor.
-  admit. (* Fint Π_1 *)
+  admit. (* FintM Π_1 *)
  constructor;[simpl;auto 10|intros y'].
  constructor;[|constructor;simpl;auto 10].
  admit. (* Fint Σ_1 *)
@@ -2812,6 +3833,790 @@ constructor.
  constructor; simpl; auto.
 Qed.
   
+
+
+
+
   
-End Univ_closure.
+Require Import ZFreflect.
+
+Ltac fo_step :=
+  first [apply FO_eq; apply fvi
+        |apply FO_in; apply fvi
+        |apply FO_T
+        |apply FO_F
+        |apply FO_and
+        |apply FO_or
+        |apply FO_imp
+        |apply FO_fa
+        |apply FO_ex].
+
+Definition e_union K x z :=
+  (forall z', K z' -> z' ∈ z -> exists a, K a /\ a ∈ x /\ z' ∈ a) /\
+  (forall a, K a -> a ∈ x -> forall b, K b -> b ∈ a -> b ∈ z).
+
+Lemma e_union_ok K x z :
+  trans K -> K x -> K z ->
+  z == union x <-> e_union K x z.
+unfold e_union; split; intros.
+*split; intros.
+ +rewrite H2,union_ax in H4.
+  destruct H4.
+  exists x0; split;[|auto].
+  apply H with x; trivial.
+ +rewrite H2,union_ax.
+  exists a; trivial.
+*destruct H2.
+ apply union_ext; intros.
+ +apply H3 with y; trivial.
+  apply H with x; trivial.
+  apply H with y; trivial.
+  apply H with x; trivial.
+ +destruct H2 with (2:=H4) as (a&?&?&?).
+   apply H with z; trivial.
+  exists a; trivial.
+Qed.
+
+Definition u_union (K:set->Prop) (i:fvs) :=
+  let x := i 0 in
+  exists y, K y /\ e_union K x y.
+
+Definition e_power K x z :=
+  (forall z', K z' -> z' ∈ z -> forall w, K w -> w ∈ z' -> w ∈ x) /\
+  (forall z', K z' -> (forall w, K w -> w ∈ z' -> w ∈ x) -> z' ∈ z).
+
+Lemma e_power_ok K x z :
+  trans K -> plump K -> K x -> K z ->
+  z == power x <-> e_power K x z.
+unfold e_power; split; intros.
+*split; intros.
+ +rewrite H3,power_ax in H5; auto.
+ +rewrite H3,power_ax; intros.
+  apply H5; trivial.
+  apply H with z'; trivial.
+*destruct H3.
+ apply power_ext; intros.
+ +apply H4; auto.
+  apply H0 with x; trivial.
+ +apply H3 with x0; auto.
+  apply H with z; auto.
+  apply H with x0; auto.
+  apply H with z; auto.
+Qed.
+
+Definition u_power (K:set->Prop) (i:fvs) :=
+  let x := i 0 in
+  exists y, K y /\ e_power K x y.
+
+
+Definition e_pair K x y z := (* z == pair x y *)
+  x ∈ z /\ y ∈ z /\ forall z', K z' -> z' ∈ z -> z' == x \/ z' == y.
+
+Lemma e_pair_ok K x y z :
+  trans K -> K x -> K y -> K z ->
+  z == pair x y <-> e_pair K x y z.
+unfold e_pair.
+split; intros.
+*split;[|split].
+ +rewrite H3; auto.
+ +rewrite H3; auto.
+ +intros.
+  rewrite H3 in H5; rewrite pair_ax in H5; trivial.
+*destruct H3 as (?&?&?).
+ apply pair_ext; auto.
+ intros; apply H5; trivial.
+ apply H with z; trivial.
+Qed.
+
+Definition u_pair (K:set->Prop) (i:fvs) :=
+  let x := i 0 in
+  let y := i 1 in
+  exists z, K z /\ e_pair K x y z.
+
+Definition e_couple K x y z := (* z == couple x y *)
+  (exists z', K z' /\ z' ∈ z /\ e_pair K x x z') /\
+  (exists z', K z' /\ z' ∈ z /\ e_pair K x y z') /\
+  (forall z', K z' -> z' ∈ z -> e_pair K x x z' \/ e_pair K x y z').
+
+Lemma e_couple_ok K x y z :
+  trans K -> K x -> K y -> K z ->
+  z == couple x y <-> e_couple K x y z.
+unfold e_couple.
+split; intros.
+*split;[|split].
+ +assert (singl x ∈ z) by (rewrite H3; apply pair_intro1).
+  assert (K (singl x)) by (apply H with z; trivial).
+  exists (singl x); split;[trivial|].
+  split; [trivial|apply e_pair_ok; trivial; reflexivity].
+ +assert (pair x y ∈ z) by (rewrite H3; apply pair_intro2).
+  assert (K (pair x y)) by (apply H with z; trivial).
+  exists (pair x y); split;[trivial|].
+  split; [trivial|apply e_pair_ok; trivial; reflexivity].
+ +intros.
+  rewrite H3 in H5; apply pair_ax in H5.
+  rewrite <- e_pair_ok; trivial.
+  rewrite <- e_pair_ok; trivial.
+  *destruct H3 as ((z'&?&?&?)&(z''&?&?&?)&?). 
+   rewrite <- e_pair_ok in H5; trivial.
+   rewrite <- e_pair_ok in H8; trivial.
+   apply pair_ext; [unfold singl; rewrite <-H5;trivial|rewrite <- H8;trivial|].
+   intros.
+   unfold singl; rewrite (e_pair_ok K); trivial;[|apply H with z; trivial].
+   rewrite (e_pair_ok K); trivial;[|apply H with z; trivial].
+   apply H9; trivial.
+   apply H with z; trivial.
+Qed.
+
+Definition e_cc_app K f x z :=
+  (forall p, K p -> p ∈ f -> forall z', K z' -> e_couple K x z' p -> z' ∈ z) /\
+  (forall z', K z' -> z' ∈ z -> exists p, K p /\ p ∈ f /\ e_couple K x z' p).
+
+Lemma e_cc_app_ok K x y z :
+  trans K -> K x -> K y -> K z ->
+  z == cc_app x y <-> e_cc_app K x y z.
+intros.
+split; intros.
+*split; intros.
+ +rewrite H3, cc_app_def.
+  exists p; split;[trivial|].
+  rewrite <- e_couple_ok in H7; auto.
+ +rewrite H3 in H5; rewrite cc_app_def in H5.
+  destruct H5 as (p&?&?).
+  assert (K p) by (apply H with x; trivial).
+  exists p; split;[trivial|split; trivial].
+  rewrite <- e_couple_ok; auto.
+*destruct H3.  
+ apply eq_set_ax; split; intros.
+ +rewrite cc_app_def.
+  assert (K x0) by (apply H with z; trivial).
+  destruct H4 with (2:=H5) as (p&?&?&?);[trivial|].
+  exists p; split;[trivial|].
+  rewrite <- e_couple_ok in H9; auto.
+ +rewrite cc_app_def in H5.
+  destruct H5 as (p&?&?).
+  assert (K p) by (apply H with x; trivial).
+  assert (K x0).
+  {apply H with (pair y x0);[|auto].
+   apply H with p;[trivial|].
+   rewrite H6; apply pair_intro2. }
+  apply H3 with p; trivial.
+  rewrite <- e_couple_ok; auto.
+Qed.
+
+
+Definition e_in_cc_app (K:set->Prop) f x z :=
+  exists p, K p /\ p ∈ f /\ e_couple K x z p.
+
+Lemma e_in_cc_app_ok K x y z :
+  trans K -> K x -> K y -> K z ->
+  z ∈ cc_app x y <-> e_in_cc_app K x y z.
+intros.
+split; intros.
+*red.
+ rewrite cc_app_def in H3.
+ destruct H3 as (p&?&?).
+ assert (K p) by (apply H with x; trivial).
+ exists p; split;[trivial|split; trivial].
+ rewrite <- e_couple_ok; auto.
+*destruct H3 as (p&?&?&?).
+ rewrite cc_app_def.
+ exists p; split; [trivial|].
+ rewrite <- e_couple_ok in H5; auto.
+Qed.
+
+(*Definition e_subset K x P z := (* z == subset x P *)
+  (forall a, K a -> a ∈ x -> P a -> a ∈ z) /\
+  (forall a, K a -> a ∈ z -> a ∈ x /\ exists a', K a' /\ a==a' /\ P a').
+*)
+
+Definition e_fst (K:set->Prop) x z :=
+  (forall p, K p -> p ∈ x -> forall q, K q -> q ∈ p -> forall p', K p' -> p' ∈ x -> e_pair K q q p' -> forall z', K z' -> z' ∈ q -> z' ∈ z) /\
+    (forall z', K z' -> z' ∈ z -> exists p, K p /\ p ∈ x /\ exists q, K q /\ e_pair K q q p /\ z' ∈ q).
+
+Lemma e_fst_ok K x z :
+  trans K -> K x -> K z ->
+  z == fst x <-> e_fst K x z.
+intros tr; unfold e_fst; split; intros.
+*split; intros.
+ +rewrite <- e_pair_ok in H8; trivial.
+  rewrite H8 in H7; clear p' H6 H8.
+  rewrite H1; unfold fst; rewrite union_ax.
+  exists q; trivial.
+  apply subset_intro;[|trivial].
+  rewrite union_ax; exists p; trivial.
+ +rewrite H1 in H3.
+  apply union_ax in H3; destruct H3.
+  apply subset_ax in H4; destruct H4.
+  assert (singl x0 ∈ x).
+  {destruct H5.
+   rewrite H5; trivial. }
+  clear H5.
+  rewrite union_ax in H4; destruct H4.
+  assert (K (singl x0)) by (apply tr with x; trivial).
+  exists (singl x0); split; [trivial|split;[trivial|]].
+  assert (K x1) by (apply tr with x; trivial).
+  assert (K x0) by (apply tr with x1; trivial).
+  exists x0; split;[trivial|split;[|trivial]].
+  rewrite <- e_pair_ok; trivial; reflexivity.
+*destruct H1.
+ apply union_ext; intros.
+ +rewrite subset_ax in H4; destruct H4.
+  assert (singl y ∈ x). 
+  {destruct H5. 
+   rewrite H5; trivial. }
+  clear H5.
+  rewrite union_ax in H4; destruct H4.
+  assert (K x1) by (apply tr with x; trivial).
+  assert (K y) by (apply tr with x1; trivial).
+  assert (K x0) by (apply tr with y; trivial).
+  apply H1 with x1 y (singl y); trivial.
+   apply tr with x; trivial.
+  rewrite <- e_pair_ok; trivial.
+   reflexivity.
+   apply tr with x; trivial.
+ +assert (K x0) by (apply tr with z; trivial).
+  destruct H2 with (2:=H3) as (p&?&?&q&?&?&?);[trivial|].
+  rewrite <- e_pair_ok in H8; trivial.
+  rewrite H8 in H6.
+  exists q; trivial.
+  apply subset_intro;[|trivial].
+  apply union_ax; exists (pair q q); auto.
+Qed.
+
+
+Definition e_in_cc_prod (K:set->Prop) A B f :=
+  (forall p, K p ->
+     p ∈ f ->
+        exists x, K x /\
+                    x ∈ A /\ (exists y, K y /\ e_in_cc_app K B x y /\
+                                          (exists y', K y' /\ y' ∈ y /\ e_couple K x y' p))) /\
+       (forall x, K x ->
+        x ∈ A ->
+        exists y, K y /\
+          e_in_cc_app K B x y /\
+          (forall y', K y' -> y' ∈ y -> exists p, K p /\ e_couple K x y' p /\ p ∈ f) /\
+          (forall p, K p -> p ∈ f -> e_fst K p x -> exists y', K y' /\ y' ∈ y /\ e_couple K x y' p)).
+
+Lemma e_in_cc_prod_ok K x y z :
+  trans K -> K x -> K y -> K z ->
+  z ∈ cc_prod x (cc_app y) <-> e_in_cc_prod K x y z.
+intros tr.
+unfold e_in_cc_prod; split; intros.
+*rewrite cc_prod_def in H2.
+ 2:intros ??? h; rewrite h; reflexivity.
+ destruct H2 as (?,?).
+ split; intros.
+ +destruct H2 with (1:=H5) as (x0&?&y0&?&y'&?&?).
+  assert (K x0) by (apply tr with x; auto). 
+  exists x0; split; [trivial|split;[trivial|]].
+  assert (K y0).
+  {rewrite cc_app_def in H7.
+   destruct H7 as (?&?&?).
+   apply tr with (pair x0 y0); auto.
+   apply tr with x1; auto.
+   apply tr with y; auto.
+   rewrite H11; apply pair_intro2. }
+  exists y0; split; [trivial|].
+  split.
+   rewrite <- e_in_cc_app_ok; auto.
+  assert (K y') by (apply tr with y0; auto). 
+  exists y'; split;[ trivial|split;[trivial|]].
+  rewrite <- e_couple_ok; auto.
+ +destruct H3 with (1:=H5) as (y0&?&?&?).
+  assert (K y0).
+  {rewrite cc_app_def in H6.
+   destruct H6 as (?&?&?).
+   apply tr with (pair x0 y0); auto.
+   apply tr with x1; auto.
+   apply tr with y; auto.
+   rewrite H9; apply pair_intro2. }
+  exists y0; split; [trivial|].
+  split;[|split].
+  ++rewrite <- e_in_cc_app_ok; auto.
+  ++intros.
+    assert (K (couple x0 y')) by (apply tr with z; auto).
+    exists (couple x0 y'); split; [trivial|].
+    split;[|auto].
+    rewrite <- e_couple_ok; auto.
+    reflexivity.
+  ++intros.
+    rewrite <- e_fst_ok in H12; trivial.
+    destruct H8 with (1:=H11)(2:=H12) as (y'&?&?).
+    assert (K y') by (apply tr with y0; auto).
+    exists y'; split; [trivial| split;[trivial|]].
+    rewrite <- e_couple_ok; auto.
+*destruct H2.
+ rewrite cc_prod_def.
+ 2:intros ??? h; rewrite h; reflexivity.
+ split; intros.
+ +assert (K p) by (apply tr with z; trivial).
+  destruct H2 with (2:=H4) as (x0&?&?&y0&?&?&y'&?&?&?);[trivial|].
+  exists x0; split;[trivial|].
+  exists y0; split.
+   rewrite <- e_in_cc_app_ok in H9; trivial.
+  exists y'; split;[trivial|].
+  rewrite <- e_couple_ok in H12; auto.
+ +assert (K x0) by (apply tr with x; trivial).
+  destruct H3 with (2:=H4) as (y0&?&?&?&?);[trivial|].
+  exists y0; split.
+   rewrite <- e_in_cc_app_ok in H7; trivial.
+  split; intros.
+  ++assert (K y') by (apply tr with y0; trivial).
+    destruct H8 with (2:=H10) as (p&?&?&?);[trivial|].
+    rewrite <- e_couple_ok in H13; trivial.
+    rewrite <-H13; trivial.
+  ++assert (K p) by (apply tr with z; trivial).
+    destruct H9 with (2:=H10) as (y'&?&?&?);[trivial| |].  
+    +++rewrite <- e_fst_ok; trivial.
+    +++rewrite <- e_couple_ok in H15; trivial.
+       exists y'; split; trivial.
+Qed.  
+
+(*Definition e_in_cc_prod (K:set->Prop) A B z :=
+  z ∈ cc_prod A (cc_app B).*)
+
+Definition e_cc_prod (K:set->Prop) A B z :=
+  forall z', K z' ->
+  (z' ∈ z <-> e_in_cc_prod K A B z').
+
+Lemma e_cc_prod_ok1 K x y z :
+  trans K -> K x -> K y -> K z ->
+  z == cc_prod x (cc_app y) -> e_cc_prod K x y z.
+unfold e_cc_prod; intros.
+rewrite H3.
+apply e_in_cc_prod_ok; trivial.
+Qed.  
+
+Lemma e_cc_prod_ok2 K x y z :
+  trans K /\ plump K /\ (forall x, K x -> K (union x)) /\ (forall x, K x -> K (power x)) /\
+    (forall x y, K x -> K y -> K (pair x y)) 
+  -> K x -> K y -> K z ->
+  e_cc_prod K x y z -> z == cc_prod x (cc_app y).
+intros (tr&pl&un&po&pa).
+  unfold e_cc_prod; intros.
+apply eq_set_ax; intros.
+split; intros.
+(* z ⊆ Π *)
+*assert (K x0) by (apply tr with z;trivial).
+ rewrite e_in_cc_prod_ok with (K:=K); trivial.
+ apply H2; trivial.
+(* Π ⊆ z *)
+*assert (K x0).
+ {rename x0 into f.
+  apply pl with (prodcart x (union (union (union y)))); auto.
+  {Transparent prodcart.
+   unfold prodcart.
+   apply pl with (power (power (x ∪ union (union (union y))))).
+   2:intro; apply subset_elim1.
+   apply po.
+   apply po.
+   apply un.
+   apply pa; auto. }
+  {red; intros.
+   apply cc_prod_def in H3;
+      [|intros ??? h; rewrite h; reflexivity].
+   destruct H3 as (?,_).   
+   destruct H3 with (1:=H4) as (a&?&b&?&b'&?&?).
+   rewrite H8.
+   apply couple_intro; trivial.
+   apply cc_app_def in H6.
+   destruct H6 as (p&?&?).
+   apply union_ax; exists b; trivial.
+   rewrite union_ax; exists (pair a b); [auto|].
+   rewrite union_ax; exists p; trivial.
+   rewrite H9; apply pair_intro2. }}
+  apply H2; trivial.
+  rewrite <- e_in_cc_prod_ok; trivial.
+Qed.
+(*
+Require Import ZFord ZFrank.
+Lemma e_cc_prod_ok2 o x y z :
+  limitOrd o -> x ∈ VN o -> y ∈ VN o -> z ∈ VN o ->
+  e_cc_prod (fun a => a ∈ VN o) x y z -> z == cc_prod x (cc_app y).
+unfold e_cc_prod; intros.
+apply eq_set_ax; intros.
+split; intros.
+(* z ⊆ Π *)
+*apply H3; trivial.
+ apply VN_trans with z; auto.
+(* Π ⊆ z *)
+*assert (x0 ∈ VN o).
+ {rename x0 into f.
+  apply VN_incl with (prodcart x (union (union (union y)))); auto.
+  {apply cc_prod_def in H4;
+      [|intros ??? h; rewrite h; reflexivity].
+   destruct H4 as (?,_).   
+   red; intros.
+   destruct H4 with (1:=H5) as (a&?&b&?&b'&?&?).
+   rewrite H9.
+   apply couple_intro; trivial.
+   apply cc_app_def in H7.
+   destruct H7 as (p&?&?).
+   apply union_ax; exists b; trivial.
+   rewrite union_ax; exists (pair a b); [auto|].
+   rewrite union_ax; exists p; trivial.
+   rewrite H10; apply pair_intro2. }
+  {apply VNlim_prodcart; auto.
+   apply VN_union; auto.
+   apply VN_union; auto.
+   apply VN_union; auto. }}
+  apply H3; trivial.
+Qed.
+*)
+(*
+
+    Lemma e_cc_prod_ok2 K x y z :
+  trans K -> K x -> K y -> K z ->
+  e_cc_prod K x y z -> z == cc_prod x (cc_app y).
+unfold e_cc_prod; intros.
+apply eq_set_ax; intros.
+split; intros.
+(* z ⊆ Π *)
+*apply H3; trivial.
+ apply H with z; trivial.
+(* Π ⊆ z *)
+*assert (K x0).
+ {rename x0 into f.
+  specialize cc_eta_eq with (1:=H4).
+  Transparent cc_lam.
+  unfold cc_lam.
+    in H5.
   
+  rewrite cc_prod_def in H4.
+  destruct H4.
+  
+ admit.
+apply H3; trivial.
+rewrite cc_prod_def in H4.
+Admitted.
+(* red.
+reflexivity.
+Qed.
+ *)*)
+
+Definition u_prod K i :=
+  let A := i 0 in let B := i 1 in
+  (forall x, K x -> x ∈ A -> exists z, K z/\e_cc_app K B x z) ->
+  exists z, K z /\ e_cc_prod K A B z.
+
+                           
+Lemma u_prod_fo : fo_form u_prod.
+repeat fo_step.
+Qed.
+
+
+Definition u_all K i :=
+  u_pair K i /\ u_union K i /\ u_power K i /\ u_prod K i.
+
+
+Lemma u_all_fo : fo_form u_all.
+repeat (apply u_prod_fo ||fo_step).
+Qed.
+
+Lemma u_all_all vs : u_all(fun _=>True) vs.
+repeat split; red.
+*exists (pair (vs 0)(vs 1)); split;[trivial|].
+ rewrite <- e_pair_ok; auto with *.
+ red; trivial.
+*exists (union (vs 0)); split;[trivial|].
+ rewrite <- e_union_ok; auto with *.
+ red; trivial.
+*exists (power (vs 0)); split;[trivial|].
+ rewrite <- e_power_ok; auto with *.
+ red; trivial.
+ red; trivial.
+*intros.
+ exists (cc_prod (vs 0) (cc_app (vs 1))); split;[trivial|].
+ apply e_cc_prod_ok1; trivial.
+ red; trivial.
+ reflexivity.
+Qed.
+
+Lemma u_pair_ok M :
+  trans (fun x=>x∈M) ->
+  (forall i, (forall k, i k ∈ M) -> u_pair (fun x=>x∈M) i) ->
+  forall x y, x ∈ M -> y ∈ M -> pair x y ∈ M.
+unfold u_pair; intros tr pa x y xM yM.
+destruct (pa (icons x (fun _ => y))) as (z&zM&eqz);[destruct k;simpl; trivial|].
+rewrite <- e_pair_ok in eqz; trivial.
+rewrite eqz in zM; trivial.
+Qed.
+Lemma u_union_ok M :
+  trans (fun x=>x∈M) ->
+  (forall i, (forall k, i k ∈ M) -> u_union (fun x=>x∈M) i) ->
+  forall  x, x ∈ M -> union x ∈ M.
+unfold u_union; intros tr un x xM.
+destruct (un (fun _ => x)) as (y&yM&eqy); [trivial|].
+rewrite <- e_union_ok in eqy; trivial.
+rewrite <- eqy; trivial.
+Qed.
+Lemma u_power_ok M :
+  trans (fun x=>x∈M) -> plump (fun x=>x∈M) ->
+  (forall i, (forall k, i k ∈ M) -> u_power (fun x=>x∈M) i) ->
+  forall  x, x ∈ M -> power x ∈ M.
+unfold u_power; intros tr pl po x xM.
+destruct (po (fun _ => x)) as (y&yM&eqy); [trivial|].  
+rewrite <- e_power_ok in eqy; trivial.
+rewrite <- eqy; trivial.
+Qed.
+
+
+
+(*
+Definition ex_univ M :=
+  reflection_principle_trans (singl M) u_prod u_prod_fo.
+
+Lemma ex_univ_prop M :
+  exists U,
+    M ∈ U /\
+    (forall x y, x ∈ U -> y ∈ x -> y ∈ U) /\
+    (forall A B, A ∈ U -> B ∈ U -> (forall x, x ∈ A -> cc_app B x ∈ U) -> cc_prod A (cc_app B) ∈ U).
+destruct (ex_univ M) as (Uu,(ext,trns),rfl); exists Uu.
+split;[|split]; intros.
+*apply ext; apply singl_intro.
+*apply trns with x; trivial.
+*red in rfl.
+ destruct rfl with (icons A (fun _=>B)) as (restr,_); [destruct k; simpl; trivial|].
+ destruct restr as (pi,(?,eqpi)).
+ {red; intros.
+  exists (cc_prod A (cc_app B)); split;[trivial|].
+  apply e_cc_prod_ok1; auto.
+  reflexivity. }
+ {simpl.
+  intros.
+  exists (cc_app B x);split;[auto|].
+  rewrite <- e_cc_app_ok; auto.
+  reflexivity. }
+ simpl in eqpi.
+Admitted.
+rewrite <- e_cc_prod_ok2 in eqpi; auto.
+ rewrite eqpi in H2; trivial.  
+Qed.
+
+Print Assumptions ex_univ_prop.  *)
+
+Require Import ZFrank.
+
+(* A transitive and plump model, other closure properties are 
+   obtained through the reflected formula *)
+Lemma ex_all_prop M :
+  exists U,
+    M ∈ U /\
+    (forall x y, x ∈ U -> y ∈ x -> y ∈ U) /\
+      (forall x y, x ∈ U -> y ∈ U -> pair x y ∈ U) /\
+      (forall x, x ∈ U -> union x ∈ U) /\
+      (forall x, x ∈ U -> power x ∈ U) /\
+      (forall A B, A ∈ U -> B ∈ U -> (forall x, x ∈ A -> cc_app B x ∈ U) ->
+                   cc_prod A (cc_app B) ∈ U).
+destruct reflection_principle_gen
+  with (compl:=VN) (K:=fun x => plump (fun y=>y∈ x) /\ trans (fun y => y ∈ x))
+       (M0:=singl M) (P:=u_all)
+      as (Uu,(ext&plmp&trns),rfl); auto with *.
+*apply VN_ext.
+*intros ?? h.
+ apply and_iff_morphism.
+  apply plump_morph; intro; rewrite h; reflexivity.
+  apply trans_morph; intro; rewrite h; reflexivity.
+*intros.
+  split; red; intros.
+  +rewrite sup_ax in H2|-*; trivial.
+   destruct H2 as (k,?,?); exists k; trivial.
+   destruct (H0 k) as (pl,_); [trivial|apply pl with x; trivial].
+  +rewrite sup_ax in H2|-*; trivial.
+   destruct H2 as (k,?,?); exists k; trivial.
+   destruct (H0 k) as (_,tr); [trivial|apply tr with x; trivial].
+*apply u_all_fo.
+*assert (refl_hyp := fun vs h => proj1 (rfl vs h) (u_all_all vs)). 
+ clear rfl.
+ assert (pa := u_pair_ok _ trns (fun i h=>proj1 (refl_hyp i h))).
+ assert (un := u_union_ok _ trns (fun i h=>proj1 (proj2 (refl_hyp i h)))).
+ assert (po := u_power_ok _ trns plmp (fun i h=>proj1 (proj2 (proj2 (refl_hyp i h))))).
+ exists Uu; repeat split; trivial.
+ +apply ext; apply singl_intro.
+ +intros.
+  destruct (refl_hyp (icons A (fun _=>B))) as (_&_&_&pr); [destruct k; simpl; trivial|].
+  red in pr; simpl in pr.
+  destruct pr as (pi,(?,eqpi)).
+  {intros.
+   exists (cc_app B x);split;[auto|].
+   rewrite <- e_cc_app_ok; auto.
+   reflexivity. }
+  {apply e_cc_prod_ok2 in eqpi; auto.
+   rewrite <- eqpi; trivial. }
+Qed.
+
+  Print Assumptions ex_all_prop.
+
+Require Import ZFord.
+
+(* The same but now we build a VN universe for a limit ordinal, we only reflect the
+   closure under product *)
+Lemma ex_all_prop' M :
+  exists U,
+    M ∈ U /\
+    (forall x y, x ∈ U -> y ∈ x -> y ∈ U) /\
+      (forall x y, x ∈ U -> y ∈ U -> pair x y ∈ U) /\
+      (forall x, x ∈ U -> union x ∈ U) /\
+      (forall x, x ∈ U -> power x ∈ U) /\
+      (forall A B, A ∈ U -> B ∈ U -> (forall x, x ∈ A -> cc_app B x ∈ U) -> cc_prod A (cc_app B) ∈ U).
+destruct reflection_principle_gen
+  with (compl:=VNlim_compl) (K:=isVNlim)
+       (M0:=singl M) (P:=u_prod)
+  as (Uu,(ext&(o,(lo,vn))),rfl); auto with *.
+*apply VNlim_ext.
+*apply VNlim_compl_ok.
+*apply VNlim_sup.
+*apply u_prod_fo.
+*assert (tr : trans (fun x => x ∈ Uu)).
+ {red; intros.
+  rewrite vn in H|-*.  
+  apply VN_trans with x; auto. }
+ assert (pl : plump (fun x => x ∈ Uu)).
+ {red; intros.
+  rewrite vn in H|-*.  
+  apply VN_incl with x; auto. }
+ assert (un : forall x : set, x ∈ Uu -> union x ∈ Uu).
+ {intros.
+  rewrite vn in H|-*.  
+  apply VN_union; auto. }
+ assert (po : forall x : set, x ∈ Uu -> power x ∈ Uu).
+ {intros.
+  rewrite vn in H|-*.  
+  apply VNlim_power; auto. }
+ assert (pa : forall x y : set, x ∈ Uu -> y ∈ Uu -> pair x y ∈ Uu).
+ {intros.
+  rewrite vn in H,H0|-*.  
+  apply VNlim_pair; auto. }
+ assert (u_prd_all : forall vs, u_prod(fun _=>True) vs).
+ {red; intros.
+  exists (cc_prod (vs 0) (cc_app (vs 1))); split; [trivial|].
+  apply e_cc_prod_ok1; trivial.
+   red; trivial.
+  reflexivity. }
+ assert (refl_hyp := fun vs h => proj1 (rfl vs h) (u_prd_all vs)). 
+ red in refl_hyp.
+ clear rfl.
+ exists Uu; repeat split; trivial.
+ +apply ext; apply singl_intro.
+ +intros.
+  destruct (refl_hyp (icons A (fun _=>B))) as (pi,(?,eqpi)).
+  ++destruct k; simpl; trivial.
+  ++simpl; intros.
+    exists (cc_app B x); split; [auto|].
+    rewrite <- e_cc_app_ok; auto with *.
+  ++apply e_cc_prod_ok2 in eqpi; auto.
+    simpl in eqpi; rewrite <- eqpi; trivial.
+Qed.
+
+Print Assumptions ex_all_prop'.
+
+Lemma ex_all_prop'' M :
+  exists U,
+    M ∈ U /\
+    (forall x y, x ∈ U -> y ∈ x -> y ∈ U) /\
+      (forall x y, x ∈ U -> y ∈ U -> pair x y ∈ U) /\
+      (forall x, x ∈ U -> union x ∈ U) /\
+      (forall x, x ∈ U -> power x ∈ U) /\
+      (forall A B, A ∈ U -> B ∈ U -> (forall x, x ∈ A -> cc_app B x ∈ U) -> cc_prod A (cc_app B) ∈ U).
+pose (Uu:=VNlim_compl (singl M)).
+specialize (VNlim_compl_ok (singl M)); intros (o,(oo,eqUu)).
+exists (VN o); repeat split; trivial.
+*rewrite <- eqUu.
+ apply VNlim_ext.
+ apply singl_intro.
+*intros.
+ apply VN_trans with x; auto.
+*intros.
+ apply VNlim_pair; auto.
+*intros.
+ apply VN_union; auto.
+*intros.
+ apply VNlim_power; auto.
+*intros.
+ clear Uu eqUu.
+ apply VN_incl with (power (prodcart A (union (union (union B))))); auto.
+ +red; intros.
+  apply power_ax; intros.
+  apply cc_prod_def in H2; [|intros ??? h; rewrite h; reflexivity].
+  destruct H2 as (?,_).   
+  destruct H2 with (1:=H3) as (a&?&b&?&b'&?&?).
+  rewrite H7.
+  apply couple_intro; trivial.
+  apply couple_in_app in H5.
+  apply union_ax; exists b; trivial.
+  rewrite union_ax; exists (pair a b); [auto|].
+  rewrite union_ax; exists (couple a b); trivial.
+  apply pair_intro2.
+ +apply VNlim_power; trivial.
+  apply VNlim_prodcart; trivial.
+  repeat (apply VN_union; auto).
+Qed.
+
+
+Section Tarski.
+
+
+(* There is no first-order (unary) formula representing the truth of all first-order formula... *)
+
+(* T(x) -> x ∈ N       σ <-> T(#σ) (σ sentence
+   toute formule unaire est de la forme φn
+   prf: ψ(x) = x ∈ N /\ ~T(#φx(x)) 
+   ψ(x) = φk(x)    φk(k)=ψ(k)=~T(#φk(k)) <-> ~φk(k)  
+
+[_]: Prop <-> form
+
+T:N->Prop
+
+#:set->N
+# : N->Prop
+ *)
+
+
+  Parameter T: nat -> Prop.
+  Parameter hash : set -> nat.
+  Parameter phi : nat->nat->set.
+  Hypothesis 
+
+  forall P : Prop, P <-> T(hash P
+
+              
+  Variable Truth : (set->Prop) -> Prop -> Prop.
+  Hypothesis fo_Tr : fo_form (fun K vs => Truth K (empty ∈ vs 0)).
+  Hypothesis Truth_ok : forall P, Truth (fun _=>True) P <-> P.
+
+  Definition psi K vs :=
+    ~ 
+  
+  
+  
+  
+  Variable enum : set -> set.
+  Hypothesis enum_typ : typ_fun enum N Form.
+  Variable G : set -> set.
+  Hypothesis G_typ : typ_fun G Form N.
+
+  
+  Variable T : set -> set.
+  Hypothesis T_typ : forall n, T n -> n ∈ N.
+  Hypothesis T_sound : forall f,
+    (forall l, Fint f l) <-> T (G f).
+
+
+  Parameter F_fa : set.
+  Definition psi := Fimp (Fex(Fand T( T ) F_fa
+  Definition psi : Prop :=
+    ~ T (G  
+
+  
+
+  
+  Variable T : set -> Prop.
+  Variable G : set->set.
+  Hypothesis Gdl : forall f, f ∈ Form -> G f ∈ N.
+  Hypothesis T_sound : forall f, (forall l, Fint f l) <-> T (G f).
+
+  Definition psi x : Prop := ~ T (G  
+  
+  Lemma tarski : False.
+    
+    
