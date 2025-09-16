@@ -67,6 +67,29 @@ apply in_reg with x; trivial.
 apply eq_elim with x0; trivial.
 Qed.
 
+Lemma in_set_def a x :
+  a ∈ x <-> exists y, y ∈ x /\ y==a.
+split; [exists a; split; auto with *|destruct 1 as (y,(?,?))].
+rewrite <- H0; trivial.
+Qed.
+
+Lemma fa_eq_var_iff y P :
+    Proper (eq_set==>iff) P ->
+    (forall x, x == y -> P x) <-> P y.
+split; intros; auto with *.
+rewrite H1; trivial.
+Qed.
+
+Lemma ex_eq_var_iff y P :
+    Proper (eq_set==>iff) P ->
+    (exists x, x == y /\ P x) <-> P y.
+split; intros; eauto with *.
+*destruct H0 as (x,(?,?)).
+ rewrite <- H0; trivial.
+*exists y; auto with *.
+Qed.
+
+
 Definition incl_set x y := forall z, z ∈ x -> z ∈ y.
 
 Notation "x ⊆ y" := (incl_set x y).
@@ -197,6 +220,17 @@ apply eq_intro; intros.
  Tdestruct H0.
 Qed.
 
+Lemma fa_empty_iff P : (forall x, x ∈ empty -> #P x) <-> True.
+split;[trivial|intros].
+Tabsurd; apply empty_ax in H0; trivial.
+Qed.
+
+Lemma ex_empty_iff P : #(exists x, x ∈ empty /\ P x) <-> #False.
+split;[intros|intros; Tabsurd; trivial].
+Tdestruct H as (x,(?,_)).
+apply empty_ax in H; trivial.
+Qed.
+
 Lemma pair_intro1 : forall x y, x ∈ pair x y.
 Proof.
 intros.
@@ -240,6 +274,27 @@ apply pair_ext; intros.
  apply pair_elim in H1; auto.
 Qed.
 
+Lemma fa_pair_iff a b P :
+    Proper (eq_set==>iff) P ->
+    (forall x, x ∈ pair a b -> #P x) <-> #P a /\ #P b.
+intros Pm.
+split; intros; auto.
+destruct H.
+rewrite pair_ax in H0; Tdestruct H0; rewrite H0; trivial.
+Qed.
+
+Lemma ex_pair_iff a b P :
+    Proper (eq_set==>iff) P ->
+    #(exists x, x ∈ pair a b /\ #P x) <-> #(P a \/ P b).
+intros Pm.
+split; intros.
+*Tdestruct H as (x,(?,?)).
+ apply pair_ax in H.
+ Telim H0; intros H0.
+ Tdestruct H; rewrite H in H0; auto.
+*Tdestruct H; [Texists a|Texists b]; split; auto.
+Qed.
+
 Lemma union_intro : forall x y z, x ∈ y -> y ∈ z -> x ∈ union z.
 Proof.
 intros.
@@ -276,6 +331,24 @@ apply union_ext; intros.
 *apply union_elim in H0.
  Telim H0; intros (z,?,?); Texists z; trivial.
  rewrite <- H; trivial.
+Qed.
+
+Lemma fa_union_iff a P :
+    (forall x, x ∈ union a -> #P x) <->
+    (forall y, y ∈ a -> forall x, x ∈ y -> #P x).
+split; intros.
+*apply H; apply union_ax; eauto.
+*apply union_ax in H0; Tdestruct H0; eauto.
+Qed.
+
+Lemma ex_union_iff a P :
+    #(exists x, x ∈ union a /\ P x) <->
+    #(exists y, y ∈ a /\ exists x, x ∈ y /\ P x).
+split; intros.
+*Tdestruct H as (x,(?,?)).
+ apply union_ax in H; Tdestruct H; Tin; eauto.
+*Tdestruct H as (y,(?,(x,(?,?)))); Texists x; split;[|trivial].
+ apply union_ax; eauto.
 Qed.
 
 Instance union_mono : Proper (incl_set ==> incl_set) union.
@@ -435,6 +508,31 @@ apply subset_ext; intros.
  red in H0.
  rewrite <- H0; trivial.
  rewrite <- H2; trivial.
+Qed.
+
+Lemma fa_subset_iff a P Q :
+    Proper (eq_set==>iff) P ->
+    (forall x, x ∈ subset a P -> #Q x) <->
+    (forall x, x ∈ a -> P x -> #Q x).
+intros Pm.
+split; intros.
+*apply H; apply subset_intro; auto.
+*apply subset_ax in H0; destruct H0 as (?,H0); Tdestruct H0 as (x',?,?).
+ rewrite <- H0 in H2; auto.
+Qed.
+
+Lemma ex_subset_iff a P Q :
+    Proper (eq_set==>iff) P ->
+    #(exists x, x ∈ subset a P /\ Q x) <->
+    #(exists x, x ∈ a /\ (P x /\ Q x)).
+intros Pm.
+split; intros.
+*Tdestruct H as (x,(?,?)).
+ apply subset_ax in H; destruct H as (?,H); Tdestruct H as (x',?,?).
+ rewrite <- H in H2; Tin; eauto.
+*Tdestruct H as (x,(?&?&?)).
+ Texists x; split; trivial.
+ apply subset_intro; auto.
 Qed.
 
 Lemma union_subset_singl : forall x (P:set->Prop) y y',

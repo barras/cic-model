@@ -646,12 +646,12 @@ End NatConvergence.
   Lemma NAT_incl_omega : NAT ⊆ VN omega.
 apply TI_pre_fix; auto.
 apply NATf_size_gen_le; auto with *.
-apply VN_intro; trivial.
+apply VN_intro; auto.
 Qed.
 
   Lemma NAT_typ : forall o, isOrd o -> lt omega o -> NAT ∈ VN o.
 intros.
-rewrite VN_def; trivial.
+rewrite VN_ord_def; trivial.
 exists omega; trivial.
 apply NAT_incl_omega.
 Qed.

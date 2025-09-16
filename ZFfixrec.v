@@ -1170,7 +1170,7 @@ split; trivial.
 
  intros; apply Ftyp'''; auto.
  red; intros.
- apply le_lt_trans with o; auto.
+ apply ord_le_lt_trans with o; auto.
  apply isOrd_trans with w; auto.
 
  red; intros.

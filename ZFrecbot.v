@@ -331,7 +331,7 @@ apply union2_ax in H2; destruct H2.
  destruct H2 as (o'',?,?).
  assert (o_o'' : isOrd o'') by eauto using isOrd_inv.
  assert (o''_y : osucc o'' ⊆ y).
-  red; intros; apply le_lt_trans with o''; auto.
+  red; intros; apply ord_le_lt_trans with o''; auto.
  rewrite eqno with (o2:=o''); auto with *.
  2:revert H3; apply cont_is_mono; auto with *.
  rewrite eqno' with (o2:=o''); auto with *.

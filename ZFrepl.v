@@ -387,15 +387,20 @@ apply WFR_rel_def; trivial.
 apply WFR_rel_fun with x a; trivial.
 Qed.
 
-  Definition WFR x a := uchoice (fun y => WFR_rel x a y).
+  Definition WFR x a :=
+    cond_set (Acc R x) (uchoice (fun y => WFR_rel x a y)).
 
   (* TODO avoid relying on this: *)
   Global Instance WFR_morph0 : Proper (eq_set ==> Aeq ==> eq_set) WFR.
 do 3 red; intros.
 unfold WFR.
-apply uchoice_morph_raw.
-red; intros.
-apply WFR_rel_morph; trivial.
+apply cond_set_morph.
+*split; destruct 1; constructor; intros.
+ rewrite <- H in H2; auto.
+ rewrite H in H2; auto.
+*apply uchoice_morph_raw.
+ red; intros.
+ apply WFR_rel_morph; trivial.
 Qed.
 
   Lemma WFR_eqn' x a (r:WFRle x xx) :
@@ -405,12 +410,14 @@ specialize WFR_rel_choice_pred with (1:=r)(2:=H)(a:=a); intro.
 apply uchoice_def in H0.
 apply WFR_rel_inv in H0; trivial.
 destruct H0 as (f,fm,(?,ch)).
-unfold WFR at 1; rewrite ch.
+unfold WFR at 1; rewrite cond_set_ok, ch; [|trivial].
 apply Fext'; intros; auto with *.
 eapply WFR_rel_fun with y a0; auto.
  apply t_trans with x; auto.
 rewrite H2.
 unfold WFR.
+rewrite cond_set_ok;
+  [|rewrite H2 in H1; apply Acc_inv with x; trivial].
 rewrite H3.
 apply uchoice_def.
 apply WFR_rel_choice_pred.
@@ -423,9 +430,13 @@ Qed.
 Proof using Aeqv Rsubm Fext.
 intros.
 unfold WFR.
-apply uchoice_morph_raw.
-red; intros.
-apply WFR_rel_morph; trivial.
+apply cond_set_morph.
+*split; destruct 1; constructor; intros.
+ rewrite <- H0 in H3; auto.
+ rewrite H0 in H3; auto.
+*apply uchoice_morph_raw.
+ red; intros.
+ apply WFR_rel_morph; trivial.
 Qed.
 
 
@@ -437,7 +448,11 @@ intros.
 rewrite cond_set_ok; [|trivial].
 apply WFR_morph0; trivial.
 Qed.
-    
+
+  Lemma WFR_non_mt x a z : z ∈ WFR x a -> Acc R x.
+unfold WFR; rewrite cond_set_ax; intros (_,?); trivial.
+Qed.
+  
 End WellFoundedRecursion.
 
 
@@ -460,7 +475,14 @@ Local Notation E:=eq_set (only parsing).
 Global Instance WFR_morph :
     Proper ((E==>E)==>((E==>Aeq==>E)==>E==>Aeq==>E)==>E==>Aeq==>E) WFR.
 do 5 red; intros.
-apply uchoice_morph_raw.
+apply cond_set_morph.
+*revert x y H x1 y1 H1; clear x2 y2 H2.
+ apply morph_impl_iff2; auto with *.
+ do 4 red; intros.
+ revert y1 H1; induction H2; constructor; intros.
+ apply H2 with y2; [|reflexivity].
+ revert H4; apply in_set_morph; [reflexivity|auto].
+*apply uchoice_morph_raw.
 red; intros.
 unfold WFR_rel.
 apply fa_morph; intros P.
@@ -552,3 +574,5 @@ Qed.
 *)
   
 End PolymorphicWellFoundedRecursion.
+
+#[global]Opaque WFR.

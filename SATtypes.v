@@ -1009,7 +1009,7 @@ destruct xty0 as [?|(y',?,?)].
  specialize H1 with (1:=H3).
  assert (isOrd y') by eauto using isOrd_inv.
  assert (zlt : osucc y' ⊆ y).
-  red; intros; apply le_lt_trans with y'; auto.
+  red; intros; apply ord_le_lt_trans with y'; auto.
  eapply inSAT_context.
   apply inSAT_context.
   intros.
@@ -1195,7 +1195,7 @@ destruct xty0 as [?|(y',?,?)].
  specialize H1 with (1:=H3).
  assert (isOrd y') by eauto using isOrd_inv.
  assert (zlt : osucc y' ⊆ y).
-  red; intros; apply le_lt_trans with y'; auto.
+  red; intros; apply ord_le_lt_trans with y'; auto.
  eapply inSAT_context.
   apply inSAT_context.
   intros.

@@ -11,7 +11,8 @@ Section WellFoundedRecursion.
   Let R x y := x ∈ Rsub y.
   Local Instance Rm : Proper (eq_set==>eq_set==>iff) R.
 do 3 red; intros.
-unfold R; rewrite H,H0; reflexivity.
+unfold R.
+rewrite H,H0; reflexivity.
 Qed.
 
   Variable F : (set -> set) -> set -> set.
@@ -71,6 +72,11 @@ unfold WFR; rewrite ZFrepl.WFR_eqn; auto with *.
 *intros; apply F'ext; auto.
  apply t_trans with x; trivial.
 *constructor; trivial.
+Qed.
+
+  Lemma WFR_non_mt x z : z ∈ WFR x -> Acc R x.
+intros.
+apply ZFrepl.WFR_non_mt in H; trivial.
 Qed.
 
 End WellFoundedRecursion.

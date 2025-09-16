@@ -119,6 +119,8 @@ apply subset_intro.
   auto.
 Qed.
 
+(*Hint Resolve zero_typ succ_typ : core.*)
+
 Lemma N_ind : forall (P: set->Prop),
   (forall n n', n ∈ N -> n == n' -> P n -> P n') ->
   P zero ->
@@ -152,6 +154,26 @@ assert (n ∈ subset N P).
  rewrite <- H4; trivial.
  symmetry; trivial.
 Qed.
+
+Lemma N_ind' (P : set -> Prop) :
+  (forall k, k == zero -> P k) ->
+  (forall n k, n ∈ N -> P n -> k == succ n -> P k) ->
+  forall n, n ∈ N -> P n.
+intros.
+assert (n ∈ subset N (fun k => forall k', k'==k -> P k')).
+{apply subset_elim2 in H1.
+ destruct H1 as (n',?,?).
+ rewrite H1; clear n H1.
+ apply H2; intros.
+ *apply subset_intro; [apply zero_typ|trivial].
+ *apply subset_ax in H1.
+  destruct H1 as (tyk, (k', ?,?)).
+  apply subset_intro; [apply succ_typ; trivial|].
+intros; apply H0 with k; auto. }
+apply subset_elim2 in H2.
+destruct H2 as (n',?,?).
+auto.
+Qed.
  
 Lemma Nle_ind m P :
   Proper (eq_set==>iff) P ->
@@ -171,6 +193,25 @@ revert m tym Hm Hle; elim tyn using N_ind; intros.
   apply H0 with m; trivial.
 Qed.
 
+Lemma Nle_ind' m (P : set -> Prop) :
+  (forall m', m == m' -> P m') ->
+  (forall n sn', n ∈ N -> P n -> succ n == sn' -> P sn') ->
+  forall n, m ∈ N -> n ∈ N -> le m n -> P n.
+intros Hm HS n tym tyn Hle.
+revert m tym Hm Hle; elim tyn using N_ind'; intros.
+*revert Hm Hle; elim tym using N_ind'; intros.
+ +apply Hm. 
+  rewrite H; trivial.
+ +rewrite H in Hle.
+  apply le_case in Hle.
+  destruct Hle as [abs|abs];[|apply empty_ax in abs;contradiction].  
+  rewrite H2 in abs; apply discr in abs; contradiction.
+*apply le_case in Hle; destruct Hle; [auto|].
+ apply HS with n0; auto with *.
+ rewrite H1 in H2.
+ apply H0 with m; auto.
+Qed.
+
 Lemma lt_trans : forall m n p, p ∈ N -> m < n -> n < p -> m < p.
 Proof.
 intros m n p ty_p.
@@ -184,6 +225,20 @@ elim ty_p using N_ind; intros.
     apply union2_intro1; trivial.
   unfold succ in |- *.
     apply union2_intro1; auto.
+Qed.
+
+Lemma le_lt_trans : forall m n p, p ∈ N -> m <= n -> n < p -> m < p.
+intros.
+apply le_case in H0; destruct H0.
+*rewrite H0; trivial.
+*apply lt_trans with n; trivial.
+Qed.
+
+Lemma lt_le_trans : forall m n p, p ∈ N -> m < n -> n <= p -> m < p.
+intros.
+apply le_case in H1; destruct H1.
+*rewrite <- H1; trivial.
+*apply lt_trans with n; trivial.
 Qed.
 
 Lemma le_trans m n p :

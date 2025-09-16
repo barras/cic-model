@@ -33,6 +33,15 @@ Lemma and_split (A B:Prop) :
 split; auto.
 Qed.
 
+Lemma iff_strengthen (A B P:Prop) :
+    (A->P) ->
+    (B->P) ->
+    (A<->B) <-> (P -> A<->B).
+split; intros; [trivial|].
+split; intro; apply H1; auto.
+Qed.
+
+
 (**********************************************************************************)
 (** Setoid and morphisms stuff *)
 

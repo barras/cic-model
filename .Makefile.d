@@ -156,8 +156,8 @@ ZF.vo ZF.glob ZF.v.beautified ZF.required_vo: ZF.v lib/basic.vo lib/Sublogic.vo 
 ZF.vos ZF.vok ZF.required_vos: ZF.v lib/basic.vos lib/Sublogic.vos ZFdef.vos Z.vos ZFskolEm.vos
 ZFrepl.vo ZFrepl.glob ZFrepl.v.beautified ZFrepl.required_vo: ZFrepl.v ZF.vo
 ZFrepl.vos ZFrepl.vok ZFrepl.required_vos: ZFrepl.v ZF.vos
-ZFcoll.vo ZFcoll.glob ZFcoll.v.beautified ZFcoll.required_vo: ZFcoll.v ZF.vo
-ZFcoll.vos ZFcoll.vok ZFcoll.required_vos: ZFcoll.v ZF.vos
+ZFcoll.vo ZFcoll.glob ZFcoll.v.beautified ZFcoll.required_vo: ZFcoll.v ZF.vo ZFrank.vo
+ZFcoll.vos ZFcoll.vok ZFcoll.required_vos: ZFcoll.v ZF.vos ZFrank.vos
 ZFwfr.vo ZFwfr.glob ZFwfr.v.beautified ZFwfr.required_vo: ZFwfr.v ZF.vo ZFrepl.vo
 ZFwfr.vos ZFwfr.vok ZFwfr.required_vos: ZFwfr.v ZF.vos ZFrepl.vos
 ZFwf.vo ZFwf.glob ZFwf.v.beautified ZFwf.required_vo: ZFwf.v lib/basic.vo ZF.vo ZFrepl.vo
@@ -204,8 +204,8 @@ ZFtarski.vo ZFtarski.glob ZFtarski.v.beautified ZFtarski.required_vo: ZFtarski.v
 ZFtarski.vos ZFtarski.vok ZFtarski.required_vos: ZFtarski.v ZF.vos ZFgrothendieck.vos ZFord.vos
 ZFstable.vo ZFstable.glob ZFstable.v.beautified ZFstable.required_vo: ZFstable.v ZF.vo
 ZFstable.vos ZFstable.vok ZFstable.required_vos: ZFstable.v ZF.vos
-ZFrank.vo ZFrank.glob ZFrank.v.beautified ZFrank.required_vo: ZFrank.v ZF.vo ZFnats.vo ZFord.vo ZFstable.vo ZFfix.vo ZFrelations.vo ZFwf.vo ZFrepl.vo
-ZFrank.vos ZFrank.vok ZFrank.required_vos: ZFrank.v ZF.vos ZFnats.vos ZFord.vos ZFstable.vos ZFfix.vos ZFrelations.vos ZFwf.vos ZFrepl.vos
+ZFrank.vo ZFrank.glob ZFrank.v.beautified ZFrank.required_vo: ZFrank.v ZF.vo ZFnats.vo ZFwf.vo ZFord.vo ZFstable.vo ZFfix.vo ZFrelations.vo ZFrepl.vo
+ZFrank.vos ZFrank.vok ZFrank.required_vos: ZFrank.v ZF.vos ZFnats.vos ZFwf.vos ZFord.vos ZFstable.vos ZFfix.vos ZFrelations.vos ZFrepl.vos
 ZFrecbot.vo ZFrecbot.glob ZFrecbot.v.beautified ZFrecbot.required_vo: ZFrecbot.v ZFrelations.vo ZFbot.vo ZFfunext.vo ZFord.vo ZFfixrec.vo
 ZFrecbot.vos ZFrecbot.vok ZFrecbot.required_vos: ZFrecbot.v ZFrelations.vos ZFbot.vos ZFfunext.vos ZFord.vos ZFfixrec.vos
 ZFfixfun.vo ZFfixfun.glob ZFfixfun.v.beautified ZFfixfun.required_vo: ZFfixfun.v ZF.vo ZFrelations.vo ZFnats.vo ZFord.vo
@@ -222,14 +222,14 @@ ZFlambda.vo ZFlambda.glob ZFlambda.v.beautified ZFlambda.required_vo: ZFlambda.v
 ZFlambda.vos ZFlambda.vok ZFlambda.required_vos: ZFlambda.v Lambda.vos ZF.vos ZFpairs.vos ZFnats.vos ZFord.vos ZFgrothendieck.vos ZFfix.vos Sat.vos
 ZFlist.vo ZFlist.glob ZFlist.v.beautified ZFlist.required_vo: ZFlist.v ZF.vo ZFpairs.vo ZFnats.vo ZFord.vo ZFfix.vo
 ZFlist.vos ZFlist.vok ZFlist.required_vos: ZFlist.v ZF.vos ZFpairs.vos ZFnats.vos ZFord.vos ZFfix.vos
-ZFreflect.vo ZFreflect.glob ZFreflect.v.beautified ZFreflect.required_vo: ZFreflect.v ZF.vo ZFnats.vo ZFord.vo ZFrank.vo ZFwfr.vo ZFrelations.vo
-ZFreflect.vos ZFreflect.vok ZFreflect.required_vos: ZFreflect.v ZF.vos ZFnats.vos ZFord.vos ZFrank.vos ZFwfr.vos ZFrelations.vos
-ZFfo.vo ZFfo.glob ZFfo.v.beautified ZFfo.required_vo: ZFfo.v ZF.vo ZFpairs.vo ZFrelations.vo ZFnats.vo ZFlist.vo ZFwdom.vo ZFw.vo
-ZFfo.vos ZFfo.vok ZFfo.required_vos: ZFfo.v ZF.vos ZFpairs.vos ZFrelations.vos ZFnats.vos ZFlist.vos ZFwdom.vos ZFw.vos
+ZFreflect.vo ZFreflect.glob ZFreflect.v.beautified ZFreflect.required_vo: ZFreflect.v ZF.vo lib/IntMap.vo ZFnats.vo ZFord.vo ZFrank.vo ZFwfr.vo ZFwf.vo ZFrelations.vo
+ZFreflect.vos ZFreflect.vok ZFreflect.required_vos: ZFreflect.v ZF.vos lib/IntMap.vos ZFnats.vos ZFord.vos ZFrank.vos ZFwfr.vos ZFwf.vos ZFrelations.vos
+ZFfo.vo ZFfo.glob ZFfo.v.beautified ZFfo.required_vo: ZFfo.v ZF.vo lib/IntMap.vo ZFpairs.vo ZFrelations.vo ZFnats.vo ZFlist.vo ZFwdom.vo ZFw.vo
+ZFfo.vos ZFfo.vok ZFfo.required_vos: ZFfo.v ZF.vos lib/IntMap.vos ZFpairs.vos ZFrelations.vos ZFnats.vos ZFlist.vos ZFwdom.vos ZFw.vos
 ZFform.vo ZFform.glob ZFform.v.beautified ZFform.required_vo: ZFform.v lib/basic.vo ZF.vo ZFpairs.vo ZFsum.vo ZFnats.vo ZFiso.vo ZFcoc.vo ZFord.vo ZFlist.vo ZFfo.vo
 ZFform.vos ZFform.vok ZFform.required_vos: ZFform.v lib/basic.vos ZF.vos ZFpairs.vos ZFsum.vos ZFnats.vos ZFiso.vos ZFcoc.vos ZFord.vos ZFlist.vos ZFfo.vos
-ZFform_int.vo ZFform_int.glob ZFform_int.v.beautified ZFform_int.required_vo: ZFform_int.v ZF.vo ZFfo.vo ZFform.vo ZFpairs.vo ZFrelations.vo ZFnats.vo ZFord.vo ZFlist.vo ZFrank.vo ZFgrothendieck.vo ZFreflect.vo ModelCC.vo
-ZFform_int.vos ZFform_int.vok ZFform_int.required_vos: ZFform_int.v ZF.vos ZFfo.vos ZFform.vos ZFpairs.vos ZFrelations.vos ZFnats.vos ZFord.vos ZFlist.vos ZFrank.vos ZFgrothendieck.vos ZFreflect.vos ModelCC.vos
+ZFform_int.vo ZFform_int.glob ZFform_int.v.beautified ZFform_int.required_vo: ZFform_int.v ZF.vo ZFfo.vo ZFform.vo ZFpairs.vo ZFrelations.vo ZFnats.vo ZFwf.vo ZFord.vo ZFlist.vo ZFrank.vo ZFgrothendieck.vo ModelCC.vo
+ZFform_int.vos ZFform_int.vok ZFform_int.required_vos: ZFform_int.v ZF.vos ZFfo.vos ZFform.vos ZFpairs.vos ZFrelations.vos ZFnats.vos ZFwf.vos ZFord.vos ZFlist.vos ZFrank.vos ZFgrothendieck.vos ModelCC.vos
 ZFlevy.vo ZFlevy.glob ZFlevy.v.beautified ZFlevy.required_vo: ZFlevy.v lib/Sublogic.vo ZFdef.vo ZF.vo ZFpairs.vo ZFcoc.vo ZFrelations.vo ModelCC.vo ZFnats.vo ZFwdom.vo ZFlist.vo ZFw.vo ZFform.vo ZFreflect.vo ZFord.vo ZFrank.vo ZFgrothendieck.vo
 ZFlevy.vos ZFlevy.vok ZFlevy.required_vos: ZFlevy.v lib/Sublogic.vos ZFdef.vos ZF.vos ZFpairs.vos ZFcoc.vos ZFrelations.vos ModelCC.vos ZFnats.vos ZFwdom.vos ZFlist.vos ZFw.vos ZFform.vos ZFreflect.vos ZFord.vos ZFrank.vos ZFgrothendieck.vos
 ZFencode.vo ZFencode.glob ZFencode.v.beautified ZFencode.required_vo: ZFencode.v ZF.vo ZFpairs.vo ZFsum.vo ZFnats.vo ZFrelations.vo ZFord.vo ZFgrothendieck.vo ZFlist.vo ZFfixfun.vo

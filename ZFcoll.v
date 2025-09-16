@@ -1,4 +1,4 @@
-Require Import ZF.
+Require Import ZF ZFrank.
 Require Import Setoid.
 
 Parameter repl1 : forall (x:set) (F:{y|in_set y x}->set), set.
@@ -324,10 +324,7 @@ Qed.
 
 Section ReplImpliesCollFromExcludedMiddleAndWellFoundation.
 
-Parameter rk : set -> set.
-
-Parameter rk_morph : morph1 rk.
-Existing Instance rk_morph.
+(*Existing Instance rk_morph.*)
 
 Parameter rk_def : forall x z,
   z ∈ rk x <-> exists y, y ∈ x /\ z ∈ power (rk y).

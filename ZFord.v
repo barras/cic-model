@@ -8,11 +8,33 @@ Require Export ZF.
 
 (** * Definition and elementary properties *)
 
+Definition trans (K : set -> Prop) := forall x y, K x -> y ∈ x -> K y.
+Definition plump (K : set -> Prop) := forall x y, K x -> y ⊆ x -> K y.
+
+Instance trans_morph : Proper (pointwise_relation set iff ==> iff) trans.
+do 2 red; intros.
+unfold trans.
+apply fa_morph; intros x0.
+apply fa_morph; intros y0.
+apply impl_morph; [trivial|intros].
+apply fa_morph; intros; auto.
+Qed.
+
+
+Instance plump_morph : Proper (pointwise_relation set iff ==> iff) plump.
+do 2 red; intros.
+unfold plump.
+apply fa_morph; intros x0.
+apply fa_morph; intros y0.
+apply impl_morph; [trivial|intros].
+apply fa_morph; intros; auto.
+Qed.
+
 (** Directed set (finite union) *)
 Definition isDir o := forall x y,
   x < o -> y < o -> exists2 z, z < o & x ⊆ z /\ y ⊆ z.
 
-Global Instance isDir_morph : Proper (eq_set==>iff) isDir.
+#[global]Instance isDir_morph : Proper (eq_set==>iff) isDir.
 do 2 red; intros; unfold isDir.
 apply fa_morph; intros x0.
 apply fa_morph; intros y0.
@@ -170,7 +192,7 @@ destruct 2.
 unfold isOrd; rewrite H in H0,H1; auto.
 Qed.
 
-Global Instance isOrd_morph : Proper (eq_set ==> iff) isOrd.
+#[global]Instance isOrd_morph : Proper (eq_set ==> iff) isOrd.
 do 2 red; split; intros.
  apply isOrd_ext with x; trivial.
 
@@ -512,7 +534,7 @@ apply H0.
 apply lt_osucc; trivial.
 Qed.
 
-Lemma le_lt_trans : forall x y z, isOrd z -> x < osucc y -> y < z -> x < z.
+Lemma ord_le_lt_trans : forall x y z, isOrd z -> x < osucc y -> y < z -> x < z.
 intros.
 apply isOrd_plump with y; trivial.
  apply subset_elim2 in H0; destruct H0.
@@ -563,7 +585,7 @@ apply ole_lts; auto.
  apply isOrd_inv with m; trivial.
 
  red; intros.
- apply le_lt_trans with n; trivial.
+ apply ord_le_lt_trans with n; trivial.
 Qed.
 
 Lemma osucc_mono : forall n m, isOrd n -> isOrd m -> n ⊆ m -> osucc n ⊆ osucc m.
@@ -600,7 +622,7 @@ apply eq_intro; intros.
  rewrite sup_ax in H0.
  2:do 2 red; intros; apply osucc_morph; trivial.
  destruct H0.
- apply le_lt_trans with x; trivial.
+ apply ord_le_lt_trans with x; trivial.
 Qed.
 
 (** Examples: ordinals of rank less than 2 *)
@@ -866,6 +888,13 @@ Definition succOrd o := exists2 o', isOrd o' & o == osucc o'.
 
 Definition limitOrd o := isOrd o /\ (forall x, x < o -> lt (osucc x) o).
 
+#[global]Instance limitOrd_morph : Proper (eq_set ==> iff) limitOrd.
+do 2 red; intros.
+apply and_iff_morphism; [rewrite H; reflexivity|].
+apply fa_morph; intros x'.
+rewrite H; reflexivity.
+Qed.
+
 Lemma limit_is_ord : forall o, limitOrd o -> isOrd o.
 destruct 1; trivial.
 Qed.
@@ -893,7 +922,7 @@ rewrite <- H0 in H1.
 apply union_elim in H1; destruct H1.
 apply isOrd_plump with x0; auto.
 red; intros.
-apply le_lt_trans with x; trivial.
+apply ord_le_lt_trans with x; trivial.
 apply isOrd_inv with o; trivial.
 Qed.
 
@@ -979,14 +1008,10 @@ Section TransfiniteRecursion.
 
   Definition TR := WFR (fun x => x) F.
 
-Global Instance TR_morph0 : morph1 TR.
+#[global]Instance TR_morph0 : morph1 TR.
 clear Fm; do 2 red; intros.
 unfold TR.
-apply WFR_morph0; trivial.
-(*do 2 red; intros.
-unfold TR.
-apply WFR_morph; trivial.
-red; intros; auto. *)
+apply WFR_morph0; auto with *.
 Qed.
 
   Lemma WFRle_ord_incl o o' :
@@ -1058,7 +1083,7 @@ Qed.
 End TransfiniteRecursion.
 
 
-Global Instance TR_morph :
+#[global]Instance TR_morph :
     Proper (((eq_set ==> eq_set) ==> eq_set ==> eq_set) ==> eq_set ==> eq_set) TR.
 do 3 red; intros.
 apply WFR_morph; trivial.
@@ -1175,7 +1200,7 @@ Qed.
 End TransfiniteIteration.
 #[global]Hint Resolve TI_fun_ext : core.
 
-Global Instance TI_morph_gen :
+#[global]Instance TI_morph_gen :
   Proper ((eq_set==>eq_set)==>eq_set==>eq_set) TI.
 do 3 red; intros.
 unfold TI.
@@ -2020,6 +2045,14 @@ apply isOrd_trans with (2:=H0); auto.
 apply w_iter_aux_ext; auto with *.
 Qed.
 
+Lemma next_limOrd_mono o o' :
+  isOrd o -> isOrd o' -> o ⊆ o' -> next_limOrd o ⊆ next_limOrd o'.
+intros.
+apply next_limOrd_lub; [trivial|apply limOrd_next_limOrd; trivial|].
+apply isOrd_plump with o'; trivial;[apply limOrd_next_limOrd; trivial|].
+apply next_limOrd_intro1; trivial.
+Qed.
+
 (** Ordinal omega *)
 
 Definition omega := next_limOrd zero.
@@ -2279,7 +2312,7 @@ apply incl_eq.
   do 2 red; intros; apply osucc_morph; trivial.
 
   red; intros.
-  apply le_lt_trans with x; trivial.
+  apply ord_le_lt_trans with x; trivial.
 Qed.
 
   Lemma osup_morph : forall x x' f f',
@@ -2351,3 +2384,5 @@ apply incl_eq.
   apply subset_intro; trivial.
   apply isOrd_inv with o; trivial.
 Qed.
+
+Hint Resolve isOrd_wf : core.

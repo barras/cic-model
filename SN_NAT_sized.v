@@ -1083,7 +1083,7 @@ Let Mty i j :
  int M (V.cons f (V.cons o' i)) ∈ cc_prod (Nati (osucc o')) (U' i (osucc o')).
 intros ordo ok o' oo' leo f tyf.
 assert (lto : o' ∈ osucc (int O i)).
- apply le_lt_trans with (int O i); auto.
+ apply ord_le_lt_trans with (int O i); auto.
  apply ole_lts; trivial.
 assert (ok': val_ok (Prod (NatI (Ref 0)) U :: OSucct O :: e)
           (V.cons f (V.cons o' i)) (I.cons daimon (I.cons daimon j))).
@@ -1971,7 +1971,7 @@ apply typ_nat_fix'' with infty (Prod (NatI infty) (NatI (Ref 2))); auto.
   unfold lift in H2; rewrite int_lift_rec_eq in H2.
   rewrite V.lams0 in H2.
   simpl in H2.
-  apply le_lt_trans with (2:=H2); trivial.
+  apply ord_le_lt_trans with (2:=H2); trivial.
   apply H0.
   red; intros.
   generalize (H1 (3+n) _ H3).
@@ -1994,7 +1994,7 @@ apply typ_nat_fix'' with infty (Prod (NatI infty) (NatI (Ref 2))); auto.
   apply H0 in H1.
   simpl in H1.
   unfold lift in H1; rewrite int_lift_rec_eq in H1.
-  apply le_lt_trans with (3:=H1); trivial.
+  apply ord_le_lt_trans with (3:=H1); trivial.
 
  rewrite eq_lift_prod.
  rewrite eq_subst_prod.
@@ -2036,7 +2036,7 @@ apply typ_nat_fix'' with infty (Prod (NatI infty) (NatI (Ref 2))); auto.
   unfold lift in H3; rewrite int_lift_rec_eq in H3.
   rewrite V.lams0 in H3.
   simpl in H3.
-  apply le_lt_trans with (2:=H3); trivial.
+  apply ord_le_lt_trans with (2:=H3); trivial.
   apply H0.
   red; intros.
   generalize (H2 (4+n) _ H4).
@@ -2052,7 +2052,7 @@ apply typ_nat_fix'' with infty (Prod (NatI infty) (NatI (Ref 2))); auto.
     unfold lift in H3; rewrite int_lift_rec_eq in H3.
     rewrite V.lams0 in H3.
     simpl in H3.
-    apply le_lt_trans with (2:=H3); trivial.
+    apply ord_le_lt_trans with (2:=H3); trivial.
     apply H0.
     red; intros.
     generalize (H2 (4+n) _ H4).
@@ -2092,7 +2092,7 @@ apply typ_nat_fix'' with infty (Prod (NatI infty) (NatI (Ref 2))); auto.
       unfold lift in H4; rewrite int_lift_rec_eq in H4.
       rewrite V.lams0 in H4.
       simpl in H4.
-      apply le_lt_trans with (2:=H4); trivial.
+      apply ord_le_lt_trans with (2:=H4); trivial.
       apply H0.
       red; intros.
       generalize (H3 (5+n) _ H5).

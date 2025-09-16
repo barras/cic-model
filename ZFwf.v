@@ -104,6 +104,25 @@ red; intros.
 apply subset_elim1 in H0; trivial.
 Qed.
 
+Lemma isWf_replf : forall x F,
+    ext_fun x F ->
+    (forall a, a ∈ x -> isWf (F a)) ->
+    isWf (replf x F).
+intros.
+apply isWf_intro; intros.
+rewrite replf_ax in H1;[|trivial].
+destruct H1 as (b,?,?).
+rewrite H2; auto.
+Qed.
+Lemma isWf_sup : forall x F,
+    ext_fun x F ->
+    (forall a, a ∈ x -> isWf (F a)) ->
+    isWf (sup x F).
+intros.
+apply isWf_union.
+apply isWf_replf; trivial.
+Qed.
+
 Require ZFrepl.
 
 Lemma isWf_repl : forall x R,
@@ -220,7 +239,7 @@ Definition trClos x :=
 
 Global Instance trClos_morph : morph1 trClos.
 do 2 red; intros; unfold trClos.
-apply ZFrepl.WFR_morph0; trivial.
+apply ZFrepl.WFR_morph0; auto with *.
 Qed.
 
 Lemma trClos_eqn x :
@@ -341,7 +360,7 @@ split; intros.
   red; intros.
   apply union2_intro2.
   apply sup_ax.
-  do 2 red; intros; apply ZFrepl.WFR_morph0; trivial.
+  do 2 red; intros; apply ZFrepl.WFR_morph0; auto with *.
   exists z; trivial.
 *destruct H as (c,?,?).
  destruct H.

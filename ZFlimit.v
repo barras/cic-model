@@ -218,7 +218,7 @@ Hint Resolve Gm : core.
   Definition TRF o x := ZFrepl.WFR eq_set (fun o=>o) G o x.
 
   Global Instance TRF_morph0 : morph2 TRF.
-do 3 red; intros; apply ZFrepl.WFR_morph0; trivial.
+do 3 red; intros; apply ZFrepl.WFR_morph0; auto with *.
 Qed.
 
   Lemma TRF_eqn o x : isOrd o ->
@@ -231,7 +231,7 @@ rewrite ZFrepl.WFR_eqn; auto with *.
  red; intros.
  apply lim_ext; auto with *.
  red; intros.
- apply ZFrepl.WFR_morph0; trivial.
+ apply ZFrepl.WFR_morph0; auto with *.
 *intros.
  apply WFRle_ord_incl in H0; trivial.
  destruct H0.

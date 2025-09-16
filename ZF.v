@@ -169,6 +169,7 @@ Lemma repl_ax :
 exact (Structure.repl_ax izfr_struct).
 Qed.
 End IZF_Axioms.
+(* We get all the derived facts of Zermelo Set Theory *)
 Module IZ_Lemmas := Z.ZermeloSetTheory CoqSublogicThms IZF_Axioms.
 
 Export IZF_Axioms.
@@ -375,6 +376,20 @@ apply eq_intro; intros.
  exists x; auto with *.
 Qed.
 
+  Lemma fa_replf_iff a F P :
+    Proper (eq_set==>iff) P ->
+    ext_fun a F ->
+    (forall x, x ∈ replf a F -> P x) <-> (forall z, z ∈ a -> P (F z)).
+intros Pm Fext.
+split; intros.
+*apply H.
+ rewrite replf_ax; eauto with *.
+*rewrite replf_ax in H0; trivial.
+ destruct H0 as (z,?,?).
+ rewrite H1; auto.
+Qed.
+
+
 (** Upper bound of a family of sets *)
 
 Definition sup x F := union (replf x F).
@@ -431,6 +446,18 @@ apply sup_morph_gen; intros.
  symmetry; apply H0; trivial; reflexivity.
 
  apply eq_index_eq; trivial.
+Qed.
+
+  Lemma ex_sup_iff a b P :
+    ext_fun a b ->
+    (exists x, x ∈ sup a b /\ P x) <->
+    (exists y, y ∈ a /\ exists x, x ∈ b y /\ P x).
+split; intros.
+*destruct H0 as (x,(?,?)).
+ rewrite sup_ax in H0; [|trivial].
+ destruct H0; eauto.
+*destruct H0 as (y,(?,(x,(?,?)))); exists x; split;[|trivial].
+ rewrite sup_ax; eauto.
 Qed.
 
 Lemma sup_incl : forall a F x,

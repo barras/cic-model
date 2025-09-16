@@ -1354,7 +1354,7 @@ Qed.
 Definition WSREC' := WFR fsub G.
 
 Global Instance WSREC'_morph0 : morph1 WSREC'.
-apply WFR_morph0.
+apply WFR_morph0; auto with *.
 Qed.
 
 

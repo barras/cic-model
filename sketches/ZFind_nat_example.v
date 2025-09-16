@@ -138,7 +138,7 @@ rewrite cc_beta_eq; auto.
     rewrite H0; rewrite H6; reflexivity.
 
  revert tyx; apply TI_mono; auto with *.
- red; intros; apply le_lt_trans with o; auto.
+ red; intros; apply ord_le_lt_trans with o; auto.
  apply ole_lts; auto.
 Admitted.
 

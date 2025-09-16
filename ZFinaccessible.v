@@ -145,7 +145,7 @@ Qed.
 
   Lemma VN_incl_grot : VN grot_ord ⊆ U.
 red; intros.
-rewrite VN_def in H; auto.
+rewrite VN_ord_def in H; auto.
 destruct H.
 apply G_trans with (power (VN x)); trivial.
  rewrite power_ax; trivial.
@@ -173,7 +173,7 @@ Qed.
 
   Lemma G_regular : VN_regular_rel grot_ord.
 red; intros.
-rewrite VN_def; trivial.
+rewrite VN_ord_def; trivial.
 pose (A := subset x (fun x' => exists y, R x' y)).
 pose (F := fun x' => inter
        (subset grot_ord (fun z => exists2 y, R x' y & y ⊆ VN z))).
@@ -219,7 +219,7 @@ exists (osup A F).
      apply H1 with x0; trivial.
      rewrite <- H3; trivial.
    destruct H3 as (z0, r0, ?).
-   rewrite VN_def in H3; trivial; destruct H3.
+   rewrite VN_ord_def in H3; trivial; destruct H3.
    apply isOrd_plump with x0; auto.
    red; intros.
    apply inter_elim with (1:=H5).
@@ -237,7 +237,7 @@ assert (x0 ⊆ VN (F x1)).
   apply subset_elim1 in H6; eauto using isOrd_inv.
 
   generalize (H1 _ _ H3 H4); intros.
-  rewrite VN_def in H6; eauto using isOrd_inv.
+  rewrite VN_ord_def in H6; eauto using isOrd_inv.
   destruct H6.
   apply inter_intro.
    clear x2 H6 H7.
@@ -261,10 +261,10 @@ assert (x0 ⊆ VN (F x1)).
    apply subset_intro; trivial.
    exists x0; trivial.
 apply H5 in H2.
-rewrite VN_def in H2.
+rewrite VN_ord_def in H2.
 2:apply oF; apply subset_intro; eauto.
 destruct H2.
-rewrite VN_def.
+rewrite VN_ord_def.
 2:apply isOrd_osup; auto.
 exists x2; trivial.
 revert H2; apply osup_intro; trivial.
