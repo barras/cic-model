@@ -371,14 +371,6 @@ apply mkForm_iso.
 repeat apply inr_typ; trivial.
 Qed.
 
-Lemma le_lt_trans : forall m n p, p ∈ N -> m <= n -> n < p -> m < p.
-intros.
-apply le_case in H0; destruct H0.
-*rewrite H0; trivial.
-*apply lt_trans with n; trivial.
-Qed.
-
-
 Lemma Fand_sub P Q : P ∈ Form -> Q ∈ Form -> let PQ := Cnxn (couple P Q) in PQ ∈ Fand P Q.
 intros.
 unfold Fand, mkForm.
@@ -708,7 +700,7 @@ Hint Resolve auxm1 auxm2 : core.
   Lemma FTr_morph : Proper (eq_set==>eq_set==>iff) FTr.
 do 3 red; intros.
 apply p2P_morph.
-apply ZFrepl.WFR_morph0; trivial.
+apply ZFrepl.WFR_morph0; auto with *.
 Qed.
 
   Lemma Tr_body_wf P :
@@ -1029,7 +1021,7 @@ rewrite WFR_eqn.
  apply fa_morph; intros x.
  apply impl_morph; [reflexivity|intro].
  apply p2P_morph.
- apply WFR_morph0.
+ apply WFR_morph0; [auto with *|].
  rewrite snd_def; reflexivity.
 *auto with *.
 *apply Tr_body_wf;[|trivial].

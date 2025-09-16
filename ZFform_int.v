@@ -1,18 +1,17 @@
 
 Require Import ZF ZFfo ZFform.
-Require Import ZFpairs ZFrelations ZFnats ZFord ZFlist.
+Require Import ZFpairs ZFrelations ZFnats ZFwf ZFord ZFlist.
 Require Import ZFrank ZFgrothendieck.
-Require ZFreflect.
 
-Existing Instance ZFreflect.limitOrd_morph.
-Existing Instance ZFreflect.isVNlim_morph.
-Existing Instance ZFreflect.VNlim_compl_mono.
+Lemma wfax x : isWf x.
+apply wf_ax; apply isWf_intro.
+Qed.
 
 (* More properties about VN universes *)
 
 Lemma fo_VNlim_compl A :
   fo_in A ->
-  fo_in (fun i => ZFreflect.VNlim_compl (A i)).
+  fo_in (fun i => VNlim_compl (A i)).
 Admitted.
 
 Definition VN_ord (X:set) := subset X isOrd.
@@ -29,17 +28,16 @@ intros.
 apply eq_set_ax; split; intros.
 *apply subset_ax in H0; destruct H0 as (?,(x',eqx,xo)).
  rewrite <-eqx in xo; clear x' eqx.
- apply ZFreflect.VN_ord_incl; auto.
+ apply VN_ord_inv; auto.
 *assert (xo : isOrd x) by (apply isOrd_inv with o; auto).
  apply subset_intro;[|trivial].
  apply VN_incl with (VN x); auto.
- apply VN_intro; trivial.
- apply ZFrank.VN_mono; auto.
+ apply VN_intro; auto.
+ apply VN_mono; auto.
 Qed.
 
 
-Lemma limOrd_VNlim X :
-  ZFreflect.isVNlim X -> limitOrd (VN_ord X).
+Lemma limOrd_VNlim X : isVNlim X -> limitOrd (VN_ord X).
 intros (o,(lo,eqX)).
 rewrite eqX.
 rewrite VN_ord_ax; auto.
@@ -103,9 +101,9 @@ Module OneUniv.
 (* Building one single universe *)
 
 Definition Ustage M k :=
-  natrec (ZFreflect.VNlim_compl M) (fun _ Mi => ZFreflect.VNlim_compl (Mi ∪ repls Mi)) k.
+  natrec (VNlim_compl M) (fun _ Mi => VNlim_compl (Mi ∪ repls Mi)) k.
 
-Instance repls_auxm : morph2 (fun _ Mi => ZFreflect.VNlim_compl (Mi ∪ repls Mi)).
+Instance repls_auxm : morph2 (fun _ Mi => VNlim_compl (Mi ∪ repls Mi)).
 do 3 red; intros.
 rewrite H0; reflexivity.
 Qed.
@@ -119,12 +117,33 @@ apply natrec_morph; trivial.
 *apply repls_auxm.
 Qed.
 
-Lemma Ustage_0 M : Ustage M zero == ZFreflect.VNlim_compl M.
+Lemma Ustage_0 M : Ustage M zero == VNlim_compl M.
 unfold Ustage; apply natrec_0.
 Qed.
-Lemma Ustage_S M k : k ∈ N -> Ustage M (succ k) == ZFreflect.VNlim_compl (Ustage M k ∪ repls (Ustage M k)).
+Lemma Ustage_S M k : k ∈ N -> Ustage M (succ k) == VNlim_compl (Ustage M k ∪ repls (Ustage M k)).
 unfold Ustage; apply natrec_S; auto.
 Qed.
+
+
+(*Lemma isWf_Ustage M k : isWf M -> k ∈ N -> isWf (Ustage M k).
+intros wfM tyk.
+elim tyk using N_ind; intros.
+  *)
+  
+(* Uses wf axiom *)
+Lemma VNlim_Ustage M k : k ∈ N -> isVNlim (Ustage M k).
+intros tyk.
+elim tyk using N_ind; intros.
++rewrite <-H0; trivial.
++rewrite Ustage_0.
+ apply VNlim_compl_ok; trivial.
+ apply wfax.
++rewrite Ustage_S; trivial.
+ apply VNlim_compl_ok.  
+ apply wfax.
+Qed.
+
+Hint Resolve VNlim_Ustage : core.
 
 Lemma Ustage_mono M k k' : k ∈ N -> k' ∈ N -> k <= k' -> Ustage M k ⊆ Ustage M k'.
 intros.
@@ -135,21 +154,9 @@ rewrite H2; reflexivity.
 *rewrite H3, Ustage_S; trivial.
  transitivity (Ustage M n ∪ repls (Ustage M n)).
  +intro; apply union2_intro1.
- +apply ZFreflect.VNlim_ext.
+ +apply VNlim_ext.
+  apply wfax.
 Qed.
-  
-
-Lemma VNlim_Ustage M k : k ∈ N -> ZFreflect.isVNlim (Ustage M k).
-intros.
-elim H using N_ind; intros.
-+rewrite <-H1; trivial.
-+rewrite Ustage_0.
- apply ZFreflect.VNlim_compl_ok.  
-+rewrite Ustage_S; trivial.
- apply ZFreflect.VNlim_compl_ok.  
-Qed.
-
-Hint Resolve VNlim_Ustage : core.
 
 (*
 Lemma Ustage_mono_base M M' k :
@@ -176,17 +183,17 @@ rewrite sup_ax.
  rewrite H0; reflexivity.
 Qed.
 
-  Lemma U'_ext M : M ⊆ U' M.
-intros z tyz.
+  Lemma U'_ext M : isWf M -> M ⊆ U' M.
+intros wfM z tyz.
 rewrite U'_def.
 exists zero;split;[apply zero_typ|].
 rewrite Ustage_0.
-apply ZFreflect.VNlim_ext; trivial.
+apply VNlim_ext; trivial.
 Qed.
 
-Lemma U'_VNlim M : ZFreflect.isVNlim (U' M).
+Lemma U'_VNlim M : isVNlim (U' M).
 unfold U'.
-apply ZFreflect.VNlim_sup.
+apply VNlim_sup.
 *do 2 red; intros.
  rewrite H0; reflexivity.
 *intros.
@@ -265,9 +272,8 @@ destruct Ustage_List with (2:=tyl) as (k',tyk',(Ul,tyl')); [eauto|].
  clear tyl'.
  exists (succ (max k k')); split; [auto using succ_typ,max_typ|].
  rewrite Ustage_S; auto.
- apply ZFreflect.VNlim_ext.
+ apply VNlim_ext; [apply wfax|].
  apply union2_intro2.
-
  unfold repls.
  rewrite sup_ax.
  2:{do 2 red; intros.
@@ -416,10 +422,10 @@ Admitted.
     Variable M0:set.
 
 (* We start with a sequence of Zermelo univs *)
-Definition Uinit := natrec (ZFreflect.VNlim_compl M0) (fun _ Mi => ZFreflect.VNlim_compl (singl Mi)).
+Definition Uinit := natrec (VNlim_compl M0) (fun _ Mi => VNlim_compl (singl Mi)).
 Definition Ubase := sup N Uinit.
 
-Instance Uinit_auxm : morph2 (fun _ Mi => ZFreflect.VNlim_compl (singl Mi)).
+Instance Uinit_auxm : morph2 (fun _ Mi => VNlim_compl (singl Mi)).
 do 3 red; intros.
 rewrite H0; reflexivity.
 Qed.
@@ -429,12 +435,12 @@ Admitted.
 
 Definition Unext M :=
   let B := sup N M in
-  natrec (ZFreflect.VNlim_compl (B ∪ mrepls B (M zero)))
-    (fun k Mi => ZFreflect.VNlim_compl (singl Mi ∪ M (succ k) ∪ mrepls B (M (succ k)))).
+  natrec (VNlim_compl (B ∪ mrepls B (M zero)))
+    (fun k Mi => VNlim_compl (singl Mi ∪ M (succ k) ∪ mrepls B (M (succ k)))).
 
 Instance unext_auxm M :
   morph1 M ->
-  morph2 (fun k Mi => ZFreflect.VNlim_compl ((singl Mi ∪ M (succ k)) ∪ mrepls (sup N M) (M (succ k)))).
+  morph2 (fun k Mi => VNlim_compl ((singl Mi ∪ M (succ k)) ∪ mrepls (sup N M) (M (succ k)))).
 Admitted.
 Hint Resolve unext_auxm : core.
 
@@ -448,7 +454,7 @@ Definition Ustage :=
   natrec (cc_lam N Uinit) (fun _ Mi => cc_lam N (Unext (cc_app Mi))).
 
 Instance mstage_auxm M : ext_fun N M ->
-                       morph2 (fun k Mi => ZFreflect.VNlim_compl (Mi ∪ mrepls (sup N M) (M (succ k)))).
+                       morph2 (fun k Mi => VNlim_compl (Mi ∪ mrepls (sup N M) (M (succ k)))).
 Admitted.
 (*(fun k Mi => VNlim_compl (Mi ∪ mrepls B Mi)).
 do 3 red; intros.
@@ -489,7 +495,7 @@ apply Unext_morph; trivial.
 apply cc_app_morph; trivial.
 Qed.*)
 
-Lemma VNlim_Ustage k j : k ∈ N -> j ∈ N -> ZFreflect.isVNlim (cc_app (Ustage k) j).
+Lemma VNlim_Ustage k j : k ∈ N -> j ∈ N -> isVNlim (cc_app (Ustage k) j).
 intros tyk tyj.
 revert j tyj; elim tyk using N_ind; intros.
 *rewrite <-H0; auto.
@@ -497,18 +503,22 @@ revert j tyj; elim tyk using N_ind; intros.
  elim tyj using N_ind; intros.
  +rewrite <-H0; trivial.
  +unfold Uinit; rewrite natrec_0.
-  apply ZFreflect.VNlim_compl_ok.  
+  apply VNlim_compl_ok.  
+  apply wfax.
  +unfold Uinit; rewrite natrec_S; auto with *.
-  apply ZFreflect.VNlim_compl_ok.  
+  apply VNlim_compl_ok.  
+  apply wfax.
 *rewrite Ustage_S; trivial.
  elim tyj using N_ind; intros.
- +revert H3; apply ZFreflect.isVNlim_morph; apply Unext_morph; [|symmetry;trivial].
+ +revert H3; apply isVNlim_morph; apply Unext_morph; [|symmetry;trivial].
   apply cc_app_morph; reflexivity.
  +unfold Unext; rewrite natrec_0.
-  apply ZFreflect.VNlim_compl_ok.  
+  apply VNlim_compl_ok.  
+  apply wfax.
  +unfold Unext; rewrite natrec_S; trivial.
   2:apply unext_auxm; auto with *.
-  apply ZFreflect.VNlim_compl_ok.  
+  apply VNlim_compl_ok.  
+  apply wfax.
 Qed.
 (*
  Lemma VNlim_Ustage M k : k ∈ N -> isVNlim (Ustage M k).
@@ -569,14 +579,15 @@ rewrite Uj_def.
 exists zero;split;[apply zero_typ|].
 rewrite Ustage_0; [|apply zero_typ].
 unfold Uinit; rewrite natrec_0.
-apply ZFreflect.VNlim_ext; trivial.
+apply VNlim_ext; trivial.
+apply wfax.
 Qed.
 
 Lemma Unext_in M j : morph1 M -> j ∈ N -> Unext M j ∈ Unext M (succ j).
 intros Mm tyj.
 unfold Unext at 2; rewrite natrec_S; auto with *.
 fold (Unext M).
-apply ZFreflect.VNlim_ext.
+apply VNlim_ext; [apply wfax|].
 apply union2_intro1.
 apply union2_intro1.
 apply singl_intro.
@@ -584,11 +595,12 @@ Qed.
 
 Lemma Unext_ext M j : morph1 M -> j ∈ N -> Unext M j ⊆ Unext M (succ j).
 intros Mm tyj z tyz.
-assert (ZFreflect.isVNlim (Unext M (succ j))).
+assert (isVNlim (Unext M (succ j))).
 {unfold Unext; rewrite natrec_S; auto with *.
- apply ZFreflect.VNlim_compl_ok. }
+ apply VNlim_compl_ok.
+ apply wfax. }
 destruct H as (o,(lo,e)).
-rewrite e; apply VN_trans with (3:=tyz);[apply lo|].
+rewrite e; apply VN_trans with (2:=tyz).
 rewrite <-e; apply Unext_in; trivial.
 Qed.
 
@@ -599,7 +611,7 @@ elim tyk using N_ind; intros.
 *rewrite <- H0; trivial.
 *rewrite !Ustage_0; auto using succ_typ.
  unfold Uinit; rewrite natrec_S; auto with *.
- apply ZFreflect.VNlim_ext.
+ apply VNlim_ext; [apply wfax|].
  apply singl_intro.
 *rewrite !Ustage_S; auto using succ_typ.
  apply Unext_in; auto with *.
@@ -608,7 +620,7 @@ Qed.
 Lemma Urow_ext k j : k ∈ N -> j ∈ N -> cc_app (Ustage k) j ⊆ cc_app (Ustage k) (succ j).
 red; intros.
 destruct VNlim_Ustage with (1:=H)(2:=succ_typ _ H0) as (o,(lo,e)).
-rewrite e; apply VN_trans with (3:=H1);[apply lo|].
+rewrite e; apply VN_trans with (2:=H1).
 rewrite <-e; apply Urow_in; trivial.
 Qed.
 
@@ -622,7 +634,7 @@ elim tyj using N_ind; intros.
  apply mstage_auxm; auto with *.
  rewrite H1,H2; reflexivity.
 *unfold Unext; rewrite natrec_0.
- eapply transitivity; [|apply ZFreflect.VNlim_ext].
+ eapply transitivity; [|apply VNlim_ext;apply wfax].
  intro;apply union2_intro1.
 *rewrite H0.
 apply Unext_ext; trivial.
@@ -632,10 +644,10 @@ intros Mm tyj.
 elim tyj using N_ind; intros.
 *rewrite <-H0; trivial.
 *unfold Unext; rewrite natrec_0.
- eapply transitivity; [|apply ZFreflect.VNlim_ext].
+ eapply transitivity; [|apply VNlim_ext; apply wfax].
  intro;apply union2_intro2.
 *unfold Unext; rewrite natrec_S; auto.
- eapply transitivity; [|apply ZFreflect.VNlim_ext].
+ eapply transitivity; [|apply VNlim_ext; apply wfax].
  intro; apply union2_intro2.
 Qed.
 
@@ -653,10 +665,10 @@ elim H2 using Nle_ind; intros; trivial.
 Qed.
 
 
-Lemma Uj_VNlim j : j ∈ N -> ZFreflect.isVNlim (Uj j).
+Lemma Uj_VNlim j : j ∈ N -> isVNlim (Uj j).
 unfold U.
 intros.
-apply ZFreflect.VNlim_sup.
+apply VNlim_sup.
 *do 2 red; intros.
  rewrite H1; reflexivity.
 *intros.
@@ -668,8 +680,8 @@ apply ZFreflect.VNlim_sup.
  intros ??? h; apply cc_app_morph; auto with *.
 Qed.
 
-Lemma U_VNlim : ZFreflect.isVNlim U.
-apply ZFreflect.VNlim_sup.
+Lemma U_VNlim : isVNlim U.
+apply VNlim_sup.
 *auto with *.
 *intros.
  apply Uj_VNlim; trivial.

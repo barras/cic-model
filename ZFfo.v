@@ -1,16 +1,8 @@
 Require Import ZF.
+Require IntMap.
 
-Definition icons {A} (x : A) (f : nat -> A) (k : nat) :=
-  match k with
-  | 0 => x
-  | S k0 => f k0
-  end.
+Notation icons := IntMap.cons_map.
 
-Lemma in_set_def a x :
-    a ∈ x <-> exists y, y ∈ x /\ y==a.
-split; [exists a; split; auto with *|destruct 1 as (y,(?,?))].
-rewrite <- H0; trivial.
-Qed.
 
 Definition lft (f:nat->nat) :=
   fun k => match k with 0=>0|S k'=>S (f k')end.

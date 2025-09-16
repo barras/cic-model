@@ -1,10 +1,7 @@
 Require Import ZF.
-  
-Definition icons {A} (x : A) (f : nat -> A) (k : nat) :=
-  match k with
-  | 0 => x
-  | S k0 => f k0
-  end.
+Require IntMap.
+
+Notation icons := IntMap.cons_map.
 
 Definition fvs := nat->set.
 
@@ -48,19 +45,6 @@ Inductive fo_form : ((set->Prop)->fvs->Prop) -> Prop :=
                fo_form (fun K vs => forall x:set, K x -> B x K vs)
 | FO_ex B    : fo_form (bind B) ->
                fo_form (fun K vs => exists x:set, K x /\ B x K vs).
-(*Inductive fo_form (K:set->Prop) (vars : fvs) : Prop -> Prop :=
-| FO_ext A B : (A<->B) -> fo_form K vars A -> fo_form K vars B
-| FO_eq x y  : is_var x vars -> is_var y vars -> fo_form K vars (x == y)
-| FO_in x y  : is_var x vars -> is_var y vars -> fo_form K vars (x ∈ y)
-| FO_T       : fo_form K vars True
-| FO_F       : fo_form K vars False
-| FO_and A B : fo_form K vars A -> fo_form K vars B -> fo_form K vars (A/\B)
-| FO_or A B  : fo_form K vars A -> fo_form K vars B -> fo_form K vars (A\/B)
-| FO_imp A B : fo_form K vars A -> fo_form K vars B -> fo_form K vars (A->B)
-| FO_fa B    : (forall x, fo_form K (push_var x vars) (B x)) ->
-               fo_form K vars (forall x:set, K x -> B x)
-| FO_ex B    : (forall x, fo_form K (push_var x vars) (B x)) ->
-               fo_form K vars (exists x:set, K x /\ B x).*)
 
 Lemma fo_form_param (P : (set -> Prop) -> fvs -> Prop) :
        fo_form P ->
@@ -386,50 +370,7 @@ Qed.
 
 (*Require Import ZFcoll.*)
 
-Require Import ZFnats ZFord ZFrank ZFwfr.
-
-Definition rk := WFR (fun x=>x) (fun f x => osup x (fun x' => osucc (f x'))).
-
-Instance rk_morph : morph1 rk.
-intros ?? h.
-apply WFR_morph; auto with *.
-*intros ?? h'; trivial.  
-*intros ?? h' ?? h''.
- apply osup_morph;[trivial|].
- intros ??? h'''.
- apply osucc_morph; auto.
-Qed.
-
-Lemma rk_def X : Acc in_set X -> rk X == osup X (fun x => osucc (rk x)).
-intros acc; unfold rk; rewrite WFR_eqn; auto with *.
-intros.
-apply osup_morph;[trivial|].
-intros ??? h.
-apply osucc_morph; auto.
-Qed.
-
-Lemma rk_isOrd X : Acc in_set X -> isOrd (rk X).
-induction 1; intros.
-rewrite rk_def; [|constructor;trivial].
-apply isOrd_osup; auto.
-intros ??? h.
-rewrite h; reflexivity.
-Qed.
-
-Lemma VN_rk_ext X : Acc in_set X -> X ⊆ VN (rk X).
-intros wfX z inX.
-revert z inX; induction wfX; intros.
-apply Acc_intro in H.
-rewrite VN_def;[|apply rk_isOrd;trivial].
-exists (rk z); auto.
-*rewrite rk_def with (X:=x);[|trivial].
- apply osup_intro with (x:=z); trivial.
- +intros ??? h; rewrite h; reflexivity.
- +apply lt_osucc; apply rk_isOrd.
-  apply Acc_inv with x; trivial.
-*red; auto.
-Qed.
-
+Require Import ZFnats ZFord ZFrank ZFwfr ZFwf.
 
 Definition lst_rk_prop (P : set -> Prop) (C : set) :=
   exists2 o,
@@ -488,8 +429,8 @@ Lemma lst_rk_prop_uch (P : set -> Prop) (w : set) :
   P w -> ZFrepl.uchoice_pred (lst_rk_prop P).
 Proof.
 intros wit.
-assert (wfw : Acc in_set w).
-{apply wf_ax; constructor; trivial. }
+assert (wfw : isWf w).
+{apply isWf_acc; apply wf_ax; constructor; trivial. }
 assert (rko : isOrd (rk w)) by (apply rk_isOrd; trivial).
 split;[|split].
 *intros x x' e; apply iff_impl.
@@ -1053,28 +994,6 @@ apply wf_ax; intros; constructor; auto.
 Qed.
 Hint Resolve wfax : core.
 
-Definition trans (K : set -> Prop) := forall x y, K x -> in_set y x -> K y.
-
-Instance trans_morph : Proper (pointwise_relation set iff ==> iff) trans.
-do 2 red; intros.
-unfold trans.
-apply fa_morph; intros x0.
-apply fa_morph; intros y0.
-apply impl_morph; [trivial|intros].
-apply fa_morph; intros; auto.
-Qed.
-
-Definition plump (K : set -> Prop) := forall x y, K x -> y ⊆ x -> K y.
-
-Instance plump_morph : Proper (pointwise_relation set iff ==> iff) plump.
-do 2 red; intros.
-unfold plump.
-apply fa_morph; intros x0.
-apply fa_morph; intros y0.
-apply impl_morph; [trivial|intros].
-apply fa_morph; intros; auto.
-Qed.
-
 
 Lemma trClos_ext X : X ⊆ trClos X.
 red; intros.
@@ -1109,281 +1028,4 @@ apply reflection_principle_gen with
  exists n; trivial.
  red in trf.
  apply trf with (x:=x); auto.
-Qed.
-
-Require Import ZFord.
-
-Lemma VN_def x : VN x == sup x (fun y => power (VN y)).
-apply WFR_eqn; [auto with *| |trivial].
-intros.
-clear H.
-apply sup_morph; trivial.
-red; intros.
-apply power_morph; auto.
-Qed.
-
-(*Existing Instance VN_morph : morph1 VN.*)
-
-Lemma VN_in_def x z : z ∈ VN x <-> exists2 y, y ∈ x & z ⊆  VN y.
-rewrite VN_def, sup_ax; [|intros ??? h; rewrite h; reflexivity].
-apply ex2_morph; [reflexivity|intro y].
-rewrite power_ax; reflexivity.
-Qed.
-
-Instance VN_mono : Proper (incl_set ==> incl_set) VN.
-do 2 red; intros.
-intros z.
-rewrite !VN_def.
-assert (morph1 (fun y => power (VN y))) by (intros ?? h; rewrite h; reflexivity).
-rewrite !sup_ax; auto.
-intros(w,?,?); exists w; auto.
-Qed.
-
-Lemma VN_ext x : x ⊆ VN x.
-pattern x; apply wf_ax; clear x; red; intros.
-apply VN_in_def.
-exists z; auto.
-Qed.
-
-Lemma VN_plump x : plump (fun y => y ∈ VN x).
-red; intros.
-rewrite VN_in_def in H|-*.
-destruct H as (w,?,?).
-exists w; auto.
-transitivity x0; trivial.
-Qed.
-
-Lemma VN_trans' x : trans (fun y => y ∈ VN x).
-red; pattern x; apply wf_ax; clear x; intros.
-rewrite VN_in_def in H0|-*.
-destruct H0 as (w,?,?).
-exists w; trivial.
-red; intros.
-apply H with y; auto.
-Qed.
-
-Local Lemma auxm : forall a, ext_fun a (fun x0 => osucc (rk x0)).
-intros ???? h; rewrite h; reflexivity.
-Qed.
-Hint Resolve auxm : core.
-
-Instance rk_mono : Proper (incl_set ==> incl_set) rk.
-do 2 red; intros.
-rewrite !rk_def; trivial.
-apply osup_lub; intros; auto.
-*apply isOrd_osup; auto.
- intros; apply isOrd_succ.
- apply rk_isOrd; trivial.
-*red; intros; apply osup_intro with x0; auto.
-Qed. 
-
-Lemma next_limOrd_mono o o' :
-  isOrd o -> isOrd o' -> o ⊆ o' -> next_limOrd o ⊆ next_limOrd o'.
-intros.
-apply next_limOrd_lub; [trivial|apply limOrd_next_limOrd; trivial|].
-apply isOrd_plump with o'; trivial;[apply limOrd_next_limOrd; trivial|].
-apply next_limOrd_intro1; trivial.
-Qed.
-
-Lemma rk_VN o : isOrd o -> rk (VN o) == o.
-intros oo; elim oo using isOrd_ind; intros.
-clear H0 o oo.  
-rewrite rk_def; auto.
-apply incl_eq.
-*apply osup_lub; intros; auto.
- rewrite VN_in_def in H0.
- destruct H0 as (z,?,?).
- transitivity (osucc (rk (VN z))).
- +apply osucc_mono; auto using rk_isOrd.
-  apply rk_mono; auto.
- +rewrite H1; trivial.
-  red; intros.
-  apply isOrd_plump with z; auto.
-   apply isOrd_inv with (osucc z); auto.
-   apply isOrd_succ; auto.
-   apply isOrd_inv with y; trivial.
-   apply olts_le; trivial.
-*red; intros.
- assert (isOrd z) by eauto using isOrd_inv.
- apply osup_intro with (VN z); auto.
- +apply VN_compl; auto.
-  apply VN_ext; trivial.
- +rewrite H1; trivial.
-  apply lt_osucc; auto.
-Qed. 
-
-Lemma rk_strict_mono x y : x ∈ y -> rk x ∈ rk y.
-rewrite (rk_def y); [|trivial].
-intros; apply osup_intro with x; auto.
-apply lt_osucc.
-apply rk_isOrd; trivial.
-Qed.
-
-Lemma VN_ord_incl o o' : isOrd o -> isOrd o' -> o' ∈  VN o -> o' ∈ o.
-intros oo oo' invn.
-revert o' oo' invn; elim oo using isOrd_ind; intros.
-clear o oo H0.
-apply VN_in_def in invn.
-destruct invn as (o,?,?).
-apply isOrd_plump with o; auto.
-red; intros.
-apply H1; eauto using isOrd_inv.
-Qed.
-
-Instance limitOrd_morph : Proper (eq_set ==> iff) limitOrd.
-do 2 red; intros.
-apply and_iff_morphism; [rewrite H; reflexivity|].
-apply fa_morph; intros x'.
-rewrite H; reflexivity.
-Qed.
-
-Lemma N_ind' (P : set -> Prop) :
-  (forall k, k == zero -> P k) ->
-  (forall n k, n ∈ N -> P n -> k == succ n -> P k) ->
-  forall n, n ∈ N -> P n.
-intros.
-assert (n ∈ subset N (fun k => forall k', k'==k -> P k')).
-{apply subset_elim2 in H1.
- destruct H1 as (n',?,?).
- rewrite H1; clear n H1.
- apply H2; intros.
- *apply subset_intro; [apply zero_typ|trivial].
- *apply subset_ax in H1.
-  destruct H1 as (tyk, (k', ?,?)).
-  apply subset_intro; [apply succ_typ; trivial|].
-intros; apply H0 with k; auto. }
-apply subset_elim2 in H2.
-destruct H2 as (n',?,?).
-auto.
-Qed.
-
-Lemma Nle_ind' m (P : set -> Prop) :
-  (forall m', m == m' -> P m') ->
-  (forall n sn', n ∈ N -> P n -> succ n == sn' -> P sn') ->
-  forall n, m ∈ N -> n ∈ N -> le m n -> P n.
-intros Hm HS n tym tyn Hle.
-revert m tym Hm Hle; elim tyn using N_ind'; intros.
-*revert Hm Hle; elim tym using N_ind'; intros.
- +apply Hm. 
-  rewrite H; trivial.
- +rewrite H in Hle.
-  apply le_case in Hle.
-  destruct Hle as [abs|abs];[|apply empty_ax in abs;contradiction].  
-  rewrite H2 in abs; apply discr in abs; contradiction.
-*apply le_case in Hle; destruct Hle; [auto|].
- apply HS with n0; auto with *.
- rewrite H1 in H2.
- apply H0 with m; auto.
-Qed.
-
-Definition isVNlim X := exists o, limitOrd o /\ X == VN o.
- 
-Instance isVNlim_morph : Proper (eq_set ==> iff) isVNlim.
-unfold isVNlim.
-do 2 red; intros.
-apply ex_morph; intros o.
-apply and_iff_morphism; [reflexivity|].
-rewrite H; reflexivity.
-Qed.
-
-Definition VNlim_compl X := VN (next_limOrd (rk X)).
-
-Instance VNlim_compl_mono : Proper (incl_set ==> incl_set) VNlim_compl.
-do 2 red; intros.
-apply VN_mono.
-apply next_limOrd_mono; auto using rk_isOrd.
-apply rk_mono; trivial.
-Qed.
-
-
-Lemma VNlim_ext X : X ⊆ VNlim_compl X.
-red; intros.
-unfold VNlim_compl.
-assert (isOrd (rk X)) by (auto using rk_isOrd).
-apply VN_mono with (rk X).
-*red; intros.
- apply isOrd_trans with (rk X); auto.
- apply limOrd_next_limOrd; auto.
- apply next_limOrd_intro1; trivial.
-*apply VN_rk_ext; trivial.
-Qed.
-
-Lemma VNlim_compl_ok X : isVNlim (VNlim_compl X).
-exists (next_limOrd (rk X)); split;[|reflexivity].
-apply limOrd_next_limOrd; auto.
-apply rk_isOrd; trivial.
-Qed.
-
-Lemma VNlim_sup (f : set -> set) :
-  ext_fun N f ->
-  (forall k, k ∈ N -> isVNlim (f k)) ->
-  (forall k, k ∈ N -> f k ⊆ f (succ k)) ->
-  isVNlim (sup N f).
-intros fext Kf fmono.
-pose (frk := fun k => subset (f k) isOrd).
-assert (frkext : ext_fun N frk).
-{do 2 red; intros.
- apply subset_morph; [auto|].
- red; reflexivity. }
-assert (Kf' : forall k, k ∈ N -> limitOrd (frk k) /\ f k == VN (frk k)).
-{intros k tyk.
- destruct Kf with (1:=tyk) as (o & lo & eqf).
- assert (frk k == o).
- {apply eq_set_ax; split; intros.
-  *apply subset_ax in H.
-   destruct H as (?,(x',eqx, xo)).
-   rewrite <- eqx in xo.
-   eapply VN_ord_incl; [apply lo|trivial|].
-   rewrite <- eqf; trivial.
-  *apply subset_intro;[|eauto using isOrd_inv].
-   rewrite eqf.
-   apply VN_ext; trivial. }
- rewrite H; auto. }
-assert (limfo : forall k, k ∈ N -> limitOrd (frk k)).
-{intros; apply Kf'; trivial. }
-assert (feq : forall k, k ∈ N -> f k == VN (frk k)).
-{intros; apply Kf'; trivial. }
-assert (lims : limitOrd (sup N frk)).
-{split.
- {apply isOrd_supf; intros; trivial.
- *apply limfo; trivial.
- *exists (max x y); [apply max_typ; trivial|].
-  assert (fmono_le : forall x y, x ∈ N -> y ∈ N -> x <= y -> f x ⊆ f y).
-  {intros.
-   elim H3 using Nle_ind'; trivial; intros.
-   *rewrite (fext x0 m'); trivial.
-    reflexivity.
-   *rewrite <- (fext (succ n) sn'); trivial;[|apply succ_typ; trivial].
-    rewrite <- fmono; trivial. } 
-  split; red; intros.
-  +apply subset_ax in H1.
-   destruct H1 as (?,(z',?,?)).
-   rewrite <- H2 in H3.
-   apply subset_intro;[|trivial].
-   revert H1; apply fmono_le; auto.
-  +apply subset_ax in H1.
-   destruct H1 as (?,(z',?,?)).
-   rewrite <- H2 in H3.
-   apply subset_intro;[|trivial].
-   revert H1; apply fmono_le; auto. }
- {intros.
-  rewrite sup_ax in H|-*; trivial.
-  destruct H as (k,?,?).
-  exists k; trivial.
-  apply limfo; trivial. }}
-exists (sup N frk); split; [trivial|].
-apply eq_set_ax; intros x.
-rewrite sup_ax; [|trivial].
-split; intros.
-*destruct H as (k,?,?).
- apply VN_mono_le with (frk k); auto.
- rewrite <- feq; auto.
-*rewrite VN_in_def in H.
- destruct H as (y,?,?).
- rewrite sup_ax in H; [|trivial].
- destruct H as (k,?,?).
- exists k; trivial.
- rewrite feq; auto.
- apply VN_incl with (VN y); auto.
- apply ZFrank.VN_mono; auto.
 Qed.

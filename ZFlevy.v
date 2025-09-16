@@ -8,135 +8,14 @@ exists empty; trivial.
 Qed.
 
 
-Lemma iff_strengthen : forall A B P:Prop,
-    (A->P) ->
-    (B->P) ->
-    (A<->B) <-> (P -> A<->B).
-split; intros; [trivial|].
-split; intro; apply H1; auto.
+Lemma dummy_ex (A:Prop) : A -> exists _:set, A.
+intros.
+destruct ex_set; eauto.
 Qed.
-
-
-
-  Lemma fa_eq_var_iff y P :
-    Proper (eq_set==>iff) P ->
-    (forall x, x == y -> P x) <-> P y.
-split; intros; auto with *.
-rewrite H1; trivial.
+Lemma dummy_fa (A:Prop) : (set->A) -> A.
+intros.
+destruct ex_set; auto.
 Qed.
-
-  Lemma ex_eq_var_iff y P :
-    Proper (eq_set==>iff) P ->
-    (exists x, x == y /\ P x) <-> P y.
-split; intros; eauto with *.
-*destruct H0 as (x,(?,?)).
- rewrite <- H0; trivial.
-*exists y; auto with *.
-Qed.
-
-
-  Lemma fa_empty_iff P : (forall x, x ∈ empty -> P x) <-> True.
-split;[trivial|intros].
-apply empty_ax in H0; contradiction.
-Qed.
-
-  Lemma ex_empty_iff P : (exists x, x ∈ empty /\ P x) <-> False.
-split;[intros|contradiction].
-destruct H as (x,(?,_)).
-apply empty_ax in H; trivial.
-Qed.
-
-
-  Lemma fa_pair_iff a b P :
-    Proper (eq_set==>iff) P ->
-    (forall x, x ∈ pair a b -> P x) <-> P a /\ P b.
-intros Pm.
-split; intros; auto.
-destruct H.
-rewrite pair_ax in H0; destruct H0; rewrite H0; trivial.
-Qed.
-
-  Lemma ex_pair_iff a b P :
-    Proper (eq_set==>iff) P ->
-    (exists x, x ∈ pair a b /\ P x) <-> P a \/ P b.
-intros Pm.
-split; intros.
-*destruct H as (x,(?,?)).
- apply pair_ax in H.
- destruct H; rewrite H in H0; auto.
-*destruct H; [exists a|exists b]; split; trivial.
-Qed.
-
-  Lemma fa_union_iff a P :
-    (forall x, x ∈ union a -> P x) <->
-    (forall y, y ∈ a -> forall x, x ∈ y -> P x).
-split; intros.
-*apply H; apply union_ax; eauto.
-*apply union_ax in H0; destruct H0; eauto.
-Qed.
-
-  Lemma ex_union_iff a P :
-    (exists x, x ∈ union a /\ P x) <->
-    (exists y, y ∈ a /\ exists x, x ∈ y /\ P x).
-split; intros.
-*destruct H as (x,(?,?)).
- apply union_ax in H; destruct H; eauto.
-*destruct H as (y,(?,(x,(?,?)))); exists x; split;[|trivial].
- apply union_ax; eauto.
-Qed.
-  
-  Lemma fa_subset_iff a P Q :
-    Proper (eq_set==>iff) P ->
-    (forall x, x ∈ subset a P -> Q x) <->
-    (forall x, x ∈ a -> P x -> Q x).
-intros Pm.
-split; intros.
-*apply H; apply subset_intro; trivial.
-*apply subset_ax in H0; destruct H0 as (?,(x',?,?)).
- rewrite <- H1 in H2; auto.
-Qed.
-
-  Lemma ex_subset_iff a P Q :
-    Proper (eq_set==>iff) P ->
-    (exists x, x ∈ subset a P /\ Q x) <->
-    (exists x, x ∈ a /\ (P x /\ Q x)).
-intros Pm.
-split; intros.
-*destruct H as (x,(?,?)).
- apply subset_ax in H; destruct H as (?,(x',?,?)).
-rewrite <- H1 in H2; eauto.
-*destruct H as (x,(?&?&?)).
- exists x; split; trivial.
- apply subset_intro; trivial.
-Qed.
-
-  Lemma fa_replf_iff a F P :
-    Proper (eq_set==>iff) P ->
-    ext_fun a F ->
-    (forall x, x ∈ replf a F -> P x) <-> (forall z, z ∈ a -> P (F z)).
-intros Pm Fext.
-split; intros.
-*apply H.
- rewrite replf_ax; eauto with *.
-*rewrite replf_ax in H0; trivial.
- destruct H0 as (z,?,?).
- rewrite H1; auto.
-Qed.
-
-
-  Lemma ex_sup_iff a b P :
-    ext_fun a b ->
-    (exists x, x ∈ sup a b /\ P x) <->
-    (exists y, y ∈ a /\ exists x, x ∈ b y /\ P x).
-split; intros.
-*destruct H0 as (x,(?,?)).
- rewrite sup_ax in H0; [|trivial].
- destruct H0; eauto.
-*destruct H0 as (y,(?,(x,(?,?)))); exists x; split;[|trivial].
- rewrite sup_ax; eauto.
-Qed.
-
-
   
 (* Levy's ΣΠ hierarchy adapted to intuitionistic formulas *)
 
@@ -211,15 +90,6 @@ rewrite ex_ex2.
 apply F_bex_ext; trivial.
 Qed.
 
-
-Lemma dummy_ex (A:Prop) : A -> exists _:set, A.
-intros.
-destruct ex_set; eauto.
-Qed.
-Lemma dummy_fa (A:Prop) : (set->A) -> A.
-intros.
-destruct ex_set; auto.
-Qed.
 
 Lemma levy_thin_vars vars vars' k n A :
   levy vars k n A ->
@@ -531,13 +401,6 @@ Qed.
 constructor; trivial.
 Qed.
 *)
-
-  Lemma in_set_def a x :
-    a ∈ x <-> exists y, y ∈ x /\ y==a.
-split; [exists a; split; auto with *|destruct 1 as (y,(?,?))].
-rewrite <- H0; trivial.
-Qed.
-    
     
 Lemma ex_eq_delta v n a P :
   Proper (eq_set==>iff) P ->
