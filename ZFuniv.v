@@ -49,9 +49,8 @@ Qed.
 Lemma sort_repl_morph2 :
   Proper (eq_set ==> eq_set) (fun P => replSAT(fun A => mkTY P A)).
 do 2 red; intros.
-apply ZFrepl.repl_morph_raw; auto with *.
-do 2 red; intros.
-rewrite H1.
+unfold replSAT.
+apply replf_morph_raw; [reflexivity|red; intros].
 unfold mkTY; rewrite H.
 rewrite (iSAT_morph _ _ (sSAT_morph _ _ H0)).
 reflexivity.

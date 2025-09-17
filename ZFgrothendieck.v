@@ -108,7 +108,9 @@ Lemma G_replf : forall A F,
   A ∈ U ->
   (forall x, x ∈ A -> F x ∈ U) ->
   replf A F ∈ U.
-unfold replf; intros; apply G_repl_hidden; intros; auto.
+intros.
+rewrite replf_def; trivial.
+apply G_repl_hidden; intros; auto.
  apply repl_rel_fun; trivial.
  rewrite H3; auto.
 Qed.

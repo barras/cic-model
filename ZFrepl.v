@@ -1,6 +1,91 @@
 
 Require Import ZF.
 
+Section GeneralizedRepl.
+
+  (* We show that repl_ax allows to derive a new replacement Repl that
+     is fully specified (i.e. not assuming properties on the relation),
+     and that staisfies both repl_ax and repl_mono.
+  *)
+  
+  Definition Repl a R :=
+    repl (subset a (fun x => (forall x' y y', x==x' -> y==y' -> R x y <-> R x' y') /\
+                             (forall y y', R x y -> R x y' -> y==y'))) R.
+
+  Lemma Repl_ax a (R:set->set->Prop) z :
+    z ∈ Repl a R <-> exists2 y, y ∈ a &
+                                forall y' z', y==y' -> (R y' z' <-> z==z').
+unfold Repl; rewrite repl_ax.
+*split; intros.
+ +destruct H as (y,tyy,?).
+  rewrite subset_ax in tyy.
+  destruct tyy as (?,(y',?,(?,?))).  
+  exists y; trivial.
+  intros.
+  split; intros.
+  ++apply H3.
+     rewrite H2 with (x':=y) (y':=z); auto with *.
+     rewrite H2 with (x':=y'0) (y':=z'); auto with *.
+     rewrite <-H1; trivial.
+  ++rewrite <- H2 with (y:=z');[|rewrite <-H1; trivial|reflexivity].
+    rewrite H2 with (x':=y)(y':=z); auto with *.
+ +destruct H as (y,?,?); exists y.
+  ++apply subset_intro; trivial.
+    split; intros.
+    rewrite H0; auto with *.
+    rewrite H0; auto with *.
+    rewrite H2; reflexivity.
+    rewrite H0 in H1; auto with *.
+    rewrite H0 in H2; auto with *.
+    rewrite <-H1; trivial.
+  ++apply H0; reflexivity.
+*intros.
+ rewrite subset_ax in H.
+ destruct H as (?,(x'',?,(?,?))).  
+ rewrite <- H4 with (y:=y); auto with *.
+ 2:rewrite <- H3; trivial.
+ rewrite H4 with (x':=x)(y':=y); auto with *.
+*intros.
+ rewrite subset_ax in H.
+ destruct H as (?,(x',?,(?,?))).  
+ apply H4.
+  rewrite H3 with (x':=x)(y':=y); auto with *.
+  rewrite H3 with (x':=x)(y':=y'); auto with *.
+Qed.
+
+  Opaque Repl.  
+
+    Lemma Repl_repl_ax a (R : set -> set -> Prop) :
+    (forall x x' y y', x ∈ a -> x == x' -> y == y' -> R x y -> R x' y') ->
+    (forall x y y', x ∈ a -> R x y -> R x y' -> y == y') ->
+    forall x, x ∈ Repl a R <-> (exists2 y, y ∈ a & R y x).
+intros.
+rewrite Repl_ax.
+apply ex2_morph'; [reflexivity|].
+intros z tyz.
+split; intros.
+*rewrite H1; reflexivity.
+*split; intros.
+ +apply H0 with z; trivial.
+  apply H with y' z'; auto with *.
+  rewrite <- H2; trivial.
+ +apply H with z x; trivial.
+Qed.
+
+  Lemma Repl_repl_mono a a' (R R' : set -> set -> Prop) :
+    (forall z, z ∈ a -> z ∈ a') ->
+    (forall x x', x == x' -> forall y y', y == y' -> R x y <-> R' x' y') ->
+    forall z, z ∈ Repl a R -> z ∈ Repl a' R'.
+intros.
+rewrite Repl_ax in *.
+destruct H1 as (y,?,?); exists y; auto.
+intros.
+rewrite <- H0 with (x:=y')(y:=z'); auto with *.
+Qed.
+
+  
+End GeneralizedRepl.
+  
 Instance repl_mono_raw :
   Proper (incl_set ==> (eq_set ==> eq_set ==> iff) ==> incl_set) repl.
 Proof repl_mono.
@@ -20,13 +105,6 @@ Qed.
 Definition repl_rel a (R:set->set->Prop) :=
   (forall x x' y y', x ∈ a -> x == x' -> y == y' -> R x y -> R x' y') /\
   (forall x y y', x ∈ a -> R x y -> R x y' -> y == y').
-
-Lemma repl_rel_fun : forall x f,
-  ext_fun x f -> repl_rel x (fun a b => b == f a).
-split; intros.
- rewrite <- H2; rewrite H3; auto.
- rewrite H1; rewrite H2; reflexivity.
-Qed.
 
 Lemma repl_intro : forall a R y x,
   repl_rel a R -> y ∈ a -> R y x -> x ∈ repl a R.
@@ -84,6 +162,46 @@ elim repl_elim with (2:=H); intros.
  split; intros.
   elim empty_ax with x0; trivial.
   elim empty_ax with x0; trivial.
+Qed.
+
+(* Relation between replf and repl *)
+Lemma repl_rel_fun : forall x f,
+  ext_fun x f -> repl_rel x (fun a b => b == f a).
+split; intros.
+ rewrite <- H2; rewrite H3; auto.
+ rewrite H1; rewrite H2; reflexivity.
+Qed.
+
+Lemma replf_def a F :
+  ext_fun a F ->
+  replf a F == repl a (fun x y => y == F x).
+intros Fext.
+apply eq_set_ax; intros z.
+rewrite replf_ax; trivial.
+rewrite repl_ax.
+*reflexivity.
+*apply repl_rel_fun; trivial.
+*apply repl_rel_fun; trivial.
+Qed.
+
+Lemma repl_rel_fun_raw : forall x f,
+  repl_rel x (fun a b => forall a', a==a' -> b == f a').
+split; intros.
+*rewrite <- H0 in H3.
+ rewrite <- H1; auto.
+*rewrite H0 with (a':=x0); [|reflexivity].
+ rewrite H1 with (a':=x0); [|reflexivity].
+ reflexivity.
+Qed.
+
+Lemma replf_def_raw a F :
+  replf a F == repl a (fun x y => forall x', x==x' -> y == F x').
+apply eq_set_ax; intros z.
+rewrite replf_ax_raw.
+rewrite repl_ax.
+*reflexivity.
+*apply repl_rel_fun_raw; trivial.
+*apply repl_rel_fun_raw; trivial.
 Qed.
 
 (* unique choice *)

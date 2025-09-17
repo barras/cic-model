@@ -187,38 +187,35 @@ Notation "x ∈ y" := (in_set x y).
 
 (*Parameter replf : set -> (set->set) -> set.*)
 Definition replf (a:set) (F:set->set) : set :=
-  repl a (fun x y => y == F x).
+  repl a (fun x y => forall x', x==x' -> y == F x').
+(*Definition replf (a:set) (F:set->set) : set :=
+  repl a (fun x y => y == F x). *)
 
+Lemma replf_ax_raw : forall a F z,
+  (z ∈ replf a F <-> exists2 x, x ∈ a & forall x', x==x' -> z == F x').
+intros.
+unfold replf.
+apply repl_ax.
+*intros.
+ rewrite <-H1.
+ apply H2.
+ rewrite H0; trivial.
+*intros.
+ rewrite H0 with (x':=x); [|reflexivity].
+ rewrite H1 with (x':=x); [|reflexivity].
+ reflexivity.
+Qed.
+
+#[global] Opaque replf.
 
 Instance replf_mono_raw :
   Proper (incl_set ==> (eq_set ==> eq_set) ==> incl_set) replf.
-unfold replf.
 do 4 red; intros.
-assert (xm : morph1 x0).
- do 2 red; intros.
- transitivity (y0 y1); auto.
- symmetry; apply H0; reflexivity.
-assert (ym : morph1 y0).
- do 2 red; intros.
- transitivity (x0 x1); auto.
- symmetry; apply H0; reflexivity.
-rewrite repl_ax in H1.
- rewrite repl_ax.
-  destruct H1.
-  exists x1; auto.
-  rewrite H2; apply H0; reflexivity.
-
-  intros.
-  rewrite <- H4; rewrite H5; auto.
-
-  intros.
-  rewrite H3; rewrite H4; reflexivity.
-
- intros.
- rewrite <- H4; rewrite H5; auto.
-
- intros.
- rewrite H3; rewrite H4; reflexivity.
+rewrite replf_ax_raw in *.
+destruct H1 as (a,?,?).
+exists a; [auto|intros].
+rewrite H2 with (x':=x'); trivial.
+apply H0; reflexivity.
 Qed.
 
 Instance replf_morph_raw :
@@ -236,18 +233,11 @@ Qed.
 Lemma replf_ax : forall a F z,
   ext_fun a F ->
   (z ∈ replf a F <-> exists2 x, x ∈ a & z == F x).
-unfold replf; intros.
-rewrite repl_ax; intros.
- split; intros.
-  destruct H0.
-  exists x; trivial.
-
-  destruct H0.
-  exists x; trivial.
-
- rewrite <- H2; rewrite H3; auto.
-
- rewrite H2; trivial.
+intros.
+rewrite replf_ax_raw.
+apply ex2_morph'; [reflexivity|intros].
+split; intros; auto with *.
+rewrite H1; auto.
 Qed.
 
 Lemma replf_intro : forall a F y x,

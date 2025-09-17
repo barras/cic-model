@@ -812,9 +812,10 @@ Section UnionClosure.
   Hypothesis mu_reg : VN_regular_rel mu.
   Hypothesis mu_inf : omega ∈ mu.
 
-
   Lemma VN_regular_weaker : VN_regular mu.
 red; intros.
+unfold sup.
+rewrite replf_def; trivial.
 apply mu_reg; trivial; intros.
  apply repl_rel_fun; trivial.
 

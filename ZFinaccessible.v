@@ -29,6 +29,7 @@ split; intros.
  split; trivial.
 
 *rewrite <- (replf_id x).
+ rewrite ZFrepl.replf_def; auto with *.
  apply mu_reg; intros; trivial.
  apply ZFrepl.repl_rel_fun; auto with *.
  rewrite H1.
