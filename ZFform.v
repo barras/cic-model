@@ -697,7 +697,7 @@ Hint Resolve auxm1 auxm2 : core.
     ZFrepl.WFR eq_set subForm (fun Fint P l => Tr_body l Fint P).
   Definition FTr (P:set) (l:set) : Prop := p2P (Fintrec P l).
 
-  Lemma FTr_morph : Proper (eq_set==>eq_set==>iff) FTr.
+  Instance FTr_morph : Proper (eq_set==>eq_set==>iff) FTr.
 do 3 red; intros.
 apply p2P_morph.
 apply ZFrepl.WFR_morph0; auto with *.
